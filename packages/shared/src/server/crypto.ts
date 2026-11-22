@@ -1,9 +1,6 @@
-import {
-  createHash as cryptoCreateHash,
-  randomBytes,
-  scrypt,
-  timingSafeEqual,
-} from 'node:crypto';
+import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
+import { shake256 } from '@noble/hashes/sha3.js';
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 
 export function generateSalt() {
   return randomBytes(16).toString('hex');
@@ -55,8 +52,10 @@ export async function verifyPassword(
   });
 }
 
+/**
+ * SHAKE256 truncated to `len` bytes, as hex. Pure JS (@noble/hashes) because
+ * workerd's node:crypto has no SHAKE; the output matches node's byte for byte.
+ */
 export function createHash(data: string, len: number) {
-  return cryptoCreateHash('shake256', { outputLength: len })
-    .update(data)
-    .digest('hex');
+  return bytesToHex(shake256(utf8ToBytes(data), { dkLen: len }));
 }

@@ -1086,10 +1086,35 @@ function toEventListPage(items: IServiceEvent[]) {
   };
 }
 
+/**
+ * The event list from the Workers event store. Filters, groups and cohorts
+ * need the Phase 4 query port and are not applied yet.
+ */
+async function getStoredEventListPage(
+  store: NonNullable<ServiceDeps['eventStore']>,
+  input: Omit<EventListPageInput, 'columnVisibility'>
+) {
+  const page = await store.listEvents(input.projectId, {
+    profileId: input.profileId ?? undefined,
+    sessionId: input.sessionId ?? undefined,
+    names: input.events ?? undefined,
+    startDate: input.startDate ?? undefined,
+    endDate: input.endDate ?? undefined,
+    cursor: input.cursor ?? null,
+    take: EVENT_LIST_PAGE_TAKE,
+  });
+  const items = page.events.map(transformEvent);
+  shareSessionProfiles(items);
+  return { data: items, meta: { next: page.cursor } };
+}
+
 export async function getEventListPage(
   deps: ServiceDeps,
   { columnVisibility, ...input }: EventListPageInput
 ) {
+  if (deps.eventStore) {
+    return getStoredEventListPage(deps.eventStore, input);
+  }
   const items = await getEventList(deps, {
     projectId: input.projectId,
     filters: input.filters,

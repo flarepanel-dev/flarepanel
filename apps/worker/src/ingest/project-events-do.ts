@@ -1,0 +1,377 @@
+/**
+ * One Durable Object per project: its events in the object's SQLite (via the
+ * storage-agnostic engine in @flarepanel/core), an alarm that closes idle
+ * sessions, checkpoints, archives to R2 and applies retention, and the
+ * project's live dashboard sockets (hibernating).
+ *
+ * Idle projects cost nothing: no alarm is scheduled once every session has
+ * ended and the state is checkpointed.
+ */
+
+import { gunzipSync, gzipSync } from 'node:zlib';
+import { DurableObject } from 'cloudflare:workers';
+import type { DeviceRequest } from '@flarepanel/core';
+import {
+  buildArchiveObjects,
+  createProjectEventsService,
+  type EngineSql,
+  type ListEventsQuery,
+  openProjectEventsEngine,
+  type ProjectEventsEngine,
+  type ProjectEventsService,
+  type ProjectEventsTrackInput,
+  type SqlRow,
+  type SqlValue,
+} from '@flarepanel/core/ingest/cloudflare';
+import type { Env } from '../index';
+import { createConsoleLogger } from '../logger';
+
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+const ARCHIVE_INTERVAL_MS = 10 * 60 * 1000;
+const ARCHIVE_BATCH_CHUNKS = 500;
+const ARCHIVE_MAX_BATCHES = 4;
+const RETENTION_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_RETENTION_DAYS = 90;
+const LITE_RETENTION_DAYS = 30;
+const BROADCAST_MIN_INTERVAL_MS = 1000;
+/** An alarm already due this soon is not moved (each move is a write). */
+const ALARM_SLACK_MS = 1000;
+
+const KEY_PROJECT_ID = 'project_id';
+const KEY_ARCHIVED_THROUGH = 'archived_through';
+const KEY_ARCHIVED_AT = 'archived_at';
+const KEY_RETENTION_AT = 'retention_at';
+
+type LiveKind = 'events' | 'visitors';
+
+interface State {
+  engine: ProjectEventsEngine;
+  service: ProjectEventsService;
+}
+
+function toBinding(value: SqlValue): SqlValue {
+  if (value instanceof Uint8Array) {
+    return value.buffer.slice(
+      value.byteOffset,
+      value.byteOffset + value.byteLength
+    ) as ArrayBuffer;
+  }
+  if (typeof value === 'bigint') {
+    return Number(value);
+  }
+  return value;
+}
+
+// node:zlib (nodejs_compat) rather than CompressionStream: a stream pump never
+// completes inside blockConcurrencyWhile, where the engine restores chunks.
+const gzip = (bytes: Uint8Array) =>
+  Promise.resolve(new Uint8Array(gzipSync(bytes)));
+const gunzip = (bytes: Uint8Array) =>
+  Promise.resolve(new Uint8Array(gunzipSync(bytes)));
+
+export class ProjectEventsDurableObject extends DurableObject<Env> {
+  private readonly logger = createConsoleLogger('info', {
+    component: 'project-events',
+  });
+  private readonly state: Promise<State>;
+  private projectId: string | null = null;
+  private alarmAt: number | null = null;
+  private unarchived = false;
+  private pendingEvents = 0;
+  private lastBroadcastAt = 0;
+  private broadcastTimer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env);
+    this.state = this.open();
+    ctx.blockConcurrencyWhile(async () => {
+      await this.state;
+    });
+  }
+
+  private async open(): Promise<State> {
+    const storage = this.ctx.storage;
+    const sql: EngineSql = {
+      exec: (query, ...bindings) =>
+        storage.sql
+          .exec(query, ...bindings.map(toBinding))
+          .toArray() as SqlRow[],
+      transaction: (fn) => storage.transactionSync(fn),
+    };
+    const engine = await openProjectEventsEngine({
+      sql,
+      clock: {
+        now: () => Date.now(),
+        setTimeout: (callback, ms) => setTimeout(callback, ms),
+        clearTimeout: (handle) =>
+          clearTimeout(handle as ReturnType<typeof setTimeout>),
+      },
+      codec: { compress: gzip, decompress: gunzip },
+      options: { sessionTimeoutMs: SESSION_TIMEOUT_MS },
+    });
+    const service = createProjectEventsService({
+      engine,
+      logger: this.logger,
+      sessionTimeoutMs: SESSION_TIMEOUT_MS,
+      onStored: () => this.afterStore(),
+    });
+
+    this.projectId = (await storage.get<string>(KEY_PROJECT_ID)) ?? null;
+    this.alarmAt = await storage.getAlarm();
+    const archivedThrough =
+      (await storage.get<number>(KEY_ARCHIVED_THROUGH)) ?? 0;
+    this.unarchived = (await engine.readChunks(archivedThrough, 1)).length > 0;
+    return { engine, service };
+  }
+
+  private async rememberProject(projectId: string) {
+    if (this.projectId === projectId) {
+      return;
+    }
+    this.projectId = projectId;
+    await this.ctx.storage.put(KEY_PROJECT_ID, projectId);
+  }
+
+  // -------------------------------------------------------------------------
+  // RPC (called by the Worker with the project's id as the object name)
+
+  async track(input: ProjectEventsTrackInput) {
+    const { service } = await this.state;
+    await this.rememberProject(input.draft.event.projectId);
+    const result = await service.track(input);
+    if (!result.duplicate) {
+      this.pendingEvents += 1;
+      this.scheduleBroadcast();
+    }
+    return result;
+  }
+
+  async resolveDevice(device: DeviceRequest) {
+    const { service } = await this.state;
+    return service.resolveDevice(device);
+  }
+
+  async getExistingSessions(projectId: string, deviceIds: string[]) {
+    const { service } = await this.state;
+    return service.getExistingSessions(projectId, deviceIds);
+  }
+
+  async listEvents(query: ListEventsQuery) {
+    const { engine } = await this.state;
+    return engine.listEvents(query);
+  }
+
+  async projectCard() {
+    const { engine } = await this.state;
+    return engine.projectCard();
+  }
+
+  async dailyStats(from: Date, to: Date) {
+    const { engine } = await this.state;
+    return engine.dailyStats(from, to);
+  }
+
+  async eventNames() {
+    const { engine } = await this.state;
+    return engine.eventNames();
+  }
+
+  async activeVisitors(windowMs?: number) {
+    const { engine } = await this.state;
+    return engine.activeVisitors(windowMs);
+  }
+
+  // -------------------------------------------------------------------------
+  // Alarm: session sweep, checkpoint, archive, retention
+
+  private afterStore() {
+    this.unarchived = true;
+    this.scheduleAlarm().catch((error) =>
+      this.logger.error({ err: error }, 'Could not schedule the alarm')
+    );
+  }
+
+  private async desiredAlarmAt(): Promise<number | null> {
+    const { engine } = await this.state;
+    let next = engine.nextAlarmAt() ?? Number.POSITIVE_INFINITY;
+    if (this.unarchived && this.env.EVENTS_ARCHIVE) {
+      const archivedAt =
+        (await this.ctx.storage.get<number>(KEY_ARCHIVED_AT)) ?? 0;
+      next = Math.min(next, archivedAt + ARCHIVE_INTERVAL_MS);
+    }
+    return Number.isFinite(next) ? next : null;
+  }
+
+  private async scheduleAlarm() {
+    const desired = await this.desiredAlarmAt();
+    if (desired === null) {
+      return;
+    }
+    const at = Math.max(desired, Date.now());
+    if (this.alarmAt !== null && this.alarmAt <= at + ALARM_SLACK_MS) {
+      return;
+    }
+    this.alarmAt = at;
+    await this.ctx.storage.setAlarm(at);
+  }
+
+  async alarm() {
+    this.alarmAt = null;
+    const { engine } = await this.state;
+    const result = await engine.tick();
+    await this.archive(engine);
+    await this.applyRetention(engine);
+    if (result.endedSessions.length > 0) {
+      this.scheduleBroadcast();
+    }
+    await this.scheduleAlarm();
+  }
+
+  private async archive(engine: ProjectEventsEngine) {
+    const bucket = this.env.EVENTS_ARCHIVE;
+    const projectId = this.projectId;
+    if (!(bucket && projectId && this.unarchived)) {
+      return;
+    }
+    const storage = this.ctx.storage;
+    const archivedAt = (await storage.get<number>(KEY_ARCHIVED_AT)) ?? 0;
+    if (Date.now() - archivedAt < ARCHIVE_INTERVAL_MS) {
+      return;
+    }
+    await engine.flush();
+    let through = (await storage.get<number>(KEY_ARCHIVED_THROUGH)) ?? 0;
+    for (let batch = 0; batch < ARCHIVE_MAX_BATCHES; batch++) {
+      const chunks = await engine.readChunks(through, ARCHIVE_BATCH_CHUNKS);
+      const last = chunks.at(-1);
+      if (!last) {
+        break;
+      }
+      for (const object of buildArchiveObjects(projectId, chunks)) {
+        await bucket.put(
+          `${object.key}.gz`,
+          await gzip(new TextEncoder().encode(object.body)),
+          {
+            httpMetadata: {
+              contentType: 'application/x-ndjson',
+              contentEncoding: 'gzip',
+            },
+            customMetadata: { events: String(object.events) },
+          }
+        );
+      }
+      through = last.id;
+      await storage.put(KEY_ARCHIVED_THROUGH, through);
+      if (chunks.length < ARCHIVE_BATCH_CHUNKS) {
+        break;
+      }
+    }
+    await storage.put(KEY_ARCHIVED_AT, Date.now());
+    this.unarchived = (await engine.readChunks(through, 1)).length > 0;
+  }
+
+  private async applyRetention(engine: ProjectEventsEngine) {
+    const storage = this.ctx.storage;
+    const lastRun = (await storage.get<number>(KEY_RETENTION_AT)) ?? 0;
+    if (Date.now() - lastRun < RETENTION_INTERVAL_MS) {
+      return;
+    }
+    const hasArchive = Boolean(this.env.EVENTS_ARCHIVE);
+    const configured = Number(this.env.FLAREPANEL_EVENT_RETENTION_DAYS);
+    const days =
+      Number.isFinite(configured) && configured > 0
+        ? configured
+        : hasArchive
+          ? DEFAULT_RETENTION_DAYS
+          : LITE_RETENTION_DAYS;
+    const archivedThrough = hasArchive
+      ? ((await storage.get<number>(KEY_ARCHIVED_THROUGH)) ?? 0)
+      : Number.MAX_SAFE_INTEGER;
+    engine.pruneChunks({
+      beforeMs: Date.now() - days * DAY_MS,
+      maxId: archivedThrough,
+    });
+    await storage.put(KEY_RETENTION_AT, Date.now());
+  }
+
+  // -------------------------------------------------------------------------
+  // Live sockets: `/live/events/:projectId` and `/live/visitors/:projectId`,
+  // forwarded here by the Worker after its session and access checks.
+
+  async fetch(request: Request): Promise<Response> {
+    if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') {
+      return new Response('Expected a WebSocket upgrade', { status: 426 });
+    }
+    const kind: LiveKind = new URL(request.url).pathname.includes(
+      '/live/visitors/'
+    )
+      ? 'visitors'
+      : 'events';
+    const pair = new WebSocketPair();
+    const [client, server] = Object.values(pair) as [WebSocket, WebSocket];
+    this.ctx.acceptWebSocket(server, [kind]);
+    if (kind === 'visitors') {
+      const { engine } = await this.state;
+      server.send(String(engine.activeVisitors()));
+    }
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  webSocketMessage() {
+    // The dashboard only listens.
+  }
+
+  webSocketClose(ws: WebSocket, code: number) {
+    try {
+      ws.close(code === 1005 ? 1000 : code, 'closed');
+    } catch {
+      // Already closed.
+    }
+  }
+
+  private scheduleBroadcast() {
+    if (this.broadcastTimer !== null) {
+      return;
+    }
+    const wait = Math.max(
+      0,
+      this.lastBroadcastAt + BROADCAST_MIN_INTERVAL_MS - Date.now()
+    );
+    this.broadcastTimer = setTimeout(() => {
+      this.broadcastTimer = null;
+      this.broadcast().catch((error) =>
+        this.logger.warn({ err: error }, 'Live broadcast failed')
+      );
+    }, wait);
+  }
+
+  private async broadcast() {
+    this.lastBroadcastAt = Date.now();
+    const count = this.pendingEvents;
+    this.pendingEvents = 0;
+    const eventSockets = this.ctx.getWebSockets('events');
+    if (count > 0 && eventSockets.length > 0) {
+      // superjson's wire shape, as the Bun routes send it.
+      const message = JSON.stringify({ json: { count } });
+      for (const ws of eventSockets) {
+        safeSend(ws, message);
+      }
+    }
+    const visitorSockets = this.ctx.getWebSockets('visitors');
+    if (visitorSockets.length > 0) {
+      const { engine } = await this.state;
+      const message = String(engine.activeVisitors());
+      for (const ws of visitorSockets) {
+        safeSend(ws, message);
+      }
+    }
+  }
+}
+
+function safeSend(ws: WebSocket, message: string) {
+  try {
+    ws.send(message);
+  } catch {
+    // A socket closing under us; its close handler cleans up.
+  }
+}

@@ -5,6 +5,7 @@ import type { QueueProducerHandle, QueueProducers } from './jobs.registry';
 import type { Logger } from './logger';
 import type { Auth } from './modules/auth/src/better-auth';
 import type { SessionValidationResult } from './modules/auth/src/login-session';
+import type { EventStore } from './modules/event/src/event-store';
 import type { IngestBackend } from './modules/ingest/src/backend';
 import { createServices, type Services } from './services';
 import type { CookieJar, CookieOptions } from './shared/cookie';
@@ -74,6 +75,8 @@ export interface AppDeps {
    * where the routes build the Redis/MaxMind/Kafka backend per request.
    */
   ingest?: IngestBackend;
+  /** Event reads on Workers (per-project Durable Objects); absent on Bun. */
+  eventStore?: EventStore;
 }
 
 /** Work scope. One per HTTP request, RPC call, job run or Kafka batch. */
@@ -89,6 +92,7 @@ export interface Ctx {
   queues: QueueProducers;
   config: CoreConfig;
   auth: Auth | null;
+  eventStore?: EventStore;
   services: Services;
   requestId: string;
 }
@@ -135,6 +139,7 @@ export function createCtx(deps: AppDeps, scope: ScopeMeta): Ctx {
     queues: deps.producers.scope({ requestId: scope.requestId }),
     config: deps.config,
     auth: deps.auth,
+    eventStore: deps.eventStore,
     requestId: scope.requestId,
     services: undefined as unknown as Services,
   };
@@ -173,6 +178,7 @@ function installLazyServices(ctx: Ctx): void {
         queues: ctx.queues,
         config: ctx.config,
         auth: ctx.auth,
+        eventStore: ctx.eventStore,
       });
       return built;
     },

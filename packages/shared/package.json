@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@noble/hashes": "2.4.0",
     "ipaddr.js": "2.5.0",
     "lru-cache": "11.5.1",
     "luxon": "3.7.2",

@@ -30,9 +30,10 @@ const healthReadyResponseSchema = z.object({
 
 const healthCheckResponseSchema = z.object({
   ready: z.boolean(),
-  redis: z.boolean(),
+  /** Absent on Workers, which run without Redis and ClickHouse. */
+  redis: z.boolean().optional(),
   db: z.boolean(),
-  ch: z.boolean(),
+  ch: z.boolean().optional(),
   failedDependencies: z.array(z.string()),
   workingDependencies: z.array(z.string()),
 });
@@ -78,25 +79,36 @@ export const healthRoutes = defineRoutes((app) =>
         // Core's own `chQuery` over `ctx.ch` — the same round-robin + retry
         // proxy every real read takes (`ctx.ch.query` IS `withRetry(client =>
         // client.query(...))`, see ch-query.ts).
+        // Workers store events in Durable Objects (`ctx.eventStore`) and have
+        // no Redis or ClickHouse, so only the database is probed there.
+        const hasServers = !ctx.eventStore;
         const [redisResult, dbResult, chResult] = await Promise.all([
-          tryCatch(async () => (await ctx.redis.ping()) === 'PONG'),
+          hasServers
+            ? tryCatch(async () => (await ctx.redis.ping()) === 'PONG')
+            : null,
           tryCatch(
             async () =>
               (await ctx.db.$queryRaw<unknown[]>`SELECT 1 AS ok`).length > 0
           ),
-          tryCatch(async () => (await chQuery(ctx, 'SELECT 1')).length > 0),
+          hasServers
+            ? tryCatch(async () => (await chQuery(ctx, 'SELECT 1')).length > 0)
+            : null,
         ]);
 
-        const dependencies = {
-          redis: redisResult.ok && redisResult.data,
+        const dependencies: { db: boolean; redis?: boolean; ch?: boolean } = {
           db: dbResult.ok && dbResult.data,
-          ch: chResult.ok && chResult.data,
         };
-        const dependencyErrors = {
-          redis: redisResult.error?.message,
+        const dependencyErrors: Record<string, string | undefined> = {
           db: dbResult.error?.message,
-          ch: chResult.error?.message,
         };
+        if (redisResult) {
+          dependencies.redis = redisResult.ok && redisResult.data;
+          dependencyErrors.redis = redisResult.error?.message;
+        }
+        if (chResult) {
+          dependencies.ch = chResult.ok && chResult.data;
+          dependencyErrors.ch = chResult.error?.message;
+        }
 
         const failedDependencies: string[] = [];
         const workingDependencies: string[] = [];

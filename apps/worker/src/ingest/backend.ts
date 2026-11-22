@@ -1,0 +1,174 @@
+/**
+ * `/track` on Workers: geo from `request.cf`, a best-effort duplicate check in
+ * the colo's Cache API, and one RPC to the project's Durable Object, which
+ * resolves the device and session, stores the event and answers once it is
+ * durable. Profiles, groups and replays have no store until Phase 4 and are
+ * accepted without being stored.
+ */
+import {
+  type AppDeps,
+  type Buffers,
+  type DeviceRequest,
+  type EventStore,
+  getGeoFromCf,
+  getProjectByIdCached,
+  type IngestBackend,
+  type TrackDraft,
+} from '@flarepanel/core';
+import type { CacheStore } from '@flarepanel/platform';
+import type { Env } from '../index';
+
+/** Repeats of one request inside this window are dropped. */
+const DEDUPE_TTL_SECONDS = 1;
+
+type ProjectEventsStub = ReturnType<Env['PROJECT_EVENTS']['get']>;
+
+export function projectEventsStub(
+  env: Pick<Env, 'PROJECT_EVENTS'>,
+  projectId: string
+): ProjectEventsStub {
+  return env.PROJECT_EVENTS.get(env.PROJECT_EVENTS.idFromName(projectId));
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(value)
+  );
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+interface CloudflareIngestOptions {
+  env: Pick<Env, 'PROJECT_EVENTS'>;
+  cache: CacheStore;
+  /** Resolved lazily: the backend is built before `AppDeps` exists. */
+  deps: () => AppDeps;
+}
+
+export function createCloudflareIngestBackend({
+  env,
+  cache,
+  deps,
+}: CloudflareIngestOptions): IngestBackend {
+  const markFirstEvent = async (projectId: string) => {
+    const appDeps = deps();
+    await appDeps.db.project.updateMany({
+      where: { id: projectId, firstEventAt: null },
+      data: { firstEventAt: new Date() },
+    });
+    await getProjectByIdCached.clear(appDeps, projectId);
+    appDeps.logger.info({ projectId }, 'Project received its first event');
+  };
+
+  return {
+    storesProfiles: false,
+
+    async isDuplicate({ ip, origin, payload, projectId }) {
+      const key = `ingest:dedupe:${await sha256Hex(
+        JSON.stringify([projectId, ip, origin, payload])
+      )}`;
+      if (await cache.get(key)) {
+        return true;
+      }
+      await cache.set(key, '1', DEDUPE_TTL_SECONDS);
+      return false;
+    },
+
+    // Bot counts arrive with Phase 3b.
+    recordBot: () => Promise.resolve(),
+
+    geo: ({ cf, ipOverridden }) =>
+      Promise.resolve(getGeoFromCf(cf, { ipOverridden })),
+
+    sink: {
+      resolveDevice: (device: DeviceRequest) =>
+        projectEventsStub(env, device.projectId).resolveDevice(device),
+
+      async track(draft: TrackDraft) {
+        const projectId = draft.event.projectId;
+        const project = await getProjectByIdCached(deps(), projectId).catch(
+          () => null
+        );
+        const result = await projectEventsStub(env, projectId).track({
+          draft,
+          project: project
+            ? {
+                firstEventAt: project.firstEventAt,
+                filters: project.filters,
+                aiStoreContent: project.aiStoreContent,
+              }
+            : null,
+        });
+        if (result.firstEvent) {
+          await markFirstEvent(projectId).catch((error) =>
+            deps().logger.error(
+              { err: error, projectId },
+              'Could not record the first event'
+            )
+          );
+        }
+        return { deviceId: result.deviceId, sessionId: result.sessionId };
+      },
+    },
+  };
+}
+
+/** Dashboard reads from each project's Durable Object. */
+export function createWorkerEventStore(
+  env: Pick<Env, 'PROJECT_EVENTS'>
+): EventStore {
+  return {
+    listEvents: (projectId, query) =>
+      projectEventsStub(env, projectId).listEvents(query),
+    projectCard: (projectId) => projectEventsStub(env, projectId).projectCard(),
+    activeVisitors: (projectId) =>
+      projectEventsStub(env, projectId).activeVisitors(),
+  };
+}
+
+const noop = () => Promise.resolve();
+
+/**
+ * The buffers `/track` and `/track/device-id` touch on Workers: sessions live
+ * in the project's Durable Object; profile, group, replay, AI and bot rows
+ * have no store yet and are dropped. Anything else still throws.
+ */
+export function createWorkerBuffers(env: Pick<Env, 'PROJECT_EVENTS'>): Buffers {
+  const standIns: Record<string, unknown> = {
+    event: {
+      getActiveVisitorCount: (projectId: string) =>
+        projectEventsStub(env, projectId).activeVisitors(),
+    },
+    session: {
+      getExistingSessions: (projectId: string, deviceIds: string[]) =>
+        projectEventsStub(env, projectId).getExistingSessions(
+          projectId,
+          deviceIds
+        ),
+    },
+    profile: {
+      add: noop,
+      fetchFromCache: () => Promise.resolve(null),
+    },
+    group: { add: noop },
+    replay: { add: noop },
+    aiEvent: { add: noop },
+    bot: { add: noop },
+  };
+  return new Proxy(standIns, {
+    get(target, property) {
+      if (property === 'then') {
+        return undefined;
+      }
+      const value = target[String(property)];
+      if (value === undefined) {
+        throw new Error(
+          `Event buffer "${String(property)}" is not available on Cloudflare Workers`
+        );
+      }
+      return value;
+    },
+  }) as unknown as Buffers;
+}

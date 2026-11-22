@@ -182,6 +182,7 @@ export {
   transformEvent,
   transformSessionToEvent,
 } from './modules/event/event.service';
+export type { EventStore } from './modules/event/src/event-store';
 export type { IServiceGroup } from './modules/group/group.service';
 export { getGscCannibalization } from './modules/gsc/gsc.service';
 export { setBooting, setShuttingDown } from './modules/health/src/shutdown';
@@ -286,7 +287,10 @@ export type {
   IServiceProject,
   IServiceProjectWithClients,
 } from './modules/project/project.service';
-export { createProjectService } from './modules/project/project.service';
+export {
+  createProjectService,
+  getProjectByIdCached,
+} from './modules/project/project.service';
 export type { IServiceReference } from './modules/reference/reference.service';
 export { createReferenceService } from './modules/reference/reference.service';
 export {

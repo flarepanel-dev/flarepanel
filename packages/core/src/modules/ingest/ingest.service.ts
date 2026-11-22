@@ -554,6 +554,16 @@ async function handleAssignGroup(
 
 /** `POST /track`. An unknown type still resolves geo/device before it is
  *  refused. */
+/** Request types that write profiles, groups or replays, not events. */
+const PROFILE_ONLY_TYPES = new Set<string>([
+  'identify',
+  'increment',
+  'decrement',
+  'group',
+  'assign_group',
+  'replay',
+]);
+
 export async function ingestTrack(
   request: TrackRequest,
   transport: IngestTransport
@@ -577,6 +587,13 @@ export async function ingestTrack(
     deviceId: context.deviceId,
     sessionId: context.sessionId,
   };
+
+  if (
+    transport.backend.storesProfiles === false &&
+    PROFILE_ONLY_TYPES.has(body.type)
+  ) {
+    return { status: 'ok', ...identity };
+  }
 
   switch (body.type) {
     case 'track':

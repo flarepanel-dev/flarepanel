@@ -20,7 +20,9 @@
   "durable_objects": {
     "bindings": [
       { "name": "COORDINATOR", "class_name": "CoordinatorDurableObject" },
-      { "name": "PUBSUB_HUB", "class_name": "PubSubHubDurableObject" }
+      { "name": "PUBSUB_HUB", "class_name": "PubSubHubDurableObject" },
+      // One per project: its events, sessions, rollups and live sockets.
+      { "name": "PROJECT_EVENTS", "class_name": "ProjectEventsDurableObject" }
     ]
   },
   "migrations": [
@@ -30,6 +32,20 @@
         "CoordinatorDurableObject",
         "PubSubHubDurableObject"
       ]
+    },
+    { "tag": "v2", "new_sqlite_classes": ["ProjectEventsDurableObject"] }
+  ],
+  // Raw event archive (ndjson.gz per project and hour). Without this binding
+  // the Worker runs in lite mode: no archive, 30-day retention.
+  "r2_buckets": [
+    { "binding": "EVENTS_ARCHIVE", "bucket_name": "flarepanel-events" }
+  ],
+  // Per-IP cap on /track and /event, enforced before any Durable Object runs.
+  "ratelimits": [
+    {
+      "name": "TRACK_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 600, "period": 60 }
     }
   ],
   "queues": {
@@ -69,7 +85,9 @@
     "DASHBOARD_URL": "https://dashboard.flarepanel.dev",
     "CUSTOM_COOKIE_DOMAIN": ".flarepanel.dev",
     // Cloudflare sets cf-connecting-ip itself; clients cannot spoof it.
-    "TRUSTED_IP_HEADER_ORDER": "cf-connecting-ip"
+    "TRUSTED_IP_HEADER_ORDER": "cf-connecting-ip",
+    // Hot events kept in each project's Durable Object; R2 keeps them all.
+    "FLAREPANEL_EVENT_RETENTION_DAYS": "90"
   },
   "observability": { "enabled": true, "head_sampling_rate": 0.1 }
 }

@@ -32,7 +32,11 @@ cookie is shared.
 | Organizations, projects, clients (onboarding) | works |
 | Rate limits, caches, locks | Cloudflare stores |
 | Background jobs and cron | Cloudflare Queue + Cron Trigger |
-| Analytics charts, ingest (`/track`), live views | not yet: they need the event pipeline (Phase 3) and the new query layer (Phase 4). Charts show 0 and the cards return errors |
+| Ingest: `/track`, `/event`, `/track/device-id` | works (Phase 3a): one Durable Object per project stores the events |
+| Onboarding "first event", event list, project card, live visitors and live event sockets | works, read from the project's Durable Object |
+| R2 archive (`flarepanel-events`) and retention | every 10 min while there is new data; 90 days hot, R2 keeps all |
+| Profiles, groups, replays (identify, increment, group, replay) | accepted and not stored yet (Phase 4) |
+| Overview charts, funnels, retention, filters, notifications | not yet: they need the Phase 4 query layer |
 
 Checked end to end with `wrangler dev`: sign-up 264 ms, onboarding (project +
 two clients) 194 ms, sign-in 202 ms, then the dashboard in a browser.
@@ -56,6 +60,34 @@ two clients) 194 ms, sign-in 202 ms, then the dashboard in a browser.
 - The bundle is ~24 MB raw, ~4.6 MB gzipped: it needs the **Workers Paid**
   plan (limit 10 MB; Free is 3 MB).
 
+## Event ingestion (Phase 3a)
+
+```
+SDK -> POST /track (Worker: auth, schema, bot check, geo from request.cf)
+    -> ProjectEventsDurableObject (one per project, SQLite)
+       device + session ids, incomingEvent(), group commit (200 events or 500 ms)
+    -> answer once stored
+alarm: close idle sessions (session_end), checkpoint, R2 archive, retention
+```
+
+- `src/ingest/project-events-do.ts`: the Durable Object (RPC, alarm, R2,
+  hibernating sockets). The logic is in `@flarepanel/core/ingest/cloudflare`
+  (engine + `createProjectEventsService`), tested with `bun:sqlite`.
+- `src/ingest/backend.ts`: the `IngestBackend` for `/track`, the Worker
+  buffers (sessions from the Durable Object, no-op profile/group/replay) and
+  the `EventStore` the dashboard reads through.
+- `src/ingest/live.ts`: `/live/events|visitors/:projectId` upgrades are
+  checked here (session + project access) and handed to the Durable Object.
+- Duplicate requests are dropped for 1 s through the colo's Cache API, so the
+  check costs no Durable Object request.
+- `TRACK_LIMITER`: 600 ingest requests per minute per IP, before any Durable
+  Object runs.
+- gzip uses `node:zlib` (sync): a `CompressionStream` pump never finishes
+  inside `blockConcurrencyWhile`, where the engine restores its chunks.
+- The first two device-id salts are created at boot, as `apps/api` does.
+
+R2 layout: `v1/events/project_id=<id>/date=YYYY-MM-DD/hour=HH/<first>-<last>.ndjson.gz`.
+
 ## Deployed
 
 | | |
@@ -64,6 +96,8 @@ two clients) 194 ms, sign-in 202 ms, then the dashboard in a browser.
 | Dashboard | `flarepanel-dashboard` (apps/start) → https://dashboard.flarepanel.dev |
 | D1 | `flarepanel` (no jurisdiction; placed in EEUR) |
 | Queues | `flarepanel-jobs`, dead letters in `flarepanel-jobs-dlq` |
+| Durable Objects | `CoordinatorDurableObject`, `PubSubHubDurableObject` (v1), `ProjectEventsDurableObject` (v2) |
+| R2 | `flarepanel-events` (event archive) |
 | Secrets | `COOKIE_SECRET`, `AUTH_SECRET` (generated, only in Cloudflare) |
 
 First deployed 2026-11-22 and checked live: sign-up, project creation and a

@@ -2,9 +2,10 @@
  * FlarePanel on Cloudflare Workers: the dashboard API (`/trpc`, public API,
  * auth) on D1, with the Cloudflare platform stores and job queue.
  *
- * Phase 2c scope: accounts, organizations, projects and clients. The event
- * pipeline (ingest, buffers, sessions) still runs on Bun and moves in Phase 3;
- * on Workers its dependencies are stand-ins that fail loudly if reached.
+ * Phase 3a: `/track` stores events in one Durable Object per project
+ * (`ProjectEventsDurableObject`), archived to R2; the dashboard's live
+ * sockets are forwarded to the same object. Profiles, groups, replays and the
+ * ClickHouse-backed reports are not on Workers yet.
  */
 
 process.env.TZ = 'UTC';
@@ -18,6 +19,7 @@ import {
   corsDelegator,
   createAuth,
   createClients,
+  createInitialSalts,
   createTrpcFetchHandler,
   dashboardRoutes,
   errorHandler,
@@ -47,17 +49,38 @@ import {
 } from '@flarepanel/platform/cloudflare';
 import { Elysia } from 'elysia';
 import { loadConfig } from '../../api/src/config/env';
+import {
+  createCloudflareIngestBackend,
+  createWorkerBuffers,
+  createWorkerEventStore,
+  projectEventsStub,
+} from './ingest/backend';
+import { liveAccessRoute, matchLivePath } from './ingest/live';
+import { ProjectEventsDurableObject } from './ingest/project-events-do';
 import { createConsoleLogger } from './logger';
 import { unavailableOnWorkers } from './unavailable-deps';
 
-export { CoordinatorDurableObject, PubSubHubDurableObject };
+export {
+  CoordinatorDurableObject,
+  ProjectEventsDurableObject,
+  PubSubHubDurableObject,
+};
 
 export interface Env {
   DB: D1Database;
   COORDINATOR: DurableObjectNamespace<CoordinatorDurableObject>;
   PUBSUB_HUB: DurableObjectNamespace<PubSubHubDurableObject>;
+  PROJECT_EVENTS: DurableObjectNamespace<ProjectEventsDurableObject>;
   JOBS: Queue;
+  /** Raw event archive; absent in lite mode (shorter retention, no R2). */
+  EVENTS_ARCHIVE?: R2Bucket;
+  /** Per-IP limit on ingest requests, checked before any Durable Object. */
+  TRACK_LIMITER?: RateLimit;
+  FLAREPANEL_EVENT_RETENTION_DAYS?: string;
 }
+
+const INGEST_PATHS = new Set(['/track', '/event']);
+const TOO_MANY_REQUESTS = 429;
 
 /** The three cookies the GSC OAuth flow signs (same as apps/api). */
 const SIGNED_COOKIE_NAMES = [
@@ -95,7 +118,7 @@ async function boot(env: Env): Promise<Booted> {
     redis: unavailableOnWorkers<AppDeps['redis']>('Redis'),
     stores,
     clients: createClients(),
-    buffers: unavailableOnWorkers<AppDeps['buffers']>('Event buffers'),
+    buffers: createWorkerBuffers(env),
     producers,
     logger,
     config: config.core,
@@ -105,7 +128,17 @@ async function boot(env: Env): Promise<Booted> {
       logger,
       coordination: stores.coordination,
     }),
+    ingest: createCloudflareIngestBackend({
+      env,
+      cache: stores.cache,
+      deps: () => deps,
+    }),
+    eventStore: createWorkerEventStore(env),
   };
+
+  // Device ids hash the visitor with the day's salt; the daily cron rotates
+  // it, and the first two are created here, as apps/api does at boot.
+  await createInitialSalts(deps);
 
   const signCookie = (value: string) =>
     `${value}.${createHmac('sha256', config.COOKIE_SECRET)
@@ -137,6 +170,7 @@ async function boot(env: Env): Promise<Booted> {
     .use(errorHandler(deps, { production: config.core.isProduction }))
     .use(requestLogging(deps, { verboseClientIds: config.verboseClientIds }))
     .use(opsRoutes(deps))
+    .use(liveAccessRoute(deps))
     .use(publicApiRoutes(deps))
     .use(dashboardRoutes(deps))
     .all(
@@ -159,7 +193,38 @@ function getBooted(env: Env) {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    if (
+      env.TRACK_LIMITER &&
+      request.method === 'POST' &&
+      INGEST_PATHS.has(url.pathname)
+    ) {
+      const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
+      const { success } = await env.TRACK_LIMITER.limit({ key: ip });
+      if (!success) {
+        return new Response('Too Many Requests', {
+          status: TOO_MANY_REQUESTS,
+        });
+      }
+    }
+
     const { fetch } = await getBooted(env);
+
+    const live = matchLivePath(url.pathname);
+    if (live && request.headers.get('upgrade')?.toLowerCase() === 'websocket') {
+      // The app checks the session and project access; the project's Durable
+      // Object then holds the (hibernating) socket.
+      const check = await fetch(
+        new Request(new URL(live.accessPath + url.search, url), {
+          headers: request.headers,
+        })
+      );
+      if (!check.ok) {
+        return check;
+      }
+      return projectEventsStub(env, live.projectId).fetch(request);
+    }
+
     return fetch(request);
   },
 

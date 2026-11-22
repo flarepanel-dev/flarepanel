@@ -65,6 +65,12 @@ export interface IngestSink {
 }
 
 export interface IngestBackend {
+  /**
+   * False where profiles, groups and replays have no store yet (Workers in
+   * Phase 3a): identify, increment, decrement, group, assign_group and replay
+   * are accepted and dropped instead of failing. Defaults to true.
+   */
+  storesProfiles?: boolean;
   isDuplicate(check: DuplicateCheck): Promise<boolean>;
   recordBot(event: IServiceCreateBotEventPayload): Promise<void>;
   geo(request: GeoRequest): Promise<ResolvedGeo>;

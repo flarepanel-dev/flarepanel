@@ -267,6 +267,15 @@ export async function getProjectCard(
   metrics: ProjectCardMetrics | undefined;
   trend: ProjectCardTrend;
 }> {
+  if (deps.eventStore) {
+    // UTC days from the project's Durable Object rollups.
+    const card = await deps.eventStore.projectCard(projectId);
+    return {
+      chart: card.chart.map((row) => ({ ...row, date: new Date(row.date) })),
+      metrics: card.metrics,
+      trend: projectCardTrend(card.metrics),
+    };
+  }
   const { timezone } = await getSettingsForProject(deps, projectId);
   const [chart, [metrics]] = await Promise.all([
     runQuery<ProjectCardChartRow>(
