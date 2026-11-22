@@ -13,8 +13,8 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
-# Inherited from the OpenPanel import: the suite still needs Postgres, Redis and
-# ClickHouse. These services go away as each part moves to D1, Durable Objects
+# Inherited from the OpenPanel import: the suite still needs Redis and
+# ClickHouse (metadata is SQLite/D1 now). These services go away as each part moves to D1, Durable Objects
 # and R2 (see docs/adr/0001-architecture-and-product-strategy.md).
 jobs:
   check:
@@ -64,20 +64,6 @@ jobs:
             command: bun run test:rest
             migrate: true
     services:
-      postgres:
-        image: postgres:16-alpine
-        ports:
-          # The host port is what test/databases.ts pins, not a free choice.
-          - 23432:5432
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 20
       redis:
         image: redis:7-alpine
         ports:
@@ -116,8 +102,7 @@ jobs:
         if: matrix.migrate
         run: bun run migrate:deploy
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:23432/postgres?schema=public
-          DATABASE_URL_DIRECT: postgresql://postgres:postgres@localhost:23432/postgres?schema=public
+          DATABASE_URL: file:.data/ci-migrate.db
           CLICKHOUSE_URL: http://localhost:23123/openpanel
           SELF_HOSTED: "true"
 

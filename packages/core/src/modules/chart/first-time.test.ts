@@ -109,7 +109,7 @@ beforeAll(async () => {
   );
   await bootstrapTestDatabases();
   const fixtures = await import('../../../../../test/fixtures');
-  await fixtures.setupPostgresFixtures(PROJECT_ID, ORG_ID);
+  await fixtures.setupMetadataFixtures(PROJECT_ID, ORG_ID);
   const { testServiceDeps, testServices } = await import(
     '../../../test/service-deps'
   );
@@ -154,7 +154,7 @@ afterAll(async () => {
     })
   );
   const fixtures = await import('../../../../../test/fixtures');
-  await fixtures.teardownPostgresFixtures(PROJECT_ID, ORG_ID);
+  await fixtures.teardownMetadataFixtures(PROJECT_ID, ORG_ID);
 });
 
 function countsByDay(chart: Awaited<ReturnType<typeof service.execute>>) {

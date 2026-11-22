@@ -41,17 +41,17 @@ pinTestDatabases();
 const { bootstrapTestDatabases } = await import('./bootstrap-databases');
 const {
   setupFixtures,
-  setupPostgresFixtures,
+  setupMetadataFixtures,
   teardownFixtures,
-  teardownPostgresFixtures,
+  teardownMetadataFixtures,
 } = await import('./fixtures');
 
 await bootstrapTestDatabases();
-await setupPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
+await setupMetadataFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
 await setupFixtures(TEST_PROJECT_ID);
 
 afterAll(async () => {
   pinTestDatabases();
   await teardownFixtures(TEST_PROJECT_ID);
-  await teardownPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
+  await teardownMetadataFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
 });

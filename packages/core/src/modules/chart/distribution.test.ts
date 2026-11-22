@@ -81,7 +81,7 @@ beforeAll(async () => {
   );
   await bootstrapTestDatabases();
   const fixtures = await import('../../../../../test/fixtures');
-  await fixtures.setupPostgresFixtures(PROJECT_ID, ORG_ID);
+  await fixtures.setupMetadataFixtures(PROJECT_ID, ORG_ID);
   const { testServiceDeps, testServices } = await import(
     '../../../test/service-deps'
   );
@@ -125,7 +125,7 @@ afterAll(async () => {
       query: `DELETE FROM events WHERE project_id = '${PROJECT_ID}'`,
     })
   );
-  await fixtures.teardownPostgresFixtures(PROJECT_ID, ORG_ID);
+  await fixtures.teardownMetadataFixtures(PROJECT_ID, ORG_ID);
 });
 
 describe('distribution over awkward property values', () => {

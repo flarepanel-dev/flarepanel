@@ -385,9 +385,8 @@ const invite = {
 
 const user = {
   findFirst: mock(
-    async ({ where }: { where: { email: { equals: string } } }) =>
-      [...userStore.values()].find((u) => u.email === where.email.equals) ??
-      null
+    async ({ where }: { where: { email: string } }) =>
+      [...userStore.values()].find((u) => u.email === where.email) ?? null
   ),
   findUniqueOrThrow: mock(
     async ({ where: { id } }: { where: { id: string } }) => {

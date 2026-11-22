@@ -83,8 +83,8 @@ export default {
     DASHBOARD_URL: w.url('web'),
     API_CORS_ORIGINS: w.url('web'),
     CUSTOM_COOKIE_DOMAIN: w.hostSuffix, // <name>.openpanel.cc; unset on localhost
-    DATABASE_URL: w.db.postgres,
-    DATABASE_URL_DIRECT: w.db.postgres,
+    // Metadata is SQLite (D1 in production): one file per worktree.
+    DATABASE_URL: `file:${join(w.dir, '.data', `flarepanel_${w.name}.db`)}`,
     CLICKHOUSE_URL: w.db.clickhouse,
     REDIS_URL: w.db.redis,
     QUEUE_NAMESPACE: w.name,
@@ -102,10 +102,6 @@ export default {
 
   // A worktree name is a DNS label; a database name is an identifier, so hyphens become underscores.
   databases: {
-    postgres: {
-      shared: 'postgres',
-      isolated: (n) => `openpanel_${n.replace(/-/g, '_')}`,
-    },
     clickhouse: {
       shared: 'openpanel',
       isolated: (n) => `openpanel_${n.replace(/-/g, '_')}`,
@@ -133,8 +129,7 @@ export default {
       `docker compose -f ${w.root}/docker-compose.yml exec op-ch clickhouse-client -d ${w.db.clickhouseName}`,
     redis: (w) =>
       `docker compose -f ${w.root}/docker-compose.yml exec op-kv redis-cli -n ${w.db.redisIndex}`,
-    postgres: (w) =>
-      `docker compose -f ${w.root}/docker-compose.yml exec op-db psql -U postgres ${w.db.postgresName}`,
+    sqlite: (w) => `sqlite3 ${join(w.dir, '.data', `flarepanel_${w.name}.db`)}`,
     // rpk has no REPL: list this worktree's topics, then leave a shell in the container with rpk on PATH.
     kafka: (w) =>
       `docker compose -f ${w.root}/docker-compose.yml exec op-rp sh -c 'rpk topic list; echo; echo "this worktree: ${w.db.kafkaTopics.join(' ')}"; exec sh'`,
@@ -158,7 +153,7 @@ export default {
     }),
   },
 
-  stack: { up: 'docker compose up -d op-db op-kv op-ch op-rp', cwd: '.' },
+  stack: { up: 'docker compose up -d op-kv op-ch op-rp', cwd: '.' },
   auth: process.platform === 'darwin' ? 'off' : 'password',
   issues: { github: true, userjot: true },
 };

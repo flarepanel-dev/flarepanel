@@ -898,11 +898,9 @@ export async function inviteUserToOrganization(
   const db = deps.db;
   const email = input.email.toLowerCase();
   const userExists = await db.user.findFirst({
+    // `email` is already lowercased above; emails are stored lowercase.
     where: {
-      email: {
-        equals: email,
-        mode: 'insensitive',
-      },
+      email,
     },
   });
 

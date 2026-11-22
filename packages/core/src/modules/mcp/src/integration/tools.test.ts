@@ -10,7 +10,7 @@
  *             2 sessions (sess-charlie-1 5d ago, sess-charlie-2 10d ago)
  *
  * get_page_performance also reads Postgres (getSettingsForProject), unmocked,
- * hence `setupPostgresFixtures`. The fixture is imported from the repository
+ * hence `setupMetadataFixtures`. The fixture is imported from the repository
  * root's `test/fixtures.ts` rather than copied, so the schema the golden harness
  * seeds from cannot fork.
  */
@@ -89,7 +89,7 @@ beforeAll(async () => {
     '../../../../../../../test/bootstrap-databases'
   );
   await bootstrapTestDatabases();
-  await fixtures.setupPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
+  await fixtures.setupMetadataFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
   CHARLIE_DAY = fixtures.timeAgo(pinFixtureClock(), 5).slice(0, 10);
   await fixtures.setupFixtures(TEST_PROJECT_ID);
 
@@ -107,7 +107,7 @@ beforeAll(async () => {
 afterAll(async () => {
   const fixtures = await import('../../../../../../../test/fixtures');
   await fixtures.teardownFixtures(TEST_PROJECT_ID);
-  await fixtures.teardownPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
+  await fixtures.teardownMetadataFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
   releaseFixtureClock();
 });
 

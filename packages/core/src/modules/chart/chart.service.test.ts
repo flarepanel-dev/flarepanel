@@ -78,7 +78,7 @@ beforeAll(async () => {
     '../../../../../test/bootstrap-databases'
   );
   await bootstrapTestDatabases();
-  await fixtures.setupPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
+  await fixtures.setupMetadataFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
   fixtureNow = pinFixtureClock();
   await fixtures.setupFixtures(TEST_PROJECT_ID);
 
@@ -119,7 +119,7 @@ afterAll(async () => {
   });
   await db.cohort.deleteMany({ where: { id: COHORT_ID } });
   await fixtures.teardownFixtures(TEST_PROJECT_ID);
-  await fixtures.teardownPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
+  await fixtures.teardownMetadataFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
   releaseFixtureClock();
 });
 

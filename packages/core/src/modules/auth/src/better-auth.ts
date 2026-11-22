@@ -255,7 +255,7 @@ function buildAuth(deps: AuthDeps, secret: string) {
     secret,
     basePath: AUTH_BASE_PATH,
     trustedOrigins: config.auth.trustedOrigins,
-    database: prismaAdapter(db, { provider: 'postgresql' }),
+    database: prismaAdapter(db, { provider: 'sqlite' }),
     telemetry: { enabled: false },
     logger: {
       log: (level, message, ...args) => {

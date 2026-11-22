@@ -17,9 +17,13 @@ import type {
   ICustomEventItem,
   IWidgetOptions,
 } from '@flarepanel/core/modules/report/report.constants';
+import type { ProjectType } from './generated/prisma/enums';
 
 declare global {
   namespace PrismaJson {
+    // Former Postgres array columns, stored as JSON arrays on SQLite/D1.
+    type IPrismaStringList = string[];
+    type IPrismaProjectTypes = ProjectType[];
     type IPrismaImportConfig = IImportConfig;
     type IPrismaNotificationRuleConfig = INotificationRuleConfig;
     type IPrismaIntegrationConfig = IIntegrationConfig;

@@ -28,8 +28,10 @@ bun run typecheck
 bun run lint:format
 ```
 
-Until the Cloudflare port is done, the full test suite and `bun run dev` need
-the inherited services from `docker-compose.yml` (`bun run dock:up`).
+Metadata lives in a local SQLite file (`DATABASE_URL="file:.data/flarepanel.db"`,
+see `.env.example`); `bun run migrate` creates and updates it. Until the
+Cloudflare port is done, the full test suite and `bun run dev` also need Redis,
+ClickHouse and Redpanda from `docker-compose.yml` (`bun run dock:up`).
 
 ## Pull requests
 

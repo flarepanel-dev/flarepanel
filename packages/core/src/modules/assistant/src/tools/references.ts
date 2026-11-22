@@ -68,13 +68,11 @@ export function referenceTools(ctx: ChatToolContext) {
               ? {
                   OR: [
                     {
-                      title: { contains: search, mode: 'insensitive' as const },
+                      // SQLite LIKE (used by `contains`) is case-insensitive for ASCII.
+                      title: { contains: search },
                     },
                     {
-                      description: {
-                        contains: search,
-                        mode: 'insensitive' as const,
-                      },
+                      description: { contains: search },
                     },
                   ],
                 }

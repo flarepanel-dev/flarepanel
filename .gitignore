@@ -213,3 +213,6 @@ packages/db/src/code-migrations/*.sql
 # local working list of open issues
 ISSUES.md
 test-results/
+
+# Local SQLite databases (metadata; D1 in production)
+.data/

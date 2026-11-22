@@ -24,18 +24,18 @@ Open-source product analytics (a Mixpanel alternative). Bun monorepo.
 | `packages/core` | The backend: every module, the tRPC router, Elysia routes, BullMQ jobs, ingest | TypeScript |
 | `apps/api` | Thin shell that mounts core; `ROLE=api\|worker\|all` picks what one process runs | Elysia on Bun |
 | `apps/start` | The dashboard | TanStack Start, React 19, Redux Toolkit, Tailwind v4, Recharts |
-| `packages/db` | Prisma (Postgres) + ClickHouse client and the `sql` tag (`src/clickhouse/sql.ts`) | |
-| `packages/seed` | Deterministic seed data for Postgres + ClickHouse (`bun run seed`) | |
+| `packages/db` | Prisma on SQLite (D1 in production; see `packages/db/README.md`) + ClickHouse client and the `sql` tag (`src/clickhouse/sql.ts`) | |
+| `packages/seed` | Deterministic seed data for SQLite metadata + ClickHouse (`bun run seed`) | |
 | `packages/redis`, `packages/email`, `packages/payments`, `packages/sdks/*` | Redis client/locks/pubsub, React Email, billing, client SDKs | |
 
 Data flow: SDK → `POST /track` (`packages/core/src/modules/ingest`) → Kafka → the
 worker role → ClickHouse (`events`, `sessions`, `profiles`, materialized views).
-Dashboard → tRPC (`$API_URL/trpc`) → ClickHouse for analytics, Postgres for config.
+Dashboard → tRPC (`$API_URL/trpc`) → ClickHouse for analytics, SQLite/D1 for config.
 
 ## Your environment
 
 You are usually inside a **worktree** under `.worktrees/<name>` with its own port block,
-its own Postgres/ClickHouse database (`openpanel_<name>`), Redis db index and Kafka
+its own SQLite file (`.data/flarepanel_<name>.db`) and ClickHouse database (`openpanel_<name>`), Redis db index and Kafka
 topics. `WORKTREE.md` says which, and whether the processes (`web`, `api`, `studio`) are
 supervised for you.
 
@@ -52,7 +52,7 @@ supervised for you.
   created and seeded).
 
 Without `WORKTREE.md` you are in a plain checkout: `.env` applies, `bun run dock:up`
-starts Postgres/Redis/ClickHouse/Redpanda, and `bun run dev` starts api + dashboard.
+starts Redis/ClickHouse/Redpanda (metadata is a local SQLite file; `bun run migrate` creates it), and `bun run dev` starts api + dashboard.
 The dashboard's server side runs under the Cloudflare Vite plugin, which reads
 `apps/start/.env.local` (and wrangler `vars`) rather than your shell — set `API_URL` and
 `DASHBOARD_URL` there, or export `CLOUDFLARE_INCLUDE_PROCESS_ENV=true` to make it use
@@ -60,7 +60,7 @@ the shell env.
 
 ## Data
 
-- `bun run seed` — seeds a user, organization, projects and clients into Postgres and
+- `bun run seed` — seeds a user, organization, projects and clients into SQLite and
   realistic events/sessions/profiles into ClickHouse. `--size small` (default, ~14
   days), `medium`, `large`, `xl` (tens of millions of events, for query-performance
   work), or `--days N --sessions-per-day N`. `--reset` wipes the seeded projects first.

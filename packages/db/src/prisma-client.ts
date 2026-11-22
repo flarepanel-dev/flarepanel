@@ -1,6 +1,7 @@
 import { getSubscriptionState } from '@flarepanel/payments/subscription-state';
 import { PrismaClient } from './generated/prisma/client';
 import { logger } from './logger';
+import { resolveSqliteUrl } from './sqlite-url';
 
 export * from './generated/prisma/client';
 
@@ -19,6 +20,8 @@ const getPrismaClient = () => {
     // into messages that reach API clients verbatim. `minimal` keeps our
     // source layout out of a 500.
     errorFormat: 'minimal',
+    // Relative SQLite paths resolve from the repo root (see sqlite-url.ts).
+    datasourceUrl: resolveSqliteUrl(process.env.DATABASE_URL),
     log: [
       { emit: 'event', level: 'error' },
       { emit: 'event', level: 'warn' },

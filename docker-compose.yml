@@ -1,19 +1,9 @@
 version: "3"
 
 services:
-  op-db:
-    image: postgres:14-alpine
-    restart: always
-    volumes:
-      - ./docker/data/op-db-data:/var/lib/postgresql/data
-    ports:
-      # Host ports live in the 23000s so a Postgres, Redis, ClickHouse or Kafka on their
-      # default ports can run beside this stack.
-      - 127.0.0.1:23432:5432
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-
+  # Metadata (accounts, projects, settings) is SQLite, Cloudflare D1 in
+  # production, so there is no Postgres service. ClickHouse, Redis and Redpanda
+  # remain until events and queues move to Durable Objects, R2 and Queues.
   op-kv:
     image: redis:7.2.5-alpine
     restart: always

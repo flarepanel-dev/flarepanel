@@ -27,11 +27,10 @@ export async function getUserAccount(
   }
 ) {
   const res = await deps.db.user.findFirst({
+    // SQLite/D1 compares strings case-sensitively, and emails are stored
+    // lowercase (better-auth and invites lowercase them), so compare lowercase.
     where: {
-      email: {
-        equals: email,
-        mode: 'insensitive',
-      },
+      email: email.toLowerCase(),
     },
     include: {
       accounts: {

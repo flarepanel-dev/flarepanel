@@ -379,7 +379,7 @@ async function deleteFixtures(client: ChClient, projectId: string) {
   ]);
 }
 
-export async function setupPostgresFixtures(
+export async function setupMetadataFixtures(
   projectId: string,
   orgId: string
 ): Promise<void> {
@@ -400,7 +400,7 @@ export async function setupPostgresFixtures(
   }
 }
 
-export async function teardownPostgresFixtures(
+export async function teardownMetadataFixtures(
   projectId: string,
   orgId: string
 ): Promise<void> {
