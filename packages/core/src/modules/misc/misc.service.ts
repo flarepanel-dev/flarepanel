@@ -1,4 +1,4 @@
-import { getCache, getRedisCache } from '@openpanel/redis';
+import { getCache, getRedisCache } from '@flarepanel/redis';
 import { chQuery } from '../../ch-query';
 import { type GeoLocation, getGeoLocation } from '../../clients/geo';
 import type { CoreConfig } from '../../config';
@@ -256,7 +256,7 @@ export async function getGeoReport(
 
 /**
  * The outbound half of "ping": a self-hosted instance's own cron job,
- * reporting its event count back to `api.openpanel.dev/misc/ping` (the
+ * reporting its event count back to `api.flarepanel.dev/misc/ping` (the
  * route above, on OUR side).
  */
 export async function runPingCron(deps: ServiceDeps): Promise<unknown> {
@@ -273,7 +273,7 @@ export async function runPingCron(deps: ServiceDeps): Promise<unknown> {
     return;
   }
 
-  const response = await fetch('https://api.openpanel.dev/misc/ping', {
+  const response = await fetch('https://api.flarepanel.dev/misc/ping', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

@@ -1,7 +1,7 @@
-// Nothing here imports @openpanel/db as a value, so constructing a client stays
+// Nothing here imports @flarepanel/db as a value, so constructing a client stays
 // out of the eager barrel chain (jobs.registry.ts, services.ts) that pulls this module in.
 
-import type { Integration, Prisma } from '@openpanel/db/src/prisma-client';
+import type { Integration, Prisma } from '@flarepanel/db/src/prisma-client';
 import { pathOr } from 'ramda';
 import { cacheablePerDb, type DbScope } from '../../cacheable-per-deps';
 import { sendEmail } from '../../clients/email';
@@ -240,7 +240,7 @@ function isValidPayload<T>(
 }
 
 /** Where a notification email links when DASHBOARD_URL is not set. */
-const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
+const DEFAULT_DASHBOARD_URL = 'https://dashboard.flarepanel.dev';
 
 export async function deliverNotification(
   deps: ServiceDeps,
@@ -248,10 +248,10 @@ export async function deliverNotification(
 ): Promise<unknown> {
   const db = deps.db;
 
-  // Lazy: a static @openpanel/redis import would force every core test's redis
+  // Lazy: a static @flarepanel/redis import would force every core test's redis
   // mock to provide `publishEvent`.
   if (notification.sendToApp) {
-    const { publishEvent } = await import('@openpanel/redis');
+    const { publishEvent } = await import('@flarepanel/redis');
     publishEvent('notification', 'created', notification);
     return;
   }

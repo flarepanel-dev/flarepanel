@@ -1,4 +1,4 @@
-import type { IServiceReference } from '@openpanel/core';
+import type { IServiceReference } from '@flarepanel/core';
 import {
   keepPreviousData,
   useMutation,

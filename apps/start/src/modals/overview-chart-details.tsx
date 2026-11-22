@@ -1,4 +1,4 @@
-import type { IReport } from '@openpanel/core/modules/report/report.constants';
+import type { IReport } from '@flarepanel/core/modules/report/report.constants';
 import { ModalContent, ModalHeader } from './Modal/Container';
 import { ReportChart } from '@/components/report-chart';
 import { ScrollArea } from '@/components/ui/scroll-area';

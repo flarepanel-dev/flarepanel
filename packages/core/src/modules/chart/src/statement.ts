@@ -3,7 +3,7 @@
 // (not in chart.service.ts) so the engine can import it without pulling the
 // service — which imports the engine — into a cycle.
 
-import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
+import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
 import type { ServiceDeps } from '../../../services';
 import type { IGetChartDataInput } from '../../report/report.constants';
 import type { CohortMetadata } from './field-resolution';

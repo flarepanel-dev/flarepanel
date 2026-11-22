@@ -12,7 +12,7 @@
 // built once on the initiator over every shard. A per-shard `IN` would take
 // each shard's own minimum, which is not the user's first occurrence.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import type { IChartEvent } from '../../report/report.constants';
 import { eventMatchCondition } from './event-match';
 import { CHART_TABLE } from './field-resolution';

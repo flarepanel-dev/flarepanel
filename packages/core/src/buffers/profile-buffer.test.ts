@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
-import { toStatement } from '@openpanel/db/src/clickhouse/sql';
-import { getRedisCache } from '@openpanel/redis';
+import { toStatement } from '@flarepanel/db/src/clickhouse/sql';
+import { getRedisCache } from '@flarepanel/redis';
 import { bufferDepsWithCh } from '../../test/buffer-fixtures';
 import { testCoreConfig } from '../../test/config-fixture';
 import type { IClickhouseProfile } from '../modules/profile/profile.service';

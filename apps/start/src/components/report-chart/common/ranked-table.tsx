@@ -1,4 +1,4 @@
-import { round } from '@openpanel/shared';
+import { round } from '@flarepanel/shared';
 import { useCallback, useMemo } from 'react';
 import { useReportChartContext } from '../context';
 import { getLabelNames } from './label-names';

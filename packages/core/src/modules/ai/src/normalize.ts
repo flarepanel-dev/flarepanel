@@ -1,7 +1,7 @@
 // Turns one `type: 'ai'` payload into the two things the pipeline stores: the
 // flat scalar properties of the `events` row and the draft `ai_events` row.
 
-import { toDots } from '@openpanel/shared';
+import { toDots } from '@flarepanel/shared';
 import {
   AI_EVENT_NAMES,
   AI_MAX_CONTENT_BYTES,

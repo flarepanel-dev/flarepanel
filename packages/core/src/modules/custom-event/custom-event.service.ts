@@ -1,4 +1,4 @@
-import type { CustomEvent } from '@openpanel/db/src/prisma-client';
+import type { CustomEvent } from '@flarepanel/db/src/prisma-client';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { TRPCBadRequestError, TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';

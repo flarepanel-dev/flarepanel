@@ -1,7 +1,7 @@
 // `getSessionsCountCached` is `cacheablePerDeps`: `cacheable` keys on the call's
 // arguments, so deps travel beside the key or the Redis key would change per request.
 
-import { getSafeJson, resolveDateRange } from '@openpanel/shared';
+import { getSafeJson, resolveDateRange } from '@flarepanel/shared';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';

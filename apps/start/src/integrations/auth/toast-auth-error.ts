@@ -1,4 +1,4 @@
-import { PASSWORD_RESET_REQUIRED } from '@openpanel/core/modules/auth/auth.constants';
+import { PASSWORD_RESET_REQUIRED } from '@flarepanel/core/modules/auth/auth.constants';
 import { toast } from 'sonner';
 import { AuthError } from './client';
 import { pushModal } from '@/modals';

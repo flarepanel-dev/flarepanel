@@ -1,4 +1,4 @@
-import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
+import { getSubscriptionStateMeta } from '@flarepanel/payments/subscription-state-meta';
 import { Link, useParams } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import {

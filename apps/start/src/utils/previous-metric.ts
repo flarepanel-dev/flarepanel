@@ -1,8 +1,8 @@
 // Copy of packages/core/src/modules/report/src/previous-metric.ts: apps/start
 // cannot value-import core outside a `*.constants.ts` path, and `PreviousValue`
-// stays out of @openpanel/shared. The type import is erased.
-import type { PreviousValue } from '@openpanel/core/modules/report/report.constants';
-import { round } from '@openpanel/shared';
+// stays out of @flarepanel/shared. The type import is erased.
+import type { PreviousValue } from '@flarepanel/core/modules/report/report.constants';
+import { round } from '@flarepanel/shared';
 import { isNil } from 'ramda';
 
 export function getPreviousMetric(

@@ -28,7 +28,7 @@ describe('FeedbackButton', () => {
     render(<FeedbackButton />);
     expect(
       screen.getByRole('link', { name: 'Give feedback' }).getAttribute('href')
-    ).toBe('https://feedback.openpanel.dev');
+    ).toBe('https://feedback.flarepanel.dev');
     expect(screen.queryByRole('button')).toBeNull();
   });
 });

@@ -1,4 +1,4 @@
-import type { IChartEventFilter } from '@openpanel/core/modules/report/report.constants';
+import type { IChartEventFilter } from '@flarepanel/core/modules/report/report.constants';
 import { FilterIcon, type LucideIcon, SlidersHorizontal } from 'lucide-react';
 import { ModalHeader } from './Modal/Container';
 import { PureCohortFilterItem } from '@/components/report/sidebar/filters/CohortFilterItem';

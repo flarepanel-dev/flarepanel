@@ -1,8 +1,8 @@
-// core keeps its own copies of @openpanel/db's ClickHouse date helpers; a
+// core keeps its own copies of @flarepanel/db's ClickHouse date helpers; a
 // divergence would show up as silently wrong date literals in a query.
 
 import { describe, expect, it } from 'bun:test';
-import * as dbClient from '@openpanel/db/src/clickhouse/client';
+import * as dbClient from '@flarepanel/db/src/clickhouse/client';
 import { convertClickhouseDateToJs, formatClickhouseDate } from './ch-dates';
 
 const CASES = [
@@ -13,7 +13,7 @@ const CASES = [
   '2026-02-28 08:00:00',
 ];
 
-describe('ch-dates parity with @openpanel/db', () => {
+describe('ch-dates parity with @flarepanel/db', () => {
   it('formats identically, with and without skipTime', () => {
     for (const input of CASES) {
       expect(formatClickhouseDate(input)).toBe(

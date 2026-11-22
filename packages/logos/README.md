@@ -1,4 +1,4 @@
-# @openpanel/logos
+# @flarepanel/logos
 
 Brand logos the dashboard shows next to browser, OS, device and a few
 referrer names: committed PNGs plus the map from a name to its file.

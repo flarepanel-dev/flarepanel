@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
-import { getRedisCache } from '@openpanel/redis';
+import { getRedisCache } from '@flarepanel/redis';
 import { bufferDepsWithCh } from '../../test/buffer-fixtures';
 import { testCoreConfig } from '../../test/config-fixture';
 import type { IServiceCreateEventPayload } from '../modules/event/event.service';

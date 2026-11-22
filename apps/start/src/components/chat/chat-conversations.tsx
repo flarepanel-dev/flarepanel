@@ -1,4 +1,4 @@
-import { CONVERSATION_LIST_LIMIT_DEFAULT } from '@openpanel/core/modules/conversation/conversation.constants';
+import { CONVERSATION_LIST_LIMIT_DEFAULT } from '@flarepanel/core/modules/conversation/conversation.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MessageSquarePlusIcon, Trash2Icon } from 'lucide-react';
 import { Button } from '@/components/ui/button';

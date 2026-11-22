@@ -1,4 +1,4 @@
-import { db, Prisma } from '@openpanel/db';
+import { db, Prisma } from '@flarepanel/db';
 import { Polar } from '@polar-sh/sdk';
 import type { Subscription } from '@polar-sh/sdk/dist/esm/models/components/subscription';
 

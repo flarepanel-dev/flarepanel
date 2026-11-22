@@ -1,4 +1,4 @@
-import type { lineTypes } from '@openpanel/core/modules/report/report.constants';
+import type { lineTypes } from '@flarepanel/core/modules/report/report.constants';
 import {
   type CurveFactory,
   curveBasis,

@@ -1,5 +1,5 @@
-import type { IServiceAiEvent } from '@openpanel/core';
-import { isAiModelCall } from '@openpanel/core/modules/ai/ai.constants';
+import type { IServiceAiEvent } from '@flarepanel/core';
+import { isAiModelCall } from '@flarepanel/core/modules/ai/ai.constants';
 import { formatCost, SMALLEST_SHOWN_COST } from './ai-format';
 import { Tooltiper } from '@/components/ui/tooltip';
 

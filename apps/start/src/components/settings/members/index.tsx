@@ -1,4 +1,4 @@
-import type { IServiceMember } from '@openpanel/core';
+import type { IServiceMember } from '@flarepanel/core';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { useColumns } from './columns';
 import { DataTable } from '@/components/ui/data-table/data-table';

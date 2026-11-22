@@ -3,12 +3,12 @@ import type {
   IdentifyPayload,
   IncrementPayload,
   TrackProperties,
-} from '@openpanel/web';
+} from '@flarepanel/web';
 import IdentifyComponent from './src/IdentifyComponent.astro';
 import OpenPanelComponent from './src/OpenPanelComponent.astro';
 import SetGlobalPropertiesComponent from './src/SetGlobalPropertiesComponent.astro';
 
-export * from '@openpanel/web';
+export * from '@flarepanel/web';
 
 export { OpenPanelComponent, IdentifyComponent, SetGlobalPropertiesComponent };
 

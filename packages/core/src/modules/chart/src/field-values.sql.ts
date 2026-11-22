@@ -6,7 +6,7 @@
 // set, one row per session. `path`/`origin` are per-pageview and stay on
 // `events`; so does a specific-event query, since `sessions` has no `name`.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import { CHART_TABLE } from './field-resolution';
 import { PROPERTY_VALUES_LIMIT } from './sql';
 

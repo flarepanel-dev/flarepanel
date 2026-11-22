@@ -1,8 +1,8 @@
 // The AI observability reads for the dashboard, plus what the ingest pipeline
 // needs (normalisation, cost, the row builder).
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
-import { getSafeJson } from '@openpanel/shared';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
+import { getSafeJson } from '@flarepanel/shared';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
 import { convertClickhouseDateToJs } from '../../shared/ch-dates';
@@ -33,7 +33,7 @@ import {
   traceListQuery,
 } from './src/sql';
 
-export { withAiContext } from '@openpanel/ai';
+export { withAiContext } from '@flarepanel/ai';
 export type { NormalizedAiEvent } from './src/normalize';
 export { normalizeAiPayload, serializeBounded } from './src/normalize';
 export { resolveModelPrice } from './src/pricing/catalog';

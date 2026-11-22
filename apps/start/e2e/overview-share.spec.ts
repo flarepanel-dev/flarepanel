@@ -70,7 +70,7 @@ async function openShareClientSide(page: Page, path: string) {
 }
 
 function realResponses(problems: PageProblems) {
-  return problems.badResponses.filter((r) => !r.includes('api.openpanel.dev'));
+  return problems.badResponses.filter((r) => !r.includes('api.flarepanel.dev'));
 }
 
 async function shareOverviewThroughModal(page: Page, password?: string) {

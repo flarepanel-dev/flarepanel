@@ -1,7 +1,7 @@
 // The HTTP limiter: a fixed window with no escalation, matching the published
 // rate-limit docs.
 
-import { getRedisCache } from '@openpanel/redis';
+import { getRedisCache } from '@flarepanel/redis';
 import { Elysia } from 'elysia';
 import type { IpHeaderConfig } from '../config';
 import type { AppDeps } from '../context';

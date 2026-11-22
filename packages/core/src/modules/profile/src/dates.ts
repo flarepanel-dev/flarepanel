@@ -1,4 +1,4 @@
-// @openpanel/db's clickhouse/client.ts owns these, but importing it constructs a
+// @flarepanel/db's clickhouse/client.ts owns these, but importing it constructs a
 // client and a pino logger at import time, and the fragment builders here must stay
 // pure and synchronous.
 

@@ -40,8 +40,8 @@ const publishedEvents: unknown[] = [];
 // Spread a SNAPSHOT of the real module and restore it in afterAll: `mock.module` has no
 // per-file scope under bare `bun test`, and a partial factory deletes `getRedisCache`
 // and friends for every file that runs next.
-const realRedis = { ...(await import('@openpanel/redis')) };
-mock.module('@openpanel/redis', () => ({
+const realRedis = { ...(await import('@flarepanel/redis')) };
+mock.module('@flarepanel/redis', () => ({
   ...realRedis,
   cacheable: (
     _name: string,
@@ -54,12 +54,12 @@ mock.module('@openpanel/redis', () => ({
 }));
 
 const realPrismaClient = {
-  ...(await import('@openpanel/db/src/prisma-client')),
+  ...(await import('@flarepanel/db/src/prisma-client')),
 };
 
 afterAll(async () => {
-  mock.module('@openpanel/redis', () => realRedis);
-  mock.module('@openpanel/db/src/prisma-client', () => realPrismaClient);
+  mock.module('@flarepanel/redis', () => realRedis);
+  mock.module('@flarepanel/db/src/prisma-client', () => realPrismaClient);
 });
 
 const notificationRule = {
@@ -156,10 +156,10 @@ mock.module('../../clients/email', () => ({
 }));
 
 // Every function under test takes `ServiceDeps`, so `deps.db` IS the fake
-// below. The `@openpanel/db/src/prisma-client` mock stays for `Prisma.JsonNull`
+// below. The `@flarepanel/db/src/prisma-client` mock stays for `Prisma.JsonNull`
 // / `Prisma.DbNull`, which `prismaSentinels` reads from that module.
-const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
-mock.module('@openpanel/db/src/prisma-client', () => ({
+const actualPrismaClient = await import('@flarepanel/db/src/prisma-client');
+mock.module('@flarepanel/db/src/prisma-client', () => ({
   ...actualPrismaClient,
   db: { notificationRule, integration, project, member, projectAccess },
 }));

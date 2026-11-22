@@ -94,7 +94,7 @@ Also note removed features, changed API/SDK behaviour, and changed defaults.
 
 **Body**
 
-Plain Markdown, written for someone running OpenPanel, not for the reviewer.
+Plain Markdown, written for someone running FlarePanel, not for the reviewer.
 Use this shape and drop any section that would be empty:
 
 ```

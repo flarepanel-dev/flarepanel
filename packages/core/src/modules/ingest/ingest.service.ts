@@ -1,8 +1,8 @@
 // Nothing here throws for a caller error: each transport owns its own status
 // codes and bodies, so the pipeline returns a `TrackOutcome` instead.
 
-import { generateId } from '@openpanel/shared';
-import { parseUserAgent } from '@openpanel/shared/server';
+import { generateId } from '@flarepanel/shared';
+import { parseUserAgent } from '@flarepanel/shared/server';
 import { assocPath, pathOr, pick } from 'ramda';
 import { v4 as uuid } from 'uuid';
 import type { Buffers } from '../../buffers/create-buffers';

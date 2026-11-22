@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test';
-import { createClient } from '@openpanel/db/src/clickhouse/client';
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { createClient } from '@flarepanel/db/src/clickhouse/client';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import {
   clickhouseUrl,
   TEST_CLICKHOUSE_DATABASE,

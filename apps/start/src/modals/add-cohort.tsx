@@ -1,5 +1,5 @@
+import type { CohortDefinition } from '@flarepanel/core/modules/cohort/cohort.constants';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { CohortDefinition } from '@openpanel/core/modules/cohort/cohort.constants';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';

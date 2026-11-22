@@ -1,4 +1,4 @@
-import type { Framework } from '@openpanel/sdk-info';
+import type { Framework } from '@flarepanel/sdk-info';
 import { CopyIcon, SparklesIcon } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 import {

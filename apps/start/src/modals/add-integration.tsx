@@ -1,4 +1,4 @@
-import type { IIntegrationConfig } from '@openpanel/core/modules/integration/integration.constants';
+import type { IIntegrationConfig } from '@flarepanel/core/modules/integration/integration.constants';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';

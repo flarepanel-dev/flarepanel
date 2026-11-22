@@ -19,7 +19,7 @@ export default UsageLimitExceeded;
 export function UsageLimitExceeded({
   firstName,
   organizationName,
-  billingUrl = 'https://dashboard.openpanel.dev',
+  billingUrl = 'https://dashboard.flarepanel.dev',
   eventsLimit,
   unsubscribeUrl,
 }: Props & { unsubscribeUrl?: string }) {
@@ -56,6 +56,6 @@ export function UsageLimitExceeded({
 UsageLimitExceeded.PreviewProps = {
   firstName: 'Alex',
   organizationName: 'Acme',
-  billingUrl: 'https://dashboard.openpanel.dev/org-id/billing',
+  billingUrl: 'https://dashboard.flarepanel.dev/org-id/billing',
   eventsLimit: 5000,
 };

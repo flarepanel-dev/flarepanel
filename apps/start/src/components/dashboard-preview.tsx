@@ -1,4 +1,4 @@
-import type { IChartType } from '@openpanel/core/modules/report/report.constants';
+import type { IChartType } from '@flarepanel/core/modules/report/report.constants';
 import {
   AreaChartIcon,
   BarChart3Icon,

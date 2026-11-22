@@ -1,5 +1,5 @@
-import { NOT_SET_VALUE } from '@openpanel/core/modules/report/report.constants';
-import { getLogo, type Logo } from '@openpanel/logos';
+import { NOT_SET_VALUE } from '@flarepanel/core/modules/report/report.constants';
+import { getLogo, type Logo } from '@flarepanel/logos';
 import type { LucideProps } from 'lucide-react';
 import {
   ActivityIcon,

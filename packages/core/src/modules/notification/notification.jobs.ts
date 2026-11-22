@@ -1,7 +1,7 @@
 // legacyCompat.notification discriminates on this exact job name (jobs/compat.ts).
 // No cron fragment: notifications are only triggered by a rule match.
 
-import type { Prisma } from '@openpanel/db/src/prisma-client';
+import type { Prisma } from '@flarepanel/db/src/prisma-client';
 import { z } from 'zod';
 import { isProviderError } from '../../clients/provider-error';
 import { defineJob } from '../../jobs/define';

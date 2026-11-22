@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 
 import 'flag-icons/css/flag-icons.min.css';
 import 'katex/dist/katex.min.css';
-import type { AppRouter } from '@openpanel/core';
+import type { AppRouter } from '@flarepanel/core';
 import type { QueryClient } from '@tanstack/react-query';
 import { TRPCClientError } from '@trpc/client';
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
@@ -56,13 +56,21 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         name: 'viewport',
         content: 'width=device-width, initial-scale=1',
       },
+      {
+        name: 'theme-color',
+        content: '#FF5B1F',
+      },
     ],
-    title: 'OpenPanel.dev',
+    title: 'FlarePanel',
     links: [
       {
         rel: 'stylesheet',
         href: appCss,
       },
+      { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
+      { rel: 'icon', href: '/logo.svg', type: 'image/svg+xml' },
+      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      { rel: 'manifest', href: '/manifest.json' },
     ],
   }),
   shellComponent: RootDocument,

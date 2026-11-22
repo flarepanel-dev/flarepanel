@@ -7,7 +7,7 @@
 // client's `distributed_product_mode: 'allow'`; changing that shape changes the
 // query's cluster semantics.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
 import { formatClickhouseDate } from './dates';
 import {

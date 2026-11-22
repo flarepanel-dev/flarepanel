@@ -632,7 +632,7 @@ export function checkDuplicateUtilities(paths: string[]): Metric {
   };
 }
 
-/** R21 — `@openpanel/shared` imports no workspace package. */
+/** R21 — `@flarepanel/shared` imports no workspace package. */
 export function checkSharedPackageIsolation(repoRoot: string): Metric {
   const manifest = join(repoRoot, SHARED_PACKAGE_ROOT, 'package.json');
   if (!existsSync(manifest)) {
@@ -654,7 +654,7 @@ export function checkSharedPackageIsolation(repoRoot: string): Metric {
     ...parsed.dependencies,
     ...parsed.peerDependencies,
   })) {
-    if (name.startsWith('@openpanel/')) {
+    if (name.startsWith('@flarepanel/')) {
       offenders.push({
         file: `${SHARED_PACKAGE_ROOT}/package.json`,
         line: 1,

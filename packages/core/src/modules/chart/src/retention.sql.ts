@@ -4,7 +4,7 @@
 // Cloud. None of these statements contains an `IN (subquery)` — the cohort
 // matrix is a CTE self-join — so no `IN` / `GLOBAL IN` decision arises.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import type { IChartEventFilter } from '../../report/report.constants';
 import { compiledText } from './compiled';
 import { formatClickhouseDate } from './dates';

@@ -1,4 +1,4 @@
-import type { IServiceEvent } from '@openpanel/core';
+import type { IServiceEvent } from '@flarepanel/core';
 import { formatDuration, getEventLabel } from './replay-utils';
 import { EventIcon } from '@/components/events/event-icon';
 import { cn } from '@/utils/cn';

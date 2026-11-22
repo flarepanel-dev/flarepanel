@@ -1,5 +1,5 @@
 // The subject is built over a fake `ServiceDeps`, so `deps.db` IS the fake below.
-// `@openpanel/redis`'s `cacheable` is still stubbed (module-level `getSalts` binds it
+// `@flarepanel/redis`'s `cacheable` is still stubbed (module-level `getSalts` binds it
 // at first import) so `rotateSalt`'s `getSalts.clear` never reaches a real Redis.
 //
 // `getSalts` itself is untested: it takes no `deps` (ingest's hot path calls it bare)
@@ -74,14 +74,14 @@ function cacheableStub<T extends (...args: unknown[]) => unknown>(
   });
 }
 
-const realRedis = { ...(await import('@openpanel/redis')) };
-mock.module('@openpanel/redis', () => ({
+const realRedis = { ...(await import('@flarepanel/redis')) };
+mock.module('@flarepanel/redis', () => ({
   ...realRedis,
   cacheable: cacheableStub,
 }));
 
 afterAll(() => {
-  mock.module('@openpanel/redis', () => realRedis);
+  mock.module('@flarepanel/redis', () => realRedis);
 });
 
 let subject: ReturnType<typeof import('./salt.service').createSaltService>;

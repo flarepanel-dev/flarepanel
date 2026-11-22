@@ -1,5 +1,5 @@
 {
-  "name": "@openpanel/logos",
+  "name": "@flarepanel/logos",
   "version": "0.0.1",
   "type": "module",
   "private": true,
@@ -12,7 +12,7 @@
     "generate": "bun scripts/generate.ts"
   },
   "devDependencies": {
-    "@openpanel/tsconfig": "workspace:*",
+    "@flarepanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "sharp": "0.35.5",
     "typescript": "catalog:"

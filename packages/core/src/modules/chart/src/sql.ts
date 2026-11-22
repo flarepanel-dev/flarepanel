@@ -12,7 +12,7 @@
 // The keyed part records below are a local, function-scoped builder: assigning
 // clauses by key keeps a stable clause order.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import { assertTimeBucketBudget } from '../../../shared/time-buckets';
 import type {
   IChartBreakdown,

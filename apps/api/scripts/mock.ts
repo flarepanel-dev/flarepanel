@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import * as faker from '@faker-js/faker';
-import { generateId, hashPassword } from '@openpanel/core';
-import { ClientType, db } from '@openpanel/db';
-import { getRedisCache } from '@openpanel/redis';
+import { generateId, hashPassword } from '@flarepanel/core';
+import { ClientType, db } from '@flarepanel/db';
+import { getRedisCache } from '@flarepanel/redis';
 import { v4 as uuidv4 } from 'uuid';
 
 const DOMAIN_COUNT = 5;
@@ -389,7 +389,7 @@ async function simultaneousRequests() {
       'openpanel-client-id': 'ef38d50e-7d8e-4041-9c62-46d4c3b3bb01',
       'x-client-ip': '',
       'user-agent': '',
-      origin: 'https://openpanel.dev',
+      origin: 'https://flarepanel.dev',
     },
     track: {
       type: 'track',

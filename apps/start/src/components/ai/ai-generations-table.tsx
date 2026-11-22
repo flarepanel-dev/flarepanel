@@ -1,4 +1,4 @@
-import type { IServiceAiEvent } from '@openpanel/core';
+import type { IServiceAiEvent } from '@flarepanel/core';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';

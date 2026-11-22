@@ -1,4 +1,4 @@
-import type { IServiceEvent } from '@openpanel/core';
+import type { IServiceEvent } from '@flarepanel/core';
 
 export interface SessionPageVisit {
   /** The screen view that opened the page; null for events before the first one. */

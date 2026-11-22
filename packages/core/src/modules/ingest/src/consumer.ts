@@ -53,7 +53,7 @@ export type DeadLetterReason = 'parse_error' | 'handler_error';
  * What the consumer hands to the dead-letter sink. The value stays the
  * producer's original bytes, so the record is a faithful copy of what arrived.
  *
- * Implemented by `@openpanel/redis`'s `createDeadLetterRecorder` (the capped
+ * Implemented by `@flarepanel/redis`'s `createDeadLetterRecorder` (the capped
  * list) and `./kafka.ts`'s `produceDeadLetterEvent` (the DLQ topic; a message
  * produced from these bytes is replayable onto the events topic unchanged).
  */

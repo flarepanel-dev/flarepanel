@@ -10,7 +10,7 @@ import { MAX_ID } from '../../shared/limits.constants';
 import { authRouter } from './auth.rpc';
 
 const COOKIE_OPTIONS: CookieOptions = {
-  domain: '.openpanel.dev',
+  domain: '.flarepanel.dev',
   secure: true,
   sameSite: 'lax',
   httpOnly: true,

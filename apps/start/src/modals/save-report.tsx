@@ -1,5 +1,5 @@
+import type { IReport } from '@flarepanel/core/modules/report/report.constants';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { IReport } from '@openpanel/core/modules/report/report.constants';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearch } from '@tanstack/react-router';
 import { Controller, useForm } from 'react-hook-form';

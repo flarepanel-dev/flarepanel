@@ -1,4 +1,4 @@
-import { getRecommendedPlan } from '@openpanel/payments';
+import { getRecommendedPlan } from '@flarepanel/payments';
 import { addDays, format, subDays } from 'date-fns';
 import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';

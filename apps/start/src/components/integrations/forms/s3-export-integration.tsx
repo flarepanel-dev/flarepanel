@@ -1,5 +1,5 @@
+import { zCreateS3ExportIntegration } from '@flarepanel/core/modules/integration/integration.constants';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zCreateS3ExportIntegration } from '@openpanel/core/modules/integration/integration.constants';
 import { useMutation } from '@tanstack/react-query';
 import { mergeDeepRight, path } from 'ramda';
 import { Controller, useForm, useWatch } from 'react-hook-form';
@@ -219,7 +219,7 @@ export function S3ExportIntegrationForm({
         />
         <p className="text-muted-foreground text-xs">
           {authMode === 'iam_role'
-            ? 'Recommended for AWS S3. Create an IAM role that grants OpenPanel access.'
+            ? 'Recommended for AWS S3. Create an IAM role that grants FlarePanel access.'
             : 'Use access keys for Cloudflare R2, MinIO, DigitalOcean Spaces, or other S3-compatible storage.'}
         </p>
       </div>

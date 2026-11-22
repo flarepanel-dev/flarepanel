@@ -1,10 +1,10 @@
 // The provider classes are behind a dynamic `import`: they import
-// `formatClickhouseDate` from @openpanel/db's clickhouse client, which
+// `formatClickhouseDate` from @flarepanel/db's clickhouse client, which
 // constructs a real pino transport at import time.
 
 import { createHash } from 'node:crypto';
-import type { Prisma } from '@openpanel/db/src/prisma-client';
-import { toDots } from '@openpanel/shared';
+import type { Prisma } from '@flarepanel/db/src/prisma-client';
+import { toDots } from '@flarepanel/shared';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
 import {
@@ -804,7 +804,7 @@ interface RunnableProvider {
   transformProfile?(rawProfile: unknown): IClickhouseProfile;
 }
 
-/** Dynamic import keeps @openpanel/db's clickhouse client off this file's eager path (see header). */
+/** Dynamic import keeps @flarepanel/db's clickhouse client off this file's eager path (see header). */
 async function createImportProvider(
   projectId: string,
   config: IImportConfig,

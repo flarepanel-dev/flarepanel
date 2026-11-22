@@ -20,18 +20,18 @@ export function OnboardingFeatureRequest({
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
       <Text>
         You're halfway through your trial, so a quick question: is there
-        anything you expected OpenPanel to do that it doesn't?
+        anything you expected FlarePanel to do that it doesn't?
       </Text>
       <Text>
         Just reply to this email. If you'd rather post publicly, the feedback
         board is at{' '}
         <Link
           href={withUtm(
-            'https://feedback.openpanel.dev',
+            'https://feedback.flarepanel.dev',
             'onboarding-feature-request'
           )}
         >
-          feedback.openpanel.dev
+          feedback.flarepanel.dev
         </Link>
         .
       </Text>

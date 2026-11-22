@@ -1,4 +1,4 @@
-// Importing @openpanel/db's clickhouse/client constructs a client and a pino
+// Importing @flarepanel/db's clickhouse/client constructs a client and a pino
 // logger at import time, and the fragment builders here must stay pure and
 // synchronous.
 

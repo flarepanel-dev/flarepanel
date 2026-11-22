@@ -65,7 +65,7 @@ export function getServiceName(config: CoreConfig, name: string): string {
 
 // pino-pretty's worker-thread transport is located via require.resolve at the
 // CALLING module's location, which is broken under Bun for a transitive
-// dependency (a caller outside @openpanel/core) and crashes the process.
+// dependency (a caller outside @flarepanel/core) and crashes the process.
 // Pretty printing is therefore off under Bun.
 const isBun = !!process.versions.bun;
 

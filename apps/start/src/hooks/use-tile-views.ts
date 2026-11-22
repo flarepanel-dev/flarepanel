@@ -1,4 +1,4 @@
-import type { IReportDisplay } from '@openpanel/core/modules/report/report.constants';
+import type { IReportDisplay } from '@flarepanel/core/modules/report/report.constants';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { TRPCClientError } from '@trpc/client';
 import { useCallback, useRef, useState } from 'react';

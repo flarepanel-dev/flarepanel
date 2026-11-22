@@ -58,7 +58,7 @@ test('a failing session lookup propagates instead of signing the user out', asyn
 
 test('with several session cookies the first that is signed in wins', async () => {
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-  const user = { id: 'user_1', email: 'carl@openpanel.dev' };
+  const user = { id: 'user_1', email: 'carl@flarepanel.dev' };
   const liveId = hashSessionToken('live-token');
   const lookedUp: string[] = [];
   const ctx = ctxWithSessionLookup(((args: { where: { id: string } }) => {
@@ -82,7 +82,7 @@ test('with several session cookies the first that is signed in wins', async () =
 
 const AUTH_SECRET = 'test-auth-secret-at-least-32-characters';
 const FUTURE = () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-const USER = { id: 'user_1', email: 'carl@openpanel.dev' };
+const USER = { id: 'user_1', email: 'carl@flarepanel.dev' };
 
 interface CapturedCookie {
   name: string;

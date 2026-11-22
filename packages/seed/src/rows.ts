@@ -4,7 +4,7 @@
 // `session_start` / `session_end`. Kept in step with core by hand, on purpose:
 // the seed stays out of the backend's dependency graph.
 
-import { parsePath, toDots } from '@openpanel/shared';
+import { parsePath, toDots } from '@flarepanel/shared';
 import type {
   Archetype,
   JourneyEvent,

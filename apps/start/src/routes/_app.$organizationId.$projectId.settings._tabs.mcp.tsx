@@ -20,7 +20,7 @@ export const Route = createFileRoute(
 });
 
 const TOKEN_PLACEHOLDER = 'BASE64_TOKEN';
-const DOCS_URL = 'https://openpanel.dev/docs/mcp';
+const DOCS_URL = 'https://flarepanel.dev/docs/mcp';
 
 type AiClient = {
   id: string;
@@ -194,7 +194,7 @@ function Component() {
         <h2 className="font-semibold text-lg">MCP Server</h2>
         <p className="text-muted-foreground text-sm">
           Connect any MCP-compatible AI client (Claude, Cursor, Windsurf, …) to
-          your OpenPanel data. Most of its tools read — events, sessions,
+          your FlarePanel data. Most of its tools read — events, sessions,
           profiles, funnels, retention and more — but it can also create, edit
           and delete dashboards and reports, so treat the token as write access.
         </p>

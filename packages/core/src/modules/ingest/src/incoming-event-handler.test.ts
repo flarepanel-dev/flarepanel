@@ -418,7 +418,7 @@ describe('incomingEvent', () => {
       deviceId: '',
       sessionId: '',
       headers: {
-        'user-agent': 'OpenPanel Server/1.0',
+        'user-agent': 'FlarePanel Server/1.0',
         'openpanel-sdk-name': 'server',
         'openpanel-sdk-version': '1.0.0',
         'request-id': '123',
@@ -486,7 +486,7 @@ describe('incomingEvent', () => {
         deviceId: '',
         sessionId: '',
         headers: {
-          'user-agent': 'OpenPanel Server/1.0',
+          'user-agent': 'FlarePanel Server/1.0',
           'openpanel-sdk-name': 'server',
           'openpanel-sdk-version': '1.0.0',
           'request-id': '123',

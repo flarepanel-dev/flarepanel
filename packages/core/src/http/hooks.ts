@@ -4,7 +4,7 @@
 // request-logging hook lives in ./context.ts because it reads the request
 // logger off `ctx`.
 
-import { generateId } from '@openpanel/shared';
+import { generateId } from '@flarepanel/shared';
 import { Elysia } from 'elysia';
 import type { IpHeaderConfig } from '../config';
 import { REQUEST_ID_HEADER, REQUEST_ID_LENGTH } from '../logger';

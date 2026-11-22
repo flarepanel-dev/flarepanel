@@ -1,4 +1,4 @@
-import type { IServiceDashboards } from '@openpanel/core';
+import type { IServiceDashboards } from '@flarepanel/core';
 import { useNavigate } from '@tanstack/react-router';
 import {
   BellIcon,

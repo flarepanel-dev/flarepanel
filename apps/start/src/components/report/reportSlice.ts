@@ -14,15 +14,15 @@ import type {
   IReportOptions,
   ITimeToConvertAggregation,
   zCriteria,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import {
   getDefaultIntervalByDates,
   getDefaultIntervalByRange,
   isHourIntervalEnabledByRange,
   isMinuteIntervalEnabledByRange,
   perUserBucketKind,
-} from '@openpanel/core/modules/report/report.constants';
-import { shortId } from '@openpanel/shared';
+} from '@flarepanel/core/modules/report/report.constants';
+import { shortId } from '@flarepanel/shared';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
 import type { z } from 'zod';

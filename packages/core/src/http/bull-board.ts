@@ -14,7 +14,7 @@ import { requestContext } from './context';
 export const BULL_BOARD_BASE_PATH = '/bullboard';
 
 const UNAUTHORIZED = 401;
-const BULL_BOARD_REALM = 'OpenPanel ops';
+const BULL_BOARD_REALM = 'FlarePanel ops';
 
 /**
  * The guard is `{ as: 'global' }` and re-checks the path itself rather than

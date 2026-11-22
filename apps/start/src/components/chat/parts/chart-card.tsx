@@ -1,4 +1,4 @@
-import type { IReport } from '@openpanel/core/modules/report/report.constants';
+import type { IReport } from '@flarepanel/core/modules/report/report.constants';
 import {
   ExternalLinkIcon,
   MaximizeIcon,

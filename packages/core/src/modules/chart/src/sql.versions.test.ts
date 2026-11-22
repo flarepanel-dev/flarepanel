@@ -5,7 +5,7 @@
 // version with plan=pro must never match, the other project must never leak.
 
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { sql } from '@openpanel/db/src/clickhouse/sql';
+import { sql } from '@flarepanel/db/src/clickhouse/sql';
 import { timeAgo } from '../../../../../../test/fixtures';
 import {
   setupProfileVersions,
@@ -43,7 +43,7 @@ const planFilter = (value: string[]) => ({
   value,
 });
 
-let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
+let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
 let now: Date;
 let window: { startDate: string; endDate: string };
 
@@ -77,7 +77,7 @@ function countsBy(result: Row[], label: string): Record<string, number> {
 }
 
 beforeAll(async () => {
-  ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
+  ({ ch } = await import('@flarepanel/db/src/clickhouse/client'));
   const { bootstrapTestDatabases } = await import(
     '../../../../../../test/bootstrap-databases'
   );

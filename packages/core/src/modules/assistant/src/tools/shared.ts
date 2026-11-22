@@ -1,4 +1,4 @@
-import { resolveDateRange as resolveDateRangeCore } from '@openpanel/shared';
+import { resolveDateRange as resolveDateRangeCore } from '@flarepanel/shared';
 import type { IChartRange } from '../../../report/report.constants';
 import { timeWindows } from '../../../report/report.constants';
 import { getDatesFromRange } from '../../../report/src/chart-dates';

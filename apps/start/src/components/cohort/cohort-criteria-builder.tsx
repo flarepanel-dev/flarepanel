@@ -3,12 +3,12 @@ import type {
   EventBasedCohortDefinition,
   EventCriteria,
   PropertyBasedCohortDefinition,
-} from '@openpanel/core/modules/cohort/cohort.constants';
+} from '@flarepanel/core/modules/cohort/cohort.constants';
 import type {
   IChartEventFilter,
   IChartEventFilterOperator,
   IChartEventFilterValue,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import { PlusIcon, TrashIcon } from 'lucide-react';
 import { PureFilterItem } from '../report/sidebar/filters/FilterItem';
 import { PropertiesCombobox } from '../report/sidebar/PropertiesCombobox';

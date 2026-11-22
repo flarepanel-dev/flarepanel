@@ -3,7 +3,7 @@
 // Adds are synchronous (the visitor pool evicts from inside a sync path); the
 // generator awaits `flushFull()` between sessions.
 
-import { ch, TABLE_NAMES } from '@openpanel/db';
+import { ch, TABLE_NAMES } from '@flarepanel/db';
 import type {
   ClickhouseAiEventRow,
   ClickhouseEventRow,

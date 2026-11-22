@@ -1,4 +1,4 @@
-import type { IServiceEvent } from '@openpanel/core';
+import type { IServiceEvent } from '@flarepanel/core';
 import { ListTreeIcon, ZapIcon } from 'lucide-react';
 import { formatDuration } from '../replay/replay-utils';
 import { getElapsedMs, type SessionPageVisit } from './session-pages';

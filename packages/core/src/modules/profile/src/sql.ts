@@ -2,7 +2,7 @@
 // subqueries run under the client's `distributed_product_mode: 'allow'`. Every `IN`
 // list binds as `Array(String)`, a literal list to the planner.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
 import { AI_INTERNAL_EVENT_NAMES } from '../../ai/ai.constants';
 import {

@@ -1,4 +1,4 @@
-import type { IServiceEvent, IServiceProfile } from '@openpanel/core';
+import type { IServiceEvent, IServiceProfile } from '@flarepanel/core';
 import { TagIcon } from 'lucide-react';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 import { EmptyState } from '../empty-state';

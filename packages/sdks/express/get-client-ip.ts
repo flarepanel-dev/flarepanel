@@ -4,10 +4,10 @@
  * Can be configured via IP_HEADER_ORDER env variable
  * Example: IP_HEADER_ORDER="cf-connecting-ip,x-real-ip,x-forwarded-for"
  *
- * Copied from @openpanel/core's shared get-client-ip module — this package is
+ * Copied from @flarepanel/core's shared get-client-ip module — this package is
  * bundled standalone (tsup `noExternal` used to pull in the workspace-internal
  * common shim for exactly this function), so it stays dependency-free rather
- * than importing @openpanel/core.
+ * than importing @flarepanel/core.
  */
 
 // Order matters: client-forwarded headers (set explicitly by SDKs/upstream

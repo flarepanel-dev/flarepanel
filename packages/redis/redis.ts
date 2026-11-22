@@ -1,4 +1,4 @@
-import { getSuperJson, setSuperJson } from '@openpanel/shared';
+import { getSuperJson, setSuperJson } from '@flarepanel/shared';
 import type { RedisOptions } from 'ioredis';
 import { Redis } from 'ioredis';
 

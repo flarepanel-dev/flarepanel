@@ -1,7 +1,7 @@
 import type {
   IChartSerie,
   IReportInput,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import isEqual from 'lodash.isequal';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ChartSizeTier } from './common/chart-size';

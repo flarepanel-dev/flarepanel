@@ -3,7 +3,7 @@
 // column. Runs against profiles with several unmerged versions.
 
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import {
   setupProfileVersions,
   teardownProfileVersions,
@@ -20,10 +20,10 @@ const ON_EVENTS = {
   groupsExpr: 'groups',
 } as const;
 
-let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
+let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
 
 beforeAll(async () => {
-  ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
+  ({ ch } = await import('@flarepanel/db/src/clickhouse/client'));
   const { bootstrapTestDatabases } = await import(
     '../../../../../../test/bootstrap-databases'
   );

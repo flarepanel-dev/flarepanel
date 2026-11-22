@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "@openpanel/root",
+      "name": "@flarepanel/root",
       "dependencies": {
         "@hyperdx/node-opentelemetry": "catalog:",
         "dotenv-cli": "7.3.0",
@@ -20,12 +20,12 @@
       },
     },
     "apps/api": {
-      "name": "@openpanel/api",
+      "name": "@flarepanel/api",
       "version": "0.0.4",
       "dependencies": {
-        "@openpanel/core": "workspace:*",
-        "@openpanel/db": "workspace:*",
-        "@openpanel/redis": "workspace:*",
+        "@flarepanel/core": "workspace:*",
+        "@flarepanel/db": "workspace:*",
+        "@flarepanel/redis": "workspace:*",
         "elysia": "1.4.30",
         "pino": "catalog:",
         "pino-pretty": "catalog:",
@@ -34,7 +34,7 @@
       },
       "devDependencies": {
         "@faker-js/faker": "9.9.0",
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/uuid": "10.0.0",
         "bun-types": "1.4.4",
         "typescript": "catalog:",
@@ -55,16 +55,16 @@
         "@dnd-kit/sortable": "10.0.0",
         "@dnd-kit/utilities": "3.2.2",
         "@faker-js/faker": "9.9.0",
+        "@flarepanel/core": "workspace:^",
+        "@flarepanel/logos": "workspace:*",
+        "@flarepanel/payments": "workspace:*",
+        "@flarepanel/sdk-info": "workspace:^",
+        "@flarepanel/shared": "workspace:*",
+        "@flarepanel/web": "workspace:*",
         "@fontsource-variable/inter": "5.3.0",
         "@hookform/resolvers": "5.2.2",
         "@nivo/sankey": "0.99.0",
         "@number-flow/react": "0.5.10",
-        "@openpanel/core": "workspace:^",
-        "@openpanel/logos": "workspace:*",
-        "@openpanel/payments": "workspace:*",
-        "@openpanel/sdk-info": "workspace:^",
-        "@openpanel/shared": "workspace:*",
-        "@openpanel/web": "1.0.5",
         "@radix-ui/react-accordion": "1.2.12",
         "@radix-ui/react-alert-dialog": "1.1.15",
         "@radix-ui/react-aspect-ratio": "1.1.7",
@@ -202,7 +202,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.3.15",
         "@cloudflare/vite-plugin": "1.33.2",
-        "@openpanel/db": "workspace:*",
+        "@flarepanel/db": "workspace:*",
         "@playwright/test": "1.63.0",
         "@tanstack/devtools-event-client": "0.3.3",
         "@testing-library/dom": "10.4.1",
@@ -236,10 +236,10 @@
       },
     },
     "apps/testbed": {
-      "name": "@openpanel/testbed",
+      "name": "@flarepanel/testbed",
       "version": "0.0.0",
       "dependencies": {
-        "@openpanel/web": "workspace:*",
+        "@flarepanel/web": "workspace:*",
         "react": "19.2.3",
         "react-dom": "19.2.3",
         "react-router-dom": "7.13.1",
@@ -255,7 +255,7 @@
       },
     },
     "packages/core": {
-      "name": "@openpanel/core",
+      "name": "@flarepanel/core",
       "version": "0.0.1",
       "dependencies": {
         "@ai-sdk/anthropic": "4.0.83",
@@ -267,18 +267,18 @@
         "@bull-board/elysia": "9.6.0",
         "@elysiajs/cors": "1.4.2",
         "@elysiajs/openapi": "1.4.15",
+        "@flarepanel/ai": "workspace:*",
+        "@flarepanel/db": "workspace:*",
+        "@flarepanel/email": "workspace:*",
+        "@flarepanel/payments": "workspace:*",
+        "@flarepanel/redis": "workspace:*",
+        "@flarepanel/sdk": "workspace:*",
+        "@flarepanel/shared": "workspace:*",
         "@google-cloud/storage": "7.22.0",
         "@hyperdx/node-opentelemetry": "catalog:",
         "@maxmind/geoip2-node": "6.1.0",
         "@modelcontextprotocol/sdk": "1.27.1",
         "@node-rs/argon2": "2.0.2",
-        "@openpanel/ai": "workspace:*",
-        "@openpanel/db": "workspace:*",
-        "@openpanel/email": "workspace:*",
-        "@openpanel/payments": "workspace:*",
-        "@openpanel/redis": "workspace:*",
-        "@openpanel/sdk": "workspace:*",
-        "@openpanel/shared": "workspace:*",
         "@oslojs/crypto": "1.0.1",
         "@oslojs/encoding": "1.1.0",
         "@slack/bolt": "3.21.4",
@@ -312,7 +312,7 @@
       },
       "devDependencies": {
         "@clickhouse/client": "1.18.5",
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/js-yaml": "4.0.9",
         "@types/ramda": "0.31.0",
         "@types/unzipper": "0.10.11",
@@ -323,15 +323,15 @@
       },
     },
     "packages/db": {
-      "name": "@openpanel/db",
+      "name": "@flarepanel/db",
       "version": "0.0.1",
       "dependencies": {
         "@clickhouse/client": "1.18.5",
+        "@flarepanel/core": "workspace:*",
+        "@flarepanel/payments": "workspace:*",
+        "@flarepanel/redis": "workspace:*",
+        "@flarepanel/shared": "workspace:*",
         "@hyperdx/node-opentelemetry": "catalog:",
-        "@openpanel/core": "workspace:*",
-        "@openpanel/payments": "workspace:*",
-        "@openpanel/redis": "workspace:*",
-        "@openpanel/shared": "workspace:*",
         "@prisma/client": "6.14.0",
         "pino": "catalog:",
         "pino-pretty": "catalog:",
@@ -339,7 +339,7 @@
         "zod": "catalog:",
       },
       "devDependencies": {
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/node": "catalog:",
         "bun-types": "1.4.4",
         "prisma": "6.14.0",
@@ -347,10 +347,10 @@
       },
     },
     "packages/email": {
-      "name": "@openpanel/email",
+      "name": "@flarepanel/email",
       "version": "0.0.1",
       "dependencies": {
-        "@openpanel/db": "workspace:*",
+        "@flarepanel/db": "workspace:*",
         "@react-email/components": "0.5.6",
         "@react-email/render": "2.0.7",
         "@types/nodemailer": "8.0.0",
@@ -361,7 +361,7 @@
         "zod": "catalog:",
       },
       "devDependencies": {
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/node": "catalog:",
         "@types/react": "catalog:",
         "react-email": "3.0.4",
@@ -369,25 +369,25 @@
       },
     },
     "packages/logos": {
-      "name": "@openpanel/logos",
+      "name": "@flarepanel/logos",
       "version": "0.0.1",
       "devDependencies": {
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/node": "catalog:",
         "sharp": "0.35.5",
         "typescript": "catalog:",
       },
     },
     "packages/payments": {
-      "name": "@openpanel/payments",
+      "name": "@flarepanel/payments",
       "version": "0.0.1",
       "dependencies": {
         "@polar-sh/sdk": "0.49.0",
         "date-fns": "3.3.1",
       },
       "devDependencies": {
-        "@openpanel/db": "workspace:*",
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/db": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/inquirer": "9.0.7",
         "@types/inquirer-autocomplete-prompt": "3.0.3",
         "@types/node": "catalog:",
@@ -398,43 +398,43 @@
       },
     },
     "packages/redis": {
-      "name": "@openpanel/redis",
+      "name": "@flarepanel/redis",
       "version": "0.0.1",
       "dependencies": {
-        "@openpanel/shared": "workspace:*",
+        "@flarepanel/shared": "workspace:*",
         "ioredis": "5.8.2",
         "lru-cache": "11.5.1",
       },
       "devDependencies": {
-        "@openpanel/core": "workspace:*",
-        "@openpanel/db": "workspace:*",
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/core": "workspace:*",
+        "@flarepanel/db": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/node": "catalog:",
         "typescript": "catalog:",
       },
     },
     "packages/sdks/_info": {
-      "name": "@openpanel/sdk-info",
+      "name": "@flarepanel/sdk-info",
       "version": "0.0.1",
       "dependencies": {
         "react": "catalog:",
       },
       "devDependencies": {
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/react": "catalog:",
         "typescript": "catalog:",
       },
     },
     "packages/sdks/ai": {
-      "name": "@openpanel/ai",
+      "name": "@flarepanel/ai",
       "version": "0.1.3-local",
       "dependencies": {
         "@ai-sdk/provider": "4.0.30",
-        "@openpanel/sdk": "workspace:1.3.4-local",
+        "@flarepanel/sdk": "workspace:1.3.4-local",
       },
       "devDependencies": {
         "@anthropic-ai/sdk": "1.3.0",
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/node": "catalog:",
         "bun-types": "1.4.0",
         "openai": "7.47.0",
@@ -443,10 +443,10 @@
       },
     },
     "packages/sdks/astro": {
-      "name": "@openpanel/astro",
+      "name": "@flarepanel/astro",
       "version": "1.4.4-local",
       "dependencies": {
-        "@openpanel/web": "workspace:1.4.4-local",
+        "@flarepanel/web": "workspace:1.4.4-local",
       },
       "devDependencies": {
         "astro": "6.4.2",
@@ -456,13 +456,13 @@
       },
     },
     "packages/sdks/express": {
-      "name": "@openpanel/express",
+      "name": "@flarepanel/express",
       "version": "1.3.4-local",
       "dependencies": {
-        "@openpanel/sdk": "workspace:1.3.4-local",
+        "@flarepanel/sdk": "workspace:1.3.4-local",
       },
       "devDependencies": {
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/express": "5.0.3",
         "@types/request-ip": "0.0.41",
         "tsup": "7.3.0",
@@ -473,13 +473,13 @@
       },
     },
     "packages/sdks/nextjs": {
-      "name": "@openpanel/nextjs",
+      "name": "@flarepanel/nextjs",
       "version": "1.5.4-local",
       "dependencies": {
-        "@openpanel/web": "workspace:1.4.4-local",
+        "@flarepanel/web": "workspace:1.4.4-local",
       },
       "devDependencies": {
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/react": "catalog:",
         "next": "15.0.3",
         "react": "19.1.1",
@@ -494,16 +494,16 @@
       },
     },
     "packages/sdks/nuxt": {
-      "name": "@openpanel/nuxt",
+      "name": "@flarepanel/nuxt",
       "version": "0.4.4-local",
       "dependencies": {
-        "@openpanel/web": "workspace:1.4.4-local",
+        "@flarepanel/web": "workspace:1.4.4-local",
       },
       "devDependencies": {
+        "@flarepanel/tsconfig": "workspace:*",
         "@nuxt/kit": "3.20.2",
         "@nuxt/module-builder": "1.0.2",
         "@nuxt/types": "2.18.1",
-        "@openpanel/tsconfig": "workspace:*",
         "@types/node": "catalog:",
         "@vue/runtime-core": "3.5.25",
         "typescript": "catalog:",
@@ -515,13 +515,13 @@
       },
     },
     "packages/sdks/react-native": {
-      "name": "@openpanel/react-native",
+      "name": "@flarepanel/react-native",
       "version": "1.4.4-local",
       "dependencies": {
-        "@openpanel/sdk": "workspace:1.3.4-local",
+        "@flarepanel/sdk": "workspace:1.3.4-local",
       },
       "devDependencies": {
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/node": "catalog:",
         "bun-types": "1.4.4",
         "tsup": "7.3.0",
@@ -534,10 +534,10 @@
       },
     },
     "packages/sdks/sdk": {
-      "name": "@openpanel/sdk",
+      "name": "@flarepanel/sdk",
       "version": "1.3.4-local",
       "devDependencies": {
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/node": "catalog:",
         "bun-types": "1.4.0",
         "tsup": "7.3.0",
@@ -545,15 +545,15 @@
       },
     },
     "packages/sdks/web": {
-      "name": "@openpanel/web",
+      "name": "@flarepanel/web",
       "version": "1.4.4-local",
       "dependencies": {
-        "@openpanel/sdk": "workspace:1.3.4-local",
+        "@flarepanel/sdk": "workspace:1.3.4-local",
         "@rrweb/types": "2.0.0-alpha.20",
         "rrweb": "2.0.0-alpha.20",
       },
       "devDependencies": {
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/jsdom": "30.0.0",
         "@types/node": "catalog:",
         "bun-types": "1.4.0",
@@ -563,22 +563,22 @@
       },
     },
     "packages/seed": {
-      "name": "@openpanel/seed",
+      "name": "@flarepanel/seed",
       "version": "0.0.1",
       "dependencies": {
+        "@flarepanel/db": "workspace:*",
+        "@flarepanel/shared": "workspace:*",
         "@node-rs/argon2": "2.0.2",
-        "@openpanel/db": "workspace:*",
-        "@openpanel/shared": "workspace:*",
       },
       "devDependencies": {
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/node": "catalog:",
         "bun-types": "1.4.4",
         "typescript": "catalog:",
       },
     },
     "packages/shared": {
-      "name": "@openpanel/shared",
+      "name": "@flarepanel/shared",
       "version": "0.0.1",
       "dependencies": {
         "ipaddr.js": "2.5.0",
@@ -593,7 +593,7 @@
         "undici": "8.10.0",
       },
       "devDependencies": {
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/luxon": "3.7.1",
         "@types/node": "catalog:",
         "@types/ramda": "0.31.0",
@@ -601,35 +601,35 @@
       },
     },
     "tooling/publish": {
-      "name": "@openpanel/publish",
+      "name": "@flarepanel/publish",
       "version": "0.1.0",
       "dependencies": {
         "arg": "5.0.2",
         "semver": "7.6.0",
       },
       "devDependencies": {
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/node": "catalog:",
         "@types/semver": "7.5.7",
         "typescript": "catalog:",
       },
     },
     "tooling/release": {
-      "name": "@openpanel/release",
+      "name": "@flarepanel/release",
       "version": "0.1.0",
       "dependencies": {
         "openai": "7.25.0",
         "semver": "7.6.0",
       },
       "devDependencies": {
-        "@openpanel/tsconfig": "workspace:*",
+        "@flarepanel/tsconfig": "workspace:*",
         "@types/semver": "7.5.7",
         "bun-types": "1.4.4",
         "typescript": "catalog:",
       },
     },
     "tooling/typescript": {
-      "name": "@openpanel/tsconfig",
+      "name": "@flarepanel/tsconfig",
       "version": "0.1.0",
       "devDependencies": {
         "tsup": "7.3.0",
@@ -1283,6 +1283,50 @@
 
     "@faker-js/faker": ["@faker-js/faker@9.9.0", "", {}, "sha512-OEl393iCOoo/z8bMezRlJu+GlRGlsKbUAN7jKB6LhnKoqKve5DXRpalbItIIcwnCjs1k/FOPjFzcA6Qn+H+YbA=="],
 
+    "@flarepanel/ai": ["@flarepanel/ai@workspace:packages/sdks/ai"],
+
+    "@flarepanel/api": ["@flarepanel/api@workspace:apps/api"],
+
+    "@flarepanel/astro": ["@flarepanel/astro@workspace:packages/sdks/astro"],
+
+    "@flarepanel/core": ["@flarepanel/core@workspace:packages/core"],
+
+    "@flarepanel/db": ["@flarepanel/db@workspace:packages/db"],
+
+    "@flarepanel/email": ["@flarepanel/email@workspace:packages/email"],
+
+    "@flarepanel/express": ["@flarepanel/express@workspace:packages/sdks/express"],
+
+    "@flarepanel/logos": ["@flarepanel/logos@workspace:packages/logos"],
+
+    "@flarepanel/nextjs": ["@flarepanel/nextjs@workspace:packages/sdks/nextjs"],
+
+    "@flarepanel/nuxt": ["@flarepanel/nuxt@workspace:packages/sdks/nuxt"],
+
+    "@flarepanel/payments": ["@flarepanel/payments@workspace:packages/payments"],
+
+    "@flarepanel/publish": ["@flarepanel/publish@workspace:tooling/publish"],
+
+    "@flarepanel/react-native": ["@flarepanel/react-native@workspace:packages/sdks/react-native"],
+
+    "@flarepanel/redis": ["@flarepanel/redis@workspace:packages/redis"],
+
+    "@flarepanel/release": ["@flarepanel/release@workspace:tooling/release"],
+
+    "@flarepanel/sdk": ["@flarepanel/sdk@workspace:packages/sdks/sdk"],
+
+    "@flarepanel/sdk-info": ["@flarepanel/sdk-info@workspace:packages/sdks/_info"],
+
+    "@flarepanel/seed": ["@flarepanel/seed@workspace:packages/seed"],
+
+    "@flarepanel/shared": ["@flarepanel/shared@workspace:packages/shared"],
+
+    "@flarepanel/testbed": ["@flarepanel/testbed@workspace:apps/testbed"],
+
+    "@flarepanel/tsconfig": ["@flarepanel/tsconfig@workspace:tooling/typescript"],
+
+    "@flarepanel/web": ["@flarepanel/web@workspace:packages/sdks/web"],
+
     "@floating-ui/core": ["@floating-ui/core@1.8.0", "", { "dependencies": { "@floating-ui/utils": "^0.2.12" } }, "sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ=="],
 
     "@floating-ui/dom": ["@floating-ui/dom@1.8.0", "", { "dependencies": { "@floating-ui/core": "^1.8.0", "@floating-ui/utils": "^0.2.12" } }, "sha512-yXSrzeHZBTZadLOlfyhCkJHNeLJnHRnRInwdZ40L7ZiaAtrBwoYlsDrX3v5zB1Utk7CLfzcOVnVVWoXEky7Ceg=="],
@@ -1554,50 +1598,6 @@
     "@oozcitak/url": ["@oozcitak/url@1.0.4", "", { "dependencies": { "@oozcitak/infra": "1.0.8", "@oozcitak/util": "8.3.8" } }, "sha512-kDcD8y+y3FCSOvnBI6HJgl00viO/nGbQoCINmQ0h98OhnGITrWR3bOGfwYCthgcrV8AnTJz8MzslTQbC3SOAmw=="],
 
     "@oozcitak/util": ["@oozcitak/util@8.3.8", "", {}, "sha512-T8TbSnGsxo6TDBJx/Sgv/BlVJL3tshxZP7Aq5R1mSnM5OcHY2dQaxLMu2+E8u3gN0MLOzdjurqN4ZRVuzQycOQ=="],
-
-    "@openpanel/ai": ["@openpanel/ai@workspace:packages/sdks/ai"],
-
-    "@openpanel/api": ["@openpanel/api@workspace:apps/api"],
-
-    "@openpanel/astro": ["@openpanel/astro@workspace:packages/sdks/astro"],
-
-    "@openpanel/core": ["@openpanel/core@workspace:packages/core"],
-
-    "@openpanel/db": ["@openpanel/db@workspace:packages/db"],
-
-    "@openpanel/email": ["@openpanel/email@workspace:packages/email"],
-
-    "@openpanel/express": ["@openpanel/express@workspace:packages/sdks/express"],
-
-    "@openpanel/logos": ["@openpanel/logos@workspace:packages/logos"],
-
-    "@openpanel/nextjs": ["@openpanel/nextjs@workspace:packages/sdks/nextjs"],
-
-    "@openpanel/nuxt": ["@openpanel/nuxt@workspace:packages/sdks/nuxt"],
-
-    "@openpanel/payments": ["@openpanel/payments@workspace:packages/payments"],
-
-    "@openpanel/publish": ["@openpanel/publish@workspace:tooling/publish"],
-
-    "@openpanel/react-native": ["@openpanel/react-native@workspace:packages/sdks/react-native"],
-
-    "@openpanel/redis": ["@openpanel/redis@workspace:packages/redis"],
-
-    "@openpanel/release": ["@openpanel/release@workspace:tooling/release"],
-
-    "@openpanel/sdk": ["@openpanel/sdk@workspace:packages/sdks/sdk"],
-
-    "@openpanel/sdk-info": ["@openpanel/sdk-info@workspace:packages/sdks/_info"],
-
-    "@openpanel/seed": ["@openpanel/seed@workspace:packages/seed"],
-
-    "@openpanel/shared": ["@openpanel/shared@workspace:packages/shared"],
-
-    "@openpanel/testbed": ["@openpanel/testbed@workspace:apps/testbed"],
-
-    "@openpanel/tsconfig": ["@openpanel/tsconfig@workspace:tooling/typescript"],
-
-    "@openpanel/web": ["@openpanel/web@workspace:packages/sdks/web"],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.0", "", {}, "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="],
 
@@ -5829,6 +5829,24 @@
 
     "@expo/require-utils/@babel/core": ["@babel/core@7.29.7", "", { "dependencies": { "@babel/code-frame": "^7.29.7", "@babel/generator": "^7.29.7", "@babel/helper-compilation-targets": "^7.29.7", "@babel/helper-module-transforms": "^7.29.7", "@babel/helpers": "^7.29.7", "@babel/parser": "^7.29.7", "@babel/template": "^7.29.7", "@babel/traverse": "^7.29.7", "@babel/types": "^7.29.7", "@jridgewell/remapping": "^2.3.5", "convert-source-map": "^2.0.0", "debug": "^4.1.0", "gensync": "^1.0.0-beta.2", "json5": "^2.2.3", "semver": "^6.3.1" } }, "sha512-RgHBCvtjbOK2gXSNBNIkNoEc9qoVEtau3hj8gEqKQuL3HZAibKarWFEI3Lfm6EYKkLalOh8eSrj9b+ch9H/VBA=="],
 
+    "@flarepanel/api/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
+
+    "@flarepanel/core/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
+
+    "@flarepanel/db/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
+
+    "@flarepanel/nextjs/react": ["react@19.1.1", "", {}, "sha512-w8nqGImo45dmMIfljjMwOGtbmC/mk4CMYhWIicdSflH91J9TyCyczcPFXJzrZ/ZXcgGRFeP6BU0BEJTw6tZdfQ=="],
+
+    "@flarepanel/nextjs/react-dom": ["react-dom@19.1.1", "", { "dependencies": { "scheduler": "^0.26.0" }, "peerDependencies": { "react": "^19.1.1" } }, "sha512-Dlq/5LAZgF0Gaz6yiqZCf6VCcZs1ghAJyrsu84Q/GT0gV+mCxbfmKNoGRKBYMJ8IEdGPqu49YWXD02GCknEDkw=="],
+
+    "@flarepanel/react-native/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
+
+    "@flarepanel/release/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
+
+    "@flarepanel/release/openai": ["openai@7.25.0", "", { "peerDependencies": { "@aws-sdk/credential-provider-node": ">=3.972.0 <4", "@smithy/hash-node": ">=4.3.0 <5", "@smithy/signature-v4": ">=5.4.0 <6", "undici": ">=5 <9", "ws": "^8.21.0", "zod": "^3.25 || ^4.0" }, "optionalPeers": ["@aws-sdk/credential-provider-node", "@smithy/hash-node", "@smithy/signature-v4", "undici", "ws", "zod"] }, "sha512-cnk0d4QT58Vq0vl2KG+DCa/C2+cXthsK2rUeaqtprq33mKv9dlX8o7fWSS283wa2IE/aVdsRyX1+Dqwz551olg=="],
+
+    "@flarepanel/seed/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
+
     "@google-cloud/storage/mime": ["mime@3.0.0", "", { "bin": { "mime": "cli.js" } }, "sha512-jSCU7/VB1loIWBZe14aEYHU/+1UMEHoaO7qxCOVJOw9GgH72VAWppxNcjU+x9a2k3GSIBXNKxXQFqRvvZ7vr3A=="],
 
     "@google-cloud/storage/p-limit": ["p-limit@3.1.0", "", { "dependencies": { "yocto-queue": "^0.1.0" } }, "sha512-TYOanM3wGwNGsZN2cVTYPArw454xnXj5qmWF1bEoAc4+cU/ol7GVh7odevjp1FNHduHc3KZMcFduxU5Xc6uJRQ=="],
@@ -5942,24 +5960,6 @@
     "@nuxt/vite-builder/vite": ["vite@7.3.6", "", { "dependencies": { "esbuild": "^0.27.0 || ^0.28.0", "fdir": "^6.5.0", "picomatch": "^4.0.3", "postcss": "^8.5.6", "rollup": "^4.43.0", "tinyglobby": "^0.2.15" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^20.19.0 || >=22.12.0", "jiti": ">=1.21.0", "less": "^4.0.0", "lightningcss": "^1.21.0", "sass": "^1.70.0", "sass-embedded": "^1.70.0", "stylus": ">=0.54.8", "sugarss": "^5.0.0", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "jiti", "less", "lightningcss", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-4XP60spRGjSZFf1qYH+dJIkK2znL3zQfl9KkOV9MkkRR/3Dls0dxaBsQPTloEc5BLXWPL9vsOxopxyKoMmDueg=="],
 
     "@nuxt/vite-builder/vite-node": ["vite-node@5.3.0", "", { "dependencies": { "cac": "^6.7.14", "es-module-lexer": "^2.0.0", "obug": "^2.1.1", "pathe": "^2.0.3", "vite": "^7.3.1" }, "bin": { "vite-node": "dist/cli.mjs" } }, "sha512-8f20COPYJujc3OKPX6OuyBy3ZIv2det4eRRU4GY1y2MjbeGSUmPjedxg1b72KnTagCofwvZ65ThzjxDW2AtQFQ=="],
-
-    "@openpanel/api/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
-
-    "@openpanel/core/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
-
-    "@openpanel/db/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
-
-    "@openpanel/nextjs/react": ["react@19.1.1", "", {}, "sha512-w8nqGImo45dmMIfljjMwOGtbmC/mk4CMYhWIicdSflH91J9TyCyczcPFXJzrZ/ZXcgGRFeP6BU0BEJTw6tZdfQ=="],
-
-    "@openpanel/nextjs/react-dom": ["react-dom@19.1.1", "", { "dependencies": { "scheduler": "^0.26.0" }, "peerDependencies": { "react": "^19.1.1" } }, "sha512-Dlq/5LAZgF0Gaz6yiqZCf6VCcZs1ghAJyrsu84Q/GT0gV+mCxbfmKNoGRKBYMJ8IEdGPqu49YWXD02GCknEDkw=="],
-
-    "@openpanel/react-native/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
-
-    "@openpanel/release/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
-
-    "@openpanel/release/openai": ["openai@7.25.0", "", { "peerDependencies": { "@aws-sdk/credential-provider-node": ">=3.972.0 <4", "@smithy/hash-node": ">=4.3.0 <5", "@smithy/signature-v4": ">=5.4.0 <6", "undici": ">=5 <9", "ws": "^8.21.0", "zod": "^3.25 || ^4.0" }, "optionalPeers": ["@aws-sdk/credential-provider-node", "@smithy/hash-node", "@smithy/signature-v4", "undici", "ws", "zod"] }, "sha512-cnk0d4QT58Vq0vl2KG+DCa/C2+cXthsK2rUeaqtprq33mKv9dlX8o7fWSS283wa2IE/aVdsRyX1+Dqwz551olg=="],
-
-    "@openpanel/seed/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
 
     "@opentelemetry/core/@opentelemetry/semantic-conventions": ["@opentelemetry/semantic-conventions@1.28.0", "", {}, "sha512-lp4qAiMTD4sNWW4DbKLBkfiMZ4jbAboJIGOQr5DvciMRI494OapieI9qiODpOt0XBr1LjIDy1xAGAnVs5supTA=="],
 
@@ -6853,8 +6853,6 @@
 
     "stacktrace-parser/type-fest": ["type-fest@0.7.1", "", {}, "sha512-Ne2YiiGN8bmrmJJEuTWTLJR32nh/JdL1+PSicowtNb0WFpn59GK8/lfD61bVtzguz7b3PBt74nxpv/Pw5po5Rg=="],
 
-    "start/@openpanel/web": ["@openpanel/web@1.0.5", "", { "dependencies": { "@openpanel/sdk": "1.0.2" } }, "sha512-n/A9fKiHWcDTH2N6N8MM214ET7aoNJjgpLux0GRW+CD0KDEwI8UosQvvz3UOGHZ3jWqMMsUNdU2B7eYk2W87mg=="],
-
     "stringify-entities/character-entities-legacy": ["character-entities-legacy@3.0.0", "", {}, "sha512-RpPp0asT/6ufRm//AJVwpViZbGM/MkjQFxJccQRHmISF/22NBtsHqAWmL+/pmkPWoIUJdWyeVleTl1wydHATVQ=="],
 
     "strip-literal/js-tokens": ["js-tokens@9.0.1", "", {}, "sha512-mxa9E9ITFOt0ban3j6L5MpjwegGz6lBQmM1IJkWeBZGcMxto50+eWdjC/52xDbS2vy0k7vIMK0Fe2wfL9OQSpQ=="],
@@ -7105,6 +7103,8 @@
 
     "@expo/require-utils/@babel/core/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 
+    "@flarepanel/nextjs/react-dom/scheduler": ["scheduler@0.26.0", "", {}, "sha512-NlHwttCI/l5gCPR3D1nNXtWABUmBwvZpEQiD4IXSbIDq8BzLIK/7Ir5gTFSGZDUu37K5cMNp0hFtzO38sC7gWA=="],
+
     "@google-cloud/storage/p-limit/yocto-queue": ["yocto-queue@0.1.0", "", {}, "sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q=="],
 
     "@grpc/proto-loader/yargs/cliui": ["cliui@8.0.1", "", { "dependencies": { "string-width": "^4.2.0", "strip-ansi": "^6.0.1", "wrap-ansi": "^7.0.0" } }, "sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ=="],
@@ -7266,8 +7266,6 @@
     "@nuxt/vite-builder/vite/postcss": ["postcss@8.5.6", "", { "dependencies": { "nanoid": "^3.3.11", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg=="],
 
     "@nuxt/vite-builder/vite/tinyglobby": ["tinyglobby@0.2.17", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.4" } }, "sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g=="],
-
-    "@openpanel/nextjs/react-dom/scheduler": ["scheduler@0.26.0", "", {}, "sha512-NlHwttCI/l5gCPR3D1nNXtWABUmBwvZpEQiD4IXSbIDq8BzLIK/7Ir5gTFSGZDUu37K5cMNp0hFtzO38sC7gWA=="],
 
     "@prisma/config/c12/chokidar": ["chokidar@4.0.3", "", { "dependencies": { "readdirp": "^4.0.1" } }, "sha512-Qgzu8kfBvo+cA4962jnP1KkS6Dop5NS6g7R5LFYJr4b8Ub94PPQXUksCw9PvXoeXPRRddRNC5C1JQUR2SMGtnA=="],
 
@@ -8128,8 +8126,6 @@
     "source-map/whatwg-url/tr46": ["tr46@1.0.1", "", { "dependencies": { "punycode": "^2.1.0" } }, "sha512-dTpowEjclQ7Kgx5SdBkqRzVhERQXov8/l9Ft9dVM9fmg0W0KQSVaXX9T4i6twCPNtYiZM53lpSSUAwJbFPOHxA=="],
 
     "source-map/whatwg-url/webidl-conversions": ["webidl-conversions@4.0.2", "", {}, "sha512-YQ+BmxuTgd6UXZW3+ICGfyqRyHXVlD5GtQr5+qjiNW7bF0cqrzX500HVXPBOvgXb5YnzDd+h0zqyv61KUD7+Sg=="],
-
-    "start/@openpanel/web/@openpanel/sdk": ["@openpanel/sdk@1.0.2", "", {}, "sha512-WvVWCBcJvJhM5MYKO5Hxjo4G/E0tnK5XK2UC+hKDHtoF+iKvtUWa5bz18pFAPQprq0u/Ev2YqirPsrMQJy5g2g=="],
 
     "sucrase/tinyglobby/picomatch": ["picomatch@4.0.7", "", {}, "sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA=="],
 

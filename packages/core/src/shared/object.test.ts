@@ -1,4 +1,4 @@
-// Tests @openpanel/shared's object helpers from here because the root `test` script
+// Tests @flarepanel/shared's object helpers from here because the root `test` script
 // does not run packages/shared.
 import { describe, expect, it } from 'bun:test';
 import {
@@ -6,7 +6,7 @@ import {
   TO_DOTS_MAX_KEYS_PER_OBJECT,
   toDots,
   toObject,
-} from '@openpanel/shared';
+} from '@flarepanel/shared';
 
 describe('toDots', () => {
   it('should convert an object to a dot object', () => {

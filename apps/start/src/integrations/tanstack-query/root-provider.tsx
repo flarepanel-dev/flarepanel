@@ -1,4 +1,4 @@
-import type { AppRouter } from '@openpanel/core';
+import type { AppRouter } from '@flarepanel/core';
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';

@@ -1,4 +1,4 @@
-import { getSuperJson } from '@openpanel/shared';
+import { getSuperJson } from '@flarepanel/shared';
 import debounce from 'lodash.debounce';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useWebSocket } from 'react-use-websocket/dist/lib/use-websocket';

@@ -1,11 +1,11 @@
 import type {
   OpenPanelOptions as OpenPanelBaseOptions,
   TrackProperties,
-} from '@openpanel/sdk';
-import { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
+} from '@flarepanel/sdk';
+import { OpenPanel as OpenPanelBase } from '@flarepanel/sdk';
 
-export type * from '@openpanel/sdk';
-export { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
+export type * from '@flarepanel/sdk';
+export { OpenPanel as OpenPanelBase } from '@flarepanel/sdk';
 
 export type SessionReplayOptions = {
   enabled: boolean;
@@ -144,7 +144,7 @@ export class OpenPanel extends OpenPanelBase {
    * Load the replay recorder module.
    *
    * - **IIFE build (op1.js)**: `__OPENPANEL_REPLAY_URL__` is replaced at
-   *   build time with a CDN URL (e.g. `https://openpanel.dev/op1-replay.js`).
+   *   build time with a CDN URL (e.g. `https://flarepanel.dev/op1-replay.js`).
    *   The user can also override it via `sessionReplay.scriptUrl`.
    *   We load the IIFE replay script via a classic `<script>` tag which
    *   avoids CORS issues (dynamic `import(url)` uses `cors` mode).
@@ -165,7 +165,7 @@ export class OpenPanel extends OpenPanelBase {
         const url =
           this.options.sessionReplay?.scriptUrl ||
           scriptEl?.src?.replace('.js', '-replay.js') ||
-          'https://openpanel.dev/op1-replay.js';
+          'https://flarepanel.dev/op1-replay.js';
 
         // Already loaded (e.g. user included the script manually)
         if ((window as any).__openpanel_replay) {

@@ -1,7 +1,7 @@
 // Redis list → ClickHouse `ai_events`. One row per AI event, written after
 // its `events` row; a plain passthrough buffer with no merge step.
 
-import { getRedisCache, type Redis } from '@openpanel/redis';
+import { getRedisCache, type Redis } from '@flarepanel/redis';
 import type { IClickhouseAiEvent } from '../modules/ai/ai.service';
 import { TABLE_NAMES } from '../shared/ch-tables';
 import { BaseBuffer, type BufferDeps } from './base-buffer';

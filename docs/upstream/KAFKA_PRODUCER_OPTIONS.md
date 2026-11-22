@@ -112,7 +112,7 @@ are. That is why it is the one ADR-023 adopted.
 ## Reproducing the four configurations
 
 The harness is `apps/api/e2e/saturation-sweep.ts` (M16-001); its knobs are
-documented in `docs/BENCHMARK_HARNESS.md`. The producer knobs belong to the
+documented in `docs/upstream/BENCHMARK_HARNESS.md`. The producer knobs belong to the
 **api process**, not to the harness, so they are set when the stack is booted
 and the stack is restarted between configurations.
 

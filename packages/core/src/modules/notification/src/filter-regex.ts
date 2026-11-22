@@ -3,7 +3,7 @@
 // backtracking) rather than the native engine. RE2 is also what ClickHouse
 // uses for the same `regex` operator in reports.
 
-import { stripLeadingAndTrailingSlashes } from '@openpanel/shared';
+import { stripLeadingAndTrailingSlashes } from '@flarepanel/shared';
 import { LRUCache } from 'lru-cache';
 import { RE2JS } from 're2js';
 import type { Logger } from '../../../logger';

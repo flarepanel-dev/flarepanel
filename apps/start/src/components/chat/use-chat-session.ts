@@ -3,9 +3,9 @@ import type {
   ChatLaunchHint,
   NavigateInput,
   OpenDialogInput,
-} from '@openpanel/core/modules/assistant/assistant.constants';
-import { CHAT_ROUTES } from '@openpanel/core/modules/assistant/assistant.constants';
-import type { IIntegrationConfig } from '@openpanel/core/modules/integration/integration.constants';
+} from '@flarepanel/core/modules/assistant/assistant.constants';
+import { CHAT_ROUTES } from '@flarepanel/core/modules/assistant/assistant.constants';
+import type { IIntegrationConfig } from '@flarepanel/core/modules/integration/integration.constants';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   DefaultChatTransport,

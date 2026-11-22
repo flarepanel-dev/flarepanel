@@ -1,10 +1,10 @@
 // Serie names (referrers, mail clients, ad networks) whose icon is the site's
 // own favicon, served through the api's favicon proxy. Browser, OS and device
-// logos live in @openpanel/logos instead.
+// logos live in @flarepanel/logos instead.
 
 // biome-ignore format: one entry per line reads better
 const domains: Readonly<Record<string, string>> = {
-  'openpanel.dev': 'https://openpanel.dev',
+  'flarepanel.dev': 'https://flarepanel.dev',
   'vstat.info': 'https://vstat.info',
   'yahoo!': 'https://yahoo.com',
   kakaotalk: 'https://www.kakaocorp.com/',

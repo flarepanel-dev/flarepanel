@@ -20,7 +20,7 @@ export type Props = z.infer<typeof zOnboardingTrialEnding>;
 export default OnboardingTrialEnding;
 export function OnboardingTrialEnding({
   firstName,
-  billingUrl = 'https://dashboard.openpanel.dev',
+  billingUrl = 'https://dashboard.flarepanel.dev',
   recommendedPlan,
   trialEndDate,
   hasData = true,
@@ -42,7 +42,7 @@ export function OnboardingTrialEnding({
           days to see if it's useful:{' '}
           <Link
             href={withUtm(
-              'https://openpanel.dev/docs/get-started/install-openpanel',
+              'https://flarepanel.dev/docs/get-started/install-openpanel',
               'onboarding-trial-ending'
             )}
           >
@@ -92,7 +92,7 @@ export function OnboardingTrialEnding({
 
 OnboardingTrialEnding.PreviewProps = {
   firstName: 'Alex',
-  billingUrl: 'https://dashboard.openpanel.dev/org-id/billing',
+  billingUrl: 'https://dashboard.flarepanel.dev/org-id/billing',
   recommendedPlan: '100K events per month for $20.00',
   trialEndDate: 'June 16',
   hasData: true,

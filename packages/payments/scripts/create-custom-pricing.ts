@@ -1,4 +1,4 @@
-import { db } from '@openpanel/db';
+import { db } from '@flarepanel/db';
 import { Polar } from '@polar-sh/sdk';
 import inquirer from 'inquirer';
 import inquirerAutocomplete from 'inquirer-autocomplete-prompt';
@@ -241,7 +241,7 @@ async function main() {
     },
     successUrl: getSuccessUrl(
       input.isProduction
-        ? 'https://dashboard.openpanel.dev'
+        ? 'https://dashboard.flarepanel.dev'
         : 'http://localhost:3000',
       organization.id,
       organization.projects[0]?.id

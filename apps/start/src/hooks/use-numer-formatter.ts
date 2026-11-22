@@ -1,4 +1,4 @@
-import { round } from '@openpanel/shared';
+import { round } from '@flarepanel/shared';
 import { isNil } from 'ramda';
 
 export function fancyMinutes(time: number) {

@@ -1,7 +1,7 @@
 // Every ClickHouse query PagesService/getPageConversionsCore runs, as pure
 // `sql` fragments.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
 import {
   TOP_PAGES_SORT_COLUMNS,

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { TESTBED_URL } from '../playwright.config';
 import { type StoredEvent, waitForEvents } from './clickhouse';
 
-const OUTGOING_LINK = 'https://openpanel.dev/';
+const OUTGOING_LINK = 'https://flarepanel.dev/';
 const SCRIPT_TAG_EVENTS = [
   'op_call_before_load',
   'op_apply_before_load',

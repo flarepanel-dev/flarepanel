@@ -5,7 +5,7 @@
 // same topic. A leaf file, so both./kafka.ts's producer and the consumer can
 // name the payload without reaching into the ingest service.
 
-import type { parseUserAgent } from '@openpanel/shared/server';
+import type { parseUserAgent } from '@flarepanel/shared/server';
 import type { GeoLocation } from '../../../clients/geo';
 import type { AiEventRowDraft } from '../../ai/src/row';
 import type { ITrackPayload } from '../ingest.constants';

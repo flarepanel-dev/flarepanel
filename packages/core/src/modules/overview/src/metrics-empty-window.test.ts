@@ -21,7 +21,7 @@ const POPULATED_WINDOW = {
 };
 const BUCKETS_PER_WINDOW = 14;
 
-let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
+let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
 let getMetrics: typeof import('../overview.service').getMetrics;
 
 const silentLogger = {
@@ -43,7 +43,7 @@ function metricsFor(window: { startDate: string; endDate: string }) {
 }
 
 beforeAll(async () => {
-  ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
+  ({ ch } = await import('@flarepanel/db/src/clickhouse/client'));
   ({ getMetrics } = await import('../overview.service'));
 
   const { bootstrapTestDatabases } = await import(

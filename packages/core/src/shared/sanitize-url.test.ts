@@ -53,8 +53,8 @@ describe('sanitizeUrlQuery', () => {
   });
 
   it('works on absolute URLs too', () => {
-    expect(sanitizeUrlQuery('https://api.openpanel.dev/mcp?token=abc')).toBe(
-      'https://api.openpanel.dev/mcp?token=[REDACTED]'
+    expect(sanitizeUrlQuery('https://api.flarepanel.dev/mcp?token=abc')).toBe(
+      'https://api.flarepanel.dev/mcp?token=[REDACTED]'
     );
   });
 });

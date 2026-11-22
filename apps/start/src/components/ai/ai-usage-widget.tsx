@@ -1,4 +1,4 @@
-import type { IAiEntitySummary } from '@openpanel/core';
+import type { IAiEntitySummary } from '@flarepanel/core';
 import { type UseQueryResult, useQuery } from '@tanstack/react-query';
 import { BotIcon } from 'lucide-react';
 import { AiCost } from './ai-cost';

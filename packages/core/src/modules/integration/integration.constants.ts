@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 /**
  * Prefix marking an at-rest ciphertext. Mirrors ENCRYPTION_PREFIX in
- * `@openpanel/shared/server/encryption.ts`, duplicated because this file is
+ * `@flarepanel/shared/server/encryption.ts`, duplicated because this file is
  * bundled for the browser and must not pull in the node-only crypto module.
  *
  * Credentials are WRITE-ONLY: the API redacts them on read, so a client never

@@ -8,25 +8,25 @@ import { Widget, WidgetHead } from '@/components/widget';
 
 const questions = [
   {
-    question: 'Does OpenPanel have a free tier?',
+    question: 'Does FlarePanel have a free tier?',
     answer: [
-      'For our Cloud plan we offer a 30 days free trial, this is mostly for you to be able to try out OpenPanel before committing to a paid plan.',
-      'OpenPanel is also open-source and you can self-host it for free!',
+      'For our Cloud plan we offer a 30 days free trial, this is mostly for you to be able to try out FlarePanel before committing to a paid plan.',
+      'FlarePanel is also open-source and you can self-host it for free!',
       '',
-      'Why does OpenPanel not have a free tier?',
-      'We want to make sure that OpenPanel is used by people who are serious about using it. We also need to invest time and resources to maintain the platform and provide support to our users.',
+      'Why does FlarePanel not have a free tier?',
+      'We want to make sure that FlarePanel is used by people who are serious about using it. We also need to invest time and resources to maintain the platform and provide support to our users.',
     ],
   },
   {
     question: 'What happens if my site exceeds the limit?',
     answer: [
-      "You will not see any new events in OpenPanel until your next billing period. If this happens 2 months in a row, we'll advice you to upgrade your plan.",
+      "You will not see any new events in FlarePanel until your next billing period. If this happens 2 months in a row, we'll advice you to upgrade your plan.",
     ],
   },
   {
     question: 'What happens if I cancel my subscription?',
     answer: [
-      'If you cancel your subscription, you will still have access to OpenPanel until the end of your current billing period. You can reactivate your subscription at any time.',
+      'If you cancel your subscription, you will still have access to FlarePanel until the end of your current billing period. You can reactivate your subscription at any time.',
       'After your current billing period ends, you will not get access to new data.',
       "NOTE: If your account has been inactive for 3 months, we'll delete your events.",
     ],
@@ -40,7 +40,7 @@ const questions = [
   {
     question: 'We need a custom plan, can you help us?',
     answer: [
-      'Yes, we can help you with that. Please contact us at hello@openpanel.dev to request a quote.',
+      'Yes, we can help you with that. Please contact us at hello@flarepanel.dev to request a quote.',
     ],
   },
 ];

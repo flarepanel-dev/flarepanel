@@ -84,7 +84,7 @@ export interface AiConfig {
 }
 
 /**
- * OP_CLIENT_ID / OP_CLIENT_SECRET / OP_API_URL: the OpenPanel project this
+ * OP_CLIENT_ID / OP_CLIENT_SECRET / OP_API_URL: the FlarePanel project this
  * deployment reports its own AI calls to. Unset means no self-tracking.
  */
 export interface SelfTrackingConfig {

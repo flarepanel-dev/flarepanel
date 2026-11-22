@@ -1,4 +1,4 @@
-import type { Framework } from '@openpanel/sdk-info';
+import type { Framework } from '@flarepanel/sdk-info';
 import { ExternalLinkIcon } from 'lucide-react';
 import { useId, useState } from 'react';
 import { FrameworkPicker, frameworksFor } from './framework-picker';

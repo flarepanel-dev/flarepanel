@@ -1,7 +1,7 @@
+import { isKind } from '@flarepanel/core/modules/integration/integration.constants';
+import { zCreateNotificationRule } from '@flarepanel/core/modules/notification/notification.constants';
+import { shortId } from '@flarepanel/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { isKind } from '@openpanel/core/modules/integration/integration.constants';
-import { zCreateNotificationRule } from '@openpanel/core/modules/notification/notification.constants';
-import { shortId } from '@openpanel/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FilterIcon, PlusIcon, SaveIcon, TrashIcon } from 'lucide-react';
 import { useId } from 'react';

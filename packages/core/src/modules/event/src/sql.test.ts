@@ -3,7 +3,7 @@
 // run offline.
 
 import { describe, expect, test } from 'bun:test';
-import { sql } from '@openpanel/db/src/clickhouse/sql';
+import { sql } from '@flarepanel/db/src/clickhouse/sql';
 import { EVENT_LIST_COLUMNS, type EventListColumn } from '../event.constants';
 import {
   botEventsCountQuery,

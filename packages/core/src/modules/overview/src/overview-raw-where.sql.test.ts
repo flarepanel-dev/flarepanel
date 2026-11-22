@@ -14,8 +14,8 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it, spyOn } from 'bun:test';
-import { ch } from '@openpanel/db/src/clickhouse/client';
-import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
+import { ch } from '@flarepanel/db/src/clickhouse/client';
+import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
 import { getRawWhereClause, isPageFilter } from '../overview.service';
 
 const PROJECT_ID = 'test-sql-validation';

@@ -1,5 +1,5 @@
-import { subscriptionBlocksDashboard } from '@openpanel/payments/subscription-state';
-import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
+import { subscriptionBlocksDashboard } from '@flarepanel/payments/subscription-state';
+import { getSubscriptionStateMeta } from '@flarepanel/payments/subscription-state-meta';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import {
   createFileRoute,

@@ -1,4 +1,4 @@
-import type { IServiceOrganization } from '@openpanel/core';
+import type { IServiceOrganization } from '@flarepanel/core';
 import EditOrganization from './edit-organization';
 
 interface OrganizationProps {

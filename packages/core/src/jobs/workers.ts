@@ -1,4 +1,4 @@
-import { generateId } from '@openpanel/shared';
+import { generateId } from '@flarepanel/shared';
 import {
   type Job as BullJob,
   Worker as BullWorker,

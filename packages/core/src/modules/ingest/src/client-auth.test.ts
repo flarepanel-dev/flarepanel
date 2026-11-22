@@ -48,14 +48,14 @@ const redisSetex = mock(
   async (_key: string, _ttl: number, _value: string) => 'OK'
 );
 
-const realShared = { ...(await import('@openpanel/shared/server')) };
-mock.module('@openpanel/shared/server', () => ({
+const realShared = { ...(await import('@flarepanel/shared/server')) };
+mock.module('@flarepanel/shared/server', () => ({
   ...realShared,
   verifyPassword,
 }));
 
-const realRedis = { ...(await import('@openpanel/redis')) };
-mock.module('@openpanel/redis', () => ({
+const realRedis = { ...(await import('@flarepanel/redis')) };
+mock.module('@flarepanel/redis', () => ({
   ...realRedis,
   getRedisCache: () => ({ get: redisGet, setex: redisSetex }),
 }));
@@ -72,8 +72,8 @@ mock.module('../../client/client.service', () => ({
 
 afterAll(() => {
   mock.module('../../client/client.service', () => realClientService);
-  mock.module('@openpanel/shared/server', () => realShared);
-  mock.module('@openpanel/redis', () => realRedis);
+  mock.module('@flarepanel/shared/server', () => realShared);
+  mock.module('@flarepanel/redis', () => realRedis);
 });
 
 /** Only `db` is read on this path, and only as the cache's identity. */

@@ -7,14 +7,14 @@ export {
   getSafeJson,
   resolveDateRange,
   shortId,
-} from '@openpanel/shared';
+} from '@flarepanel/shared';
 export type {
   SafeFetchOptions,
   SafeFetchResult,
   SafeFetchStreamResult,
   UserAgentInfo,
   UserAgentResult,
-} from '@openpanel/shared/server';
+} from '@flarepanel/shared/server';
 export {
   assertPublicHostname,
   assertPublicUrl,
@@ -36,7 +36,7 @@ export {
   safeFetch,
   safeFetchStream,
   verifyPassword,
-} from '@openpanel/shared/server';
+} from '@flarepanel/shared/server';
 export type { BufferDeps } from './buffers/base-buffer';
 export { registerBufferMetrics } from './buffers/buffer.metrics';
 export type { Buffers } from './buffers/create-buffers';

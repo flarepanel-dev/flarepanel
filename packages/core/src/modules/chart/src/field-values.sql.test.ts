@@ -3,9 +3,9 @@
 // `sessions` (or vice versa) fails here, not in production.
 
 import { beforeAll, describe, expect, it } from 'bun:test';
-import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
+import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
 
-let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
+let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
 let eventFieldValuesQuery: typeof import('./field-values.sql').eventFieldValuesQuery;
 let getSelectPropertyKey: typeof import('./field-resolution').getSelectPropertyKey;
 
@@ -33,7 +33,7 @@ function query(event: string, column: string, lookbackDays?: number) {
 }
 
 beforeAll(async () => {
-  ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
+  ({ ch } = await import('@flarepanel/db/src/clickhouse/client'));
   ({ eventFieldValuesQuery } = await import('./field-values.sql'));
   ({ getSelectPropertyKey } = await import('./field-resolution'));
   const { bootstrapTestDatabases } = await import(

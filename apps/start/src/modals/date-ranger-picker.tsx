@@ -1,5 +1,5 @@
-import type { IInterval } from '@openpanel/core/modules/report/report.constants';
-import { getDefaultIntervalByDates } from '@openpanel/core/modules/report/report.constants';
+import type { IInterval } from '@flarepanel/core/modules/report/report.constants';
+import { getDefaultIntervalByDates } from '@flarepanel/core/modules/report/report.constants';
 import { endOfDay, startOfDay, subMonths } from 'date-fns';
 import { CheckIcon } from 'lucide-react';
 import { useState } from 'react';

@@ -12,7 +12,7 @@ import { alphabetIds } from '../../../report/report.constants';
  * arithmetic over the series symbols before the expression is ever compiled.
  */
 
-/** Operators that map to the arithmetic OpenPanel actually offers. */
+/** Operators that map to the arithmetic FlarePanel actually offers. */
 const ALLOWED_OPERATOR_FUNCTIONS = new Set([
   'add',
   'subtract',

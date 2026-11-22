@@ -14,7 +14,7 @@ import {
   type DeadLetterMulti,
   type DeadLetterRecord,
   type DeadLetterRedisClient,
-} from '@openpanel/redis';
+} from '@flarepanel/redis';
 import type { Consumer, EachBatchPayload, KafkaMessage } from 'kafkajs';
 import {
   createEventsBatchHandler,
@@ -684,7 +684,7 @@ describe('durability before commit', () => {
 
 /**
  * End to end: the consumer wired to the REAL capped-list recorder
- * (`@openpanel/redis`'s `createDeadLetterRecorder`) instead of a mock, against
+ * (`@flarepanel/redis`'s `createDeadLetterRecorder`) instead of a mock, against
  * an in-memory stand-in for the one MULTI it issues. Redis itself is out of the
  * picture; the LPUSH/LTRIM arithmetic is not.
  */

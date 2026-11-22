@@ -1,4 +1,4 @@
-import type { ChatModelEntry } from '@openpanel/core/modules/assistant/assistant.constants';
+import type { ChatModelEntry } from '@flarepanel/core/modules/assistant/assistant.constants';
 import { CheckIcon, ChevronDownIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {

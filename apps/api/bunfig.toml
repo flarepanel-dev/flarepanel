@@ -1,4 +1,4 @@
-# `bun test` configuration for @openpanel/api.
+# `bun test` configuration for @flarepanel/api.
 
 [test]
 # Runs once per test FILE under `--isolate`, not once per run — `bun test` has

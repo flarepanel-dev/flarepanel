@@ -2,7 +2,7 @@ import { expect, test } from './fixtures';
 import { openHydrated, SHOTS_DIR } from './verify-a-helpers';
 
 const GSC_DOCS_URL =
-  'https://openpanel.dev/docs/self-hosting/google-search-console';
+  'https://flarepanel.dev/docs/self-hosting/google-search-console';
 const SUPPORTER_URL = /^https:\/\/buy\.polar\.sh\//;
 // seroval encodes `false` as {"t":2,"s":3} and `true` as {"t":2,"s":2}; the
 // first boolean in the env payload is `isSelfHosted`.

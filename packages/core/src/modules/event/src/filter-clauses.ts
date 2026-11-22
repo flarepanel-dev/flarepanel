@@ -2,7 +2,7 @@
 // the filter compilers (chart/src/table-filter-where.ts, chart/src/filter-where.ts)
 // already produced.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 
 export type CompiledFilterClauses = Record<string, SqlFragment>;
 

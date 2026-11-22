@@ -8,8 +8,8 @@
  */
 
 import { describe, expect, it } from 'bun:test';
-import { TABLE_NAMES } from '@openpanel/db/src/clickhouse/client';
-import type { SqlParamValue } from '@openpanel/db/src/clickhouse/sql';
+import { TABLE_NAMES } from '@flarepanel/db/src/clickhouse/client';
+import type { SqlParamValue } from '@flarepanel/db/src/clickhouse/sql';
 import type { IChartEventFilter } from '../../report/report.constants';
 import {
   buildFilterWhere,

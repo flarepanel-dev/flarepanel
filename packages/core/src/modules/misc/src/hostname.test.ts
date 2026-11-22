@@ -9,7 +9,7 @@ describe('hostnameFromInput', () => {
     expect(hostnameFromInput('http://news.ycombinator.com:8080/x?y=1')).toBe(
       'news.ycombinator.com'
     );
-    expect(hostnameFromInput('openpanel.dev')).toBe('openpanel.dev');
+    expect(hostnameFromInput('flarepanel.dev')).toBe('flarepanel.dev');
     expect(hostnameFromInput('https://user:pw@example.com/')).toBe(
       'example.com'
     );

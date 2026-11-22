@@ -1,4 +1,4 @@
-import { average } from '@openpanel/shared';
+import { average } from '@flarepanel/shared';
 import { useMemo } from 'react';
 import { getPreviousMetric } from '../../../utils/previous-metric';
 import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';

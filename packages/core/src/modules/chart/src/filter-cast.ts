@@ -6,7 +6,7 @@ import {
   type SqlFragment,
   type SqlSlot,
   sql,
-} from '@openpanel/db/src/clickhouse/sql';
+} from '@flarepanel/db/src/clickhouse/sql';
 import type {
   IChartEventFilterOperator,
   IChartEventFilterValue,

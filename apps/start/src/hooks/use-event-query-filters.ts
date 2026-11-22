@@ -1,7 +1,7 @@
 import type {
   IChartEventFilterOperator,
   IFilterValueType,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import type { Options as NuqsOptions } from 'nuqs';
 import {
   createParser,

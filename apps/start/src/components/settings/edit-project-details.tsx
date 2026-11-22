@@ -1,6 +1,6 @@
+import type { IServiceProjectWithClients } from '@flarepanel/core';
+import { zProject } from '@flarepanel/core/modules/project/project.constants';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { IServiceProjectWithClients } from '@openpanel/core';
-import { zProject } from '@openpanel/core/modules/project/project.constants';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SaveIcon } from 'lucide-react';
 import { useState } from 'react';

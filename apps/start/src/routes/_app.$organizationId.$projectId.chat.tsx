@@ -1,4 +1,4 @@
-import { zChatLaunchHint } from '@openpanel/core/modules/assistant/assistant.constants';
+import { zChatLaunchHint } from '@flarepanel/core/modules/assistant/assistant.constants';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useCallback, useMemo, useState } from 'react';

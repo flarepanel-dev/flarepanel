@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// Keys must match the template `category` in @openpanel/email. Each entry's
+// Keys must match the template `category` in @flarepanel/email. Each entry's
 // label + description drive the account email-preferences toggles.
 export const emailCategories = {
   onboarding: {

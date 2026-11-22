@@ -1,4 +1,4 @@
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import type { IChartEvent } from '../../report/report.constants';
 import { getEventFiltersWhereClause } from './filter-where';
 

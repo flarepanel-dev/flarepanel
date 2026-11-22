@@ -1,5 +1,5 @@
-import type { IServiceOrganization } from '@openpanel/core';
-import { isOrganizationAdminRole } from '@openpanel/core/modules/organization/organization.constants';
+import type { IServiceOrganization } from '@flarepanel/core';
+import { isOrganizationAdminRole } from '@flarepanel/core/modules/organization/organization.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { addHours, format, startOfHour } from 'date-fns';
 import { TrashIcon } from 'lucide-react';

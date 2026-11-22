@@ -1,5 +1,5 @@
-import type { IServiceOrganization } from '@openpanel/core';
-import { isOrganizationAdminRole } from '@openpanel/core/modules/organization/organization.constants';
+import type { IServiceOrganization } from '@flarepanel/core';
+import { isOrganizationAdminRole } from '@flarepanel/core/modules/organization/organization.constants';
 import { useQuery } from '@tanstack/react-query';
 import { differenceInMonths } from 'date-fns';
 import { useEffect, useState } from 'react';

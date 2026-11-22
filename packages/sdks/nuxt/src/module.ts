@@ -11,7 +11,7 @@ export type { ModuleOptions };
 
 export default defineNuxtModule<ModuleOptions>({
   meta: {
-    name: '@openpanel/nuxt',
+    name: '@flarepanel/nuxt',
     configKey: 'openpanel',
   },
   defaults: {

@@ -9,7 +9,7 @@ import type { CookieOptions } from '../../shared/cookie';
 import { onboardingRouter } from './onboarding.rpc';
 
 const COOKIE_OPTIONS: CookieOptions = {
-  domain: '.openpanel.dev',
+  domain: '.flarepanel.dev',
   secure: true,
   sameSite: 'lax',
   httpOnly: true,

@@ -1,4 +1,4 @@
-import { isOrganizationAdminRole } from '@openpanel/core/modules/organization/organization.constants';
+import { isOrganizationAdminRole } from '@flarepanel/core/modules/organization/organization.constants';
 import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/integrations/trpc/react';
 

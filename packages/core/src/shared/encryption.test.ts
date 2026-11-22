@@ -1,4 +1,4 @@
-// Tests @openpanel/shared's encryption from here because the root `test` script
+// Tests @flarepanel/shared's encryption from here because the root `test` script
 // does not run packages/shared.
 import { describe, expect, it } from 'bun:test';
 import {
@@ -7,7 +7,7 @@ import {
   encrypt,
   encryptCredential,
   isEncrypted,
-} from '@openpanel/shared/server';
+} from '@flarepanel/shared/server';
 
 // Deterministic key for the round-trips.
 const KEY = 'a'.repeat(64);

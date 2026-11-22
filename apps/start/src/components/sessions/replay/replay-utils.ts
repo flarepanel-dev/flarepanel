@@ -1,4 +1,4 @@
-import type { IServiceEvent } from '@openpanel/core';
+import type { IServiceEvent } from '@flarepanel/core';
 import { sortEventsAscending } from '../details/session-pages';
 
 export interface ReplayRecordEvent {

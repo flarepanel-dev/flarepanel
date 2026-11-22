@@ -1,4 +1,4 @@
-import { getRedisCache } from '@openpanel/redis';
+import { getRedisCache } from '@flarepanel/redis';
 import { TABLE_NAMES } from '../shared/ch-tables';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
 

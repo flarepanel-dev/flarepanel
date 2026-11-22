@@ -1,4 +1,4 @@
-import type { IChartBreakdown } from '@openpanel/core/modules/report/report.constants';
+import type { IChartBreakdown } from '@flarepanel/core/modules/report/report.constants';
 import { ChevronsUpDownIcon, PlusIcon, SplitIcon } from 'lucide-react';
 import { addBreakdown, changeBreakdown, removeBreakdown } from '../reportSlice';
 import { PropertiesCombobox } from './PropertiesCombobox';

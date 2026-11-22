@@ -1,4 +1,4 @@
-import type { IGetTopGenericInput } from '@openpanel/core';
+import type { IGetTopGenericInput } from '@flarepanel/core';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRightIcon } from 'lucide-react';
 import { SerieIcon } from '../report-chart/common/serie-icon';

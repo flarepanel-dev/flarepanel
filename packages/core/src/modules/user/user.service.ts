@@ -1,4 +1,4 @@
-import type { User } from '@openpanel/db/src/prisma-client';
+import type { User } from '@flarepanel/db/src/prisma-client';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 

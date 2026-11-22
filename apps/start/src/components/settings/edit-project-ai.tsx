@@ -1,4 +1,4 @@
-import type { IServiceProjectWithClients } from '@openpanel/core';
+import type { IServiceProjectWithClients } from '@flarepanel/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Label } from '@/components/ui/label';
@@ -40,7 +40,7 @@ export default function EditProjectAi({ project }: Props) {
                 Store prompts and completions
               </Label>
               <p className="text-muted-foreground text-sm">
-                When off, OpenPanel keeps model, tokens, cost, latency and
+                When off, FlarePanel keeps model, tokens, cost, latency and
                 errors for every call but drops the messages, outputs and tool
                 definitions before they are stored. Stored content expires after
                 30 days either way.

@@ -78,7 +78,7 @@ export function CreateClientSuccess({ id, secret, type }: Props) {
           Read our{' '}
           <a
             className="underline"
-            href="https://openpanel.dev/docs"
+            href="https://flarepanel.dev/docs"
             rel="noreferrer"
             target="_blank"
           >

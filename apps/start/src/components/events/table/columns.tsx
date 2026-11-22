@@ -1,4 +1,4 @@
-import type { IServiceEvent } from '@openpanel/core';
+import type { IServiceEvent } from '@flarepanel/core';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useEventDrawer } from '../use-event-drawer';
 import { ColumnCreatedAt } from '@/components/column-created-at';

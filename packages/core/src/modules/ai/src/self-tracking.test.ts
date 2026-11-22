@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { withAiContext } from '@openpanel/ai';
+import { withAiContext } from '@flarepanel/ai';
 import type { LanguageModel } from 'ai';
 import { testCoreConfig } from '../../../../test/config-fixture';
 import { instrumentLanguageModel, selfTrackingClient } from './self-tracking';

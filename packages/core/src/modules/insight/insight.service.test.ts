@@ -24,7 +24,7 @@ const $executeRaw = mock((..._args: unknown[]) => {
   return Promise.resolve(executeRawReturns.shift() ?? 0);
 });
 // The explain cache is `deps.redis`, so the fake is a map on the scope — no
-// `@openpanel/redis` module mock, which would replace that barrel process-wide
+// `@flarepanel/redis` module mock, which would replace that barrel process-wide
 // for every other file in the run.
 const redisStore = new Map<string, string>();
 const redis = {

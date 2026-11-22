@@ -1,5 +1,5 @@
 // The SaaS archetype's AI assistant. Every turn is one agent trace, shaped
-// like what `withAiContext` + the `@openpanel/ai` middleware send: a root
+// like what `withAiContext` + the `@flarepanel/ai` middleware send: a root
 // `ai_trace`, an optional retrieval span wrapping its embedding, a model call,
 // tool spans when the model asks for them, and the model call that answers.
 
@@ -480,7 +480,7 @@ function generation(
       input: JSON.stringify([
         {
           role: 'system',
-          content: 'You are the OpenPanel analytics assistant.',
+          content: 'You are the FlarePanel analytics assistant.',
         },
         { role: 'user', content: call.question },
       ]),

@@ -1,7 +1,7 @@
-// Tests @openpanel/shared's JSON helpers from here because the root `test` script
+// Tests @flarepanel/shared's JSON helpers from here because the root `test` script
 // does not run packages/shared.
 import { describe, expect, test } from 'bun:test';
-import { getSafeJson, getSuperJson, setSuperJson } from '@openpanel/shared';
+import { getSafeJson, getSuperJson, setSuperJson } from '@flarepanel/shared';
 
 describe('getSafeJson', () => {
   test('parses valid JSON', () => {

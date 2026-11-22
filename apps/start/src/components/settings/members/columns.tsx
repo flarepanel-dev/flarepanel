@@ -1,4 +1,4 @@
-import type { IServiceMember } from '@openpanel/core';
+import type { IServiceMember } from '@flarepanel/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';

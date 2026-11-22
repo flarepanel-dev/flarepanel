@@ -6,7 +6,7 @@
 // the four sync inserts here.
 
 import type { ClickHouseSettings } from '@clickhouse/client';
-import { decrypt, encrypt } from '@openpanel/shared/server';
+import { decrypt, encrypt } from '@flarepanel/shared/server';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import type { CoreConfig } from '../../config';
 import type { Logger } from '../../logger';

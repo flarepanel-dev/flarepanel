@@ -1,6 +1,6 @@
 # Benchmark harness — saturation sweep
 
-How to find the **max sustainable ingest throughput** of OpenPanel V2: the rate
+How to find the **max sustainable ingest throughput** of FlarePanel V2: the rate
 at which the Kafka consumer starts falling behind and does not catch up.
 
 The harness is three files under `apps/api/e2e/`:
@@ -106,9 +106,9 @@ same project:
 - `e2e1e2e1-…-000000000001` — the pre-existing bypass client, unchanged, so the
   29 checks in `e2e:sessions` keep passing.
 - `e2e1e2e1-…-000000000002` — new. Carries a real scrypt secret in
-  `salt.hashKey` form, hashed with `hashPassword` (the `@openpanel/shared/server`
-  scrypt helper, reached through its re-export on the `@openpanel/core` barrel —
-  `apps/api` does not declare `@openpanel/shared` and adding it would move
+  `salt.hashKey` form, hashed with `hashPassword` (the `@flarepanel/shared/server`
+  scrypt helper, reached through its re-export on the `@flarepanel/core` barrel —
+  `apps/api` does not declare `@flarepanel/shared` and adding it would move
   `bun.lock`, which M16-001 could not touch).
 
 The project's `cors` list is set to `e2e.test` so path (b) is reachable. That

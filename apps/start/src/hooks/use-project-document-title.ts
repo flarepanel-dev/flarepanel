@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-const BASE_SUFFIX = ' | OpenPanel.dev';
+const BASE_SUFFIX = ' | FlarePanel.dev';
 
 function inject(title: string, projectName: string): string {
   if (!title.endsWith(BASE_SUFFIX)) {

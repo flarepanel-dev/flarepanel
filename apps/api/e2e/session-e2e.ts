@@ -7,7 +7,7 @@
  *
  * Run (shrink the idle window; start the stack with the SAME value):
  *   SESSION_TIMEOUT_MS=4000 pnpm dev
- *   SESSION_TIMEOUT_MS=4000 pnpm --filter @openpanel/api e2e:sessions
+ *   SESSION_TIMEOUT_MS=4000 pnpm --filter @flarepanel/api e2e:sessions
  *
  * For a high-volume drain test see session-stress.ts (`e2e:sessions:stress`).
  */

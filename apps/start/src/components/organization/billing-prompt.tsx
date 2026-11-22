@@ -1,4 +1,4 @@
-import type { IServiceOrganization } from '@openpanel/core';
+import type { IServiceOrganization } from '@flarepanel/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckIcon } from 'lucide-react';
 import { useEffect } from 'react';
@@ -42,7 +42,7 @@ const COPY: Record<
     badge: { label: 'Trial ended', variant: 'secondary' },
     gradient: 'rgb(16 185 129)',
     title: 'Your 30 days are up',
-    lead: 'Thanks for trying OpenPanel. Everything you set up is still here: your projects, your reports, and every event you tracked. Pick a plan and your dashboards are live again in about a minute.',
+    lead: 'Thanks for trying FlarePanel. Everything you set up is still here: your projects, your reports, and every event you tracked. Pick a plan and your dashboards are live again in about a minute.',
     dateLabel: 'Trial ended',
     action: 'checkout',
     cta: (plan, price) => `Continue with ${plan} for ${price}/month`,
@@ -229,7 +229,7 @@ export default function BillingPrompt({
       }
       return (
         <Button asChild className="w-full" size="lg">
-          <a href="mailto:hello@openpanel.dev?subject=Custom plan">
+          <a href="mailto:hello@flarepanel.dev?subject=Custom plan">
             Get a custom plan
           </a>
         </Button>
@@ -340,7 +340,7 @@ export default function BillingPrompt({
             </LinkButton>
             <a
               className="text-muted-foreground text-sm hover:underline"
-              href="mailto:hello@openpanel.dev"
+              href="mailto:hello@flarepanel.dev"
             >
               Questions? Email us
             </a>

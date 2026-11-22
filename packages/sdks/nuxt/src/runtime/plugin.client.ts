@@ -1,4 +1,4 @@
-import { OpenPanel } from '@openpanel/web';
+import { OpenPanel } from '@flarepanel/web';
 import { defineNuxtPlugin, useRuntimeConfig } from '#app';
 import type { ModuleOptions } from '../types';
 

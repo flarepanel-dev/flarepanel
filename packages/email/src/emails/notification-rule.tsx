@@ -46,5 +46,5 @@ NotificationRule.PreviewProps = {
   title: 'Conversion: Sign up completed',
   message: 'A user completed the sign-up funnel.',
   projectName: 'My website',
-  dashboardUrl: 'https://dashboard.openpanel.dev/org-id/project-id',
+  dashboardUrl: 'https://dashboard.flarepanel.dev/org-id/project-id',
 };

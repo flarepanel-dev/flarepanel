@@ -1,7 +1,7 @@
 import {
   type ChatModelEntry,
   MODEL_STORAGE_KEY,
-} from '@openpanel/core/modules/assistant/assistant.constants';
+} from '@flarepanel/core/modules/assistant/assistant.constants';
 import { expect as baseExpect, test } from './fixtures';
 import { shot, trpcMutation, trpcQuery } from './org-helpers';
 

@@ -1,11 +1,11 @@
 import type {
   IPerUserAggregation,
   PerUserBucketKind,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import {
   perUserAggregations,
   perUserBucketKind,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import {
   ActivityIcon,
   EqualApproximatelyIcon,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { SafeFetchResult } from '@openpanel/shared/server';
+import type { SafeFetchResult } from '@flarepanel/shared/server';
 import {
   FAVICON_PROVIDERS,
   fetchProviderIcon,

@@ -1,4 +1,4 @@
-import type { Reference } from '@openpanel/db/src/prisma-client';
+import type { Reference } from '@flarepanel/db/src/prisma-client';
 import type { ServiceDeps, Services } from '../../services';
 import { getSettingsForProject } from '../organization/organization.service';
 import type { IChartRange } from '../report/report.constants';

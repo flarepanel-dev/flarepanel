@@ -1,6 +1,6 @@
 ---
-import type { OpenPanelMethodNames, OpenPanelOptions } from '@openpanel/web';
-import { getInitSnippet } from '@openpanel/web';
+import type { OpenPanelMethodNames, OpenPanelOptions } from '@flarepanel/web';
+import { getInitSnippet } from '@flarepanel/web';
 
 type Props = Omit<OpenPanelOptions, 'filter'> & {
   profileId?: string;
@@ -14,7 +14,7 @@ type Props = Omit<OpenPanelOptions, 'filter'> & {
 const { profileId, cdnUrl, scriptUrl, globalProperties, ...options } =
   Astro.props;
 
-const CDN_URL = 'https://openpanel.dev/op1.js';
+const CDN_URL = 'https://flarepanel.dev/op1.js';
 
 const stringify = (obj: unknown) => {
   if (typeof obj === 'object' && obj !== null && obj !== undefined) {

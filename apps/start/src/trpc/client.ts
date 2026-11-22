@@ -1,4 +1,4 @@
-import type { AppRouter } from '@openpanel/core';
+import type { AppRouter } from '@flarepanel/core';
 import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 import { useTRPC } from '@/integrations/trpc/react';
 

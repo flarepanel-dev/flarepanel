@@ -9,8 +9,8 @@ import type {
   AccessLevel,
   Member,
   ProjectScope,
-} from '@openpanel/db/src/prisma-client';
-import { cacheable } from '@openpanel/redis';
+} from '@flarepanel/db/src/prisma-client';
+import { cacheable } from '@flarepanel/redis';
 import type { Db } from '../context';
 
 // Lazy: `context.ts` value-imports `services.ts`, and a static import would

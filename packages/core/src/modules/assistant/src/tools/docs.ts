@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { ChatToolContext } from '../context';
 
 /** The public docs rendered for LLMs, one section per page. */
-const DOCS_URL = 'https://openpanel.dev/llms-full.txt';
+const DOCS_URL = 'https://flarepanel.dev/llms-full.txt';
 const DOCS_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const DOCS_FETCH_TIMEOUT_MS = 10_000;
 const MAX_RESULTS = 3;
@@ -15,7 +15,7 @@ const SECTION_SEPARATOR = /\n---\n/;
 const TITLE_LINE = /^## (.+)$/m;
 const URL_LINE = /^URL: (\S+)$/m;
 const NON_WORD = /[^a-z0-9]+/;
-/** Pages that only make sense when you run OpenPanel yourself. */
+/** Pages that only make sense when you run FlarePanel yourself. */
 const SELF_HOSTING_DOCS = '/docs/self-hosting';
 
 interface DocSection {
@@ -117,7 +117,7 @@ export function docsTools(ctx: Pick<ChatToolContext, 'config'>) {
   return {
     search_docs: tool({
       description:
-        'Search the OpenPanel documentation: SDK setup, tracking, identify users, groups, session replay, MCP, API, self-hosting, integrations, pricing concepts. Use it for any "how do I" or "is it possible" question about the product before answering from memory, and link the page you used.',
+        'Search the FlarePanel documentation: SDK setup, tracking, identify users, groups, session replay, MCP, API, self-hosting, integrations, pricing concepts. Use it for any "how do I" or "is it possible" question about the product before answering from memory, and link the page you used.',
       inputSchema: z.object({ query: z.string().min(1) }),
       execute: async ({ query }) => {
         try {
@@ -129,7 +129,7 @@ export function docsTools(ctx: Pick<ChatToolContext, 'config'>) {
           };
         } catch (error) {
           return {
-            error: `Documentation is not reachable right now (${error instanceof Error ? error.message : 'unknown error'}). Answer from what you know and point to https://openpanel.dev/docs.`,
+            error: `Documentation is not reachable right now (${error instanceof Error ? error.message : 'unknown error'}). Answer from what you know and point to https://flarepanel.dev/docs.`,
           };
         }
       },

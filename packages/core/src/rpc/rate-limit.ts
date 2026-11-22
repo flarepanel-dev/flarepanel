@@ -1,4 +1,4 @@
-import { getRedisCache, LRUCache } from '@openpanel/redis';
+import { getRedisCache, LRUCache } from '@flarepanel/redis';
 import { TRPCError } from '@trpc/server';
 import { getTrustedIpFromHeaders } from '../shared/get-client-ip';
 import type { EnforceRateLimit } from './base';

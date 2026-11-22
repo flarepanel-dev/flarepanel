@@ -1,5 +1,5 @@
+import { zShareOverview } from '@flarepanel/core/modules/share/share.constants';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zShareOverview } from '@openpanel/core/modules/share/share.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { CheckCircle2, Copy, ExternalLink, TrashIcon } from 'lucide-react';

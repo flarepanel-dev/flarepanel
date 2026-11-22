@@ -2,7 +2,7 @@
 // query here carries an `IN (subquery)`; the `IN` lists bind as `Array(String)`
 // params, which is a literal list to the planner.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 
 const TABLE = {
   groups: 'groups',

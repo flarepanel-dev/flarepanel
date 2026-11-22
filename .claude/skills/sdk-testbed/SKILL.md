@@ -6,13 +6,13 @@ allowed-tools: Bash, Read, Edit, Write, Grep, Glob
 
 # SDK testbed
 
-`apps/testbed` is a small React shop (`TESTSTORE`) that uses `@openpanel/web`
+`apps/testbed` is a small React shop (`TESTSTORE`) that uses `@flarepanel/web`
 exactly like a customer site: screen views, custom `track()` calls, identify,
 groups, revenue, plus a footer with a `data-track` button and an outgoing link
-for the automatic trackers. Vite resolves `@openpanel/web` from the package
+for the automatic trackers. Vite resolves `@flarepanel/web` from the package
 *source*, so an SDK edit is live on the next reload; nothing has to be built.
 
-Unit tests (`bun run --filter @openpanel/web test`) prove what the SDK *sends*.
+Unit tests (`bun run --filter @flarepanel/web test`) prove what the SDK *sends*.
 This skill proves what gets *stored*: browser → `POST /track` → Kafka → worker →
 ClickHouse `events`, with `path`, `origin`, properties and session as the
 dashboard will show them.
@@ -22,7 +22,7 @@ dashboard will show them.
 - **The API must be running with the worker role** (`ROLE=all`). In a
   worktree it is supervised (`WORKTREE.md`); if the supervisor is gone, start it
   yourself and keep the log:
-  `bun run --filter @openpanel/api dev > /tmp/api.log 2>&1 &` then wait for
+  `bun run --filter @flarepanel/api dev > /tmp/api.log 2>&1 &` then wait for
   `"Boot complete"` in the log. Confirm with `curl -s -o /dev/null -w '%{http_code}' $API_URL_SSR/track`
   (any HTTP answer means it is up).
 - **A seeded client.** `.seed.json` (repo root) lists the projects; the config
@@ -41,7 +41,7 @@ is the single place that turns them into `VITE_OPENPANEL_API_URL`,
 ## 2. Run the journey
 
 ```bash
-bun run --filter @openpanel/testbed e2e
+bun run --filter @flarepanel/testbed e2e
 ```
 
 `apps/testbed/e2e/sdk.spec.ts` starts the testbed (or reuses one already up),
@@ -68,7 +68,7 @@ traffic stay out of the way:
 port=${TESTBED_PORT:-$(( ${WEB_PORT:-3091} + 9 ))}
 TESTBED_PORT=$port VITE_OPENPANEL_API_URL=${API_URL_SSR:-http://localhost:3333} \
 VITE_OPENPANEL_CLIENT_ID=<website clientId from .seed.json> \
-bun run --filter @openpanel/testbed dev > /tmp/testbed.log 2>&1 &
+bun run --filter @flarepanel/testbed dev > /tmp/testbed.log 2>&1 &
 
 curl -s "${CLICKHOUSE_URL%/*}/?database=${CLICKHOUSE_URL##*/}" --data-binary "
   SELECT name, path, properties, session_id, toString(created_at) AS at
@@ -103,7 +103,7 @@ when the change touches identify, groups or session handling.
 - **Latency.** Rows take a few seconds to show up (Kafka, the worker, the
   buffer). Poll with a deadline; never assert right after the click.
 - **`op1.js` (the script tag build) is not what the testbed runs.** It uses the
-  npm entry. To check the IIFE, `bun run --filter @openpanel/web build` and load
+  npm entry. To check the IIFE, `bun run --filter @flarepanel/web build` and load
   `packages/sdks/web/dist/src/tracker.global.js` in a page yourself.
 
 ## Report

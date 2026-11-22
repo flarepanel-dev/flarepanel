@@ -8,13 +8,13 @@
  */
 
 import { beforeAll, describe, expect, it } from 'bun:test';
-import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
+import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
 
 const PROJECT_ID = 'test-sql-validation';
 const START = '2026-08-01 00:00:00';
 const END = '2026-08-08 00:00:00';
 
-let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
+let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
 let OV: typeof import('./overview.sql');
 
 async function explain(fragment: SqlFragment): Promise<void> {
@@ -23,7 +23,7 @@ async function explain(fragment: SqlFragment): Promise<void> {
 }
 
 beforeAll(async () => {
-  ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
+  ({ ch } = await import('@flarepanel/db/src/clickhouse/client'));
   OV = await import('./overview.sql');
 });
 

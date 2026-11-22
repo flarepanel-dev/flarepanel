@@ -1,4 +1,4 @@
-import { average, round } from '@openpanel/shared';
+import { average, round } from '@flarepanel/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import { useChartChrome } from '../common/chart-size';

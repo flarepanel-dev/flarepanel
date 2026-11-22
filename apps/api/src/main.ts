@@ -61,25 +61,25 @@ import {
   startWorkers,
   TRPC_ENDPOINT,
   type WorkerHandle,
-} from '@openpanel/core';
-import { ch } from '@openpanel/db/src/clickhouse/client';
+} from '@flarepanel/core';
+import { ch } from '@flarepanel/db/src/clickhouse/client';
 import {
   abortMigrationCommands,
   allowMigrationCommands,
   MigrationQueryStillRunningError,
-} from '@openpanel/db/src/clickhouse/migration';
+} from '@flarepanel/db/src/clickhouse/migration';
 import {
   getPendingMigrations,
   runMigration,
-} from '@openpanel/db/src/code-migrations/migrate';
-import { db, Prisma } from '@openpanel/db/src/prisma-client';
+} from '@flarepanel/db/src/code-migrations/migrate';
+import { db, Prisma } from '@flarepanel/db/src/prisma-client';
 import {
   configureRedisCache,
   createDeadLetterRecorder,
   getRedisCache,
   getRedisPub,
   getRedisQueue,
-} from '@openpanel/redis';
+} from '@flarepanel/redis';
 import { Elysia } from 'elysia';
 import pino from 'pino';
 import { type Config, KAFKA_QUEUE_TOKEN, loadConfig } from './config/env';

@@ -1,4 +1,4 @@
-import type { IChartType } from '@openpanel/core/modules/report/report.constants';
+import type { IChartType } from '@flarepanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
 import { BookmarkIcon, UsersIcon } from 'lucide-react';
 import { type ReactNode, useCallback, useRef } from 'react';

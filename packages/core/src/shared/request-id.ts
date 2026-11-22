@@ -3,7 +3,7 @@
 // from outside the process, so the rule for what is safe to bind to a logger
 // lives here.
 
-import { generateId } from '@openpanel/shared';
+import { generateId } from '@flarepanel/shared';
 import { REQUEST_ID_LENGTH } from '../logger';
 
 const DISALLOWED_REQUEST_ID_CHARS = /[^A-Za-z0-9_-]/g;

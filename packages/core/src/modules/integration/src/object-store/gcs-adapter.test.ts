@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { encryptCredential } from '@openpanel/shared/server';
+import { encryptCredential } from '@flarepanel/shared/server';
 import { testCoreConfig } from '../../../../../test/config-fixture';
 import { createGCSAdapter } from './gcs-adapter';
 

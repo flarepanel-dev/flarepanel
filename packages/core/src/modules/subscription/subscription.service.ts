@@ -13,8 +13,8 @@ import {
   resumeSubscription as resumePolarSubscription,
   unpauseSubscription,
   validatePolarEvent,
-} from '@openpanel/payments';
-import { getCache, publishEvent } from '@openpanel/redis';
+} from '@flarepanel/payments';
+import { getCache, publishEvent } from '@flarepanel/redis';
 import { addMonths, subDays } from 'date-fns';
 import { z } from 'zod';
 import type { Logger } from '../../logger';

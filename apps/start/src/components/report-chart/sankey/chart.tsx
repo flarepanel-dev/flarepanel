@@ -1,4 +1,4 @@
-import { round } from '@openpanel/shared';
+import { round } from '@flarepanel/shared';
 import { ArrowRightIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { AspectContainer } from '../aspect-container';

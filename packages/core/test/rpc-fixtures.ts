@@ -63,7 +63,7 @@ export const TEST_SESSION: Session = {
   },
   user: {
     id: 'user_1',
-    email: 'carl@openpanel.dev',
+    email: 'carl@flarepanel.dev',
     name: null,
     emailVerified: false,
     image: null,

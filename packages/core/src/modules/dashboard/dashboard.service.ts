@@ -2,7 +2,7 @@ import type {
   Dashboard,
   Prisma,
   ReportLayout,
-} from '@openpanel/db/src/prisma-client';
+} from '@flarepanel/db/src/prisma-client';
 import { PrismaError } from 'prisma-error-enum';
 import { TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';

@@ -2,11 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { createInterface } from 'node:readline';
 import { Readable } from 'node:stream';
 import { createBrotliDecompress, createGunzip } from 'node:zlib';
-import { isSameDomain, parsePath, toDots } from '@openpanel/shared';
+import { isSameDomain, parsePath, toDots } from '@flarepanel/shared';
 import unzipper from 'unzipper';
 import { z } from 'zod';
 import type { Logger } from '../../../../logger';
-// core's own date helper, not @openpanel/db's — see umami.ts's header.
+// core's own date helper, not @flarepanel/db's — see umami.ts's header.
 import { formatClickhouseDate } from '../../../../shared/ch-dates';
 import {
   getReferrerWithQuery,
@@ -396,7 +396,7 @@ export class AmplitudeProvider extends BaseImportProvider<AmplitudeRawEvent> {
   }
 
   /**
-   * Derive an OpenPanel profile from a single Amplitude event. Amplitude has no
+   * Derive an FlarePanel profile from a single Amplitude event. Amplitude has no
    * profile export API, so identity lives inside each event's user_properties.
    * Returns null for anonymous events (no user_id, or user_id === device_id) so
    * we don't create profiles for purely-device-scoped traffic.
@@ -467,7 +467,7 @@ export class AmplitudeProvider extends BaseImportProvider<AmplitudeRawEvent> {
   }
 
   /**
-   * Map Amplitude system event names to OpenPanel conventions. Custom event
+   * Map Amplitude system event names to FlarePanel conventions. Custom event
    * names pass through unchanged.
    */
   private mapEventName(eventType: string): string {
@@ -550,7 +550,7 @@ export class AmplitudeProvider extends BaseImportProvider<AmplitudeRawEvent> {
   }
 
   /**
-   * Build the OpenPanel properties bag from Amplitude event_properties: drop
+   * Build the FlarePanel properties bag from Amplitude event_properties: drop
    * keys already represented elsewhere (URLs, query params) and parse
    * stringified JSON so toDots() can flatten nested structures.
    */

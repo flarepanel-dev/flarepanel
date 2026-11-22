@@ -1,4 +1,4 @@
-import type { IServiceGroup } from '@openpanel/core';
+import type { IServiceGroup } from '@flarepanel/core';
 import { Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { ColumnCreatedAt } from '@/components/column-created-at';

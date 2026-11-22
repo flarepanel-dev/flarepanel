@@ -1,6 +1,6 @@
 # OPS: Grafana / alert migration for the V1 → V2 metrics cutover
 
-**Audience: whoever owns the OpenPanel dashboards and alerts. This is a written
+**Audience: whoever owns the FlarePanel dashboards and alerts. This is a written
 spec, not a change. No dashboard, alert or datasource was edited by the work
 that produced it — deliberately (M9 cutover discipline).**
 

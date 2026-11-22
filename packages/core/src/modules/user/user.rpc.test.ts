@@ -7,7 +7,7 @@ import type { CookieOptions } from '../../shared/cookie';
 import { userRouter } from './user.rpc';
 
 const COOKIE_OPTIONS: CookieOptions = {
-  domain: '.openpanel.dev',
+  domain: '.flarepanel.dev',
   secure: true,
   sameSite: 'lax',
   httpOnly: true,

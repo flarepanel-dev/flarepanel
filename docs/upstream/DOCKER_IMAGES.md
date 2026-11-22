@@ -136,7 +136,7 @@ until `openpanel doctor` rewrites the command.
 - **The version is pinned** (`PRISMA_VERSION` in `apps/api/Dockerfile`) and the
   build fails unless it matches `packages/db`'s `prisma` devDependency, the
   version that generated the client.
-- **The code migrations moved to `@openpanel/db` in M15-204** (ADR-022, Carl's
+- **The code migrations moved to `@flarepanel/db` in M15-204** (ADR-022, Carl's
   rulings: they run as a script with direct database access and no services).
   The command-line entrypoint is `packages/db/scripts/migrate-code.ts`
   (`migrate:deploy`, for development, CI and operators), and the api calls the

@@ -1,6 +1,6 @@
 // Every ClickHouse query the AI pages run, as `sql` fragments over `ai_events`.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
 import { TABLE_NAMES } from '../../../shared/ch-tables';
 import type { IInterval } from '../../report/report.constants';

@@ -3,7 +3,7 @@
 // several unmerged versions (test/profile-versions).
 
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { sql } from '@openpanel/db/src/clickhouse/sql';
+import { sql } from '@flarepanel/db/src/clickhouse/sql';
 import {
   setupProfileVersions,
   teardownProfileVersions,
@@ -19,10 +19,10 @@ import {
 const PROJECT_ID = 'group-profile-versions';
 const { g1, g2 } = VERSIONED.groups;
 
-let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
+let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
 
 beforeAll(async () => {
-  ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
+  ({ ch } = await import('@flarepanel/db/src/clickhouse/client'));
   const { bootstrapTestDatabases } = await import(
     '../../../../../../test/bootstrap-databases'
   );

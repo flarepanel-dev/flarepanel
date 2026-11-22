@@ -1,5 +1,5 @@
 {
-  "name": "@openpanel/sdk-info",
+  "name": "@flarepanel/sdk-info",
   "version": "0.0.1",
   "main": "index.ts",
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "devDependencies": {
     "@types/react": "catalog:",
-    "@openpanel/tsconfig": "workspace:*",
+    "@flarepanel/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

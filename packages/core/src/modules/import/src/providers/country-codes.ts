@@ -1,6 +1,6 @@
 /**
  * Map a country *name* (as exported by Amplitude / MaxMind) to its ISO 3166-1
- * alpha-2 code. OpenPanel's ClickHouse `country` column is FixedString(2), so
+ * alpha-2 code. FlarePanel's ClickHouse `country` column is FixedString(2), so
  * anything that isn't a clean 2-letter code must be converted or dropped —
  * inserting a full name like "Nigeria" throws "Too large value for
  * FixedString(2)".

@@ -1,6 +1,6 @@
 // The browser holds `token`, Postgres stores only its hash, so a leaked
 // `sessions` row is not a leaked cookie. `hashSessionToken` is the single source
-// of that hash so @openpanel/db's session CRUD (which cannot live here without
+// of that hash so @flarepanel/db's session CRUD (which cannot live here without
 // a core -> db cycle) and this package's token issuance agree on the session id.
 
 import crypto from 'node:crypto';

@@ -11,7 +11,7 @@
 > any more. The shipped commands are now
 > `cd /app/packages/db && bunx prisma@6.14.0 migrate deploy` and
 > `cd /app/packages/core && bun scripts/migrate-code.ts`; see
-> `docs/DOCKER_IMAGES.md`. Since M15-204 that second path is a forwarder — the
+> `docs/upstream/DOCKER_IMAGES.md`. Since M15-204 that second path is a forwarder — the
 > migrations themselves live in `packages/db/src/code-migrations`, run by
 > `packages/db/scripts/migrate-code.ts`. Everything else in this file stands.
 
@@ -191,7 +191,7 @@ relationship to `apps/api` — `next` + `@next/swc-linux-x64-gnu` (~265MB),
 (~18MB) — because the workspace-root `pnpm install --frozen-lockfile --prod`
 installs the **entire monorepo's** production dependency graph (all 23
 workspace projects, `apps/start`/`apps/public` included), not just
-`@openpanel/api`'s closure, regardless of which package.json files were
+`@flarepanel/api`'s closure, regardless of which package.json files were
 selectively `COPY`'d for pnpm's own resolution. Filtering the install (e.g.
 `pnpm install --filter` or `pnpm deploy`) would be a substantially bigger size
 win than this task's stage restructuring, but it is a different, riskier
@@ -238,16 +238,16 @@ and `apps/public` are never copied in, so pnpm's workspace glob simply cannot
 see them, confirmed via `Scope: all 14 workspace projects` in the install log
 and by reproducing the exact stage in a scratch directory). Every package named
 in that note is a genuine transitive **production** dependency already
-inside `@openpanel/api`'s real closure, not workspace leakage:
+inside `@flarepanel/api`'s real closure, not workspace leakage:
 
 | Package | `pnpm why` chain |
 |---|---|
-| `next`, `react-email` | `@openpanel/email → responsive-react-email → react-email → next` |
-| `effect` | `@openpanel/db → @prisma/client`/`prisma-json-types-generator → @prisma/config → effect` |
-| `mathjs` | `@openpanel/common`, `@openpanel/core`, `@openpanel/trpc` (all direct) |
-| `@polar-sh/sdk` | `@openpanel/payments` (direct) |
+| `next`, `react-email` | `@flarepanel/email → responsive-react-email → react-email → next` |
+| `effect` | `@flarepanel/db → @prisma/client`/`prisma-json-types-generator → @prisma/config → effect` |
+| `mathjs` | `@flarepanel/common`, `@flarepanel/core`, `@flarepanel/trpc` (all direct) |
+| `@polar-sh/sdk` | `@flarepanel/payments` (direct) |
 
-`pnpm --filter "@openpanel/api..." list --depth -1` (the real dependency-graph
+`pnpm --filter "@flarepanel/api..." list --depth -1` (the real dependency-graph
 closure) returns exactly the same 13 projects (12 packages + `apps/api`) the
 Dockerfile's manifest list already names — confirmed by diffing the resulting
 `node_modules/.pnpm` entries between the current (manifest-only) install and a
@@ -256,7 +256,7 @@ byte-identical, 1039 packages both ways.
 
 ### What changed and why
 
-**Command chosen: `pnpm --filter "@openpanel/api..." install --frozen-lockfile
+**Command chosen: `pnpm --filter "@flarepanel/api..." install --frozen-lockfile
 --prod`**, not `pnpm deploy`. Tested both: `pnpm deploy` needs either
 `inject-workspace-packages=true` (a repo-wide `.npmrc` behavior change, out of
 this task's scope — it would flip every install in the monorepo from symlinked
@@ -283,7 +283,7 @@ as a no-op today. Not taken.
 
 What the `--filter` **does** buy, since the manifest list turned out to
 already be correct: the closure is now a property the install command asserts
-(`--filter "@openpanel/api..."`), not an accident of which files happened to be
+(`--filter "@flarepanel/api..."`), not an accident of which files happened to be
 `COPY`'d. If a future PR adds a new package to `apps/api`'s dependency graph
 without adding its manifest line, the install now silently omits it from
 `node_modules` exactly as before (Docker's per-file COPY still requires the
@@ -305,11 +305,11 @@ snapshotter reports compressed content size, per M9-006); uncompressed via
 | Image | Tag | Compressed (bytes) | Compressed (MB) | Uncompressed (`docker images` DISK USAGE) |
 |---|---|---:|---:|---:|
 | Before (root `--prod` install, unchanged Dockerfile, rebuilt this attempt) | `openpanel-v2:before` | 341,068,228 | 341.1 | 1.79GB |
-| After (`--filter "@openpanel/api..."` install, this attempt) | `openpanel-v2:closure` | 341,063,856 | 341.1 | 1.79GB |
+| After (`--filter "@flarepanel/api..."` install, this attempt) | `openpanel-v2:closure` | 341,063,856 | 341.1 | 1.79GB |
 
 **Verdict: no measurable size change (−4,372 bytes, noise).** This is the
 correct, honestly-reported result given the `pnpm why` findings above — the
-image was already scoped to `@openpanel/api`'s real closure before this task,
+image was already scoped to `@flarepanel/api`'s real closure before this task,
 so there was no apps/start/apps/public dependency bloat to remove. That
 premise was wrong; this task's value is making the closure boundary an
 explicit property of the install command instead of an implicit consequence of
@@ -378,7 +378,7 @@ image shape it describes no longer exists.
 | | before (M9-006) | now |
 |---|---|---|
 | `apps/api/Dockerfile` stages | `base` → `toolchain` (a second package manager + python3/make/g++) → `build` / `prod-deps` in parallel → `runtime` | `base` → `toolchain` → `build` → `prod-deps` → `runtime`, all on `oven/bun:${BUN_VERSION}-slim` except nothing |
-| api install | root install, then a from-scratch `--prod` install filtered to api's closure | `bun install --frozen-lockfile --linker=isolated`, then a from-scratch `bun install --production --frozen-lockfile --linker=isolated --filter '@openpanel/api'` |
+| api install | root install, then a from-scratch `--prod` install filtered to api's closure | `bun install --frozen-lockfile --linker=isolated`, then a from-scratch `bun install --production --frozen-lockfile --linker=isolated --filter '@flarepanel/api'` |
 | api codegen | `pnpm codegen` | `bun run codegen` |
 | manifest COPYs | a hand-maintained list of `packages/*/package.json` | `COPY . .` — one full workspace install per image (ADR-014 Problems §4) |
 | native build toolchain | `python3 make g++` in two stages | gone: `[install] ignoreScripts = true` means nothing compiles at install time, and `@node-rs/argon2` / `sharp` resolve to prebuilt linux-x64 packages |
@@ -386,10 +386,10 @@ image shape it describes no longer exists.
 
 **The dashboard image was already broken before P13**, for two reasons neither
 of which is the installer, both now fixed and named in that file's header:
-stale COPYs of the `@openpanel/auth` package P11 deleted, and a workspace-subset
-install that left `@openpanel/tsconfig` unresolvable for
+stale COPYs of the `@flarepanel/auth` package P11 deleted, and a workspace-subset
+install that left `@flarepanel/tsconfig` unresolvable for
 `packages/core/tsconfig.json` once P11 made `apps/start` import
-`@openpanel/core`. The fix for the second is the full workspace install, which
+`@flarepanel/core`. The fix for the second is the full workspace install, which
 is the shape a bun-base image has to take anyway.
 
 The dashboard runner stage now copies **only** `.output`. The Nitro output is

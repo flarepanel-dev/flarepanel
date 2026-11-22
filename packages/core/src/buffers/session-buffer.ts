@@ -1,5 +1,5 @@
-import { getRedisCache, type Redis } from '@openpanel/redis';
-import { DateTime, getSafeJson } from '@openpanel/shared';
+import { getRedisCache, type Redis } from '@flarepanel/redis';
+import { DateTime, getSafeJson } from '@flarepanel/shared';
 import type { CoreConfig } from '../config';
 import type { IServiceCreateEventPayload } from '../modules/event/event.service';
 import type { IClickhouseSession } from '../modules/session/session.service';

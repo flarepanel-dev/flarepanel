@@ -1,4 +1,4 @@
-import { INSIGHT_LIST_ALL_MAX_LIMIT } from '@openpanel/core/modules/insight/insight.constants';
+import { INSIGHT_LIST_ALL_MAX_LIMIT } from '@flarepanel/core/modules/insight/insight.constants';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {

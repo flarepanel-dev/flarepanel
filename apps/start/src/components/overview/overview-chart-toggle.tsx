@@ -1,4 +1,4 @@
-import type { IChartType } from '@openpanel/core/modules/report/report.constants';
+import type { IChartType } from '@flarepanel/core/modules/report/report.constants';
 import { BarChartIcon, LineChartIcon } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
 import { Button } from '../ui/button';

@@ -9,7 +9,7 @@ import { zUpdateEmailPreferences } from './email.constants';
 import { emailRouter } from './email.rpc';
 
 const COOKIE_OPTIONS: CookieOptions = {
-  domain: '.openpanel.dev',
+  domain: '.flarepanel.dev',
   secure: true,
   sameSite: 'lax',
   httpOnly: true,

@@ -3,14 +3,14 @@
  * Architecture enforcement: constants stay isomorphic, layers only import downward, web bundles never reach
  * server code. Rules, in order below:
  *  - core-uses-ctx-not-db-internals: packages/core reaches Postgres/ClickHouse through ctx.db / ctx.ch.
- *  - core-no-self-barrel: a file under packages/core/src imports its siblings relatively, never via @openpanel/core.
+ *  - core-no-self-barrel: a file under packages/core/src imports its siblings relatively, never via @flarepanel/core.
  *  - core-layers-*: one rule per layer boundary.
  *  - constants-stay-isomorphic: a `*.constants.ts` file depends on nothing but zod, another constants file or a
  *    type-only specifier.
  *  - frontend-values-only-constants: a web app (apps/start, apps/public, packages/sdks/*) may only VALUE-import
- *    @openpanel/core or @openpanel/db through a `*.constants.ts` path.
- *  - shared-root-stays-isomorphic: nothing reachable from @openpanel/shared's root imports a node: builtin or server/.
- *  - no-web-to-server: a web app may not import @openpanel/shared/server.
+ *    @flarepanel/core or @flarepanel/db through a `*.constants.ts` path.
+ *  - shared-root-stays-isomorphic: nothing reachable from @flarepanel/shared's root imports a node: builtin or server/.
+ *  - no-web-to-server: a web app may not import @flarepanel/shared/server.
  *
  * Do NOT set `options.exclude: { path: 'node_modules' }`: it drops every npm dependency before the rules run, so
  * constants-stay-isomorphic would only catch builtins. The zod allow-list entry matches the RESOLVED path, not
@@ -64,14 +64,14 @@ module.exports = {
       severity: 'error',
       comment:
         'packages/core reaches Postgres and ClickHouse through ctx.db / ctx.ch / ' +
-        'ServiceDeps, never by acquiring a client from @openpanel/db itself, so the ' +
+        'ServiceDeps, never by acquiring a client from @flarepanel/db itself, so the ' +
         'requestId minted at the edge stays on every query. `import type` is allowed, ' +
         'which keeps `bun test` offline. Exempt FROM: packages/core/src/context.ts, whose ' +
-        "Db / ClickHouseClient fields are `typeof import('@openpanel/db/...')` type " +
+        "Db / ClickHouseClient fields are `typeof import('@flarepanel/db/...')` type " +
         'queries that dependency-cruiser does not tag as type-only (exempting the ' +
         'type-import tag instead would also hide runtime `import()` of the same module, ' +
         'because both fold into one edge); and *.test.ts, since a test has no request ' +
-        'and some tests deliberately compare core against the real @openpanel/db ' +
+        'and some tests deliberately compare core against the real @flarepanel/db ' +
         'helpers. Exempt TO: the three files that build query text and hold no client ' +
         '(clickhouse/sql.ts, clickhouse/query-builder.ts, sql-builder.ts); the client is ' +
         'still whatever the caller passes, which in core is always deps.ch. ' +
@@ -96,12 +96,12 @@ module.exports = {
       severity: 'error',
       comment:
         'A file under packages/core/src imports its siblings by relative path, never ' +
-        'through its own barrel (@openpanel/core): a relative import always works, and ' +
+        'through its own barrel (@flarepanel/core): a relative import always works, and ' +
         'going through the barrel reintroduces the resolution cycles the barrel exists ' +
         "to keep away from external consumers. `to.path` is the barrel's resolved file " +
         '(src/index.ts), because rules match resolved paths, not specifiers. `import ' +
         'type` is allowed. *.test.ts is exempt: a barrel test has to import the barrel, ' +
-        "and `mock.module('@openpanel/core', ...)` is a mocking idiom, not a cycle.",
+        "and `mock.module('@flarepanel/core', ...)` is a mocking idiom, not a cycle.",
       from: {
         path: '^packages/core/src/',
         pathNot: '\\.test\\.ts$',
@@ -195,9 +195,9 @@ module.exports = {
       severity: 'error',
       comment:
         'A web app (apps/start, apps/public, packages/sdks/*) value-imports ' +
-        '@openpanel/core or @openpanel/db only through a *.constants.ts path. Everything ' +
+        '@flarepanel/core or @flarepanel/db only through a *.constants.ts path. Everything ' +
         'else must be `import type`, which is erased, so no server code reaches a browser ' +
-        'bundle. @openpanel/shared is not in the TO list: its root entrypoint is meant for ' +
+        'bundle. @flarepanel/shared is not in the TO list: its root entrypoint is meant for ' +
         'browsers, and shared-root-stays-isomorphic keeps that safe. check:deps only ' +
         'cruises apps/start and packages, so the apps/public part of this rule is not ' +
         'checked until that command names it.',
@@ -212,11 +212,11 @@ module.exports = {
       name: 'shared-root-stays-isomorphic',
       severity: 'error',
       comment:
-        "Nothing reachable from @openpanel/shared's root entrypoint may import a node: " +
+        "Nothing reachable from @flarepanel/shared's root entrypoint may import a node: " +
         'builtin or the server/ subtree. A root-reachable file that imports node:crypto ' +
         'still type-checks and bundles, and puts a Node polyfill (or a broken bundle) in ' +
         'every browser that loads the dashboard, while looking isomorphic at the call ' +
-        'site. Node-only code belongs behind @openpanel/shared/server. Reachability is ' +
+        'site. Node-only code belongs behind @flarepanel/shared/server. Reachability is ' +
         'computed from src/index.ts, so a helper several imports down is covered too. ' +
         'dependency-cruiser reports a node: specifier with the prefix stripped, hence the ' +
         'two spellings.',
@@ -233,7 +233,7 @@ module.exports = {
       name: 'no-web-to-server',
       severity: 'error',
       comment:
-        'A web app may not import @openpanel/shared/server: it holds server-only helpers ' +
+        'A web app may not import @flarepanel/shared/server: it holds server-only helpers ' +
         '(crypto, encryption, safe-fetch, ssrf, parser-user-agent) that must not reach a ' +
         'browser bundle. The specifier itself is the violation, so no reachability is ' +
         'needed. As with frontend-values-only-constants, apps/public is not cruised by ' +

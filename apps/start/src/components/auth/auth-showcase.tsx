@@ -7,7 +7,7 @@ const ROTATE_EVERY_MS = 7000;
 const TESTIMONIALS: { quote: string; author: string; site?: string }[] = [
   {
     quote:
-      "OpenPanel is by far the best open-source analytics I've ever seen. Better UX, more features, and incredible support from the founder.",
+      "FlarePanel is by far the best open-source analytics I've ever seen. Better UX, more features, and incredible support from the founder.",
     author: 'Thomas Sanlis',
     site: 'uneed.best',
   },
@@ -19,7 +19,7 @@ const TESTIMONIALS: { quote: string; author: string; site?: string }[] = [
   },
   {
     quote:
-      'After testing several product analytics tools we chose OpenPanel. Profiles and conversion events are our favorite features.',
+      'After testing several product analytics tools we chose FlarePanel. Profiles and conversion events are our favorite features.',
     author: 'Julien Hany',
     site: 'strackr.com',
   },
@@ -31,7 +31,7 @@ const TESTIMONIALS: { quote: string; author: string; site?: string }[] = [
   },
   {
     quote:
-      'After paying a lot to PostHog for years, OpenPanel gives us the same analytics while keeping full ownership of our data.',
+      'After paying a lot to PostHog for years, FlarePanel gives us the same analytics while keeping full ownership of our data.',
     author: 'Self-hosting team',
   },
 ];

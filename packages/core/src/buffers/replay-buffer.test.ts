@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { Readable } from 'node:stream';
-import { getRedisCache } from '@openpanel/redis';
+import { getRedisCache } from '@flarepanel/redis';
 import { bufferDepsWithCh } from '../../test/buffer-fixtures';
 import { testCoreConfig } from '../../test/config-fixture';
 import {

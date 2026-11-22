@@ -39,7 +39,7 @@ function looksLikeBrowser(ua: string): boolean {
 }
 
 // Desktop/Android Chromium (Blink), which ALWAYS emits `sec-ch-ua` — including
-// on `fetch`/`sendBeacon` requests like the OpenPanel web SDK makes. iOS
+// on `fetch`/`sendBeacon` requests like the FlarePanel web SDK makes. iOS
 // browsers (CriOS/EdgiOS/…) are WebKit and excluded, as are Firefox/Safari.
 const CHROMIUM_UA_REGEX = /(?:Chrome|Chromium|Edg|OPR)\/\d/;
 const APPLE_WEBKIT_UA_REGEX = /(CriOS|EdgiOS|OPiOS|FxiOS|iPhone|iPad|iPod)/;

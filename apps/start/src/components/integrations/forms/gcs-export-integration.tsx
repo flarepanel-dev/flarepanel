@@ -1,5 +1,5 @@
+import { zCreateGCSExportIntegration } from '@flarepanel/core/modules/integration/integration.constants';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zCreateGCSExportIntegration } from '@openpanel/core/modules/integration/integration.constants';
 import { useMutation } from '@tanstack/react-query';
 import { mergeDeepRight, path } from 'ramda';
 import { Controller, useForm } from 'react-hook-form';

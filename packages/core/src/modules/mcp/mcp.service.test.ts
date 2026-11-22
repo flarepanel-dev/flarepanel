@@ -6,7 +6,7 @@
  * `createMcpServer` down (SDK server, `InMemoryTransport`, handshake, tool
  * dispatch) runs for real.
  *
- * `mock.module` is used only for `@openpanel/redis`'s `getCache` and argon2
+ * `mock.module` is used only for `@flarepanel/redis`'s `getCache` and argon2
  * verification, restored in `afterAll` from a plain-object snapshot taken before
  * the first mock: restoring via the live `await import(...)` binding is a no-op
  * once mocked.
@@ -27,24 +27,24 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import type { ServiceDeps, Services } from '../../services';
 
-const actualRedis = await import('@openpanel/redis');
+const actualRedis = await import('@flarepanel/redis');
 const realRedis = { ...actualRedis };
-mock.module('@openpanel/redis', () => ({
+mock.module('@flarepanel/redis', () => ({
   ...realRedis,
   getCache: async <T>(_key: string, _ttl: number, fn: () => Promise<T>) => fn(),
 }));
 
 const mockVerifyPassword = mock(async () => true);
-const actualCrypto = await import('@openpanel/shared/server');
+const actualCrypto = await import('@flarepanel/shared/server');
 const realCrypto = { ...actualCrypto };
-mock.module('@openpanel/shared/server', () => ({
+mock.module('@flarepanel/shared/server', () => ({
   ...realCrypto,
   verifyPassword: mockVerifyPassword,
 }));
 
 afterAll(() => {
-  mock.module('@openpanel/redis', () => realRedis);
-  mock.module('@openpanel/shared/server', () => realCrypto);
+  mock.module('@flarepanel/redis', () => realRedis);
+  mock.module('@flarepanel/shared/server', () => realCrypto);
 });
 
 let handleStatelessMcpRequest: typeof import('./mcp.service').handleStatelessMcpRequest;
@@ -231,7 +231,7 @@ describe('handleStatelessMcpRequest — protocol', () => {
     expect(body.jsonrpc).toBe('2.0');
     expect(body.id).toBe(1);
     expect(body.result.serverInfo).toEqual({
-      name: 'OpenPanel',
+      name: 'FlarePanel',
       version: '1.0.0',
     });
   });

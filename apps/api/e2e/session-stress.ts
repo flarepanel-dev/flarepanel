@@ -15,11 +15,11 @@
  * the run asserts — see `check` calls below.
  *
  * `saturation-sweep.ts` drives this script across a ladder of offered loads;
- * see docs/BENCHMARK_HARNESS.md.
+ * see docs/upstream/BENCHMARK_HARNESS.md.
  *
  * Run (shrink the idle window; start the stack with the SAME value):
  * SESSION_TIMEOUT_MS=4000 pnpm dev SESSION_TIMEOUT_MS=4000 pnpm --filter
- * @openpanel/api e2e:sessions:stress
+ * @flarepanel/api e2e:sessions:stress
  *
  * Tunables (env): E2E_SESSIONS (500), E2E_CONCURRENCY (25),
  * E2E_EVENTS_PER_SESSION (3), E2E_DRAIN_TIMEOUT_MS (120000),

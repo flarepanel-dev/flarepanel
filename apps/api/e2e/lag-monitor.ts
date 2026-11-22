@@ -1,7 +1,7 @@
 /**
  * Kafka consumer-group lag sampling for the stress harness — the backpressure
  * story a throughput number alone hides. Wraps the admin-API primitives in
- * `@openpanel/core`'s ingest module; a fast API can outrun its consumer for a
+ * `@flarepanel/core`'s ingest module; a fast API can outrun its consumer for a
  * while without a single failed request, and this is the only place that would
  * show it.
  */
@@ -11,7 +11,7 @@ import {
   type ConsumerGroupLag,
   createKafkaAdmin,
   sampleConsumerGroupLag,
-} from '@openpanel/core';
+} from '@flarepanel/core';
 import { loadConfig } from '../src/config/env';
 
 // The Kafka topic and group come from the same loader the API boots on, so a

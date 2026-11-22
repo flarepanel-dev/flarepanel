@@ -1,4 +1,4 @@
-import { chartColors } from '@openpanel/core/modules/report/report.constants';
+import { chartColors } from '@flarepanel/core/modules/report/report.constants';
 
 export function getChartColor(index: number): string {
   return chartColors[index % chartColors.length]?.main || chartColors[0].main;

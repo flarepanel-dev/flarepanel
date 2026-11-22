@@ -16,30 +16,30 @@ export function LoginNavbar({ className }: { className?: string }) {
         className
       )}
     >
-      <a className="row items-center gap-2" href="https://openpanel.dev">
+      <a className="row items-center gap-2" href="https://flarepanel.dev">
         <LogoSquare className="size-8 shrink-0" />
         <span className="font-medium text-muted-foreground text-sm">
-          {isSelfHosted ? 'Self-hosted analytics' : 'OpenPanel.dev'}
+          {isSelfHosted ? 'Self-hosted analytics' : 'FlarePanel.dev'}
         </span>
       </a>
       {isSelfHosted && (
         <nav className="max-md:hidden">
           <ul className="row items-center gap-4 [&>li>a]:text-muted-foreground [&>li>a]:text-sm [&>li>a]:hover:underline">
             <li>
-              <a href="https://openpanel.dev">OpenPanel Cloud</a>
+              <a href="https://flarepanel.dev">FlarePanel Cloud</a>
             </li>
             <li>
-              <a href="https://openpanel.dev/compare/mixpanel-alternative">
+              <a href="https://flarepanel.dev/compare/mixpanel-alternative">
                 Mixpanel alternative
               </a>
             </li>
             <li>
-              <a href="https://openpanel.dev/compare/posthog-alternative">
+              <a href="https://flarepanel.dev/compare/posthog-alternative">
                 Posthog alternative
               </a>
             </li>
             <li>
-              <a href="https://openpanel.dev/articles/open-source-web-analytics">
+              <a href="https://flarepanel.dev/articles/open-source-web-analytics">
                 Open source analytics
               </a>
             </li>
@@ -66,16 +66,16 @@ export function LoginNavbar({ className }: { className?: string }) {
                 <li>
                   <a
                     className="block px-4 py-2 hover:bg-accent hover:text-accent-foreground"
-                    href="https://openpanel.dev"
+                    href="https://flarepanel.dev"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    OpenPanel Cloud
+                    FlarePanel Cloud
                   </a>
                 </li>
                 <li>
                   <a
                     className="block px-4 py-2 hover:bg-accent hover:text-accent-foreground"
-                    href="https://openpanel.dev/compare/mixpanel-alternative"
+                    href="https://flarepanel.dev/compare/mixpanel-alternative"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Posthog alternative
@@ -84,7 +84,7 @@ export function LoginNavbar({ className }: { className?: string }) {
                 <li>
                   <a
                     className="block px-4 py-2 hover:bg-accent hover:text-accent-foreground"
-                    href="https://openpanel.dev/compare/mixpanel-alternative"
+                    href="https://flarepanel.dev/compare/mixpanel-alternative"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Mixpanel alternative
@@ -93,7 +93,7 @@ export function LoginNavbar({ className }: { className?: string }) {
                 <li>
                   <a
                     className="block px-4 py-2 hover:bg-accent hover:text-accent-foreground"
-                    href="https://openpanel.dev/articles/open-source-web-analytics"
+                    href="https://flarepanel.dev/articles/open-source-web-analytics"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Open source analytics

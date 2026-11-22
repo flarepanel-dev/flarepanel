@@ -40,7 +40,7 @@ function deltaColor(direction?: 'up' | 'down' | 'flat'): string {
 
 export function WeeklyDigest({
   projectName,
-  dashboardUrl = 'https://dashboard.openpanel.dev',
+  dashboardUrl = 'https://dashboard.flarepanel.dev',
   dateRange,
   narrative,
   stats,
@@ -118,7 +118,7 @@ WeeklyDigest.PreviewProps = {
     },
     {
       title:
-        'Visits starting at the IP lookup tool on openpanel.dev more than doubled in the past 30 days, a strong sign of increased user interest in this feature.',
+        'Visits starting at the IP lookup tool on flarepanel.dev more than doubled in the past 30 days, a strong sign of increased user interest in this feature.',
       summary: 'Last 30 days. Sessions 1168 vs 520.',
     },
     {

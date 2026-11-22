@@ -7,8 +7,8 @@ import type {
   CoreConfig,
   DevLoginConfig,
   KafkaSaslMechanism,
-} from '@openpanel/core';
-import { KAFKA_SASL_MECHANISMS, queues } from '@openpanel/core';
+} from '@flarepanel/core';
+import { KAFKA_SASL_MECHANISMS, queues } from '@flarepanel/core';
 import { z } from 'zod';
 
 export const ROLE_VALUES = ['api', 'worker', 'all'] as const;
@@ -459,7 +459,7 @@ const rawSchema = z.object({
   ANTHROPIC_BASE_URL: optionalString,
   ANTHROPIC_TOKEN: optionalString,
   ANTHROPIC_VERSION: optionalString,
-  // OpenPanel tracking its own model calls into an OpenPanel project.
+  // FlarePanel tracking its own model calls into an FlarePanel project.
   OP_CLIENT_ID: optionalString,
   OP_CLIENT_SECRET: optionalString,
   OP_API_URL: optionalString,

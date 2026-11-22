@@ -3,7 +3,7 @@
 // unmerged versions (test/profile-versions) enrolled in one cohort.
 
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { sql } from '@openpanel/db/src/clickhouse/sql';
+import { sql } from '@flarepanel/db/src/clickhouse/sql';
 import {
   otherProjectId,
   setupProfileVersions,
@@ -16,12 +16,12 @@ import type { IChartEventFilter } from '../report/report.constants';
 const PROJECT_ID = 'cohort-profile-versions';
 const COHORT_ID = 'dddddddd-0000-4000-8000-00000000pv01';
 
-let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
+let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
 let deps: import('../../services').ServiceDeps;
 let listCohortMemberProfiles: typeof import('./cohort.service').listCohortMemberProfiles;
 
 beforeAll(async () => {
-  ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
+  ({ ch } = await import('@flarepanel/db/src/clickhouse/client'));
   const { testServiceDeps } = await import('../../../test/service-deps');
   deps = await testServiceDeps();
   ({ listCohortMemberProfiles } = await import('./cohort.service'));

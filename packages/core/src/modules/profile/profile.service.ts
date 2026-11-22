@@ -1,4 +1,4 @@
-import { round, strip, toObject } from '@openpanel/shared';
+import { round, strip, toObject } from '@flarepanel/shared';
 import { assocPath, flatten, map, pathOr, pipe, prop, sort, uniq } from 'ramda';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';

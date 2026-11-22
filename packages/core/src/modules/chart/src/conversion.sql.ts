@@ -4,7 +4,7 @@
 // profile / group / cohort joins are LEFT ANY JOIN and run under the client's
 // `distributed_product_mode: 'allow'`; the profile join's id set is `GLOBAL IN`.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import type { IInterval } from '../../report/report.constants';
 import { compiledText } from './compiled';
 import {

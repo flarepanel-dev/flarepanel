@@ -2,7 +2,7 @@ import type {
   IChartEventFilter,
   IChartEventFilterOperator,
   IChartEventFilterValue,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import { FilterIcon } from 'lucide-react';
 import { PureCohortFilterItem } from '@/components/report/sidebar/filters/CohortFilterItem';
 import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';

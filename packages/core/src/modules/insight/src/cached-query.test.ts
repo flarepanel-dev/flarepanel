@@ -7,7 +7,7 @@
 // round trips and shows what was sent.
 
 import { expect, test } from 'bun:test';
-import { sql } from '@openpanel/db/src/clickhouse/sql';
+import { sql } from '@flarepanel/db/src/clickhouse/sql';
 import type { ChScope } from '../../../ch-query';
 import { createStatementCache } from './cached-query';
 

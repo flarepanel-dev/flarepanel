@@ -196,7 +196,7 @@ export function expectNoRealProblems(problems: PageProblems) {
   // The dashboard's own product analytics call (no key locally) and the
   // overloaded dev server's module 502s are not the app under test.
   const responses = problems.badResponses.filter(
-    (r) => !(r.includes('api.openpanel.dev') || /^502 /.test(r))
+    (r) => !(r.includes('api.flarepanel.dev') || /^502 /.test(r))
   );
   const pageErrors = problems.pageErrors.filter(
     (e) => !e.includes('Failed to fetch dynamically imported module')

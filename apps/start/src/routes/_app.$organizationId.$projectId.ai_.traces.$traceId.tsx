@@ -1,4 +1,4 @@
-import { isAiModelCall } from '@openpanel/core/modules/ai/ai.constants';
+import { isAiModelCall } from '@flarepanel/core/modules/ai/ai.constants';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';

@@ -113,11 +113,11 @@ const deps = {
   config: testCoreConfig({ encryptionKey: 'a'.repeat(64) }),
 } as unknown as import('../../services').ServiceDeps;
 // Bypasses the Redis cache-aside entirely — `getGscCannibalization`'s own
-// logic is exercised directly, its caching is @openpanel/redis's concern.
+// logic is exercised directly, its caching is @flarepanel/redis's concern.
 // `getRedisCache` is unused here but included for the same cross-file
 // mock.module reason as above.
-const realRedis = { ...(await import('@openpanel/redis')) };
-mock.module('@openpanel/redis', () => ({
+const realRedis = { ...(await import('@flarepanel/redis')) };
+mock.module('@flarepanel/redis', () => ({
   ...realRedis,
   cacheable: <T>(fn: T) => fn,
   getRedisCache: () => ({
@@ -126,12 +126,12 @@ mock.module('@openpanel/redis', () => ({
   }),
 }));
 
-// `@openpanel/redis` above is a fake stuck in place for the rest of the
+// `@flarepanel/redis` above is a fake stuck in place for the rest of the
 // process once this file's tests finish (`mock.module` has no per-file scope
 // without `--isolate` — see AGENTS.md). Restore the real snapshot so whichever
 // file runs next sees real behavior again.
 afterAll(() => {
-  mock.module('@openpanel/redis', () => realRedis);
+  mock.module('@flarepanel/redis', () => realRedis);
   mock.module('../../ch-query', () => realChQuery);
   mock.module(
     '../organization/organization.service',
@@ -173,7 +173,7 @@ const getChartStartEndDate = mock(() => ({
 }));
 // `resolveGscDateRange` reaches these two through the DEEP modules they live
 // in, not through this package's barrel (`core-no-self-barrel`), so that is
-// what has to be mocked — mocking `@openpanel/core` would no longer intercept
+// what has to be mocked — mocking `@flarepanel/core` would no longer intercept
 // anything. Each factory spreads its real module: `mock.module` replaces a
 // specifier process-wide under bare `bun test` (AGENTS.md), and both are
 // restored from a plain-object snapshot in afterAll below.

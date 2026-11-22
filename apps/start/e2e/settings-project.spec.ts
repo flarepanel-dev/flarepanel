@@ -264,7 +264,7 @@ test.describe('tracking script', () => {
       `clientId: '${project.clientId}'`,
       SLOW_ASSERT
     );
-    await expect(snippet).toContainText('https://openpanel.dev/op1.js');
+    await expect(snippet).toContainText('https://flarepanel.dev/op1.js');
 
     await page
       .getByRole('combobox')
@@ -326,7 +326,7 @@ test.describe('tracking script', () => {
       target.getByRole('button', { name: 'Copy', exact: true });
     await gotoHydrated(page, settingsPath('tracking'), copyButton);
 
-    // The only framework whose instructions live outside openpanel.dev.
+    // The only framework whose instructions live outside flarepanel.dev.
     await page.getByRole('button', { name: 'Laravel', exact: true }).click();
     const frame = page.getByRole('dialog').locator('iframe');
     await expect(frame).toBeVisible();
@@ -490,7 +490,7 @@ test.describe('widgets', () => {
     const loggedOut = await browser.newContext(LOGGED_OUT);
     const visitor = await loggedOut.newPage();
     await visitor.goto(`/widget/badge?shareId=${counter.data?.id}`);
-    const label = visitor.getByText('OpenPanel', { exact: true });
+    const label = visitor.getByText('FlarePanel', { exact: true });
     await expect(label).toBeVisible(SLOW_ASSERT);
     await visitor.screenshot({
       path: 'test-results/settings/shots/widget-public-badge.png',

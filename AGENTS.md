@@ -1,4 +1,10 @@
-# OpenPanel — agent guide
+# FlarePanel — agent guide
+
+> **FlarePanel port in progress.** This repo is a fork of OpenPanel being moved to
+> Cloudflare (Workers, D1, Durable Objects, R2). Read
+> `docs/adr/0001-architecture-and-product-strategy.md` and `docs/project-plan.md`
+> first. The sections below describe the inherited OpenPanel stack, which is what
+> the code still runs today. Keep OpenPanel's tracking protocol compatible (see `NOTICE`).
 
 **If `WORKTREE.md` exists in the repo root, read it before anything else.** The tooling
 that created this worktree generates it: URLs, ports, database names, the seeded login
@@ -21,7 +27,6 @@ Open-source product analytics (a Mixpanel alternative). Bun monorepo.
 | `packages/db` | Prisma (Postgres) + ClickHouse client and the `sql` tag (`src/clickhouse/sql.ts`) | |
 | `packages/seed` | Deterministic seed data for Postgres + ClickHouse (`bun run seed`) | |
 | `packages/redis`, `packages/email`, `packages/payments`, `packages/sdks/*` | Redis client/locks/pubsub, React Email, billing, client SDKs | |
-| `apps/public` | Marketing + docs; the look and page recipe are in `apps/public/DESIGN.md` | Next.js, Fumadocs |
 
 Data flow: SDK → `POST /track` (`packages/core/src/modules/ingest`) → Kafka → the
 worker role → ClickHouse (`events`, `sessions`, `profiles`, materialized views).
@@ -37,12 +42,12 @@ supervised for you.
 - **Supervised processes**: `WORKTREE.md` gives the log files and the exact restart
   command. Prefer restarting over starting your own copy — two processes on one port is
   the usual cause of "my change does nothing". If the supervisor is gone, your shell has
-  the same env it used, so `bun run --filter @openpanel/api dev` (or `start`) starts a
+  the same env it used, so `bun run --filter @flarepanel/api dev` (or `start`) starts a
   process on the right port. `tail -f` the log while you test.
 - Env is injected into your shell and wins over `.env`; `.env` in a worktree is a copy of
   the main checkout's and mostly irrelevant.
 - Never point at another worktree's database or edit files under `.worktrees/`.
-- Migrations: `bun run --filter @openpanel/db migrate:deploy` runs both Prisma and the
+- Migrations: `bun run --filter @flarepanel/db migrate:deploy` runs both Prisma and the
   ClickHouse code migrations against *your* databases (already run when the worktree was
   created and seeded).
 
@@ -65,7 +70,7 @@ the shell env.
   data is built to show. `WORKTREE.md` repeats the important ones. The four projects
   (web, SaaS, shop, app) differ in identity: only identified projects have retention;
   see `packages/seed/README.md`.
-- Direct database access: `bun run --filter @openpanel/db studio` (Prisma Studio on
+- Direct database access: `bun run --filter @flarepanel/db studio` (Prisma Studio on
   `$STUDIO_PORT`), or `psql "$DATABASE_URL"` / `clickhouse-client` / `redis-cli` with the
   URLs from your env.
 
@@ -78,11 +83,11 @@ a one-line fix does not need the full suite, a query or ingest change always doe
 |---|---|---|
 | Dashboard UI (`apps/start`) | Open `$DASHBOARD_URL` with the Playwright MCP if you have one (`browser_*` tools; the local HTTPS certificate is self-signed, ignore that), log in with `.seed.json`, use the feature, **take a screenshot** (`browser_take_screenshot`; you get the image back — look at it) | `bunx vitest run` in `apps/start`, then add/adjust a spec in `apps/start/e2e/` and `bun run e2e` |
 | tRPC procedure / REST route (`packages/core`) | Call it (recipes below) with seeded ids and check the JSON; for auth changes, try the wrong role too | `bun test --isolate` in `packages/core` for that module |
-| ClickHouse query / chart / overview | Run old and new against the seeded data and diff results; check the numbers on the dashboard match a manual query | `packages/core` tests for the module; `bun run --filter @openpanel/db test` if you touched `packages/db` |
+| ClickHouse query / chart / overview | Run old and new against the seeded data and diff results; check the numbers on the dashboard match a manual query | `packages/core` tests for the module; `bun run --filter @flarepanel/db test` if you touched `packages/db` |
 | Ingest / worker / buffers / sessions | `bun run send journey --project acme-shop` (live events through Kafka → worker → ClickHouse), then query `events`/`sessions`/`profiles` for that session id | `packages/core` ingest + buffer tests, `apps/api/e2e/` for session lifecycle |
-| SDK (`packages/sdks/*`) | `/sdk-testbed`: drive `apps/testbed` in a real browser against *your* API and read the rows in ClickHouse (`bun run --filter @openpanel/testbed e2e`); extend the spec for new behaviour | `bun run --filter @openpanel/web test`, `bun run --filter "./packages/sdks/*" typecheck`; a release goes through the SDKs workflow (`.github/workflows/sdks.yml`) |
+| SDK (`packages/sdks/*`) | `/sdk-testbed`: drive `apps/testbed` in a real browser against *your* API and read the rows in ClickHouse (`bun run --filter @flarepanel/testbed e2e`); extend the spec for new behaviour | `bun run --filter @flarepanel/web test`, `bun run --filter "./packages/sdks/*" typecheck`; a release goes through the SDKs workflow (`.github/workflows/sdks.yml`) |
 | MCP tools (`packages/core/src/modules/mcp`) | Call the product's MCP against *your* API and data: as the `openpanel` MCP server if one is configured for you, else over HTTP (`.seed.json` → `mcp.url`, recipe below); compare its answer with a direct query | `packages/core` mcp tests |
-| Schema / migration | `bun run --filter @openpanel/db migrate:deploy` on your isolated database, then `bun run seed --reset` and the seed tests (`bun run --filter @openpanel/seed test`) | `bun run typecheck` |
+| Schema / migration | `bun run --filter @flarepanel/db migrate:deploy` on your isolated database, then `bun run seed --reset` and the seed tests (`bun run --filter @flarepanel/seed test`) | `bun run typecheck` |
 | Anything shared (`packages/shared`, `packages/db`, config, deps) | — | `bun run typecheck` and `bun run test` in full |
 
 Always before you finish: `bun run typecheck`, and `npx ultracite fix <files you changed>`
@@ -142,7 +147,7 @@ you do that, before they start. Merge their reports into yours; do not forward t
   (zod schemas + constants, safe to import from the frontend). `Cmd+P report.service`.
 - Dashboard routes: `apps/start/src/routes/` (TanStack file routing); modals in
   `src/modals/`; tRPC client in `src/integrations/tanstack-query/`.
-- ClickHouse queries use the `sql` tag from `@openpanel/db` (`packages/db/src/clickhouse/sql.ts`).
+- ClickHouse queries use the `sql` tag from `@flarepanel/db` (`packages/db/src/clickhouse/sql.ts`).
   Table names: `packages/db/src/clickhouse/client.ts` (`TABLE_NAMES`). Schema: the
   numbered files in `packages/db/src/code-migrations/`; a flat copy is `test/clickhouse-schema.sql`.
 - Env schema: `apps/api/src/config/env.ts`. Auth: `packages/core/src/modules/auth/`.
@@ -226,7 +231,7 @@ to PR titles, which become the commit on a squash merge.
 ```
 <type>(<scope>): <what changed, from the user's side>
 
-<why, and what it means for someone running OpenPanel>
+<why, and what it means for someone running FlarePanel>
 ```
 
 - **type** decides the version bump:

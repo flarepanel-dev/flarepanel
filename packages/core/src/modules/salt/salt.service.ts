@@ -2,7 +2,7 @@
 // than the scope: its L1 LRU has to survive across calls, so the `/track` hot path
 // passes the scope it holds. `generateNewSalt` clears the same instance.
 
-import { generateSalt } from '@openpanel/shared/server';
+import { generateSalt } from '@flarepanel/shared/server';
 import { cacheablePerDb } from '../../cacheable-per-deps';
 import type { ServiceDeps, Services } from '../../services';
 

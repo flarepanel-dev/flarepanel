@@ -1,4 +1,4 @@
-import type { IServiceProject } from '@openpanel/core';
+import type { IServiceProject } from '@flarepanel/core';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { SettingsIcon, TrendingDownIcon, TrendingUpIcon } from 'lucide-react';

@@ -1,4 +1,4 @@
-import { getInitSnippet } from '@openpanel/web';
+import { getInitSnippet } from '@flarepanel/web';
 
 declare global {
   interface Window {
@@ -18,4 +18,4 @@ window.op('init', {
   apiUrl: import.meta.env.VITE_OPENPANEL_API_URL ?? 'http://localhost:3333',
 });
 
-window.loadTracker = () => import('@openpanel/web/src/tracker');
+window.loadTracker = () => import('@flarepanel/web/src/tracker');

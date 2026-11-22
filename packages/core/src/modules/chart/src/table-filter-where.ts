@@ -8,7 +8,7 @@
 // Distributed on Cloud. The cohort / profile / group / performed_event
 // subselects use plain `IN`.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import {
   getCohortIds,
   type IChartEventFilter,

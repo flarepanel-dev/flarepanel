@@ -5,7 +5,7 @@
 // `session_timezone` setting, which every statement here sets (see
 // src/run-query.ts).
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import {
   toRangeBoundaryDate,
   toRangeBoundaryLiteral,

@@ -1,4 +1,4 @@
-import { cacheable } from '@openpanel/redis';
+import { cacheable } from '@flarepanel/redis';
 import bots from './bots';
 
 // Pre-compile regex patterns at module load time

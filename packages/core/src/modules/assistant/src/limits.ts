@@ -2,7 +2,7 @@ import {
   getSubscriptionState,
   type SubscriptionStateInput,
   subscriptionBlocksDashboard,
-} from '@openpanel/payments/subscription-state';
+} from '@flarepanel/payments/subscription-state';
 import type { Logger } from '../../../logger';
 import {
   CHAT_BURST_LIMIT,

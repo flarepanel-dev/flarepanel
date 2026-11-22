@@ -1,5 +1,5 @@
-import { AI_INTERNAL_EVENT_NAMES } from '@openpanel/core/modules/ai/ai.constants';
-import type { IReport } from '@openpanel/core/modules/report/report.constants';
+import { AI_INTERNAL_EVENT_NAMES } from '@flarepanel/core/modules/ai/ai.constants';
+import type { IReport } from '@flarepanel/core/modules/report/report.constants';
 import { memo } from 'react';
 import { WidgetHead } from '../overview/overview-widget';
 import { ReportChart } from '@/components/report-chart';

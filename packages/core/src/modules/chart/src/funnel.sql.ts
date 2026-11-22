@@ -9,7 +9,7 @@
 // Distributed on Cloud. Every join runs under the client's
 // `distributed_product_mode: 'allow'`; the profile join's id set is `GLOBAL IN`.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import type {
   IChartBreakdown,
   IChartEvent,

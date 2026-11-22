@@ -2,11 +2,11 @@ import type {
   IChartRange,
   IChartType,
   IInterval,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import {
   isHourIntervalEnabledByRange,
   isMinuteIntervalEnabledByRange,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import { differenceInDays } from 'date-fns';
 import { ClockIcon } from 'lucide-react';
 import { Button, type ButtonProps } from '../ui/button';

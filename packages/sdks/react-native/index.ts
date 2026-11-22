@@ -2,16 +2,16 @@ import type {
   OpenPanelOptions,
   TrackHandlerPayload,
   TrackProperties,
-} from '@openpanel/sdk';
-import { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
+} from '@flarepanel/sdk';
+import { OpenPanel as OpenPanelBase } from '@flarepanel/sdk';
 import * as Application from 'expo-application';
 import * as ExpoConstants from 'expo-constants';
 import { AppState, Platform } from 'react-native';
 import { getWebViewUserAgent } from './user-agent';
 
-export * from '@openpanel/sdk';
+export * from '@flarepanel/sdk';
 
-const QUEUE_STORAGE_KEY = '@openpanel/offline_queue';
+const QUEUE_STORAGE_KEY = '@flarepanel/offline_queue';
 
 interface StorageLike {
   getItem(key: string): Promise<string | null>;

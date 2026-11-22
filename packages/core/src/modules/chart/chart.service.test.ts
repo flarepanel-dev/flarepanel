@@ -28,8 +28,8 @@ const PROJECT_CARD_DAYS = 90;
 
 // Bypass Redis caching so a stale entry from another run cannot gate an
 // assertion. Captured before mock.module runs.
-const actualRedis = await import('@openpanel/redis');
-mock.module('@openpanel/redis', () => ({
+const actualRedis = await import('@flarepanel/redis');
+mock.module('@flarepanel/redis', () => ({
   ...actualRedis,
   getCache: async <T>(_key: string, _ttl: number, fn: () => Promise<T>) => fn(),
 }));
@@ -37,7 +37,7 @@ mock.module('@openpanel/redis', () => ({
 let FIXTURE: typeof import('../../../../../test/fixtures').FIXTURE;
 let fixtureNow: Date;
 let service: ReturnType<typeof import('./chart.service').createChartService>;
-let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
+let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
 
 type EventSeriesItem = Extract<IChartEventItem, { type: 'event' }>;
 
@@ -67,7 +67,7 @@ const report = (overrides: Partial<IReportInput> = {}): IReportInput => ({
 beforeAll(async () => {
   const fixtures = await import('../../../../../test/fixtures');
   FIXTURE = fixtures.FIXTURE;
-  ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
+  ({ ch } = await import('@flarepanel/db/src/clickhouse/client'));
   const { testServiceDeps, testServices } = await import(
     '../../../test/service-deps'
   );
@@ -82,7 +82,7 @@ beforeAll(async () => {
   fixtureNow = pinFixtureClock();
   await fixtures.setupFixtures(TEST_PROJECT_ID);
 
-  const { db } = await import('@openpanel/db/src/prisma-client');
+  const { db } = await import('@flarepanel/db/src/prisma-client');
   await db.cohort.upsert({
     where: { id: COHORT_ID },
     create: {
@@ -113,7 +113,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   const fixtures = await import('../../../../../test/fixtures');
-  const { db } = await import('@openpanel/db/src/prisma-client');
+  const { db } = await import('@flarepanel/db/src/prisma-client');
   await ch.command({
     query: `DELETE FROM cohort_members WHERE project_id = '${TEST_PROJECT_ID}'`,
   });

@@ -2,7 +2,7 @@
 // catalog (MIT, updated several times a day). Only the fields the cost engine
 // reads are kept, so the vendored file stays a few hundred KB.
 //
-//   bun run --filter @openpanel/core gen:llm-prices
+//   bun run --filter @flarepanel/core gen:llm-prices
 
 import path from 'node:path';
 import { z } from 'zod';

@@ -1,12 +1,12 @@
 // Cohort definitions, membership computation and the compute enqueue.
 //
-// Table names are a local literal map (`TABLE`) rather than @openpanel/db's
+// Table names are a local literal map (`TABLE`) rather than @flarepanel/db's
 // `TABLE_NAMES`: importing that builds a pino logger, and the SQL builders here
 // are pure functions the shape tests call without a ClickHouse connection.
 
 import type { ClickHouseSettings } from '@clickhouse/client';
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
-import type { Cohort } from '@openpanel/db/src/prisma-client';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
+import type { Cohort } from '@flarepanel/db/src/prisma-client';
 import { chQuery } from '../../ch-query';
 import type { CoreConfig } from '../../config';
 import type { ServiceDeps, Services } from '../../services';

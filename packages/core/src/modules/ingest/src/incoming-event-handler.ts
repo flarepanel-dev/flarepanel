@@ -6,7 +6,7 @@
 // `createIncomingEventDeps` binds it to one message's ctx, so the requestId the
 // producer stamped reaches the row the consumer writes.
 
-import { getTime, isSameDomain, parsePath } from '@openpanel/shared';
+import { getTime, isSameDomain, parsePath } from '@flarepanel/shared';
 import { anyPass, isEmpty, isNil, mergeDeepRight, omit, reject } from 'ramda';
 import type { SessionIngestResult } from '../../../buffers/session-buffer';
 import type { Ctx } from '../../../context';

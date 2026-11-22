@@ -1,5 +1,5 @@
 // The subject is built over a fake `ServiceDeps`, so `deps.db` IS the fake below.
-// `@openpanel/redis` is still stubbed: the `cacheable` binding resolves at
+// `@flarepanel/redis` is still stubbed: the `cacheable` binding resolves at
 // `client.service.ts`'s import time, so the mock must land first (the `await import`
 // in `beforeAll`).
 
@@ -124,7 +124,7 @@ function cacheableStub(
     set: () => async () => 'OK' as const,
   });
 }
-mock.module('@openpanel/redis', () => ({
+mock.module('@flarepanel/redis', () => ({
   cacheable: cacheableStub,
   getRedisCache: () => ({
     get: async () => null,

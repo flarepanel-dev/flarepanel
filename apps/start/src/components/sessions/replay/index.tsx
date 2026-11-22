@@ -1,4 +1,4 @@
-import type { IServiceEvent } from '@openpanel/core';
+import type { IServiceEvent } from '@flarepanel/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FastForwardIcon, VideoOffIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';

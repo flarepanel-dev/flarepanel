@@ -19,7 +19,7 @@
  * Dotenv -e../../.env -- bun e2e/redis-command-cost.ts
  */
 
-import { Redis } from '@openpanel/redis';
+import { Redis } from '@flarepanel/redis';
 
 /** Its own database: this must not touch anything the dev stack is using. */
 const BENCH_REDIS_DB = 4;
@@ -45,7 +45,7 @@ function sampleEventRow(index: number): string {
     project_id: 'e2e1e2e1-0000-4000-8000-000000000001',
     session_id: crypto.randomUUID(),
     path: `/pricing/plan/${index}`,
-    origin: 'https://openpanel.dev',
+    origin: 'https://flarepanel.dev',
     referrer: 'https://www.google.com/',
     referrer_name: 'Google',
     referrer_type: 'search',
@@ -64,13 +64,13 @@ function sampleEventRow(index: number): string {
     brand: 'Apple',
     model: '',
     imported_at: null,
-    sdk_name: '@openpanel/web',
+    sdk_name: '@flarepanel/web',
     sdk_version: '1.0.9',
     properties: {
       __hash: '',
       __query:
         'utm_source=newsletter&utm_medium=email&utm_campaign=launch-week',
-      __title: 'Pricing — OpenPanel, the open source analytics platform',
+      __title: 'Pricing — FlarePanel, the open source analytics platform',
       __reason: 'navigation',
       plan: 'business',
       seats: 12,

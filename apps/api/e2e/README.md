@@ -14,7 +14,7 @@ over HTTP and asserting state in **both ClickHouse and Redis**:
   `session-stress.ts` across a ladder of offered loads, one child process per
   rung, and reports the max sustainable ingest throughput and where the knee is.
   Full knob list, the knee definition and what the numbers do NOT cover:
-  **`docs/BENCHMARK_HARNESS.md`**.
+  **`docs/upstream/BENCHMARK_HARNESS.md`**.
 - `ingest-load.ts` (`e2e:ingest-load`) — **bulk throughput**: N devices × M
   events through `/track`, timed from the first request until every business
   event is in ClickHouse and every buffer is empty, with the Redis command and
@@ -39,10 +39,10 @@ the **same** value the harness uses, then run the harness:
 SESSION_TIMEOUT_MS=4000 pnpm dev
 
 # 2. In another terminal, run the harness with the SAME timeout
-SESSION_TIMEOUT_MS=4000 pnpm --filter @openpanel/api e2e:sessions
+SESSION_TIMEOUT_MS=4000 pnpm --filter @flarepanel/api e2e:sessions
 
 # …or the stress + drain test (500 sessions by default)
-SESSION_TIMEOUT_MS=4000 pnpm --filter @openpanel/api e2e:sessions:stress
+SESSION_TIMEOUT_MS=4000 pnpm --filter @flarepanel/api e2e:sessions:stress
 ```
 
 Stress tunables (env): `E2E_SESSIONS` (500), `E2E_CONCURRENCY` (25),
@@ -64,7 +64,7 @@ endpoint, so it never waits for the 5-minute reaper cron.
   `ignoreCorsAndSecret` one, and (M16-001) a second carrying a real scrypt
   secret. `E2E_AUTH_MODE` picks which ingest auth path requests take —
   `bypass` (default, the original client), `cors` or `secret`. See
-  `docs/BENCHMARK_HARNESS.md`; only `cors` and `secret` are shapes real traffic
+  `docs/upstream/BENCHMARK_HARNESS.md`; only `cors` and `secret` are shapes real traffic
   takes.
 - Each run uses fresh device IPs, so reruns don't collide with prior state.
 - Overridable: `E2E_API_URL` (default `:3333`), `E2E_WORKER_URL` (default `:9999`).
@@ -276,7 +276,7 @@ both. Pre-existing V1 behaviour, unrelated to the transport.
 Same harness, same assertions, same machine as BENCH-001. What changed since
 then is the code under test: `apps/worker`'s Kafka consumer, `incoming-event`,
 `create-session-end`, the session reaper, the salt cron and the session-context/
-consistency helpers now all run through `@openpanel/core` (`M8-002`..`M8-006`,
+consistency helpers now all run through `@flarepanel/core` (`M8-002`..`M8-006`,
 `d5cf5854`..`0f8d956a`) instead of `packages/db`/`packages/queue` directly. This
 is the correctness-proven (`0f8d956a`, `full.sh` green) ingest path's **first**
 throughput number — the second data point in Carl's V1-vs-V2 comparison, beside
@@ -359,7 +359,7 @@ two runs — and dragging on it alone would overstate any regression; runs 2–1
 cluster 665.5–754.9 ev/s (mean ≈699), within ordinary run-to-run noise of the
 704–750 ev/s band on this shared 4-core box.
 
-Nothing about the `@openpanel/core` port changes the request-handling or
+Nothing about the `@flarepanel/core` port changes the request-handling or
 consumer code paths in a way expected to cost throughput — `M8-006`'s
 correctness checkpoint (`0f8d956a`) already proved the ported path behaves
 identically to the one BENCH-001 measured; this run's job was only to attach a

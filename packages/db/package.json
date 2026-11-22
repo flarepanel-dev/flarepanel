@@ -1,5 +1,5 @@
 {
-  "name": "@openpanel/db",
+  "name": "@flarepanel/db",
   "version": "0.0.1",
   "type": "module",
   "main": "index.ts",
@@ -19,10 +19,10 @@
   "dependencies": {
     "@clickhouse/client": "1.18.5",
     "@hyperdx/node-opentelemetry": "catalog:",
-    "@openpanel/core": "workspace:*",
-    "@openpanel/payments": "workspace:*",
-    "@openpanel/redis": "workspace:*",
-    "@openpanel/shared": "workspace:*",
+    "@flarepanel/core": "workspace:*",
+    "@flarepanel/payments": "workspace:*",
+    "@flarepanel/redis": "workspace:*",
+    "@flarepanel/shared": "workspace:*",
     "@prisma/client": "6.14.0",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
@@ -30,7 +30,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@openpanel/tsconfig": "workspace:*",
+    "@flarepanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "bun-types": "1.4.4",
     "prisma": "6.14.0",

@@ -3,7 +3,7 @@
 
 import { afterAll, describe, expect, test } from 'bun:test';
 import { randomUUID } from 'node:crypto';
-import { getRedisCache } from '@openpanel/redis';
+import { getRedisCache } from '@flarepanel/redis';
 import type { Logger } from '../logger';
 import {
   bucketsFor,

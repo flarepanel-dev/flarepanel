@@ -35,9 +35,9 @@ export default function BillingSuccess() {
           Subscription updated successfully
         </h2>
         <p className="mb-12 max-w-md text-center text-base">
-          Thank you for your purchase! You have now full access to OpenPanel. If
-          you have any questions or feedback, please don't hesitate to contact
-          us.
+          Thank you for your purchase! You have now full access to FlarePanel.
+          If you have any questions or feedback, please don't hesitate to
+          contact us.
         </p>
       </div>
     </ModalContent>

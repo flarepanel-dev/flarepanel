@@ -1,4 +1,4 @@
-import { OpenPanel } from '@openpanel/web';
+import { OpenPanel } from '@flarepanel/web';
 import { readAttribution, toFirstTouchProperties } from '@/utils/attribution';
 import { shouldSendAnalyticsEvent } from '@/utils/op-filter';
 

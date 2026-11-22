@@ -1,4 +1,4 @@
-// Duplicates @openpanel/core's `src/pino-logger.ts` on purpose: core depends
+// Duplicates @flarepanel/core's `src/pino-logger.ts` on purpose: core depends
 // on db, so db importing it would create a cycle.
 
 import * as HyperDX from '@hyperdx/node-opentelemetry';
@@ -86,7 +86,7 @@ function getServiceName(name: string): string {
 }
 
 // Same Bun/pino-pretty incompatibility as the `isBun` guard in
-// @openpanel/core's `src/pino-logger.ts`; keep in sync by hand.
+// @flarepanel/core's `src/pino-logger.ts`; keep in sync by hand.
 const isBun = !!process.versions.bun;
 
 export function createLogger({ name }: { name: string }): ILogger {

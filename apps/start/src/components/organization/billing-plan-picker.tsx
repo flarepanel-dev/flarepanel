@@ -1,5 +1,5 @@
-import type { IServiceOrganization } from '@openpanel/core';
-import type { IPolarProduct } from '@openpanel/payments';
+import type { IServiceOrganization } from '@flarepanel/core';
+import type { IPolarProduct } from '@flarepanel/payments';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CheckIcon,

@@ -1,4 +1,4 @@
-import type { IInterval } from '@openpanel/core/modules/report/report.constants';
+import type { IInterval } from '@flarepanel/core/modules/report/report.constants';
 
 interface UseDashedTailOptions<T extends { date: string | Date }> {
   data: T[];

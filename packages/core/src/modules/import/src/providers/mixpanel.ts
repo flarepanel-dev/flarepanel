@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { isSameDomain, parsePath, toDots } from '@openpanel/shared';
-import { parseUserAgent, type UserAgentInfo } from '@openpanel/shared/server';
+import { isSameDomain, parsePath, toDots } from '@flarepanel/shared';
+import { parseUserAgent, type UserAgentInfo } from '@flarepanel/shared/server';
 import { z } from 'zod';
 import type { Logger } from '../../../../logger';
-// core's own date helper, not @openpanel/db's — see umami.ts's header.
+// core's own date helper, not @flarepanel/db's — see umami.ts's header.
 import { formatClickhouseDate } from '../../../../shared/ch-dates';
 import {
   getReferrerWithQuery,

@@ -1,4 +1,4 @@
-import type { IServiceOrganization } from '@openpanel/core';
+import type { IServiceOrganization } from '@flarepanel/core';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from '@tanstack/react-router';
 import { BookOpenIcon, HeartIcon, MenuIcon, XIcon } from 'lucide-react';
@@ -135,7 +135,7 @@ export function SidebarContainer({
                 'mx-3 mb-2 flex h-9 items-center gap-2.5 rounded-lg bg-def-200 px-2.5 font-medium text-sm',
                 'text-foreground/75 transition-colors hover:bg-def-300 hover:text-foreground'
               )}
-              href="https://openpanel.dev/supporter"
+              href="https://flarepanel.dev/supporter"
             >
               <HeartIcon
                 className="size-4 shrink-0 text-rose-500"
@@ -151,7 +151,7 @@ export function SidebarContainer({
             <FeedbackButton className={cn(SIDEBAR_FOOTER_BUTTON, 'px-2')} />
             <a
               className={cn(SIDEBAR_FOOTER_BUTTON, 'px-2')}
-              href="https://openpanel.dev/docs"
+              href="https://flarepanel.dev/docs"
               rel="noopener noreferrer"
               target="_blank"
             >

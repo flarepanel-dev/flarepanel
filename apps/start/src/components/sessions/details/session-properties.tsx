@@ -1,4 +1,4 @@
-import type { IServiceEvent, IServiceSession } from '@openpanel/core';
+import type { IServiceEvent, IServiceSession } from '@flarepanel/core';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 import {
   WidgetButtons,

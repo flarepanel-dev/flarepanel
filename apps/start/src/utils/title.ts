@@ -1,4 +1,4 @@
-const BASE_TITLE = 'OpenPanel.dev';
+const BASE_TITLE = 'FlarePanel.dev';
 
 export function createTitle(
   pageTitle: string,

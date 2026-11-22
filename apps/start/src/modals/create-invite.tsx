@@ -1,5 +1,5 @@
+import { zInviteUser } from '@flarepanel/core/modules/organization/organization.constants';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zInviteUser } from '@openpanel/core/modules/organization/organization.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SendIcon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';

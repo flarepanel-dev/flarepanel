@@ -1,4 +1,4 @@
-import { createHash } from '@openpanel/shared/server';
+import { createHash } from '@flarepanel/shared/server';
 
 interface GenerateDeviceIdOptions {
   salt: string;

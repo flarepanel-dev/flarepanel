@@ -1,5 +1,5 @@
-import type { IServiceSession } from '@openpanel/core';
-import { round } from '@openpanel/shared';
+import type { IServiceSession } from '@flarepanel/core';
+import { round } from '@flarepanel/shared';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Video } from 'lucide-react';
 import { ColumnCreatedAt } from '@/components/column-created-at';

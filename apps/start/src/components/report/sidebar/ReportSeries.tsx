@@ -18,11 +18,11 @@ import type {
   IChartEvent,
   IChartEventItem,
   IChartFormula,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import {
   alphabetIds,
   requiredPerUserBucketKind,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import { HandIcon, PiIcon, PlusIcon } from 'lucide-react';
 import {
   addSerie,

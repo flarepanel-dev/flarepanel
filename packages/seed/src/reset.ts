@@ -2,7 +2,7 @@
 // upserted in place, so only ClickHouse needs clearing; the materialized views
 // are not rebuilt from `events` on delete and must be cleared explicitly.
 
-import { ch } from '@openpanel/db';
+import { ch } from '@flarepanel/db';
 
 const TABLES_WITH_PROJECT_ROWS = [
   'events',

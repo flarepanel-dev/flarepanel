@@ -1,5 +1,5 @@
-import type { IClickhouseEvent } from '@openpanel/core';
-import { ch, formatClickhouseDate } from '@openpanel/db';
+import type { IClickhouseEvent } from '@flarepanel/core';
+import { ch, formatClickhouseDate } from '@flarepanel/db';
 import { v4 as uuid } from 'uuid';
 
 async function main() {

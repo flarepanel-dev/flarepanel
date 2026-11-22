@@ -2,10 +2,10 @@ import { afterAll, describe, expect, it } from 'bun:test';
 
 // This is a test file, which the `core-uses-ctx-not-db-internals` lint rule
 // exempts: the round-robin/retry client the buffers are handed (`ch` /
-// `chQuery`, `@openpanel/db`'s exports) must survive a dead node, so the
+// `chQuery`, `@flarepanel/db`'s exports) must survive a dead node, so the
 // subject is imported directly here rather than through `BufferDeps.ch`.
 function loadClickHouse() {
-  return import('@openpanel/db/src/clickhouse/client');
+  return import('@flarepanel/db/src/clickhouse/client');
 }
 
 /**
@@ -58,7 +58,7 @@ async function deadNodeIsRefused(): Promise<boolean> {
 
 // `bun test` shares one process and one `process.env` across every file in
 // the run, unlike vitest's per-file env reset. Whichever file first calls
-// `loadClickHouse()` pins `@openpanel/db/src/clickhouse/client`'s picker for
+// `loadClickHouse()` pins `@flarepanel/db/src/clickhouse/client`'s picker for
 // the rest of the run regardless of env set here, but OTHER files that read
 // `CLICKHOUSE_URL` directly (e.g. test fixtures building their own throwaway
 // client) are not protected by that — an unrestored mutation here leaks into
@@ -79,7 +79,7 @@ function restoreClickhouseEnv(): void {
   }
 }
 
-// `loadClickHouse()` above lazily imports `@openpanel/db/src/clickhouse/client`
+// `loadClickHouse()` above lazily imports `@flarepanel/db/src/clickhouse/client`
 // on first call, which reads CLICKHOUSE_URL once at module evaluation — so
 // these must be set before this file's first `loadClickHouse()` call.
 process.env.CLICKHOUSE_URL = `${DEAD_NODE_URL}/${CLICKHOUSE_TEST_DATABASE},${LIVE_NODE_URL}`;

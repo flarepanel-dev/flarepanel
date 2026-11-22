@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { AiPayload } from '@openpanel/sdk';
+import type { AiPayload } from '@flarepanel/sdk';
 import { withAiContext } from './context';
 import { instrumentCreate } from './instrument';
 import {

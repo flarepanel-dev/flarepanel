@@ -1,7 +1,7 @@
-import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
-import type { EventMeta, Prisma } from '@openpanel/db/src/prisma-client';
-import { getCache } from '@openpanel/redis';
-import { DateTime, resolveDateRange, toDots } from '@openpanel/shared';
+import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
+import type { EventMeta, Prisma } from '@flarepanel/db/src/prisma-client';
+import { getCache } from '@flarepanel/redis';
+import { DateTime, resolveDateRange, toDots } from '@flarepanel/shared';
 import { clone, mergeDeepRight, uniq } from 'ramda';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';

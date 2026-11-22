@@ -168,12 +168,12 @@ const transformMdxToReadme = (
 
   content = content.replace(
     /\[([^\]]+)\]\((\/[^)]+)\)/g,
-    '[$1](https://openpanel.dev$2)'
+    '[$1](https://flarepanel.dev$2)'
   );
 
   content = content.replace(/\n{3,}/g, '\n\n').trim();
 
-  const docUrl = `https://openpanel.dev/docs/sdks/${packageName.replace('@openpanel/', '')}`;
+  const docUrl = `https://flarepanel.dev/docs/sdks/${packageName.replace('@flarepanel/', '')}`;
   let readme = `# ${title}\n\n`;
 
   if (description) {

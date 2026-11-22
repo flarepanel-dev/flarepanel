@@ -1,7 +1,7 @@
 import { useRouteContext } from '@tanstack/react-router';
 import { op } from '@/utils/op';
 
-const PUBLIC_FEEDBACK_URL = 'https://feedback.openpanel.dev';
+const PUBLIC_FEEDBACK_URL = 'https://feedback.flarepanel.dev';
 
 export function FeedbackButton({
   className,

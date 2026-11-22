@@ -4,7 +4,7 @@
 // change the contract. It MUTATES `query` in place: reassigning the destructured
 // binding would not reach the object the validator reads.
 
-import { getSafeJson } from '@openpanel/shared';
+import { getSafeJson } from '@flarepanel/shared';
 
 const NUMERIC = /^-?[0-9]+(\.[0-9]+)?$/i;
 

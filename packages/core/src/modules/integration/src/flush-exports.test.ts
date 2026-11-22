@@ -3,7 +3,7 @@
 
 import { describe, expect, it, mock } from 'bun:test';
 import { gunzipSync } from 'node:zlib';
-import { getRedisCache } from '@openpanel/redis';
+import { getRedisCache } from '@flarepanel/redis';
 import { testCoreConfig } from '../../../../test/config-fixture';
 import type { Logger } from '../../../logger';
 import {
@@ -57,7 +57,7 @@ const chEvent = (i: number) =>
     browser: 'Chrome',
     device: 'desktop',
     path: `/p/${i}`,
-    origin: 'https://openpanel.dev',
+    origin: 'https://flarepanel.dev',
     referrer: '',
   }) as never;
 

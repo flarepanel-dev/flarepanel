@@ -1,10 +1,10 @@
-// OpenPanel observing its own model calls: every language model the backend
+// FlarePanel observing its own model calls: every language model the backend
 // builds goes through the same middleware a customer would install, and the
 // events land in whichever project OP_CLIENT_ID names. Without that config
 // the model is returned untouched.
 
-import { openpanelAiMiddleware } from '@openpanel/ai/vercel';
-import { OpenPanel } from '@openpanel/sdk';
+import { openpanelAiMiddleware } from '@flarepanel/ai/vercel';
+import { OpenPanel } from '@flarepanel/sdk';
 import { type LanguageModel, wrapLanguageModel } from 'ai';
 import type { CoreConfig } from '../../../config';
 

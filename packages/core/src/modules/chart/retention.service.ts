@@ -1,7 +1,7 @@
 // The cohort matrix is shared by the dashboard retention chart and the MCP /
 // agent / REST retention endpoints.
 
-import { DateTime, round } from '@openpanel/shared';
+import { DateTime, round } from '@flarepanel/shared';
 import { range } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
 import { TimeRangeError } from '../../shared/time-buckets';

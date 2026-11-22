@@ -1,8 +1,8 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
   type ISignInShare,
   zSignInShare,
-} from '@openpanel/core/modules/auth/auth.constants';
+} from '@flarepanel/core/modules/auth/auth.constants';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';

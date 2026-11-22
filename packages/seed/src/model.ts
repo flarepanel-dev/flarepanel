@@ -1,6 +1,6 @@
 // The in-memory shapes the generator produces before they become ClickHouse rows.
 
-import type { parseUserAgent } from '@openpanel/shared/server';
+import type { parseUserAgent } from '@flarepanel/shared/server';
 
 export type ParsedDevice = ReturnType<typeof parseUserAgent>;
 

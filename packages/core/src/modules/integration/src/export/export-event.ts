@@ -1,6 +1,6 @@
 import type { IClickhouseEvent } from '../../../event/event.service';
 
-// Local copy: importing @openpanel/db's clickhouse/client constructs a client
+// Local copy: importing @flarepanel/db's clickhouse/client constructs a client
 // at import time, and this module is on jobs.registry.ts's eager import chain.
 function convertClickhouseDateToJs(date: string): Date {
   return new Date(`${date.replace(' ', 'T')}Z`);

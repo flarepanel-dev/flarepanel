@@ -1,5 +1,5 @@
-import type { IAiBreakdownRow } from '@openpanel/core';
-import type { AiBreakdownDimension } from '@openpanel/core/modules/ai/ai.constants';
+import type { IAiBreakdownRow } from '@flarepanel/core';
+import type { AiBreakdownDimension } from '@flarepanel/core/modules/ai/ai.constants';
 import { useQuery } from '@tanstack/react-query';
 import type { LucideIcon } from 'lucide-react';
 import { AiCost } from './ai-cost';

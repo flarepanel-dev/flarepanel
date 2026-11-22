@@ -4,8 +4,8 @@
 # application `.output` is 9 MB, so the only cuts available are the two apt ones below.
 #
 # The install is ONE FULL WORKSPACE INSTALL, not a list of member manifests: `apps/start` imports
-# `@openpanel/core/modules/*.constants`, and `vite-tsconfig-paths` then reads `packages/core/tsconfig.json`, whose
-# `"extends": "@openpanel/tsconfig/base.json"` cannot resolve unless `tooling/typescript` is installed as a workspace member.
+# `@flarepanel/core/modules/*.constants`, and `vite-tsconfig-paths` then reads `packages/core/tsconfig.json`, whose
+# `"extends": "@flarepanel/tsconfig/base.json"` cannot resolve unless `tooling/typescript` is installed as a workspace member.
 ARG BUN_VERSION=1.4.4
 ARG NODE_VERSION=24.22.1
 
@@ -44,8 +44,8 @@ COPY apps/public/public/op1-replay.js ./apps/start/public/op1-replay.js
 # BUILD — Nitro's standalone server output. NITRO=1 selects the node-server
 # preset over the Cloudflare one; SELF_HOSTED=1 is read at build time.
 #
-# No codegen step: the build succeeds with `packages/db/src/generated` absent, because every `@openpanel/db` import in
-# apps/start is `import type` and the `@openpanel/core` imports are all `*.constants` subpaths.
+# No codegen step: the build succeeds with `packages/db/src/generated` absent, because every `@flarepanel/db` import in
+# apps/start is `import type` and the `@flarepanel/core` imports are all `*.constants` subpaths.
 FROM install AS build
 
 ENV NITRO=1

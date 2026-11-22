@@ -1,7 +1,7 @@
 // `protectedProcedure` runs `enforceAccess` on the top-level `projectId`; the
 // explicit checks below follow the tree-wide pattern.
 
-import { getChartPrevStartEndDate } from '@openpanel/shared';
+import { getChartPrevStartEndDate } from '@flarepanel/shared';
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCNotFoundError } from '../../rpc/errors';

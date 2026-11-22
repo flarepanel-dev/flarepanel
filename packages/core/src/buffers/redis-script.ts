@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { Redis } from '@openpanel/redis';
+import type { Redis } from '@flarepanel/redis';
 
 /**
  * A Lua script sent as EVALSHA, so the body crosses the wire only when Redis

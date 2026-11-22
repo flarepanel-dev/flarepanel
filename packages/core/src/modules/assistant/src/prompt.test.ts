@@ -10,15 +10,15 @@ const base = {
 describe('buildSystemPrompt', () => {
   test('Cloud users are never sent to environment variables', () => {
     const prompt = buildSystemPrompt({ ...base, selfHosted: false });
-    expect(prompt).toContain('OpenPanel Cloud');
+    expect(prompt).toContain('FlarePanel Cloud');
     expect(prompt).toContain('never suggest');
-    expect(prompt).toContain('mailto:hello@openpanel.dev');
-    expect(prompt).not.toContain('self-hosted OpenPanel install');
+    expect(prompt).toContain('mailto:hello@flarepanel.dev');
+    expect(prompt).not.toContain('self-hosted FlarePanel install');
   });
 
   test('self-hosters are told they own the stack', () => {
     const prompt = buildSystemPrompt({ ...base, selfHosted: true });
-    expect(prompt).toContain('self-hosted OpenPanel install');
+    expect(prompt).toContain('self-hosted FlarePanel install');
     expect(prompt).toContain('There is no billing');
   });
 

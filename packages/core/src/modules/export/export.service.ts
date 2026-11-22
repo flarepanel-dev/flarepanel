@@ -1,7 +1,7 @@
 // Sibling services are imported by relative path, not through the package barrel,
 // to avoid re-entering it mid-evaluation.
 
-import { resolveDateRange } from '@openpanel/shared';
+import { resolveDateRange } from '@flarepanel/shared';
 import type { AuthenticatedClient } from '../../http/client-auth';
 import type { ServiceDeps, Services } from '../../services';
 import { getSettingsForProject } from '../organization/organization.service';

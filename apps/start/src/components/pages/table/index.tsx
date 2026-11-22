@@ -1,7 +1,7 @@
 import {
   TOP_PAGES_SORT_COLUMNS,
   type TopPagesSortColumn,
-} from '@openpanel/core/modules/event/event.constants';
+} from '@flarepanel/core/modules/event/event.constants';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type {
   PaginationState,

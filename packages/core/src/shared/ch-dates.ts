@@ -1,4 +1,4 @@
-// ClickHouse's date literal format. Duplicated from `@openpanel/db` because
+// ClickHouse's date literal format. Duplicated from `@flarepanel/db` because
 // importing it constructs a real ClickHouse client at module load;
 // `ch-dates.parity.test.ts` asserts the two agree on every input.
 

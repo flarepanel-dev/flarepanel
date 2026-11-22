@@ -1,6 +1,6 @@
 // Seeds two days into the suite's isolated databases and checks what the
 // dashboard's queries rely on. Pins the env before any database import, the
-// same way test/bun-preload.ts does for @openpanel/db.
+// same way test/bun-preload.ts does for @flarepanel/db.
 
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import {
@@ -17,7 +17,7 @@ process.env.SELF_HOSTED = 'true';
 const { bootstrapTestDatabases } = await import(
   '../../../test/bootstrap-databases'
 );
-const { ch, db } = await import('@openpanel/db');
+const { ch, db } = await import('@flarepanel/db');
 const { ARCHETYPES } = await import('./archetypes');
 const { generate } = await import('./generator');
 const { projectIdFor } = await import('./ids');

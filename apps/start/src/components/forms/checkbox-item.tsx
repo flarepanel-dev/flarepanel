@@ -1,4 +1,4 @@
-import { slug } from '@openpanel/shared';
+import { slug } from '@flarepanel/shared';
 import type { LucideIcon } from 'lucide-react';
 import { forwardRef } from 'react';
 import type { ControllerRenderProps } from 'react-hook-form';

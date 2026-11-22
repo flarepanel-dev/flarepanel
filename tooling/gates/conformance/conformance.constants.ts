@@ -159,7 +159,7 @@ export const UTIL_BASENAME_EXCLUSIONS = new Set([
   'constants',
 ]);
 
-export const SHARED_PACKAGE_NAME = '@openpanel/shared';
+export const SHARED_PACKAGE_NAME = '@flarepanel/shared';
 export const SHARED_PACKAGE_ROOT = 'packages/shared';
 
 /**

@@ -1,9 +1,9 @@
-import { mergeDashboardFilters } from '@openpanel/core/modules/dashboard/dashboard.constants';
+import { mergeDashboardFilters } from '@flarepanel/core/modules/dashboard/dashboard.constants';
 import {
   type IChartEventFilter,
   type IReportDisplay,
   timeWindows,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import { useRouter } from '@tanstack/react-router';
 import {
   ChartLineIcon,

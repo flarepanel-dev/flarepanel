@@ -31,7 +31,7 @@ export type Props = z.infer<typeof zWindDownExpired>;
 export default WindDownExpired;
 export function WindDownExpired({
   firstName,
-  billingUrl = 'https://dashboard.openpanel.dev',
+  billingUrl = 'https://dashboard.flarepanel.dev',
   blockDate,
   trialEndedDate,
   recommendedPlan,
@@ -54,7 +54,7 @@ export function WindDownExpired({
     <Text>
       A lot has shipped since your trial — including our{' '}
       <Link
-        href={withUtm('https://openpanel.dev/docs/mcp', 'wind-down-expired')}
+        href={withUtm('https://flarepanel.dev/docs/mcp', 'wind-down-expired')}
       >
         MCP server
       </Link>
@@ -76,7 +76,7 @@ export function WindDownExpired({
       <Layout unsubscribeUrl={unsubscribeUrl}>
         {greeting}
         <Text>
-          Your OpenPanel tracking is still running
+          Your FlarePanel tracking is still running
           {trialEndedDate
             ? `, even though your trial ended ${trialEndedDate}`
             : ''}
@@ -147,7 +147,7 @@ export function WindDownExpired({
     <Layout unsubscribeUrl={unsubscribeUrl}>
       {greeting}
       <Text>
-        Your OpenPanel trial has ended. No events ever reached us, so there's
+        Your FlarePanel trial has ended. No events ever reached us, so there's
         nothing stored and nothing for you to lose.
       </Text>
       <Text>
@@ -166,7 +166,7 @@ export function WindDownExpired({
 
 WindDownExpired.PreviewProps = {
   firstName: 'Alex',
-  billingUrl: 'https://dashboard.openpanel.dev/org-id/billing',
+  billingUrl: 'https://dashboard.flarepanel.dev/org-id/billing',
   blockDate: 'March 14',
   trialEndedDate: 'November 3, 2025',
   recommendedPlan: '100K events per month for $20.00',

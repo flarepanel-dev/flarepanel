@@ -32,7 +32,7 @@ function OnboardingLayout() {
       >
         <a className="row items-center gap-2.5 font-medium" href="/">
           <LogoSquare className="size-8 shrink-0" />
-          <span>OpenPanel</span>
+          <span>FlarePanel</span>
         </a>
         <Button
           icon={LogOutIcon}

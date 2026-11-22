@@ -1,4 +1,4 @@
-import { slug } from '@openpanel/shared';
+import { slug } from '@flarepanel/shared';
 import type { IChartEventItem } from '../../../report/report.constants';
 import { alphabetIds } from '../../../report/report.constants';
 import type { NormalizedInput } from './normalize';

@@ -1,4 +1,4 @@
-import type { IGetTopGenericInput } from '@openpanel/core';
+import type { IGetTopGenericInput } from '@flarepanel/core';
 
 export const OVERVIEW_COLUMNS_NAME: Record<
   IGetTopGenericInput['column'],

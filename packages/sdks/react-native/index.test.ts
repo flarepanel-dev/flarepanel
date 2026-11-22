@@ -5,7 +5,7 @@ let platform = 'android';
 let foreground: ((state: string) => void) | undefined;
 let globalProperties: Record<string, unknown> = {};
 const getInstallReferrerAsync = mock(() => referrer());
-mock.module('@openpanel/sdk', () => ({
+mock.module('@flarepanel/sdk', () => ({
   OpenPanel: class {
     api = { addHeader: mock(() => undefined) };
     queue: unknown[] = [];

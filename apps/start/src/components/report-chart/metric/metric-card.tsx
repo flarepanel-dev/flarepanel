@@ -1,4 +1,4 @@
-import type { IChartMetric } from '@openpanel/core/modules/report/report.constants';
+import type { IChartMetric } from '@flarepanel/core/modules/report/report.constants';
 import { useMemo } from 'react';
 import { useReportChartContext } from '../context';
 import {

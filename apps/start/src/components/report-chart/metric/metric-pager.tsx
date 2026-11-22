@@ -1,4 +1,4 @@
-import type { IChartMetric } from '@openpanel/core/modules/report/report.constants';
+import type { IChartMetric } from '@flarepanel/core/modules/report/report.constants';
 import { useEffect, useState } from 'react';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { MetricCard } from './metric-card';

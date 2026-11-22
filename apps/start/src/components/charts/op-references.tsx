@@ -15,7 +15,7 @@ export interface OPReferenceItem {
 }
 
 /**
- * Convert OpenPanel reference rows into ChartMarker[] for use by the
+ * Convert FlarePanel reference rows into ChartMarker[] for use by the
  * tooltip's `useReferencesForHoveredPoint` lookup (independent of the chart
  * marker rendering, which goes through OPMarkerLayer).
  */

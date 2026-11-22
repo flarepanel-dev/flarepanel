@@ -1,5 +1,5 @@
-import type { IServiceOrganization } from '@openpanel/core';
-import type { IPolarProduct } from '@openpanel/payments';
+import type { IServiceOrganization } from '@flarepanel/core';
+import type { IPolarProduct } from '@flarepanel/payments';
 import { useState } from 'react';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';

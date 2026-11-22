@@ -1,11 +1,11 @@
 import type {
   IChartRange,
   IInterval,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import {
   getDefaultIntervalByDates,
   timeWindows,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import { bind } from 'bind-event-listener';
 import { endOfDay, isSameDay, startOfDay, subDays, subMonths } from 'date-fns';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';

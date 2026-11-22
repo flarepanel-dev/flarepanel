@@ -8,7 +8,7 @@ import type {
   LanguageModelV4StreamPart,
   LanguageModelV4Usage,
 } from '@ai-sdk/provider';
-import type { AiPayload, AiUsage } from '@openpanel/sdk';
+import type { AiPayload, AiUsage } from '@flarepanel/sdk';
 import type { AiCallContext } from './context';
 import { toMessages, toOutputMessages, toTools } from './messages';
 import {

@@ -1,6 +1,6 @@
-import { FREE_PRODUCT_IDS } from '@openpanel/payments';
-import { getSubscriptionState } from '@openpanel/payments/subscription-state';
-import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
+import { FREE_PRODUCT_IDS } from '@flarepanel/payments';
+import { getSubscriptionState } from '@flarepanel/payments/subscription-state';
+import { getSubscriptionStateMeta } from '@flarepanel/payments/subscription-state-meta';
 import { tool } from 'ai';
 import { z } from 'zod';
 import { getCurrentSubscriptionProduct } from '../../../subscription/subscription.service';

@@ -4,8 +4,8 @@ import type {
   IChartEventFilterOperator,
   IChartEventFilterValue,
   IChartFilterValueType,
-} from '@openpanel/core/modules/report/report.constants';
-import { getOperatorsForType } from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
+import { getOperatorsForType } from '@flarepanel/core/modules/report/report.constants';
 import { FilterIcon, XIcon } from 'lucide-react';
 import { changeEvent } from '../../reportSlice';
 import { FilterOperatorSelect } from '@/components/report/sidebar/filters/FilterOperatorSelect';

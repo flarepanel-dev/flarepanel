@@ -1,9 +1,9 @@
 // Hand-duplicated on purpose, not imported: the wire contract's source of
-// truth is @openpanel/core/modules/ingest/ingest.constants.ts, but core's
+// truth is @flarepanel/core/modules/ingest/ingest.constants.ts, but core's
 // package.json exports map is deliberately narrow (no `./*` wildcard) and
 // rollup-plugin-dts (tsup's dts bundler) cannot inline a type that resolves
 // through that map's `*` pattern: it leaves an unresolvable
-// `@openpanel/core/...` reference in dist/index.d.ts, which breaks for every
+// `@flarepanel/core/...` reference in dist/index.d.ts, which breaks for every
 // consumer since core isn't published. A plain deep import into any
 // workspace-internal shim package hits the same wall one hop later, since
 // those packages now just re-export core's. Keeping a literal copy here is
@@ -200,7 +200,7 @@ export class OpenPanel {
       options.sdkVersion || process.env.SDK_VERSION!;
 
     this.api = new Api({
-      baseUrl: options.apiUrl || 'https://api.openpanel.dev',
+      baseUrl: options.apiUrl || 'https://api.flarepanel.dev',
       defaultHeaders,
     });
   }
@@ -492,7 +492,7 @@ export class OpenPanel {
 
   log(...args: any[]) {
     if (this.options.debug) {
-      console.log('[OpenPanel.dev]', ...args);
+      console.log('[FlarePanel.dev]', ...args);
     }
   }
 }

@@ -2,9 +2,9 @@
 // data migration can be proven access-neutral: snapshot before, migrate,
 // snapshot after, diff.
 //
-//   bun run --filter @openpanel/db access-snapshot --evaluator legacy  > before.json
-//   bun run --filter @openpanel/db access-snapshot --evaluator current > after.json
-//   bun run --filter @openpanel/db access-snapshot --diff before.json after.json [--expect keys.json]
+//   bun run --filter @flarepanel/db access-snapshot --evaluator legacy  > before.json
+//   bun run --filter @flarepanel/db access-snapshot --evaluator current > after.json
+//   bun run --filter @flarepanel/db access-snapshot --diff before.json after.json [--expect keys.json]
 //
 // `legacy` is the rule the previous build applied, spelled out here so it
 // keeps answering after the app has moved on: both role spellings, scope and
@@ -16,11 +16,11 @@ import {
   canWriteProject,
   getOrganizationAccess,
   getProjectAccess,
-} from '@openpanel/core';
+} from '@flarepanel/core';
 import {
   isOrganizationAdminRole,
   normalizeOrganizationRole,
-} from '@openpanel/core/modules/organization/organization.constants';
+} from '@flarepanel/core/modules/organization/organization.constants';
 import { db } from '../src/prisma-client';
 
 interface AccessLine {

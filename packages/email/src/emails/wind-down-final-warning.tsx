@@ -21,7 +21,7 @@ export type Props = z.infer<typeof zWindDownFinalWarning>;
 export default WindDownFinalWarning;
 export function WindDownFinalWarning({
   firstName,
-  billingUrl = 'https://dashboard.openpanel.dev',
+  billingUrl = 'https://dashboard.flarepanel.dev',
   deleteDate,
   hasData = true,
   stillTracking = false,
@@ -37,7 +37,7 @@ export function WindDownFinalWarning({
       </Text>
       <Text>
         <strong>
-          On {deleteDate} your OpenPanel organization and everything in it will
+          On {deleteDate} your FlarePanel organization and everything in it will
           be permanently deleted.
         </strong>{' '}
         That means your projects, your settings, and
@@ -66,7 +66,7 @@ export function WindDownFinalWarning({
 
 WindDownFinalWarning.PreviewProps = {
   firstName: 'Alex',
-  billingUrl: 'https://dashboard.openpanel.dev/org-id/billing',
+  billingUrl: 'https://dashboard.flarepanel.dev/org-id/billing',
   deleteDate: 'April 10',
   hasData: true,
   stillTracking: true,

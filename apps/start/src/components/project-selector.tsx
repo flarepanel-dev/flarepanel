@@ -1,4 +1,4 @@
-import type { IServiceOrganization } from '@openpanel/core';
+import type { IServiceOrganization } from '@flarepanel/core';
 import { Link, useRouter } from '@tanstack/react-router';
 import {
   Building2Icon,

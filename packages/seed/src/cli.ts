@@ -7,7 +7,7 @@
 
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { db } from '@openpanel/db';
+import { db } from '@flarepanel/db';
 import { ARCHETYPE_IDS, ARCHETYPES, archetypeById } from './archetypes';
 import { type GenerateConfig, generate, planDays } from './generator';
 import { projectIdFor } from './ids';

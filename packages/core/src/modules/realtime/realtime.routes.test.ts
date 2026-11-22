@@ -9,7 +9,7 @@
 // red if that stopped holding.
 
 import { afterAll, afterEach, beforeEach, expect, mock, test } from 'bun:test';
-import { getSuperJson } from '@openpanel/shared';
+import { getSuperJson } from '@flarepanel/shared';
 import { stubAppDeps } from '../../../test/http-fixtures';
 import * as actualAccessLookups from '../../shared/access-lookups';
 import { realtimeRoutes } from './realtime.routes';

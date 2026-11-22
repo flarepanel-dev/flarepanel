@@ -1,11 +1,11 @@
 import type {
   NavigateInput,
   OpenDialogInput,
-} from '@openpanel/core/modules/assistant/assistant.constants';
+} from '@flarepanel/core/modules/assistant/assistant.constants';
 import {
   CHAT_DIALOGS,
   CHAT_ROUTES,
-} from '@openpanel/core/modules/assistant/assistant.constants';
+} from '@flarepanel/core/modules/assistant/assistant.constants';
 import { Link } from '@tanstack/react-router';
 import { ArrowRightIcon, BookOpenIcon, PlusIcon, UserIcon } from 'lucide-react';
 import { openDialog } from '../use-chat-session';

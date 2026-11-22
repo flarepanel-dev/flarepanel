@@ -10,7 +10,7 @@
  * Note: the dashboard must run with SELF_HOSTED=false (or unset) to render
  * billing — with SELF_HOSTED=true every org resolves to `self_hosted`.
  */
-import { getSubscriptionState } from '@openpanel/payments/subscription-state';
+import { getSubscriptionState } from '@flarepanel/payments/subscription-state';
 import { db } from '../src/prisma-client';
 
 const DAY = 1000 * 60 * 60 * 24;

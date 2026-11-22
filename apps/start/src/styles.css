@@ -76,8 +76,8 @@ body {
 
   --radius: 0.5rem;
 
-  /* Bklit chart tokens — single-series defaults pick OpenPanel brand palette.
-     We deliberately do NOT redefine --chart-1..5 (OpenPanel uses them as a 13-color
+  /* Bklit chart tokens — single-series defaults pick FlarePanel brand palette.
+     We deliberately do NOT redefine --chart-1..5 (FlarePanel uses them as a 13-color
      fixed palette via --chart-0..12); for multi-series charts we always pass
      explicit colors via getChartColor(i). */
   --chart-background: var(--card);

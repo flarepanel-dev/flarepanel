@@ -1,8 +1,8 @@
-import type { IServiceMember } from '@openpanel/core';
+import type { IServiceMember } from '@flarepanel/core';
 import type {
   IProjectAccessGrant,
   ProjectScope,
-} from '@openpanel/core/modules/organization/organization.constants';
+} from '@flarepanel/core/modules/organization/organization.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';

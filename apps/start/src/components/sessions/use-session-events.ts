@@ -1,4 +1,4 @@
-import type { IServiceEvent } from '@openpanel/core';
+import type { IServiceEvent } from '@flarepanel/core';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import type { useTRPC } from '@/integrations/trpc/react';

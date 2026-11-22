@@ -1,4 +1,4 @@
-import { round } from '@openpanel/shared';
+import { round } from '@flarepanel/shared';
 import { useCallback } from 'react';
 import { useChartChrome } from '../common/chart-size';
 import { SerieIcon } from '../common/serie-icon';

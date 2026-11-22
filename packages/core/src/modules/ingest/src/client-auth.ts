@@ -4,7 +4,7 @@
 // 5-minute verify cache whose key holds base64(<plaintext secret>) are all
 // deliberate.
 
-import { getRedisCache, LRUCache } from '@openpanel/redis';
+import { getRedisCache, LRUCache } from '@flarepanel/redis';
 import { path } from 'ramda';
 import type { DbScope } from '../../../cacheable-per-deps';
 import { verifyClientSecret as verifyClientSecretHash } from '../../../shared/client-secret';

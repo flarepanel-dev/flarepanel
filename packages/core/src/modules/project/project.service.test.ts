@@ -158,10 +158,10 @@ function cacheableStub(
 }
 // Each factory spreads a plain-object SNAPSHOT of the real module and is
 // restored in afterAll. `mock.module` has no per-file scope under bare `bun
-// test`, and a partial factory for `@openpanel/redis` deletes every export it
+// test`, and a partial factory for `@flarepanel/redis` deletes every export it
 // does not name for whichever file runs next.
-const realRedis = { ...(await import('@openpanel/redis')) };
-mock.module('@openpanel/redis', () => ({
+const realRedis = { ...(await import('@flarepanel/redis')) };
+mock.module('@flarepanel/redis', () => ({
   ...realRedis,
   cacheable: cacheableStub,
   getRedisCache: () => ({
@@ -178,7 +178,7 @@ mock.module('../../slug-id', () => ({
 }));
 
 afterAll(() => {
-  mock.module('@openpanel/redis', () => realRedis);
+  mock.module('@flarepanel/redis', () => realRedis);
   mock.module('../../slug-id', () => realSlugId);
 });
 

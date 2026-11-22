@@ -8,7 +8,7 @@ import {
   isSqlFragment,
   SqlFragment,
   type SqlSlot,
-} from '@openpanel/db/src/clickhouse/sql';
+} from '@flarepanel/db/src/clickhouse/sql';
 
 const PROFILE_PROPERTY_MAP_OPEN = 'profile.properties[';
 const PROFILE_PROPERTY_MAP_CLOSE = ']';

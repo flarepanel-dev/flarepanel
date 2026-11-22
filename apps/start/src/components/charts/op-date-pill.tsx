@@ -1,4 +1,4 @@
-import type { IInterval } from '@openpanel/core/modules/report/report.constants';
+import type { IInterval } from '@flarepanel/core/modules/report/report.constants';
 import { differenceInHours, getISOWeek } from 'date-fns';
 import { motion, useSpring } from 'motion/react';
 import { useEffect, useMemo, useState } from 'react';
@@ -20,7 +20,7 @@ interface OPDatePillProps {
 /**
  * Compact date pill drawn at the bottom of the chart, replacing bklit's
  * `<DateTicker>` so we can (a) format the label based on `interval` + data span,
- * and (b) use OpenPanel's smaller type scale.
+ * and (b) use FlarePanel's smaller type scale.
  *
  * Visibility guard sits in the outer wrapper; the inner component (which
  * owns the `useSpring`) only mounts when `tooltipData` exists, so the

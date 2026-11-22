@@ -1,4 +1,4 @@
-import type { AppRouter } from '@openpanel/core';
+import type { AppRouter } from '@flarepanel/core';
 import type { QueryClient } from '@tanstack/react-query';
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
 

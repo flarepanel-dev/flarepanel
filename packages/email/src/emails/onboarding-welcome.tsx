@@ -14,14 +14,14 @@ export type Props = z.infer<typeof zOnboardingWelcome>;
 export default OnboardingWelcome;
 export function OnboardingWelcome({
   firstName,
-  dashboardUrl = 'https://dashboard.openpanel.dev',
+  dashboardUrl = 'https://dashboard.flarepanel.dev',
   hasData = false,
   unsubscribeUrl,
 }: Props & { unsubscribeUrl?: string }) {
   return (
     <Layout unsubscribeUrl={unsubscribeUrl}>
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
-      <Text>Carl here. I build OpenPanel. Thanks for signing up.</Text>
+      <Text>Carl here. I build FlarePanel. Thanks for signing up.</Text>
       <Text>
         Your trial runs for 30 days with everything included. No card needed
         until you decide to stay.
@@ -48,7 +48,7 @@ export function OnboardingWelcome({
             items={[
               <Link
                 href={withUtm(
-                  'https://openpanel.dev/docs/get-started/install-openpanel',
+                  'https://flarepanel.dev/docs/get-started/install-openpanel',
                   'onboarding-welcome'
                 )}
                 key="install"
@@ -57,7 +57,7 @@ export function OnboardingWelcome({
               </Link>,
               <Link
                 href={withUtm(
-                  'https://openpanel.dev/docs/get-started/track-events',
+                  'https://flarepanel.dev/docs/get-started/track-events',
                   'onboarding-welcome'
                 )}
                 key="track"
@@ -76,6 +76,6 @@ export function OnboardingWelcome({
 
 OnboardingWelcome.PreviewProps = {
   firstName: 'Alex',
-  dashboardUrl: 'https://dashboard.openpanel.dev/org-id',
+  dashboardUrl: 'https://dashboard.flarepanel.dev/org-id',
   hasData: false,
 };

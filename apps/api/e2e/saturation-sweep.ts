@@ -28,7 +28,7 @@
  * SWEEP_AUTH_MODE=cors (browser traffic) and SWEEP_AUTH_MODE=bypass (diagnostic
  * baseline, no real traffic takes it).
  *
- * Full knob list and how to read the output: docs/BENCHMARK_HARNESS.md.
+ * Full knob list and how to read the output: docs/upstream/BENCHMARK_HARNESS.md.
  */
 
 import { spawn } from 'node:child_process';
@@ -356,7 +356,7 @@ function printVerdict(rungs: Rung[], probe: AuthCostProbe | null) {
   }
   console.log(
     '\n  Single-node box, single api+worker process. Not a cloud capacity claim;\n' +
-      '  see docs/BENCHMARK_HARNESS.md for what these numbers do NOT cover.'
+      '  see docs/upstream/BENCHMARK_HARNESS.md for what these numbers do NOT cover.'
   );
 }
 

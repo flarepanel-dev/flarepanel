@@ -1,4 +1,4 @@
-import type { IInterval } from '@openpanel/core/modules/report/report.constants';
+import type { IInterval } from '@flarepanel/core/modules/report/report.constants';
 import { curveMonotoneX } from 'd3-shape';
 import { useCallback } from 'react';
 import { Grid } from './grid';

@@ -1,4 +1,4 @@
-import type { OpenPanel, OpenPanelOptions } from '@openpanel/web';
+import type { OpenPanel, OpenPanelOptions } from '@flarepanel/web';
 
 export interface ModuleOptions extends OpenPanelOptions {
   proxy?: boolean;

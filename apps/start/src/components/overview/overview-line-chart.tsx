@@ -1,7 +1,7 @@
 import type {
   IInterval,
   timeWindows,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import { curveMonotoneX } from '@visx/curve';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Grid } from '../charts/grid';

@@ -1,4 +1,4 @@
-import { zReportInput } from '@openpanel/core/modules/report/report.constants';
+import { zReportInput } from '@flarepanel/core/modules/report/report.constants';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import ReportEditor from '@/components/report-chart/report-editor';

@@ -1,4 +1,4 @@
-import { round } from '@openpanel/shared';
+import { round } from '@flarepanel/shared';
 import { useMemo, useState } from 'react';
 import { useChartChrome } from '../common/chart-size';
 import { getLabelNames } from '../common/label-names';

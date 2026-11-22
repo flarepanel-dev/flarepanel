@@ -3,7 +3,7 @@ import {
   type IChartEventFilter,
   type IChartEventFilterOperator,
   operators,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import { FilterIcon, X } from 'lucide-react';
 import type { Options as NuqsOptions } from 'nuqs';
 import { FilterOperatorSelect } from '@/components/report/sidebar/filters/FilterOperatorSelect';

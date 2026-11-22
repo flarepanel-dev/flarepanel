@@ -22,7 +22,7 @@ const HTTP_TOO_MANY_REQUESTS = 429;
 // Wikimedia's policy wants a descriptive agent with a contact and throttles
 // anonymous browser strings; some other hosts refuse anything but a browser.
 const WIKIMEDIA_USER_AGENT =
-  'OpenPanelLogoFetcher/1.0 (https://openpanel.dev; hello@openpanel.dev)';
+  'OpenPanelLogoFetcher/1.0 (https://flarepanel.dev; hello@flarepanel.dev)';
 const BROWSER_USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
 const TRANSPARENT = { r: 0, g: 0, b: 0, alpha: 0 };

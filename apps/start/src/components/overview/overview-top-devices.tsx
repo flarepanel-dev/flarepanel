@@ -1,5 +1,5 @@
-import type { IChartType } from '@openpanel/core/modules/report/report.constants';
-import { NOT_SET_VALUE } from '@openpanel/core/modules/report/report.constants';
+import type { IChartType } from '@flarepanel/core/modules/report/report.constants';
+import { NOT_SET_VALUE } from '@flarepanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { SerieIcon } from '../report-chart/common/serie-icon';

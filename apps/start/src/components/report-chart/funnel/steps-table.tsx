@@ -2,7 +2,7 @@ import {
   alphabetIds,
   type ITimeToConvertAggregation,
   timeToConvertAggregations,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import { UsersIcon } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { getPreviousMetric } from '../../../utils/previous-metric';

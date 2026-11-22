@@ -1,4 +1,4 @@
-import { type Framework, frameworks } from '@openpanel/sdk-info';
+import { type Framework, frameworks } from '@flarepanel/sdk-info';
 import { WandSparklesIcon } from 'lucide-react';
 import {
   Select,

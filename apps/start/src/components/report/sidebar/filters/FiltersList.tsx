@@ -1,4 +1,4 @@
-import type { IChartEvent } from '@openpanel/core/modules/report/report.constants';
+import type { IChartEvent } from '@flarepanel/core/modules/report/report.constants';
 import { CohortFilterItem } from './CohortFilterItem';
 import { FilterItem } from './FilterItem';
 

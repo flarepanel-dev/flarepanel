@@ -2,7 +2,7 @@ import {
   type IProjectAccessGrant,
   type ProjectScope,
   SELECT_A_PROJECT_MESSAGE,
-} from '@openpanel/core/modules/organization/organization.constants';
+} from '@flarepanel/core/modules/organization/organization.constants';
 import { useId } from 'react';
 import { ProjectAccessGrants } from '@/components/settings/project-access-grants';
 import { Label } from '@/components/ui/label';

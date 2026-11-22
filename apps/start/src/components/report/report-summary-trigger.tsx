@@ -1,5 +1,5 @@
-import type { IChartEventItem } from '@openpanel/core/modules/report/report.constants';
-import { alphabetIds } from '@openpanel/core/modules/report/report.constants';
+import type { IChartEventItem } from '@flarepanel/core/modules/report/report.constants';
+import { alphabetIds } from '@flarepanel/core/modules/report/report.constants';
 import { GanttChartSquareIcon, PencilIcon } from 'lucide-react';
 import { forwardRef } from 'react';
 import { ColorSquare } from '@/components/color-square';

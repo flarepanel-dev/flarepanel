@@ -1,5 +1,5 @@
-import { getRecommendedPlan } from '@openpanel/payments';
-import { stripTrailingSlash } from '@openpanel/shared';
+import { getRecommendedPlan } from '@flarepanel/payments';
+import { stripTrailingSlash } from '@flarepanel/shared';
 import { format } from 'date-fns';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';

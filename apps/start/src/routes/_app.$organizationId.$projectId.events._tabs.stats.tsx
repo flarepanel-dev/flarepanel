@@ -2,7 +2,7 @@ import type {
   IChartBreakdown,
   IChartEventItem,
   IHistogramOptions,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import { createFileRoute } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import {

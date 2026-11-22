@@ -1,5 +1,5 @@
-import type { IServiceCustomEvent } from '@openpanel/core';
-import type { ICustomEventItem } from '@openpanel/core/modules/report/report.constants';
+import type { IServiceCustomEvent } from '@flarepanel/core';
+import type { ICustomEventItem } from '@flarepanel/core/modules/report/report.constants';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { XIcon } from 'lucide-react';
 import { useState } from 'react';

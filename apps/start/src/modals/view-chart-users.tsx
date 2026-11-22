@@ -1,4 +1,4 @@
-import type { IReportInput } from '@openpanel/core/modules/report/report.constants';
+import type { IReportInput } from '@flarepanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useEffect, useMemo, useState } from 'react';

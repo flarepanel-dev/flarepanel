@@ -1,5 +1,5 @@
-import type { IServiceOrganization } from '@openpanel/core';
-import { zEditOrganization } from '@openpanel/core/modules/organization/organization.constants';
+import type { IServiceOrganization } from '@flarepanel/core';
+import { zEditOrganization } from '@flarepanel/core/modules/organization/organization.constants';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';

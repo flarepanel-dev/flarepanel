@@ -46,7 +46,7 @@ const CLEANUP_BATCH_SIZE = 5000;
 const CLEANUP_MAX_BATCHES = 2000; // runaway backstop: 5000 * 2000 = 10M rows
 const DEFAULT_INSIGHTS_RETENTION_DAYS = 90;
 /** Where the weekly-digest link points when DASHBOARD_URL is not set. */
-const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
+const DEFAULT_DASHBOARD_URL = 'https://dashboard.flarepanel.dev';
 
 // Weekly digest: quiet threshold + how many email-worthy insights to surface.
 const WEEKLY_DIGEST_MIN_EVENTS = 100;

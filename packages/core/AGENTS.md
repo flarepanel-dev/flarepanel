@@ -1,4 +1,4 @@
-# @openpanel/core
+# @flarepanel/core
 
 Every route, procedure, job and rule the backend serves. `apps/api` is a shell
 that mounts what this package exports and runs it as `ROLE=api|worker|all`.
@@ -53,7 +53,7 @@ unreachable, because it is not exported. dependency-cruiser
 only one.
 
 The `*` matches `<module>/<module>`, so a report module's constants are
-`@openpanel/core/modules/report/report.constants`. One star per key is all the
+`@flarepanel/core/modules/report/report.constants`. One star per key is all the
 exports spec allows; putting the module name in the star twice is what buys the
 `modules/<name>/<name>.constants.ts` layout without a hand-maintained entry per
 module.
@@ -63,29 +63,29 @@ Measured on this scaffold (Bun 1.4.0, TypeScript 5.9 with
 one `report.constants.ts` and one `report.service.ts`:
 
 ```
-$ bun -e "await import('@openpanel/core/modules/report/report.constants')"
+$ bun -e "await import('@flarepanel/core/modules/report/report.constants')"
 RESOLVED [ "hour", "day" ]
 
-$ bun -e "await import('@openpanel/core/modules/report/report.service')"
-error: Cannot find module '@openpanel/core/modules/report/report.service'
+$ bun -e "await import('@flarepanel/core/modules/report/report.service')"
+error: Cannot find module '@flarepanel/core/modules/report/report.service'
 
-$ bun -e "await import('@openpanel/core/context')"
-error: Cannot find module '@openpanel/core/context'
+$ bun -e "await import('@flarepanel/core/context')"
+error: Cannot find module '@flarepanel/core/context'
 
-$ bun -e "await import('@openpanel/core/modules/../../package.json')"
-error: Cannot find module '@openpanel/core/modules/../../package.json'
+$ bun -e "await import('@flarepanel/core/modules/../../package.json')"
+error: Cannot find module '@flarepanel/core/modules/../../package.json'
 ```
 
 and the same pair through `tsc --noEmit`, importing both paths from one file:
 
 ```
 src/__exports_probe__.ts(2,30): error TS2307: Cannot find module
-  '@openpanel/core/modules/report/report.service' or its corresponding type
+  '@flarepanel/core/modules/report/report.service' or its corresponding type
   declarations.
 ```
 
 Vite's resolver says the same thing in its own words, which is what
-`apps/start` would see: `Missing "./context" specifier in "@openpanel/core"
+`apps/start` would see: `Missing "./context" specifier in "@flarepanel/core"
 package`.
 
 Line 1 — the `*.constants` import — produced no error. Both fixtures were
@@ -234,7 +234,7 @@ deep-importing `modules/<name>/src/*` instead of reaching behaviour through `dep
 
 `shared/` is for helpers that need nothing above them. If a file in `shared/` needs
 `ServiceDeps`, it is service infrastructure and is in the wrong directory. Truly dumb,
-dependency-free helpers belong in `@openpanel/shared` (**R21**), not here.
+dependency-free helpers belong in `@flarepanel/shared` (**R21**), not here.
 
 ## Procedures
 
@@ -294,7 +294,7 @@ the producer or worker runtime.
   `<name>.constants.ts`. Everything else arrives as `import type`, which is erased, so no server
   code reaches a browser bundle.
 - Enforced by the `frontend-values-only-constants` cruiser rule and the SDK dist gate. If you
-  find yourself needing a runtime helper in the dashboard, it belongs in `@openpanel/shared`
+  find yourself needing a runtime helper in the dashboard, it belongs in `@flarepanel/shared`
   (**R21**), not in an exception to this rule.
 
 ## Tests
@@ -384,7 +384,7 @@ manual escaping are gone.
 Static queries are written out and bound server-side with ClickHouse's own
 `{name:Type}` parameters; `{name:Identifier}` covers a dynamic table or column
 name. Dynamic composition — the chart engine, filters, breakdowns — uses typed
-fragments from `@openpanel/db`'s `sql` tag, which carry their own params and
+fragments from `@flarepanel/db`'s `sql` tag, which carry their own params and
 compose into auto-named `{pN:Type}` placeholders.
 
 **A `${}` slot accepts only a `SqlFragment` or a `SqlParam`.** A bare string or
@@ -415,7 +415,7 @@ of `node:fs` and the `fileURLToPath(import.meta.url)` dance. Existing `node:fs`
 call sites are **not** swept — `node:fs` is a builtin under Bun and rewriting
 working I/O deletes nothing.
 
-`apps/start`, `@openpanel/email` and `@openpanel/redis` typecheck this source
+`apps/start`, `@flarepanel/email` and `@flarepanel/redis` typecheck this source
 without Bun's types, so a `Bun.*` or `bun:*` reference is typed locally (see
 `src/shared/memory.ts`) or those packages stop compiling.
 

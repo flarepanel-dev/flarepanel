@@ -1,4 +1,4 @@
-import { stripTrailingSlash } from '@openpanel/shared';
+import { stripTrailingSlash } from '@flarepanel/shared';
 import referrers from './referrers';
 
 function getHostname(url: string | undefined) {

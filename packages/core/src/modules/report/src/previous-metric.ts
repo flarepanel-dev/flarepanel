@@ -3,7 +3,7 @@
 // module rather than to the layer below every transport. The generic
 // aggregates it is built on stay in `shared/math.ts`.
 
-import { round } from '@openpanel/shared';
+import { round } from '@flarepanel/shared';
 import { isNil } from 'ramda';
 import type { PreviousValue } from '../report.constants';
 

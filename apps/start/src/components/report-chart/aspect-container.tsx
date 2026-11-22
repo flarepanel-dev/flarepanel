@@ -1,4 +1,4 @@
-import { DEFAULT_ASPECT_RATIO } from '@openpanel/core/modules/report/report.constants';
+import { DEFAULT_ASPECT_RATIO } from '@flarepanel/core/modules/report/report.constants';
 import { useReportChartContext } from './context';
 import { cn } from '@/utils/cn';
 

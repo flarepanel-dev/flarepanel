@@ -1,10 +1,10 @@
-import type { IChartRange } from '@openpanel/core/modules/report/report.constants';
+import type { IChartRange } from '@flarepanel/core/modules/report/report.constants';
 import {
   getDefaultIntervalByDates,
   getDefaultIntervalByRange,
   intervals,
   timeWindows,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import { differenceInCalendarMonths } from 'date-fns';
 import {
   parseAsInteger,

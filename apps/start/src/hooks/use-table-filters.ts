@@ -1,4 +1,4 @@
-import type { IChartEventFilter } from '@openpanel/core/modules/report/report.constants';
+import type { IChartEventFilter } from '@flarepanel/core/modules/report/report.constants';
 import type { Options as NuqsOptions } from 'nuqs';
 import { useQueryState } from 'nuqs';
 import { useCallback, useMemo } from 'react';

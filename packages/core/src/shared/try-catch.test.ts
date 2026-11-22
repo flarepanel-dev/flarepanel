@@ -1,7 +1,7 @@
-// Tests @openpanel/shared's tryCatch from here because the root `test` script
+// Tests @flarepanel/shared's tryCatch from here because the root `test` script
 // does not run packages/shared.
 import { describe, expect, test } from 'bun:test';
-import { tryCatch } from '@openpanel/shared';
+import { tryCatch } from '@flarepanel/shared';
 
 describe('tryCatch', () => {
   test('wraps a resolved promise', async () => {

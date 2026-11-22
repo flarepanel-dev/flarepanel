@@ -4,9 +4,9 @@
  * fixtures, polling, and a tiny check/report framework.
  */
 
-import { getClientByIdCached, hashPassword } from '@openpanel/core';
-import { ClientType, chQuery, db } from '@openpanel/db';
-import { getRedisCache } from '@openpanel/redis';
+import { getClientByIdCached, hashPassword } from '@flarepanel/core';
+import { ClientType, chQuery, db } from '@flarepanel/db';
+import { getRedisCache } from '@flarepanel/redis';
 
 // ── Config ──────────────────────────────────────────────────────────────────
 export const API_URL = process.env.E2E_API_URL || 'http://localhost:3333';
@@ -428,7 +428,7 @@ export async function ensureFixtures() {
   try {
     await db.organization.upsert({
       where: { id: ORG_ID },
-      create: { id: ORG_ID, name: 'OpenPanel Dev' },
+      create: { id: ORG_ID, name: 'FlarePanel Dev' },
       update: {},
     });
     await db.project.upsert({
@@ -456,9 +456,9 @@ export async function ensureFixtures() {
       },
       update: { ignoreCorsAndSecret: true, projectId: PROJECT_ID },
     });
-    // `hashPassword` here is @openpanel/shared/server's scrypt hash, re-exported
-    // by @openpanel/core under its own name (core/src/index.ts) — reached that
-    // way because apps/api does not declare @openpanel/shared, and adding it
+    // `hashPassword` here is @flarepanel/shared/server's scrypt hash, re-exported
+    // by @flarepanel/core under its own name (core/src/index.ts) — reached that
+    // way because apps/api does not declare @flarepanel/shared, and adding it
     // would move the lockfile.
     const secret = await hashPassword(CLIENT_SECRET);
     await db.client.upsert({

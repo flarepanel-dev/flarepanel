@@ -1,5 +1,5 @@
-import { sql } from '@openpanel/db/src/clickhouse/sql';
-import { getRedisCache, publishEvent } from '@openpanel/redis';
+import { sql } from '@flarepanel/db/src/clickhouse/sql';
+import { getRedisCache, publishEvent } from '@flarepanel/redis';
 import type { IClickhouseEvent } from '../modules/event/event.service';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
 

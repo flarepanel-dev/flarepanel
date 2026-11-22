@@ -45,10 +45,10 @@ export default {
   name: 'openpanel',
   baseBranch: 'main',
   worktreesDir: '.worktrees',
-  github: 'Openpanel-dev/openpanel',
+  github: 'flarepanel-dev/flarepanel',
   domains: { local: 'local.openpanel.cc', remote: 'openpanel.cc' },
   install:
-    'bun install && bun run --filter @openpanel/db codegen && bunx playwright install chromium',
+    'bun install && bun run --filter @flarepanel/db codegen && bunx playwright install chromium',
 
   // port = 21000 + block×100 + offset. Main checkout is block 0.
   processes: {
@@ -57,13 +57,13 @@ export default {
     api: {
       host: 'api',
       offset: 1,
-      cmd: 'bun run --filter @openpanel/api dev',
+      cmd: 'bun run --filter @flarepanel/api dev',
       cwd: '.',
     },
     studio: {
       host: 'studio',
       offset: 2,
-      cmd: 'bun run --filter @openpanel/db studio',
+      cmd: 'bun run --filter @flarepanel/db studio',
       cwd: '.',
     },
   },
@@ -112,12 +112,12 @@ export default {
     },
     redis: { index: (block) => block }, // always per worktree
     kafka: { topics: (n) => [`events-${n}`, `events-${n}-dlq`] },
-    migrate: 'bun run --filter @openpanel/db migrate:deploy',
+    migrate: 'bun run --filter @flarepanel/db migrate:deploy',
     // Presets of packages/seed; each writes .seed.json and prints the logins it created.
     seed: {
-      small: 'bun run --filter @openpanel/seed seed -- --size small --reset',
-      medium: 'bun run --filter @openpanel/seed seed -- --size medium --reset',
-      large: 'bun run --filter @openpanel/seed seed -- --size large --reset',
+      small: 'bun run --filter @flarepanel/seed seed -- --size small --reset',
+      medium: 'bun run --filter @flarepanel/seed seed -- --size medium --reset',
+      large: 'bun run --filter @flarepanel/seed seed -- --size large --reset',
     },
   },
 
@@ -142,7 +142,7 @@ export default {
 
   // Every agent the hub launches can drive the dashboard in a real browser (--ignore-https-errors
   // only skips certificate checks for the hub's local CA; cookies and login are unaffected), and
-  // talks to this worktree's own OpenPanel MCP once the seed has written its root-client token.
+  // talks to this worktree's own FlarePanel MCP once the seed has written its root-client token.
   agents: {
     mcp: (w) => ({
       playwright: {

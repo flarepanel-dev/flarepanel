@@ -1,4 +1,4 @@
-import type { IProfileMetrics } from '@openpanel/core';
+import type { IProfileMetrics } from '@flarepanel/core';
 import { OverviewMetricCard } from '@/components/overview/overview-metric-card';
 
 interface Props {

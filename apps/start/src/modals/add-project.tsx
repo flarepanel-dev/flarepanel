@@ -1,5 +1,5 @@
+import { zOnboardingProject } from '@flarepanel/core/modules/onboarding/onboarding.constants';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zOnboardingProject } from '@openpanel/core/modules/onboarding/onboarding.constants';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import {

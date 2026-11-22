@@ -128,7 +128,7 @@ function Component() {
             can also do this later from the dashboard.
           </>
         }
-        title="Install OpenPanel"
+        title="Install FlarePanel"
       />
       <aside className={sidebarPlacement}>
         <FirstEventStatus

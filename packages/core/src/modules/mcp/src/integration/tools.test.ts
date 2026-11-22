@@ -28,8 +28,8 @@ const TEST_ORG_ID = 'mcp-integration-org';
 // Bypass Redis caching — prevents a real Redis round trip from gating every
 // assertion. Captured before mock.module runs: unlike vitest's importOriginal,
 // a factory here has no hook back to the real module once mocked.
-const actualRedis = await import('@openpanel/redis');
-mock.module('@openpanel/redis', () => ({
+const actualRedis = await import('@flarepanel/redis');
+mock.module('@flarepanel/redis', () => ({
   ...actualRedis,
   getCache: async <T>(_key: string, _ttl: number, fn: () => Promise<T>) => fn(),
 }));
@@ -54,7 +54,7 @@ let registerUserFlowTools: typeof import('../tools/analytics/user-flow').registe
 
 beforeAll(async () => {
   // Sequential, not Promise.all — concurrent dynamic imports of sibling
-  // modules that all reach into `@openpanel/db`'s barrel raced its class
+  // modules that all reach into `@flarepanel/db`'s barrel raced its class
   // declarations (a `PagesService` TDZ ReferenceError), so each subject
   // finishes evaluating before the next one starts.
   const fixtures = await import('../../../../../../../test/fixtures');

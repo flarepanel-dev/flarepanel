@@ -4,19 +4,19 @@ import type {
   IClickhouseEvent,
   IClickhouseProfile,
   INotificationPayload,
-} from '@openpanel/core';
-import type { CohortDefinition } from '@openpanel/core/modules/cohort/cohort.constants';
-import type { IImportConfig } from '@openpanel/core/modules/import/import.constants';
-import type { InsightPayload } from '@openpanel/core/modules/insight/insight.constants';
-import type { IIntegrationConfig } from '@openpanel/core/modules/integration/integration.constants';
-import type { INotificationRuleConfig } from '@openpanel/core/modules/notification/notification.constants';
-import type { IOrganizationAttributionStored } from '@openpanel/core/modules/onboarding/onboarding.constants';
-import type { IProjectAccessGrant } from '@openpanel/core/modules/organization/organization.constants';
-import type { IProjectFilters } from '@openpanel/core/modules/project/project.constants';
+} from '@flarepanel/core';
+import type { CohortDefinition } from '@flarepanel/core/modules/cohort/cohort.constants';
+import type { IImportConfig } from '@flarepanel/core/modules/import/import.constants';
+import type { InsightPayload } from '@flarepanel/core/modules/insight/insight.constants';
+import type { IIntegrationConfig } from '@flarepanel/core/modules/integration/integration.constants';
+import type { INotificationRuleConfig } from '@flarepanel/core/modules/notification/notification.constants';
+import type { IOrganizationAttributionStored } from '@flarepanel/core/modules/onboarding/onboarding.constants';
+import type { IProjectAccessGrant } from '@flarepanel/core/modules/organization/organization.constants';
+import type { IProjectFilters } from '@flarepanel/core/modules/project/project.constants';
 import type {
   ICustomEventItem,
   IWidgetOptions,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 
 declare global {
   namespace PrismaJson {
@@ -35,7 +35,7 @@ declare global {
     type IPrismaCohortDefinition = CohortDefinition;
     type IPrismaCustomEventItems = ICustomEventItem[];
     // One ChatMessage row is one AI SDK `UIMessage`: `parts` is its parts
-    // array. Typed loosely so `ai` stays out of @openpanel/db; the assistant
+    // array. Typed loosely so `ai` stays out of @flarepanel/db; the assistant
     // module narrows it.
     type IPrismaUIMessageParts = unknown[];
     type IPrismaChatMessageMetadata = Record<string, unknown>;

@@ -1,5 +1,5 @@
-import type { IChartLineType } from '@openpanel/core/modules/report/report.constants';
-import { lineTypes } from '@openpanel/core/modules/report/report.constants';
+import type { IChartLineType } from '@flarepanel/core/modules/report/report.constants';
+import { lineTypes } from '@flarepanel/core/modules/report/report.constants';
 import { CheckIcon, Tv2Icon } from 'lucide-react';
 import { Button, type ButtonProps } from '../ui/button';
 import {

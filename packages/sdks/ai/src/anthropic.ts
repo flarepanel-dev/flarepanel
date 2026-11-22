@@ -3,7 +3,7 @@
 // and `beta.messages.create`. The interfaces below describe only the fields
 // read, so any SDK version with these shapes works.
 
-import type { AiModelParameters, AiUsage } from '@openpanel/sdk';
+import type { AiModelParameters, AiUsage } from '@flarepanel/sdk';
 import {
   type CallDescription,
   type CallResult,

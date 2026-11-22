@@ -1,5 +1,5 @@
 {
-  "extends": "@openpanel/tsconfig/sdk.json",
+  "extends": "@flarepanel/tsconfig/sdk.json",
   "compilerOptions": {
     "incremental": false,
     "outDir": "dist",

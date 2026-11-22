@@ -2,7 +2,7 @@
 // client rather than the scope: its L1 LRU has to survive across calls, and the
 // ingest hot path passes the scope it holds on each call.
 
-import type { Client, Prisma } from '@openpanel/db/src/prisma-client';
+import type { Client, Prisma } from '@flarepanel/db/src/prisma-client';
 import { cacheablePerDb, type DbScope } from '../../cacheable-per-deps';
 import type { ServiceDeps, Services } from '../../services';
 import { hashClientSecret, newClientSecret } from '../../shared/client-secret';
@@ -23,7 +23,7 @@ export type IServiceClientWithProject = Prisma.ClientGetPayload<{
   };
 }>;
 
-// Declared here because Prisma's `ClientType` enum would be an `@openpanel/db`
+// Declared here because Prisma's `ClientType` enum would be an `@flarepanel/db`
 // value import, which core forbids outside the named seams.
 export const CLIENT_TYPES = ['read', 'write', 'root'] as const;
 export type ClientType = (typeof CLIENT_TYPES)[number];

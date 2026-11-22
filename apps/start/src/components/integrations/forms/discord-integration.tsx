@@ -1,5 +1,5 @@
+import { zCreateDiscordIntegration } from '@flarepanel/core/modules/integration/integration.constants';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zCreateDiscordIntegration } from '@openpanel/core/modules/integration/integration.constants';
 import { useMutation } from '@tanstack/react-query';
 import { mergeDeepRight, path } from 'ramda';
 import { useForm } from 'react-hook-form';

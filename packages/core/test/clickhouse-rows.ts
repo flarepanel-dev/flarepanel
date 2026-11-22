@@ -2,8 +2,8 @@
 // test ClickHouse and must produce the same rows, order ignored.
 
 import { expect } from 'bun:test';
-import type { ch as ChClient } from '@openpanel/db/src/clickhouse/client';
-import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
+import type { ch as ChClient } from '@flarepanel/db/src/clickhouse/client';
+import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
 
 type Ch = typeof ChClient;
 

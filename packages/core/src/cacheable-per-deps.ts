@@ -10,7 +10,7 @@
 // per process; the shared L2 Redis cache is unaffected. A cache that must be
 // process-lived takes `cacheablePerDb` below.
 
-import { type CacheableOptions, cacheable } from '@openpanel/redis';
+import { type CacheableOptions, cacheable } from '@flarepanel/redis';
 import type { ServiceDeps } from './services';
 
 type Cacheable<A extends unknown[], R> = ((...args: A) => Promise<R>) & {

@@ -6,7 +6,7 @@ import { appRouter } from './rpc.router';
 import type { CookieOptions } from './shared/cookie';
 
 const COOKIE_OPTIONS: CookieOptions = {
-  domain: '.openpanel.dev',
+  domain: '.flarepanel.dev',
   secure: true,
   sameSite: 'lax',
   httpOnly: true,
@@ -23,7 +23,7 @@ test('the composed appRouter serves the health procedure', async () => {
   });
 
   const response = await handler(
-    new Request('https://api.openpanel.dev/trpc/health.live'),
+    new Request('https://api.flarepanel.dev/trpc/health.live'),
     ctx
   );
 

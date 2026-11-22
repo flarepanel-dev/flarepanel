@@ -1,7 +1,7 @@
 // Every query is a `sql` fragment (src/sql.ts). The one write
 // (`writeGroupToCh`) goes through `deps.ch.insert`.
 
-import { toDots } from '@openpanel/shared';
+import { toDots } from '@flarepanel/shared';
 import { chQuery } from '../../ch-query';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';

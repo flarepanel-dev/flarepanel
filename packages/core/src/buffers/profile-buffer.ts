@@ -1,6 +1,6 @@
-import { sql } from '@openpanel/db/src/clickhouse/sql';
-import { getRedisCache, type Redis } from '@openpanel/redis';
-import { deepMergeObjects, getSafeJson } from '@openpanel/shared';
+import { sql } from '@flarepanel/db/src/clickhouse/sql';
+import { getRedisCache, type Redis } from '@flarepanel/redis';
+import { deepMergeObjects, getSafeJson } from '@flarepanel/shared';
 import { omit, uniq } from 'ramda';
 import type { IClickhouseProfile } from '../modules/profile/profile.service';
 import { TABLE_NAMES } from '../shared/ch-tables';

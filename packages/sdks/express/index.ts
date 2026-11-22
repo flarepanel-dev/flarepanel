@@ -1,9 +1,9 @@
-import type { OpenPanelOptions } from '@openpanel/sdk';
-import { OpenPanel } from '@openpanel/sdk';
+import type { OpenPanelOptions } from '@flarepanel/sdk';
+import { OpenPanel } from '@flarepanel/sdk';
 import type { NextFunction, Request, Response } from 'express';
 import { getClientIpFromHeaders } from './get-client-ip';
 
-export * from '@openpanel/sdk';
+export * from '@flarepanel/sdk';
 
 declare global {
   namespace Express {

@@ -1,5 +1,5 @@
+import { round } from '@flarepanel/shared';
 import { ResponsiveSankey } from '@nivo/sankey';
-import { round } from '@openpanel/shared';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRightIcon } from 'lucide-react';
 import { parseAsInteger, useQueryState } from 'nuqs';

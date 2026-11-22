@@ -1,4 +1,4 @@
-import type { AppRouter } from '@openpanel/core';
+import type { AppRouter } from '@flarepanel/core';
 import type { TRPCClientErrorBase } from '@trpc/client';
 import { createTRPCContext } from '@trpc/tanstack-react-query';
 import { type ExternalToast, toast } from 'sonner';

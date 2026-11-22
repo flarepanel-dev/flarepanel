@@ -1,7 +1,7 @@
-// Tests @openpanel/shared's id helpers from here because the root `test` script
+// Tests @flarepanel/shared's id helpers from here because the root `test` script
 // does not run packages/shared.
 import { describe, expect, test } from 'bun:test';
-import { generateId, shortId } from '@openpanel/shared';
+import { generateId, shortId } from '@flarepanel/shared';
 
 describe('shortId', () => {
   test('is 4 characters', () => {

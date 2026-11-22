@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import type { TrackHandlerPayload } from '@openpanel/sdk';
+import type { TrackHandlerPayload } from '@flarepanel/sdk';
 import { JSDOM } from 'jsdom';
 import { getInitSnippet } from './init-snippet';
 

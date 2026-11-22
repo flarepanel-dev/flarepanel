@@ -26,7 +26,7 @@ type BreakdownRow = {
 };
 
 /**
- * Every breakdown here is a ranked long-tail distribution: on openpanel.dev
+ * Every breakdown here is a ranked long-tail distribution: on flarepanel.dev
  * `referrer_name` returns 740 rows where the top 10 are 91% of sessions and 596
  * rows have two sessions or fewer. Returning the whole tail costs ~23k tokens to
  * say nothing, so we keep the head and roll the rest into one `(other)` row —

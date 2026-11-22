@@ -1,4 +1,4 @@
-import { safeFetch } from '@openpanel/shared/server';
+import { safeFetch } from '@flarepanel/shared/server';
 import type { WebhookFetcher } from '../../../clients/integrations/fetcher';
 
 /**

@@ -1,4 +1,4 @@
-import type { TrackProperties } from '@openpanel/sdk';
+import type { TrackProperties } from '@flarepanel/sdk';
 import type { OpenPanel, OpenPanelOptions } from './';
 
 type ExposedMethodsNames =

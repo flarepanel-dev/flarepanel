@@ -3,8 +3,8 @@ import type {
   IChartEventFilterOperator,
   IChartEventFilterValue,
   IChartFilterValueType,
-} from '@openpanel/core/modules/report/report.constants';
-import { getOperatorsForType } from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
+import { getOperatorsForType } from '@flarepanel/core/modules/report/report.constants';
 import { changeGlobalFilter, removeGlobalFilter } from '../../reportSlice';
 import { PureCohortFilterItem } from './CohortFilterItem';
 import { PureFilterItem } from './FilterItem';

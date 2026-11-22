@@ -1,4 +1,4 @@
-import type { IInterval } from '@openpanel/core/modules/report/report.constants';
+import type { IInterval } from '@flarepanel/core/modules/report/report.constants';
 import { getISOWeek } from 'date-fns';
 
 export function formatDateInterval(options: {

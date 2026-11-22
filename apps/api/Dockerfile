@@ -68,13 +68,13 @@ RUN bun run codegen
 # generated output survives, with every node_modules removed first: a `--production` install must be production-only
 # from the start, not a filtered view of a devDependency-laden tree.
 #
-# `--filter '@openpanel/api'` is the closure boundary: it follows `workspace:` edges transitively (api -> core -> db ->
+# `--filter '@flarepanel/api'` is the closure boundary: it follows `workspace:` edges transitively (api -> core -> db ->
 # redis/email/payments) and installs nothing outside them. A filter that matches nothing leaves the app unable to
 # resolve its imports, which tooling/gates/p13-images.sh catches by booting the image.
 FROM build AS prod-deps
 
 RUN find . -maxdepth 4 -type d -name node_modules -prune -exec rm -rf {} + && \
-    bun install --production --frozen-lockfile --linker=isolated --filter '@openpanel/api'
+    bun install --production --frozen-lockfile --linker=isolated --filter '@flarepanel/api'
 
 # TRIM — cuts that run HERE, in a build stage, never in the runtime stage: deleting a file in the final stage adds a
 # whiteout and makes the image LARGER, so a removal only shrinks anything if the bytes are never COPYed forward.
@@ -83,8 +83,8 @@ RUN find . -maxdepth 4 -type d -name node_modules -prune -exec rm -rf {} + && \
 #      arch this image is built for; the glob is arch-independent (an arm64 build resolves `-linux-arm64`).
 #   2/3. apps/api/scripts (two mock fixtures, 15.5 MB, only used by the non-production `test:manage` script) and
 #      apps/api/e2e. Removed here rather than by splitting the COPY below, which keeps that COPY drift-proof.
-#   4. `*.test.ts` under packages/. packages/sdks stays: core imports `@openpanel/ai` (which runs from source and
-#      pulls `@openpanel/sdk`), and the whole tree is under half a megabyte, so a per-package list is not worth
+#   4. `*.test.ts` under packages/. packages/sdks stays: core imports `@flarepanel/ai` (which runs from source and
+#      pulls `@flarepanel/sdk`), and the whole tree is under half a megabyte, so a per-package list is not worth
 #      the drift it invites.
 RUN find /app/node_modules/.bun -maxdepth 1 -name '*musl*' -prune -exec rm -rf {} + && \
     rm -rf /app/apps/api/scripts /app/apps/api/e2e && \

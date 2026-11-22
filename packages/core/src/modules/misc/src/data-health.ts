@@ -5,7 +5,7 @@
 import type {
   AccessLevel,
   ProjectScope,
-} from '@openpanel/db/src/prisma-client';
+} from '@flarepanel/db/src/prisma-client';
 import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';
 import { resolveProjectAccess } from '../../../shared/access-lookups';
@@ -15,7 +15,7 @@ import { MS_PER_DAY } from '../../../shared/time.constants';
 const NO_DATA_AFTER_MS = 2 * MS_PER_DAY;
 // An active project whose newest event is older than this counts as stalled.
 const STALLED_AFTER_MS = 7 * MS_PER_DAY;
-const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
+const DEFAULT_DASHBOARD_URL = 'https://dashboard.flarepanel.dev';
 
 interface OrgAlert {
   organizationId: string;

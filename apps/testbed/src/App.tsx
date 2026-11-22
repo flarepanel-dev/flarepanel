@@ -225,7 +225,7 @@ export default function App() {
         </button>
         <a
           data-testid="sdk-fixture-outgoing-link"
-          href="https://openpanel.dev/"
+          href="https://flarepanel.dev/"
         >
           Outgoing link
         </a>

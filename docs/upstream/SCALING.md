@@ -1,4 +1,4 @@
-# Scaling OpenPanel: what one box actually takes
+# Scaling FlarePanel: what one box actually takes
 
 This page answers two questions a self-hoster has before they install anything:
 **how much traffic will one box swallow**, and **what happens when I outgrow
@@ -41,7 +41,7 @@ process and the load generator itself.
 
 That co-location is not incidental. The load generator competes for the same
 four cores as the thing it is measuring, so these are numbers for *a whole
-OpenPanel stack on one small box*, not for an api process with a backend to
+FlarePanel stack on one small box*, not for an api process with a backend to
 itself. A bigger box, a managed ClickHouse, or an external broker all move them.
 
 All ingest figures are `/track` with a **real client secret** — the
@@ -195,7 +195,7 @@ Redpanda, ClickHouse and Redis were **not** shown to be the constraint. CPU
 exhaustion arrived first and masked whatever is behind it. Establishing a real
 per-replica scaling factor needs the load generated off-box, or more cores;
 neither was available for these runs. **Do not quote +28% as "the scaling
-factor" for OpenPanel** — it is the scaling factor of a 4-core box that was
+factor" for FlarePanel** — it is the scaling factor of a 4-core box that was
 already full.
 
 ---
@@ -249,13 +249,13 @@ are not sharing it.
 - **Not a cloud capacity model.** Every figure is one node with everything
   co-located: one Postgres, one Redis, one ClickHouse, one Redpanda, the api,
   the worker and the load generator, on 4 cores and 15 GB of RAM. Production
-  OpenPanel Cloud runs ClickHouse as 2 shards x 2 replicas; nothing here
+  FlarePanel Cloud runs ClickHouse as 2 shards x 2 replicas; nothing here
   predicts a per-node figure there.
 - **A synthetic session shape.** The load comes from one generator on the same
   box, emitting a fixed session pattern. Your events are a different size, a
   different mix, and arrive from the internet rather than from localhost.
 - **No V1 comparison.** Nothing here says whether V2 is faster or slower than
-  the OpenPanel you are running today. That comparison has not been made.
+  the FlarePanel you are running today. That comparison has not been made.
 - **A different box moves every number.** More cores, a managed ClickHouse, or
   an external broker each remove a different one of the constraints these runs
   hit, and the constraint they hit first was CPU on a box doing everything at

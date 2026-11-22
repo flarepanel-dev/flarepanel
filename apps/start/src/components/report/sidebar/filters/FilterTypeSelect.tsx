@@ -1,5 +1,5 @@
-import type { IChartFilterValueType } from '@openpanel/core/modules/report/report.constants';
-import { filterValueTypes } from '@openpanel/core/modules/report/report.constants';
+import type { IChartFilterValueType } from '@flarepanel/core/modules/report/report.constants';
+import { filterValueTypes } from '@flarepanel/core/modules/report/report.constants';
 import { Button } from '@/components/ui/button';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 import { mapKeys } from '@/utils/object-to-zod-enums';

@@ -8,7 +8,7 @@ import {
   Text,
 } from '@react-email/components';
 
-const baseUrl = 'https://openpanel.dev';
+const baseUrl = 'https://flarepanel.dev';
 
 export function Footer({ unsubscribeUrl }: { unsubscribeUrl?: string }) {
   return (
@@ -25,7 +25,7 @@ export function Footer({ unsubscribeUrl }: { unsubscribeUrl?: string }) {
           <Column className="w-8">
             <Link href="https://git.new/openpanel">
               <Img
-                alt="OpenPanel on Github"
+                alt="FlarePanel on Github"
                 height="22"
                 src={`${baseUrl}/icons/github.png`}
                 width="22"
@@ -35,7 +35,7 @@ export function Footer({ unsubscribeUrl }: { unsubscribeUrl?: string }) {
           <Column className="w-8">
             <Link href="https://x.com/openpaneldev">
               <Img
-                alt="OpenPanel on X"
+                alt="FlarePanel on X"
                 height="22"
                 src={`${baseUrl}/icons/x.png`}
                 width="22"
@@ -43,9 +43,9 @@ export function Footer({ unsubscribeUrl }: { unsubscribeUrl?: string }) {
             </Link>
           </Column>
           <Column className="w-8">
-            <Link href="https://go.openpanel.dev/discord">
+            <Link href="https://go.flarepanel.dev/discord">
               <Img
-                alt="OpenPanel on Discord"
+                alt="FlarePanel on Discord"
                 height="22"
                 src={`${baseUrl}/icons/discord.png`}
                 width="22"
@@ -53,9 +53,9 @@ export function Footer({ unsubscribeUrl }: { unsubscribeUrl?: string }) {
             </Link>
           </Column>
           <Column className="w-auto">
-            <Link href="mailto:hello@openpanel.dev">
+            <Link href="mailto:hello@flarepanel.dev">
               <Img
-                alt="Contact OpenPanel with email"
+                alt="Contact FlarePanel with email"
                 height="22"
                 src={`${baseUrl}/icons/email.png`}
                 width="22"
@@ -66,7 +66,7 @@ export function Footer({ unsubscribeUrl }: { unsubscribeUrl?: string }) {
 
         <Row>
           <Text className="text-[#B8B8B8] text-xs">
-            OpenPanel AB - Sankt Eriksgatan 100, 113 31, Stockholm, Sweden.
+            FlarePanel AB - Sankt Eriksgatan 100, 113 31, Stockholm, Sweden.
           </Text>
         </Row>
 

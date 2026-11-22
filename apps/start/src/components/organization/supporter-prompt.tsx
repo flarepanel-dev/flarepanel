@@ -82,7 +82,7 @@ export default function SupporterPrompt() {
       onClose={() => setSupporterPromptClosed(true)}
       show={!supporterPromptClosed}
       subtitle="Help us build the future of open analytics"
-      title="Support OpenPanel"
+      title="Support FlarePanel"
     >
       <div className="col gap-3 px-6">
         {PERKS.map((perk) => (
@@ -106,7 +106,7 @@ export default function SupporterPrompt() {
           Starting at $20/month • Cancel anytime •{' '}
           <a
             className="text-primary underline-offset-4 hover:underline"
-            href="https://openpanel.dev/supporter"
+            href="https://flarepanel.dev/supporter"
             rel="noreferrer"
             target="_blank"
           >

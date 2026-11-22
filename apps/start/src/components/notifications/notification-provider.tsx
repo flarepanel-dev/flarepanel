@@ -1,4 +1,4 @@
-import type { Notification } from '@openpanel/db';
+import type { Notification } from '@flarepanel/db';
 import { BellIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppParams } from '@/hooks/use-app-params';

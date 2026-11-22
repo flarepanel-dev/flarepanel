@@ -3,9 +3,9 @@
 // onboarding flow creates (onboarding.service.ts), with deterministic ids so a
 // re-run updates in place.
 
+import { db } from '@flarepanel/db';
+import { hashPassword } from '@flarepanel/shared/server';
 import { hash as argon2Hash } from '@node-rs/argon2';
-import { db } from '@openpanel/db';
-import { hashPassword } from '@openpanel/shared/server';
 import type { Archetype } from './archetypes/archetype';
 import { deterministicUuid, projectIdFor } from './ids';
 import type { Rng } from './rng';

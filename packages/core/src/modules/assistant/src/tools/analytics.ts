@@ -1,4 +1,4 @@
-import { sql } from '@openpanel/db/src/clickhouse/sql';
+import { sql } from '@flarepanel/db/src/clickhouse/sql';
 import { tool } from 'ai';
 import { z } from 'zod';
 import { chQuery } from '../../../../ch-query';

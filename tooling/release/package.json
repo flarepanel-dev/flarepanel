@@ -1,5 +1,5 @@
 {
-  "name": "@openpanel/release",
+  "name": "@flarepanel/release",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
@@ -13,7 +13,7 @@
     "semver": "7.6.0"
   },
   "devDependencies": {
-    "@openpanel/tsconfig": "workspace:*",
+    "@flarepanel/tsconfig": "workspace:*",
     "@types/semver": "7.5.7",
     "bun-types": "1.4.4",
     "typescript": "catalog:"

@@ -39,8 +39,8 @@ import {
   queueKey,
   queues,
   startWorkers,
-} from '@openpanel/core';
-import { Redis } from '@openpanel/redis';
+} from '@flarepanel/core';
+import { Redis } from '@flarepanel/redis';
 import pino from 'pino';
 import { loadConfig } from '../src/config/env';
 

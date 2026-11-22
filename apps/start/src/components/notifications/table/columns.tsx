@@ -1,4 +1,4 @@
-import type { INotificationPayload } from '@openpanel/core';
+import type { INotificationPayload } from '@flarepanel/core';
 import type { ColumnDef } from '@tanstack/react-table';
 import { ColumnCreatedAt } from '@/components/column-created-at';
 import { ProjectLink } from '@/components/links';

@@ -1,10 +1,10 @@
 // The ClickHouse table names core reads and writes, plus two cluster helpers.
 //
-// Duplicated from `@openpanel/db/src/clickhouse/client.ts` because importing
+// Duplicated from `@flarepanel/db/src/clickhouse/client.ts` because importing
 // that constructs a real ClickHouse client and pino logger at module load.
 // `ch-tables.parity.test.ts` asserts the two maps are identical.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 
 export const TABLE_NAMES = {
   events: 'events',

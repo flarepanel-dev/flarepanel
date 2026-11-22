@@ -1,122 +1,68 @@
-![hero](apps/public/public/ogimage.png)
-
 <p align="center">
-	<h1 align="center"><b>Openpanel</b></h1>
-<p align="center">
-    An open-source alternative to Mixpanel
-    <br />
-    <br />
-    <a href="https://openpanel.dev">Website</a>
-    ·
-    <a href="https://openpanel.dev/docs">Docs</a>
-    ·
-    <a href="https://dashboard.openpanel.dev">Sign in</a>
-    ·
-    <a href="https://go.openpanel.dev/discord">Discord</a>
-    ·
-    <a href="https://twitter.com/OpenPanelDev">X/Twitter</a>
-    ·
-    <a href="https://twitter.com/CarlLindesvard">Creator</a>
-    ·
-  </p>
-  <br />
-  <br />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/wordmark-dark.svg">
+    <img alt="FlarePanel" src="brand/wordmark-light.svg" width="340">
+  </picture>
 </p>
-  
-Openpanel is an open-source web and product analytics platform that combines the power of Mixpanel with the ease of Plausible and one of the best Google Analytics replacements.
 
-## ✨ Features
+<p align="center">
+  Open-source web and product analytics that runs entirely on Cloudflare.
+</p>
 
-- **🔍 Advanced Analytics**: Funnels, cohorts, user profiles, and session history
-- **🎬 Session Replay**: Record and replay user sessions with privacy controls built in
-- **📊 Real-time Dashboards**: Live data updates and interactive charts
-- **🎯 A/B Testing**: Built-in variant testing with detailed breakdowns
-- **🔔 Smart Notifications**: Event and funnel-based alerts
-- **🌍 Privacy-First**: Cookieless tracking and GDPR compliance
-- **🚀 Developer-Friendly**: Comprehensive SDKs and API access
-- **📦 Self-Hosted**: Full control over your data and infrastructure
-- **💸 Transparent Pricing**: No hidden costs or usage limits
-- **🛠️ Custom Dashboards**: Flexible chart creation and data visualization
-- **📱 Multi-Platform**: Web, mobile (iOS/Android), and server-side tracking
-- **🤖 MCP Server**: Ask Claude, Cursor, or any MCP client about your users — 38 tools, hosted, no install
-- **💰 Revenue Tracking**: Monitor purchases, subscriptions, and LTV alongside product events
-- **🔌 Integrations**: Connect Google Search Console, and more to enrich your data
+<p align="center">
+  <a href="LICENSE.md">AGPL-3.0</a> ·
+  <a href="docs/adr/0001-architecture-and-product-strategy.md">Architecture</a> ·
+  <a href="docs/project-plan.md">Roadmap</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
 
-## 📊 Analytics Platform Comparison
+---
 
-| Feature                                | OpenPanel | Mixpanel | GA4       | Plausible |
-|----------------------------------------|-----------|----------|-----------|-----------|
-| ✅ Open-source                         | ✅         | ❌        | ❌        | ✅         |
-| 🧩 Self-hosting supported              | ✅         | ❌        | ❌        | ✅         |
-| 🔒 Cookieless by default               | ✅         | ❌        | ❌        | ✅         |
-| 🔁 Real-time dashboards                | ✅         | ✅        | ❌        | ✅         |
-| 🔍 Funnels & cohort analysis           | ✅         | ✅        | ✅*       | ✅***         |
-| 👤 User profiles & session history     | ✅         | ✅        | ❌        | ❌         |
-| 🎬 Session replay                      | ✅         | ✅****    | ❌        | ❌         |
-| 📈 Custom dashboards & charts          | ✅         | ✅        | ✅        | ❌         |
-| 💬 Event & funnel notifications        | ✅         | ✅        | ❌        | ❌         |
-| 🌍 GDPR-compliant tracking             | ✅         | ✅        | ❌**      | ✅         |
-| 📦 SDKs (Web, Swift, Kotlin, ReactNative) | ✅      | ✅        | ✅        | ❌         |
-| 💸 Transparent pricing                 | ✅         | ❌        | ✅*       | ✅         |
-| 🚀 Built for developers                | ✅         | ✅        | ❌        | ✅         |
-| 🔧 A/B testing & variant breakdowns    | ✅         | ✅        | ❌        | ❌         |
+> **Status: early development.** FlarePanel is being ported from OpenPanel's
+> Postgres/ClickHouse/Redis/Kafka stack to Cloudflare. It is not ready to
+> deploy yet. Follow the [roadmap](docs/project-plan.md).
 
-> ✅* GA4 has a free tier but often requires BigQuery (paid) for raw data access.
-> ❌** GA4 has faced GDPR bans in several EU countries due to data transfers to US-based servers.
-> ✅*** Plausible has simple goals
-> ✅**** Mixpanel session replay is limited to 5k sessions/month on free and 20k on paid. OpenPanel has no limit.
+## What it is
 
-## Stack
+FlarePanel is a fork of [OpenPanel](https://github.com/Openpanel-dev/openpanel)
+rebuilt on Cloudflare's own services, so you can deploy it to your Cloudflare
+account with no servers or databases to run:
 
-- **Nextjs** - the dashboard
-- **Fastify** - event api
-- **Postgres** - storing basic information
-- **Clickhouse** - storing events
-- **Redis** - cache layer, pub/sub and queue
-- **BullMQ** - queue
-- **GroupMQ** - for grouped queue
-- **Resend** - email
-- **Arctic** - oauth
-- **Oslo** - auth
-- **tRPC** - api
-- **Tailwind** - styling
-- **Shadcn** - ui
+| Part | Runs on |
+|---|---|
+| Dashboard and API | Cloudflare Workers |
+| Accounts, projects, settings | D1 |
+| Live counters, rollups, realtime | Durable Objects |
+| Raw event archive | R2 |
+| Scheduled jobs | Cron Triggers |
 
-## Self-hosting
+Planned:
 
-OpenPanel can be self-hosted and we have tried to make it as simple as possible.
+- **Self-hosted:** free, one-click deploy to your own Cloudflare account, with
+  a free-plan "lite" mode for small sites.
+- **FlarePanel Cloud:** hosted by us, priced per event.
+- **Data region choice:** keep data in the EU or US.
+- **Works with OpenPanel SDKs:** point an existing OpenPanel SDK at your
+  FlarePanel URL and keep tracking.
 
-You can find the how to [here](https://openpanel.dev/docs/self-hosting/self-hosting)
+## Features (inherited from OpenPanel)
 
-**Give us a star if you like it!**
-
-[![Star History Chart](https://api.star-history.com/svg?repos=Openpanel-dev/openpanel&type=Date)](https://star-history.com/#Openpanel-dev/openpanel&Date)
+Web analytics, product analytics, funnels, retention, user profiles,
+sessions, live visitors, dashboards, an AI assistant and AI observability.
 
 ## Development
 
-### Prerequisites
-
-- Docker
-- Docker Compose
-- Bun
-
-### Start
-
 ```bash
 bun install
-cp .env.example .env
-echo "API_URL=http://localhost:3333" > apps/start/.env
-
-bun run dock:up
 bun run codegen
-bun run migrate:deploy # once to setup the db
-bun run dev
+bun run typecheck
 ```
 
-You can now access the following:
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full setup.
 
-- Dashboard: https://localhost:3000
-- API: https://api.localhost:3333
-- Bullboard (queue): http://localhost:9999
-- `bun run dock:ch` to access clickhouse terminal
-- `bun run dock:redis` to access redis terminal
+## License
+
+AGPL-3.0, like OpenPanel. The client SDKs in `packages/sdks` are MIT. See
+[NOTICE](NOTICE) for attribution.
+
+FlarePanel is not affiliated with OpenPanel or Cloudflare.

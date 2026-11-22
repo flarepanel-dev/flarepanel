@@ -1,9 +1,9 @@
-import type { IServiceReport } from '@openpanel/core';
+import type { IServiceReport } from '@flarepanel/core';
 import {
   GRID_COLUMNS,
   GRID_GAP,
   GRID_ROW_HEIGHT,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import {
   type ReactNode,
   useCallback,
@@ -27,7 +27,7 @@ export {
   GRID_COLUMNS,
   GRID_GAP,
   GRID_ROW_HEIGHT,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 export type { Layout, LayoutItem } from 'react-grid-layout';
 
 export const TILE_MIN_SIZE = { minW: 6, minH: 6 } as const;

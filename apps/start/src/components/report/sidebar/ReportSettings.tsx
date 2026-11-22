@@ -1,11 +1,11 @@
 import type {
   IChartMetric,
   IConversionYAxisScale,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import {
   conversionYAxisScales,
   timeToConvertAggregations,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import { useMemo } from 'react';
 import {
   changeConversionYAxisScale,

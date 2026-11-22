@@ -5,7 +5,7 @@
 // (subquery)` over a CTE. Whether these should be `GLOBAL IN` on a cluster is
 // an open question.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import { compiledText } from './compiled';
 import { CHART_TABLE } from './field-resolution';
 

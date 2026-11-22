@@ -7,14 +7,14 @@
   "main": "@tanstack/react-start/server-entry",
   "routes": [
     {
-      "pattern": "dashboard.openpanel.dev/*",
-      "zone_name": "openpanel.dev"
+      "pattern": "dashboard.flarepanel.dev/*",
+      "zone_name": "flarepanel.dev"
     }
   ],
   "vars": {
     "VITE_OP_CLIENT_ID": "301c6dc1-424c-4bc3-9886-a8beab09b615",
-    "API_URL": "https://api.openpanel.dev",
-    "DASHBOARD_URL": "https://dashboard.openpanel.dev",
+    "API_URL": "https://api.flarepanel.dev",
+    "DASHBOARD_URL": "https://dashboard.flarepanel.dev",
     "NODE_ENV": "production",
     "APP_VERSION": "1.0.0"
   },

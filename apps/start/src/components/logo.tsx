@@ -7,7 +7,7 @@ interface LogoProps {
 export function LogoSquare({ className }: LogoProps) {
   return (
     <img
-      alt="Openpanel logo"
+      alt="FlarePanel logo"
       className={cn('rounded-md', className)}
       src="/logo.svg"
     />
@@ -20,7 +20,7 @@ export function Logo({ className }: LogoProps) {
       className={cn('flex items-center gap-2 font-medium text-xl', className)}
     >
       <LogoSquare className="max-h-8" />
-      <span>openpanel.dev</span>
+      <span>FlarePanel</span>
     </div>
   );
 }

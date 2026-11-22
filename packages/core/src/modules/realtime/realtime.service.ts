@@ -1,11 +1,11 @@
 // `TABLE_NAMES` and the date helpers come from core's own copies rather than
-// @openpanel/db, whose clickhouse client constructs a real client at module load.
+// @flarepanel/db, whose clickhouse client constructs a real client at module load.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import {
   type IPublishChannels,
   subscribeToPublishedEvent,
-} from '@openpanel/redis';
+} from '@flarepanel/redis';
 import { subMinutes } from 'date-fns';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';

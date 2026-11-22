@@ -5,7 +5,7 @@ import type {
   LanguageModelV4GenerateResult,
   LanguageModelV4StreamPart,
 } from '@ai-sdk/provider';
-import type { AiPayload } from '@openpanel/sdk';
+import type { AiPayload } from '@flarepanel/sdk';
 import { withAiContext } from './context';
 import { openpanelAiMiddleware } from './middleware';
 

@@ -1,4 +1,4 @@
-import { shortId } from '@openpanel/shared';
+import { shortId } from '@flarepanel/shared';
 import { FilterIcon } from 'lucide-react';
 import { addGlobalFilter } from '../reportSlice';
 import { GlobalFilterItem } from './filters/GlobalFilterItem';

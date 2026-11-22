@@ -1,4 +1,4 @@
-import type { IServiceEvent } from '@openpanel/core';
+import type { IServiceEvent } from '@flarepanel/core';
 import { memo } from 'react';
 import { Skeleton } from '../../skeleton';
 import { EventIcon } from '../event-icon';

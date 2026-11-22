@@ -2,7 +2,7 @@
 // insight write. `Prisma` is the JSON sentinel (`DbNull`), which arrives on the
 // scope as `deps.prisma`.
 
-import type { Prisma } from '@openpanel/db/src/prisma-client';
+import type { Prisma } from '@flarepanel/db/src/prisma-client';
 import type { ServiceDeps } from '../../../services';
 import type {
   Cadence,

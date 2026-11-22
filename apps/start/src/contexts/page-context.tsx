@@ -1,6 +1,6 @@
-import type { ChatLaunchHint } from '@openpanel/core/modules/assistant/assistant.constants';
+import type { ChatLaunchHint } from '@flarepanel/core/modules/assistant/assistant.constants';
 
-export type { ChatLaunchHint } from '@openpanel/core/modules/assistant/assistant.constants';
+export type { ChatLaunchHint } from '@flarepanel/core/modules/assistant/assistant.constants';
 
 import {
   createContext,

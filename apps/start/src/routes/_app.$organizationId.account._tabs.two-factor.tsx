@@ -77,7 +77,7 @@ function DisabledView({
           <p className="text-muted-foreground">
             We moved sign-in to a new system, and authenticator codes set up
             before the move no longer work there. Two-factor is off until you
-            enable it again; remove the old OpenPanel entry from your
+            enable it again; remove the old FlarePanel entry from your
             authenticator app first.
           </p>
         </div>

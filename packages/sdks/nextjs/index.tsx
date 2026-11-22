@@ -5,17 +5,17 @@ import type {
   OpenPanelMethodNames,
   OpenPanelOptions,
   TrackProperties,
-} from '@openpanel/web';
-import { getInitSnippet } from '@openpanel/web';
+} from '@flarepanel/web';
+import { getInitSnippet } from '@flarepanel/web';
 // adding .js next/script import fixes an issues
 // with esm and nextjs (when using pages dir)
 import Script from 'next/script.js';
 // biome-ignore lint/correctness/noUnusedImports: nextjs requires this
 import React from 'react';
 
-export * from '@openpanel/web';
+export * from '@flarepanel/web';
 
-const CDN_URL = 'https://openpanel.dev/op1.js';
+const CDN_URL = 'https://flarepanel.dev/op1.js';
 
 type OpenPanelComponentProps = Omit<OpenPanelOptions, 'filter'> & {
   profileId?: string;

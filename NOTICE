@@ -1,0 +1,26 @@
+FlarePanel
+https://github.com/flarepanel-dev/flarepanel
+
+FlarePanel is a fork of OpenPanel (https://github.com/Openpanel-dev/openpanel),
+started from commit a5a6eb7d62c9579620ec5e3fbfd4ce760f3d8073 (2026-11-06).
+OpenPanel was created by Carl-Gerhard Lindesvärd and the OpenPanel contributors.
+
+FlarePanel is not affiliated with, endorsed by or sponsored by OpenPanel.
+"OpenPanel" is a trademark of its owners and is used here only to describe
+where this code comes from.
+
+License
+-------
+FlarePanel, like OpenPanel, is licensed under the GNU Affero General Public
+License v3.0 (see LICENSE.md). If you run a modified version of FlarePanel as a
+network service, AGPL section 13 requires you to offer its source code to the
+users of that service.
+
+The client SDKs in packages/sdks/* keep their own MIT licenses and copyright
+notices (see the LICENSE file in each SDK directory).
+
+Wire compatibility
+------------------
+FlarePanel keeps OpenPanel's tracking protocol (for example the
+openpanel-client-id request headers and the SDK class names) so that existing
+OpenPanel SDKs can send events to a FlarePanel install.

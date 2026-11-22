@@ -1,5 +1,5 @@
+import { decryptCredential } from '@flarepanel/shared/server';
 import { Storage } from '@google-cloud/storage';
-import { decryptCredential } from '@openpanel/shared/server';
 import {
   callProvider,
   ProviderError,

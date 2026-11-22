@@ -1,4 +1,4 @@
-import type { IServiceProjectWithClients } from '@openpanel/core';
+import type { IServiceProjectWithClients } from '@flarepanel/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { SparklesIcon } from 'lucide-react';
@@ -29,10 +29,10 @@ const TEST_EVENT_NAME = 'openpanel_test_event';
 // project's client and allowed origins, so it finds most causes by itself.
 function diagnoseQuestion(project: IServiceProjectWithClients): string {
   if (project.domain) {
-    return `No events have arrived for ${project.domain} after installing OpenPanel. Diagnose the install.`;
+    return `No events have arrived for ${project.domain} after installing FlarePanel. Diagnose the install.`;
   }
   const kinds = project.types.length > 0 ? project.types.join(' and ') : 'app';
-  return `No events have arrived from my ${kinds} project after installing OpenPanel. Check what has reached the project and what could block events.`;
+  return `No events have arrived from my ${kinds} project after installing FlarePanel. Check what has reached the project and what could block events.`;
 }
 
 function normalizeOrigins(values: string[]) {
@@ -199,7 +199,7 @@ export function InstallTroubleshooting({
         Still stuck? Write to{' '}
         <a
           className="underline"
-          href="mailto:hello@openpanel.dev"
+          href="mailto:hello@flarepanel.dev"
           onClick={() =>
             trackFunnel('onboarding_support_link_clicked', {
               projectId: project.id,
@@ -207,12 +207,12 @@ export function InstallTroubleshooting({
             })
           }
         >
-          hello@openpanel.dev
+          hello@flarepanel.dev
         </a>{' '}
         or join the{' '}
         <a
           className="underline"
-          href="https://go.openpanel.dev/discord"
+          href="https://go.flarepanel.dev/discord"
           onClick={() =>
             trackFunnel('onboarding_support_link_clicked', {
               projectId: project.id,

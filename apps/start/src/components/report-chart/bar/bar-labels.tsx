@@ -1,4 +1,4 @@
-import { NOT_SET_VALUE } from '@openpanel/core/modules/report/report.constants';
+import { NOT_SET_VALUE } from '@flarepanel/core/modules/report/report.constants';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { SerieIcon } from '../common/serie-icon';

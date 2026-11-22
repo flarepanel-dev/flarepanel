@@ -1,7 +1,7 @@
 // Every ClickHouse statement here is a `sql` fragment from src/sql.ts. Funnel,
 // conversion, sankey and retention dispatch to the sibling `*.service.ts` files.
 
-import { getChartPrevStartEndDate } from '@openpanel/shared';
+import { getChartPrevStartEndDate } from '@flarepanel/shared';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
 import { expandCustomEvents } from '../custom-event/custom-event.service';

@@ -1,4 +1,4 @@
-// Tests @openpanel/shared's safeFetch from here because the root `test` script
+// Tests @flarepanel/shared's safeFetch from here because the root `test` script
 // does not run packages/shared.
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import http from 'node:http';
@@ -8,7 +8,7 @@ import {
   isBlockedIp,
   safeFetch,
   safeFetchStream,
-} from '@openpanel/shared/server';
+} from '@flarepanel/shared/server';
 
 describe('isBlockedIp', () => {
   it('blocks the ranges an SSRF payload aims at', () => {

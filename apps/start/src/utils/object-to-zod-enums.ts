@@ -1,4 +1,4 @@
-// Copied rather than value-imported from @openpanel/core.
+// Copied rather than value-imported from @flarepanel/core.
 export function objectToZodEnums<K extends string>(
   obj: Record<K, unknown>
 ): [K, ...K[]] {

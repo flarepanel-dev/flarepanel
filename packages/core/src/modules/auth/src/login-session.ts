@@ -1,7 +1,7 @@
 // Postgres-backed login sessions (a `sessions` row keyed by the hash of a
 // browser's cookie). Not to be confused with ClickHouse visitor sessions.
 
-import type { Session, User } from '@openpanel/db/src/prisma-client';
+import type { Session, User } from '@flarepanel/db/src/prisma-client';
 import type { ServiceDeps } from '../../../services';
 import { EMPTY_SESSION } from '../../../shared/session';
 import { decodeSessionToken } from './token';

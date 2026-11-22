@@ -13,17 +13,17 @@ const noopLogger = {
   child: () => noopLogger,
 };
 
-// Only `@openpanel/redis`'s `getCache` and argon2 verification are mocked, at
+// Only `@flarepanel/redis`'s `getCache` and argon2 verification are mocked, at
 // the specifier the source resolves to: a whole-barrel replacement would drop
 // every other export for other files sharing this process.
-const actualRedis = await import('@openpanel/redis');
-mock.module('@openpanel/redis', () => ({
+const actualRedis = await import('@flarepanel/redis');
+mock.module('@flarepanel/redis', () => ({
   ...actualRedis,
   getCache: mockGetCache,
 }));
 
-const actualCrypto = await import('@openpanel/shared/server');
-mock.module('@openpanel/shared/server', () => ({
+const actualCrypto = await import('@flarepanel/shared/server');
+mock.module('@flarepanel/shared/server', () => ({
   ...actualCrypto,
   verifyPassword: mockVerifyPassword,
 }));

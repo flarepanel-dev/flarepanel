@@ -1,5 +1,5 @@
-import type { IServiceReport } from '@openpanel/core';
-import type { IReportInput } from '@openpanel/core/modules/report/report.constants';
+import type { IServiceReport } from '@flarepanel/core';
+import type { IReportInput } from '@flarepanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
 import { ShareIcon } from 'lucide-react';
 import { useEffect } from 'react';

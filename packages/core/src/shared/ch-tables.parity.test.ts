@@ -1,11 +1,11 @@
-// core keeps its own copy of @openpanel/db's `TABLE_NAMES`; this catches a table
+// core keeps its own copy of @flarepanel/db's `TABLE_NAMES`; this catches a table
 // added on one side only in CI instead of as a failing production query.
 
 import { describe, expect, it } from 'bun:test';
-import * as dbClient from '@openpanel/db/src/clickhouse/client';
+import * as dbClient from '@flarepanel/db/src/clickhouse/client';
 import { getReplicatedTableName, TABLE_NAMES } from './ch-tables';
 
-describe('ch-tables parity with @openpanel/db', () => {
+describe('ch-tables parity with @flarepanel/db', () => {
   it('has exactly the same table map', () => {
     expect(TABLE_NAMES).toEqual(dbClient.TABLE_NAMES);
   });

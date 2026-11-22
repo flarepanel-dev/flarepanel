@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { chQuery, TABLE_NAMES } from '@openpanel/db/src/clickhouse/client';
-import { round } from '@openpanel/shared';
+import { chQuery, TABLE_NAMES } from '@flarepanel/db/src/clickhouse/client';
+import { round } from '@flarepanel/shared';
 import {
   RETENTION_BLUEPRINT,
   RETENTION_FIXTURE,

@@ -9,8 +9,8 @@ import {
   type SqlFragment,
   type SqlSlot,
   sql,
-} from '@openpanel/db/src/clickhouse/sql';
-import { stripLeadingAndTrailingSlashes } from '@openpanel/shared';
+} from '@flarepanel/db/src/clickhouse/sql';
+import { stripLeadingAndTrailingSlashes } from '@flarepanel/shared';
 import type { IChartEventFilter } from '../../report/report.constants';
 import { getCohortIds } from '../../report/report.constants';
 import {

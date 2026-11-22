@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { getCache } from '@openpanel/redis';
+import { getCache } from '@flarepanel/redis';
 import type { ServiceDeps, Services } from '../../../services';
 import { verifyClientSecret } from '../../../shared/client-secret';
 

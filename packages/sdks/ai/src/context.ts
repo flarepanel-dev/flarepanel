@@ -21,7 +21,7 @@ export interface AiCallContext {
   privacyMode?: boolean;
 }
 
-// Every entry point (`@openpanel/ai`, `/openai`, `/vercel`…) is bundled on
+// Every entry point (`@flarepanel/ai`, `/openai`, `/vercel`…) is bundled on
 // its own, and an app may load both the ESM and CJS builds. A store per copy
 // would make `withAiContext` invisible to the wrappers, so all copies share one.
 const STORAGE_KEY = Symbol.for('openpanel.ai.context');

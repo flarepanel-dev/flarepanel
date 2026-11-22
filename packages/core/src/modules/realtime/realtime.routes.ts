@@ -7,7 +7,7 @@
 // HTTP upgrade request itself instead of letting the socket reject after
 // connecting.
 
-import { setSuperJson } from '@openpanel/shared';
+import { setSuperJson } from '@flarepanel/shared';
 import { z } from 'zod';
 import type { HttpCtx } from '../../context';
 import { defineRoutes } from '../../http/define';

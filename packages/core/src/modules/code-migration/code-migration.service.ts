@@ -2,8 +2,8 @@
 // moment it starts instead of waiting on them. The migration functions are
 // injected so the orchestration is testable without `mock.module`.
 
-import type { Redis } from '@openpanel/redis';
-import { generateSecureId } from '@openpanel/shared';
+import type { Redis } from '@flarepanel/redis';
+import { generateSecureId } from '@flarepanel/shared';
 import { defineRedisScript } from '../../buffers/redis-script';
 import type { Logger } from '../../logger';
 

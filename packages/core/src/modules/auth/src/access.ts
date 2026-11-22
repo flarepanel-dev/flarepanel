@@ -1,7 +1,7 @@
 // Lives in the auth module, not `shared/`: it throws a transport error
 // (`TRPCForbiddenError`).
 //
-// The data lookups are injected rather than imported from `@openpanel/db` so
+// The data lookups are injected rather than imported from `@flarepanel/db` so
 // core stays importable without a database: `bun test` loads this package with
 // no DATABASE_URL and no Prisma client.
 

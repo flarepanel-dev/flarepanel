@@ -2,7 +2,7 @@
 // `session` cookies still resolve (see `http/session.ts`) and are handed
 // better-auth's cookie on the way out, until PR 4 drops them.
 
-import type { Session, User } from '@openpanel/db/src/prisma-client';
+import type { Session, User } from '@flarepanel/db/src/prisma-client';
 import { APIError, type BetterAuthPlugin, betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { createAuthMiddleware, getOAuthState } from 'better-auth/api';
@@ -299,7 +299,7 @@ function buildAuth(deps: AuthDeps, secret: string) {
             throw new APIError('BAD_REQUEST', {
               code: PASSWORD_RESET_REQUIRED,
               message:
-                'Your password was set in an older version of OpenPanel and has expired. Reset your password to continue.',
+                'Your password was set in an older version of FlarePanel and has expired. Reset your password to continue.',
             });
           }
           return verifyPasswordHash(hash, password);
@@ -351,7 +351,7 @@ function buildAuth(deps: AuthDeps, secret: string) {
     plugins: [
       exposedPathsPlugin,
       twoFactor({
-        issuer: 'OpenPanel',
+        issuer: 'FlarePanel',
         twoFactorCookieMaxAge: TWO_FACTOR_CHALLENGE_SECONDS,
       }),
       lastLoginMethod({

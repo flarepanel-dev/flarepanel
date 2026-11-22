@@ -36,8 +36,8 @@ import {
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { createKafkaAdmin, sampleConsumerGroupLag } from '@openpanel/core';
-import { getRedisCache } from '@openpanel/redis';
+import { createKafkaAdmin, sampleConsumerGroupLag } from '@flarepanel/core';
+import { getRedisCache } from '@flarepanel/redis';
 import { loadConfig } from '../src/config/env';
 
 const SAMPLE_INTERVAL_MS = 1000;

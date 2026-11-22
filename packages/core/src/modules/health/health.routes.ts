@@ -8,7 +8,7 @@
 // `GET /` lands here too, hidden from the OpenAPI document like the probes,
 // and self-hosters use it as a "is this thing on" check.
 
-import { tryCatch } from '@openpanel/shared';
+import { tryCatch } from '@flarepanel/shared';
 import { z } from 'zod';
 import { chQuery } from '../../ch-query';
 import { defineRoutes } from '../../http/define';
@@ -42,7 +42,7 @@ const OK = 200;
 
 const ROOT_BODY = {
   status: 'ok',
-  message: 'Successfully running OpenPanel.dev API',
+  message: 'Successfully running FlarePanel.dev API',
 } as const;
 
 const rootResponseSchema = z.object({

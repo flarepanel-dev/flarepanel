@@ -1,4 +1,4 @@
-import type { IReportInput } from '@openpanel/core/modules/report/report.constants';
+import type { IReportInput } from '@flarepanel/core/modules/report/report.constants';
 import { useMutation } from '@tanstack/react-query';
 import { SparklesIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';

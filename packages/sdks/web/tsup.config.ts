@@ -27,7 +27,7 @@ export default defineConfig([
     minify: true,
     define: {
       __OPENPANEL_REPLAY_URL__: JSON.stringify(
-        'https://openpanel.dev/op1-replay.js'
+        'https://flarepanel.dev/op1-replay.js'
       ),
     },
     esbuildPlugins: [

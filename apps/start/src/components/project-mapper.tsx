@@ -1,4 +1,4 @@
-import type { IServiceProject } from '@openpanel/core';
+import type { IServiceProject } from '@flarepanel/core';
 import { PlusIcon, XIcon } from 'lucide-react';
 import type {
   FieldArrayWithId,
@@ -54,8 +54,8 @@ export function ProjectMapper({
       </div>
       {fields.length === 0 && (
         <p className="text-muted-foreground text-sm">
-          Map source project IDs to your OpenPanel projects. If you skip mapping
-          all data will be imported to your current project.
+          Map source project IDs to your FlarePanel projects. If you skip
+          mapping all data will be imported to your current project.
         </p>
       )}
 
@@ -77,7 +77,7 @@ export function ProjectMapper({
                 </div>
                 <div className="flex-1">
                   <Label className="text-muted-foreground text-xs">
-                    To (OpenPanel Project)
+                    To (FlarePanel Project)
                   </Label>
                   <Select
                     onValueChange={(value) =>

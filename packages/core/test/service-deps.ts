@@ -46,9 +46,9 @@ export async function testServiceDeps(
   overrides: Partial<ServiceDeps> = {}
 ): Promise<ServiceDeps> {
   const [{ db, Prisma }, { ch }, redis] = await Promise.all([
-    import('@openpanel/db/src/prisma-client'),
-    import('@openpanel/db/src/clickhouse/client'),
-    import('@openpanel/redis').then((m) => m.getRedisCache()),
+    import('@flarepanel/db/src/prisma-client'),
+    import('@flarepanel/db/src/clickhouse/client'),
+    import('@flarepanel/redis').then((m) => m.getRedisCache()),
   ]);
   return {
     db,

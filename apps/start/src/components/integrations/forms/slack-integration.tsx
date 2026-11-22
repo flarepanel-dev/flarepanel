@@ -1,5 +1,5 @@
+import { zCreateSlackIntegration } from '@flarepanel/core/modules/integration/integration.constants';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zCreateSlackIntegration } from '@openpanel/core/modules/integration/integration.constants';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';

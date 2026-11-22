@@ -291,23 +291,23 @@ describe('parseCookieDomain', () => {
   });
 
   describe('specific real-world scenarios', () => {
-    it('should handle openpanel.dev domains correctly', () => {
-      expect(parse('https://api.openpanel.dev')).toEqual({
-        domain: '.openpanel.dev',
+    it('should handle flarepanel.dev domains correctly', () => {
+      expect(parse('https://api.flarepanel.dev')).toEqual({
+        domain: '.flarepanel.dev',
         secure: true,
       });
     });
 
-    it('should handle dashboard.openpanel.dev domains correctly', () => {
-      expect(parse('https://dashboard.openpanel.dev')).toEqual({
-        domain: '.openpanel.dev',
+    it('should handle dashboard.flarepanel.dev domains correctly', () => {
+      expect(parse('https://dashboard.flarepanel.dev')).toEqual({
+        domain: '.flarepanel.dev',
         secure: true,
       });
     });
 
-    it('should handle subdomains of openpanel.dev correctly', () => {
-      expect(parse('https://staging.dashboard.openpanel.dev')).toEqual({
-        domain: '.openpanel.dev',
+    it('should handle subdomains of flarepanel.dev correctly', () => {
+      expect(parse('https://staging.dashboard.flarepanel.dev')).toEqual({
+        domain: '.flarepanel.dev',
         secure: true,
       });
     });
@@ -479,12 +479,12 @@ describe('parseCookieDomain', () => {
             cookies: {
               secret: 'test',
               extraMultiPartTlds: [],
-              customDomain: '.openpanel.dev',
+              customDomain: '.flarepanel.dev',
             },
           }),
           'https://abc.my.id'
         )
-      ).toEqual({ domain: '.openpanel.dev', secure: true });
+      ).toEqual({ domain: '.flarepanel.dev', secure: true });
     });
   });
 });

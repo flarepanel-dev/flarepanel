@@ -1,5 +1,5 @@
+import type { IPublicClient } from '@flarepanel/core';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { IPublicClient } from '@openpanel/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';

@@ -1,12 +1,12 @@
 import type {
   IChartEventFilterOperator,
   IChartFilterValueType,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import {
   getOperatorsForType,
   operators,
   operatorsShort,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import { Button } from '@/components/ui/button';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 

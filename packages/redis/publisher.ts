@@ -1,5 +1,5 @@
-import type { Prisma } from '@openpanel/db';
-import { getSuperJson, setSuperJson } from '@openpanel/shared';
+import type { Prisma } from '@flarepanel/db';
+import { getSuperJson, setSuperJson } from '@flarepanel/shared';
 import { getRedisPub, getRedisSub, type Redis } from './redis';
 
 export type IPublishChannels = {

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { slug } from '@openpanel/shared';
+import { slug } from '@flarepanel/shared';
 import type { Archetype } from './archetypes/archetype';
 import { formatUuid } from './rng';
 import { ID_NAMESPACE } from './seed.constants';

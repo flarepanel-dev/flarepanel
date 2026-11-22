@@ -1,4 +1,4 @@
-import { ifNaN } from '@openpanel/shared';
+import { ifNaN } from '@flarepanel/shared';
 import { last, reverse } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';

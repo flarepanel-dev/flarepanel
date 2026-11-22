@@ -13,7 +13,7 @@
 // unauthenticated-boundary tests and this repo's local ClickHouse run.
 
 import { afterAll, beforeEach, expect, mock, test } from 'bun:test';
-import * as actualRedis from '@openpanel/redis';
+import * as actualRedis from '@flarepanel/redis';
 import * as subject from './realtime.service';
 
 const activeVisitorCountByProject = new Map<string, number>();
@@ -33,16 +33,16 @@ const subscribeToPublishedEvent = mock(
 let unsubscribeCalls = 0;
 
 // Spread the real module — a partial factory here would be a process-wide
-// hazard for every other test file mocking `@openpanel/redis` narrowly (see
-// `@openpanel/redis`'s import at the top of realtime.service.ts).
+// hazard for every other test file mocking `@flarepanel/redis` narrowly (see
+// `@flarepanel/redis`'s import at the top of realtime.service.ts).
 const realRedis = { ...actualRedis };
-mock.module('@openpanel/redis', () => ({
+mock.module('@flarepanel/redis', () => ({
   ...realRedis,
   subscribeToPublishedEvent,
 }));
 
 afterAll(() => {
-  mock.module('@openpanel/redis', () => realRedis);
+  mock.module('@flarepanel/redis', () => realRedis);
 });
 
 // `deps.ch.query` is what ch-query.ts calls; it returns the raw

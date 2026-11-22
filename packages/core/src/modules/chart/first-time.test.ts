@@ -16,7 +16,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
-import { createClient } from '@openpanel/db/src/clickhouse/client';
+import { createClient } from '@flarepanel/db/src/clickhouse/client';
 import { TEST_CLICKHOUSE_URL } from '../../../../../test/databases';
 import type {
   IChartEventFilter,
@@ -30,8 +30,8 @@ const START = '2024-03-04 00:00:00';
 const END = '2024-03-10 23:59:59';
 const FUNNEL_WINDOW_HOURS = 24;
 
-const actualRedis = await import('@openpanel/redis');
-mock.module('@openpanel/redis', () => ({
+const actualRedis = await import('@flarepanel/redis');
+mock.module('@flarepanel/redis', () => ({
   ...actualRedis,
   getCache: async <T>(_key: string, _ttl: number, fn: () => Promise<T>) => fn(),
 }));

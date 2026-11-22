@@ -1,6 +1,6 @@
-import { sql } from '@openpanel/db/src/clickhouse/sql';
-import { getRedisCache, type Redis } from '@openpanel/redis';
-import { getSafeJson } from '@openpanel/shared';
+import { sql } from '@flarepanel/db/src/clickhouse/sql';
+import { getRedisCache, type Redis } from '@flarepanel/redis';
+import { getSafeJson } from '@flarepanel/shared';
 import { replicatedTarget, TABLE_NAMES } from '../shared/ch-tables';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
 

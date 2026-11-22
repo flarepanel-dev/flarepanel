@@ -17,7 +17,7 @@ import {
 } from './handler';
 
 const COOKIE_OPTIONS: CookieOptions = {
-  domain: '.openpanel.dev',
+  domain: '.flarepanel.dev',
   secure: true,
   sameSite: 'lax',
   httpOnly: true,
@@ -31,7 +31,7 @@ function report(overrides: Partial<TrpcErrorReport> = {}): TrpcErrorReport {
     input: { projectId: 'p1' },
     type: 'query',
     ctx: undefined,
-    req: new Request('https://api.openpanel.dev/trpc/report.get', {
+    req: new Request('https://api.flarepanel.dev/trpc/report.get', {
       headers: {
         'user-agent': 'op-test/1.0',
         'cf-connecting-ip': '203.0.113.7',
@@ -150,7 +150,7 @@ test('an untrusted forwarded ip is ignored', () => {
     testCoreConfig().ipHeaders
   )(
     report({
-      req: new Request('https://api.openpanel.dev/trpc/report.get', {
+      req: new Request('https://api.flarepanel.dev/trpc/report.get', {
         headers: { 'x-client-ip': '198.51.100.9' },
       }),
     })
@@ -190,7 +190,7 @@ function mount() {
 
 test('a query resolves through the superjson envelope', async () => {
   const response = await mount().call(
-    new Request('https://api.openpanel.dev/trpc/ping')
+    new Request('https://api.flarepanel.dev/trpc/ping')
   );
 
   expect(response.status).toBe(200);
@@ -201,22 +201,22 @@ test('a query resolves through the superjson envelope', async () => {
 
 test('Set-Cookie survives the raw Response the handler returns', async () => {
   const response = await mount().call(
-    new Request('https://api.openpanel.dev/trpc/signIn', {
+    new Request('https://api.flarepanel.dev/trpc/signIn', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ json: { email: 'carl@openpanel.dev' } }),
+      body: JSON.stringify({ json: { email: 'carl@flarepanel.dev' } }),
     })
   );
 
   expect(response.status).toBe(200);
   expect(response.headers.get('set-cookie')).toBe(
-    'session=token-for-carl%40openpanel.dev; Max-Age=600; Domain=.openpanel.dev; Path=/; HttpOnly; Secure; SameSite=Lax'
+    'session=token-for-carl%40openpanel.dev; Max-Age=600; Domain=.flarepanel.dev; Path=/; HttpOnly; Secure; SameSite=Lax'
   );
 });
 
 test('a ZodError is flattened onto data.zodError', async () => {
   const response = await mount().call(
-    new Request('https://api.openpanel.dev/trpc/signIn', {
+    new Request('https://api.flarepanel.dev/trpc/signIn', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ json: { email: 'not-an-email' } }),
@@ -237,7 +237,7 @@ test('a ZodError is flattened onto data.zodError', async () => {
 
 test('a TRPCForbiddenError is a 403 with a null zodError', async () => {
   const response = await mount().call(
-    new Request('https://api.openpanel.dev/trpc/forbidden')
+    new Request('https://api.flarepanel.dev/trpc/forbidden')
   );
 
   expect(response.status).toBe(403);
@@ -254,7 +254,7 @@ test('a TRPCForbiddenError is a 403 with a null zodError', async () => {
 test('an unknown procedure is a 404 and is logged', async () => {
   const mounted = mount();
   const response = await mounted.call(
-    new Request('https://api.openpanel.dev/trpc/nope.nope')
+    new Request('https://api.flarepanel.dev/trpc/nope.nope')
   );
 
   expect(response.status).toBe(404);
@@ -265,7 +265,7 @@ test('an unknown procedure is a 404 and is logged', async () => {
 // against a future httpBatchLink, whose path segment carries commas.
 test('a batched request resolves every procedure in the segment', async () => {
   const response = await mount().call(
-    new Request('https://api.openpanel.dev/trpc/ping,ping?batch=1&input={}')
+    new Request('https://api.flarepanel.dev/trpc/ping,ping?batch=1&input={}')
   );
 
   expect(response.status).toBe(200);
@@ -303,7 +303,7 @@ function mountCancellable() {
     logger,
     cancellation,
     call: () =>
-      handler(new Request('https://api.openpanel.dev/trpc/stuck'), ctx),
+      handler(new Request('https://api.flarepanel.dev/trpc/stuck'), ctx),
   };
 }
 
@@ -355,7 +355,7 @@ test('a call that finishes in time disarms the deadline', async () => {
   });
 
   const response = await handler(
-    new Request('https://api.openpanel.dev/trpc/ping'),
+    new Request('https://api.flarepanel.dev/trpc/ping'),
     ctx
   );
   await new Promise((resolve) => setTimeout(resolve, SHORT_DEADLINE_MS * 2));

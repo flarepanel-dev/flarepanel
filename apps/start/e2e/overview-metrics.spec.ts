@@ -195,7 +195,7 @@ for (const projectId of PROJECT_IDS) {
     await attachProblems(testInfo, problems);
     expect(problems.pageErrors).toEqual([]);
     expect(
-      problems.badResponses.filter((r) => !r.includes('api.openpanel.dev'))
+      problems.badResponses.filter((r) => !r.includes('api.flarepanel.dev'))
     ).toEqual([]);
   });
 }
@@ -251,6 +251,6 @@ test('every range can be picked, sets its default interval and enables the right
   await attachProblems(testInfo, problems);
   expect(problems.pageErrors).toEqual([]);
   expect(
-    problems.badResponses.filter((r) => !r.includes('api.openpanel.dev'))
+    problems.badResponses.filter((r) => !r.includes('api.flarepanel.dev'))
   ).toEqual([]);
 });

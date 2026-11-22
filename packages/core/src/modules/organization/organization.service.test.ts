@@ -419,7 +419,7 @@ const memberProject = {
 const $transaction = mock(async (ops: Promise<unknown>[]) => Promise.all(ops));
 
 // `connectUserToOrganization` reaches `shared/access-lookups.ts` (cacheable, on
-// the unscoped db), which is why the `@openpanel/redis` stand-in below stays.
+// the unscoped db), which is why the `@flarepanel/redis` stand-in below stays.
 const chCommand = mock(async () => undefined);
 const deps = {
   logger: recordingLogger(),
@@ -480,8 +480,8 @@ const EXPECTED_CLEARED_ACCESS_KEYS = [
 // Spread the real module: `mock.module` replaces this specifier process-wide,
 // and `event-buffer.ts` value-imports `publishEvent` from here, so a partial
 // factory turns this file's own barrel import into a SyntaxError.
-const realRedis = { ...(await import('@openpanel/redis')) };
-mock.module('@openpanel/redis', () => ({
+const realRedis = { ...(await import('@flarepanel/redis')) };
+mock.module('@flarepanel/redis', () => ({
   ...realRedis,
   cacheable: cacheableStub,
   getRedisCache: () => ({
@@ -492,11 +492,11 @@ mock.module('@openpanel/redis', () => ({
 }));
 
 afterAll(() => {
-  mock.module('@openpanel/redis', () => realRedis);
+  mock.module('@flarepanel/redis', () => realRedis);
 });
 
-// Mocks core's `clients/email.ts` wrapper, not @openpanel/email: that package
-// statically imports @openpanel/db's full barrel, an eager side-effecting chain.
+// Mocks core's `clients/email.ts` wrapper, not @flarepanel/email: that package
+// statically imports @flarepanel/db's full barrel, an eager side-effecting chain.
 const sentEmails: { templateKey: string; to: string; data: unknown }[] = [];
 mock.module('../../clients/email', () => ({
   sendEmail: async (

@@ -13,7 +13,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
-import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
+import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
 import type { EventListQuery } from '../../event/src/sql';
 import type {
   IChartBreakdown,
@@ -23,18 +23,18 @@ import type {
 import type { AggregateChartSqlInput, ChartSqlInput } from './statement';
 
 const cohortFindMany = mock(async () => []);
-const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
+const actualPrismaClient = await import('@flarepanel/db/src/prisma-client');
 const realPrismaClient = { ...actualPrismaClient };
-mock.module('@openpanel/db/src/prisma-client', () => ({
+mock.module('@flarepanel/db/src/prisma-client', () => ({
   ...realPrismaClient,
   db: { cohort: { findMany: cohortFindMany } },
 }));
 
 afterAll(async () => {
-  mock.module('@openpanel/db/src/prisma-client', () => realPrismaClient);
+  mock.module('@flarepanel/db/src/prisma-client', () => realPrismaClient);
 });
 
-let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
+let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
 let deps: import('../../../services').ServiceDeps;
 let buildChartSql: typeof import('./statement').getChartSql;
 let buildAggregateChartSql: typeof import('./statement').getAggregateChartSql;
@@ -122,7 +122,7 @@ async function explain(fragment: SqlFragment): Promise<void> {
 }
 
 beforeAll(async () => {
-  ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
+  ({ ch } = await import('@flarepanel/db/src/clickhouse/client'));
   const { testServiceDeps } = await import('../../../../test/service-deps');
   deps = await testServiceDeps();
   ({

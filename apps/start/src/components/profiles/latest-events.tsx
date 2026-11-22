@@ -1,4 +1,4 @@
-import { AI_INTERNAL_EVENT_NAMES } from '@openpanel/core/modules/ai/ai.constants';
+import { AI_INTERNAL_EVENT_NAMES } from '@flarepanel/core/modules/ai/ai.constants';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { ActivityIcon } from 'lucide-react';

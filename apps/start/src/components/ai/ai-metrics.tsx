@@ -1,4 +1,4 @@
-import type { IAiMetrics } from '@openpanel/core';
+import type { IAiMetrics } from '@flarepanel/core';
 import { useQuery } from '@tanstack/react-query';
 import { curveMonotoneX } from '@visx/curve';
 import { RotateCwIcon } from 'lucide-react';

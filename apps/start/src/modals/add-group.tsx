@@ -1,5 +1,5 @@
+import { zCreateGroup } from '@flarepanel/core/modules/group/group.constants';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zCreateGroup } from '@openpanel/core/modules/group/group.constants';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { PlusIcon, Trash2Icon } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';

@@ -3,7 +3,7 @@
 // a provider SDK converts its own request and response shapes into `AiCall`
 // and `AiCallOutcome` and leaves the rest to this module.
 
-import type { AiPayload, AiUsage } from '@openpanel/sdk';
+import type { AiPayload, AiUsage } from '@flarepanel/sdk';
 import { type AiCallContext, createAiTraceId, getAiContext } from './context';
 import type { Message } from './messages';
 

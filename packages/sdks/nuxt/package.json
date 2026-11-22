@@ -1,10 +1,10 @@
 {
-  "name": "@openpanel/nuxt",
+  "name": "@flarepanel/nuxt",
   "version": "0.4.4-local",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Openpanel-dev/openpanel.git",
+    "url": "git+https://github.com/flarepanel-dev/flarepanel.git",
     "directory": "packages/sdks/nuxt"
   },
   "type": "module",
@@ -30,7 +30,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/web": "workspace:1.4.4-local"
+    "@flarepanel/web": "workspace:1.4.4-local"
   },
   "peerDependencies": {
     "h3": "^1.0.0",
@@ -40,7 +40,7 @@
     "@nuxt/kit": "3.20.2",
     "@nuxt/module-builder": "1.0.2",
     "@nuxt/types": "2.18.1",
-    "@openpanel/tsconfig": "workspace:*",
+    "@flarepanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "@vue/runtime-core": "3.5.25",
     "typescript": "catalog:",

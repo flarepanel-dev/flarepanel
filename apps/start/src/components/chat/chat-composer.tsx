@@ -1,4 +1,4 @@
-import type { ChatModelEntry } from '@openpanel/core/modules/assistant/assistant.constants';
+import type { ChatModelEntry } from '@flarepanel/core/modules/assistant/assistant.constants';
 import { ArrowUpIcon, SquareIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { ChatModelPicker } from './chat-model-picker';

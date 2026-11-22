@@ -1,9 +1,9 @@
-import type { ChatLaunchHint } from '@openpanel/core/modules/assistant/assistant.constants';
+import type { ChatLaunchHint } from '@flarepanel/core/modules/assistant/assistant.constants';
 import {
   type ChatModelEntry,
   isValidModelId,
   MODEL_STORAGE_KEY,
-} from '@openpanel/core/modules/assistant/assistant.constants';
+} from '@flarepanel/core/modules/assistant/assistant.constants';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChatComposer } from './chat-composer';
 import { ChatEmpty } from './chat-empty';

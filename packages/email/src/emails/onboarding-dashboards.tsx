@@ -18,7 +18,7 @@ export type Props = z.infer<typeof zOnboardingDashboards>;
 export default OnboardingDashboards;
 export function OnboardingDashboards({
   firstName,
-  dashboardUrl = 'https://dashboard.openpanel.dev',
+  dashboardUrl = 'https://dashboard.flarepanel.dev',
   hasData = false,
   eventsCount,
   unsubscribeUrl,
@@ -32,11 +32,11 @@ export function OnboardingDashboards({
           dashboard advice I'd normally send wouldn't help you yet.
         </Text>
         <Text>
-          If you still want to try OpenPanel, the install is the only thing in
+          If you still want to try FlarePanel, the install is the only thing in
           the way:{' '}
           <Link
             href={withUtm(
-              'https://openpanel.dev/docs/get-started/install-openpanel',
+              'https://flarepanel.dev/docs/get-started/install-openpanel',
               'onboarding-dashboards'
             )}
           >
@@ -87,7 +87,7 @@ export function OnboardingDashboards({
       <span style={{ margin: '0 -20px', display: 'block' }}>
         <img
           alt="Dashboard"
-          src="https://openpanel.dev/_next/image?url=%2Fscreenshots%2Fdashboard-dark.webp&w=3840&q=75"
+          src="https://flarepanel.dev/_next/image?url=%2Fscreenshots%2Fdashboard-dark.webp&w=3840&q=75"
           style={{
             width: '100%',
             height: 'auto',
@@ -101,7 +101,7 @@ export function OnboardingDashboards({
 
 OnboardingDashboards.PreviewProps = {
   firstName: 'Alex',
-  dashboardUrl: 'https://dashboard.openpanel.dev/org-id',
+  dashboardUrl: 'https://dashboard.flarepanel.dev/org-id',
   hasData: true,
   eventsCount: 48_211,
 };

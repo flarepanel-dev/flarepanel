@@ -3,18 +3,18 @@ import { AuthShowcase } from './auth-showcase';
 import { useAppContext } from '@/hooks/use-app-context';
 
 const SELF_HOSTED_LINKS = [
-  { label: 'OpenPanel Cloud', href: 'https://openpanel.dev' },
+  { label: 'FlarePanel Cloud', href: 'https://flarepanel.dev' },
   {
     label: 'Mixpanel alternative',
-    href: 'https://openpanel.dev/compare/mixpanel-alternative',
+    href: 'https://flarepanel.dev/compare/mixpanel-alternative',
   },
   {
     label: 'PostHog alternative',
-    href: 'https://openpanel.dev/compare/posthog-alternative',
+    href: 'https://flarepanel.dev/compare/posthog-alternative',
   },
   {
     label: 'Open source analytics',
-    href: 'https://openpanel.dev/articles/open-source-web-analytics',
+    href: 'https://flarepanel.dev/articles/open-source-web-analytics',
   },
 ] as const;
 
@@ -27,10 +27,10 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         <header className="flex items-center justify-between p-6 lg:px-10 lg:py-8">
           <a
             className="row items-center gap-2.5 font-medium"
-            href="https://openpanel.dev"
+            href="https://flarepanel.dev"
           >
             <LogoSquare className="size-8 shrink-0" />
-            <span>OpenPanel</span>
+            <span>FlarePanel</span>
           </a>
           {isSelfHosted && (
             <span className="rounded-full bg-def-200 px-2.5 py-1 text-muted-foreground text-xs">
@@ -55,7 +55,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
               </ul>
             </nav>
           ) : (
-            <span>Open source product analytics · openpanel.dev</span>
+            <span>Open source product analytics · flarepanel.dev</span>
           )}
         </footer>
       </div>

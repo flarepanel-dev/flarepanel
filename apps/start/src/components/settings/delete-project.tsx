@@ -1,4 +1,4 @@
-import type { IServiceProjectWithClients } from '@openpanel/core';
+import type { IServiceProjectWithClients } from '@flarepanel/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { addHours, format, startOfHour } from 'date-fns';

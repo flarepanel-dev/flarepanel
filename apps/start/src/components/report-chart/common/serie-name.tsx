@@ -1,4 +1,4 @@
-import { NOT_SET_VALUE } from '@openpanel/core/modules/report/report.constants';
+import { NOT_SET_VALUE } from '@flarepanel/core/modules/report/report.constants';
 import { ChevronRightIcon } from 'lucide-react';
 import { Fragment } from 'react';
 import { useReportChartContext } from '../context';

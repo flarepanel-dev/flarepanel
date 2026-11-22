@@ -1,4 +1,4 @@
-import { isOrganizationAdminRole } from '@openpanel/core/modules/organization/organization.constants';
+import { isOrganizationAdminRole } from '@flarepanel/core/modules/organization/organization.constants';
 import {
   createFileRoute,
   Outlet,

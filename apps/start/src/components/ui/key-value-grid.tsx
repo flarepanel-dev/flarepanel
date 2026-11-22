@@ -1,4 +1,4 @@
-import type { IServiceEvent } from '@openpanel/core';
+import type { IServiceEvent } from '@flarepanel/core';
 import { isToday } from 'date-fns';
 import { CopyIcon } from 'lucide-react';
 import { SerieIcon } from '../report-chart/common/serie-icon';

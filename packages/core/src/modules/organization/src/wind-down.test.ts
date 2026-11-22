@@ -87,7 +87,7 @@ function windDownConfig(
   const base = testCoreConfig();
   return testCoreConfig({
     selfHosted: overrides.selfHosted ?? false,
-    dashboardUrl: 'https://dashboard.openpanel.dev',
+    dashboardUrl: 'https://dashboard.flarepanel.dev',
     query: { ...base.query, windDownMaxPerRun: overrides.maxPerRun },
   });
 }

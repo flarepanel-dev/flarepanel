@@ -2,7 +2,7 @@
 // connect to. Google answers with a redirect to `t{n}.gstatic.com`, so that
 // domain is allowed too; a redirect anywhere else is not followed.
 
-import { type SafeFetchResult, safeFetch } from '@openpanel/shared/server';
+import { type SafeFetchResult, safeFetch } from '@flarepanel/shared/server';
 import type { Logger } from '../../../logger';
 import { contentTypeFor, detectImageFormat } from './image-format';
 
@@ -13,7 +13,7 @@ const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 const MAX_ICON_BYTES = 256 * 1024;
 const FETCH_TIMEOUT_MS = 10_000;
 const FAVICON_USER_AGENT =
-  'OpenPanel-FaviconProxy/1.0 (+https://openpanel.dev)';
+  'FlarePanel-FaviconProxy/1.0 (+https://flarepanel.dev)';
 
 export const FAVICON_PROVIDERS: readonly ((hostname: string) => URL)[] = [
   (hostname) => new URL(`https://icons.duckduckgo.com/ip3/${hostname}.ico`),

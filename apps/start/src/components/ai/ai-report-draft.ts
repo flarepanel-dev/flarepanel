@@ -4,14 +4,14 @@
 import type {
   AiBreakdownDimension,
   IAiFilters,
-} from '@openpanel/core/modules/ai/ai.constants';
+} from '@flarepanel/core/modules/ai/ai.constants';
 import type {
   IChartEventFilter,
   IChartEventItem,
   IChartRange,
   IInterval,
   IReportInput,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 
 export type ReportDraft = IReportInput & { name: string };
 

@@ -1,4 +1,4 @@
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import { omit } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
 import { expandCustomEvents } from '../custom-event/custom-event.service';

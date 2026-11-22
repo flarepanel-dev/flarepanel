@@ -1,10 +1,10 @@
-import { sql } from '@openpanel/db/src/clickhouse/sql';
+import { sql } from '@flarepanel/db/src/clickhouse/sql';
 import type {
   Prisma,
   Project,
   ProjectType,
-} from '@openpanel/db/src/prisma-client';
-import { stripTrailingSlash } from '@openpanel/shared';
+} from '@flarepanel/db/src/prisma-client';
+import { stripTrailingSlash } from '@flarepanel/shared';
 import { cacheablePerDb, type DbScope } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import { TRPCBadRequestError } from '../../rpc/errors';

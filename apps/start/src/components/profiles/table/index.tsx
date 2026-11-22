@@ -1,4 +1,4 @@
-import type { IServiceProfile } from '@openpanel/core';
+import type { IServiceProfile } from '@flarepanel/core';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import type { PaginationState, Table, Updater } from '@tanstack/react-table';

@@ -2,9 +2,9 @@ import type {
   IChartEvent,
   IChartEventItem,
   PerUserBucketKind,
-} from '@openpanel/core/modules/report/report.constants';
-import { alphabetIds } from '@openpanel/core/modules/report/report.constants';
-import { shortId } from '@openpanel/shared';
+} from '@flarepanel/core/modules/report/report.constants';
+import { alphabetIds } from '@flarepanel/core/modules/report/report.constants';
+import { shortId } from '@flarepanel/shared';
 import { DatabaseIcon, FilterIcon, HistoryIcon } from 'lucide-react';
 import { ReportSegment } from '../ReportSegment';
 import { ReportPerUser } from '../report-per-user';

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-// `shortId` is copied from @openpanel/shared's id.ts to keep code-migrations
+// `shortId` is copied from @flarepanel/shared's id.ts to keep code-migrations
 // isolated (see constants.ts). Same nanoid/non-secure alphabet and length, so
 // migration-written ids match the app's.
 const SHORT_ID_ALPHABET =

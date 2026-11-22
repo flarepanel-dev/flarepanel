@@ -1,6 +1,6 @@
 /** One subscriber leaving must not silence the others: the channel is reference-counted, and the LAST listener leaving still sends a real UNSUBSCRIBE. Uses a stand-in for the shared connection. */
 
-import { setSuperJson } from '@openpanel/shared';
+import { setSuperJson } from '@flarepanel/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const EVENTS_CHANNEL = 'events:batch';

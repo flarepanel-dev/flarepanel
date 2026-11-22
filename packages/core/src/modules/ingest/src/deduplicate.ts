@@ -1,7 +1,7 @@
 // The web SDK can fire the same event twice (pagehide + visibilitychange); a
 // short-lived Redis lock keyed on the whole payload collapses the pair.
 
-import { getLock } from '@openpanel/redis';
+import { getLock } from '@flarepanel/redis';
 import fastJsonStableHash from 'fast-json-stable-hash';
 
 const DEDUPLICATE_KEY_PREFIX = 'fastify:deduplicate:';

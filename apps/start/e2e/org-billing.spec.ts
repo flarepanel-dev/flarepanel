@@ -64,7 +64,7 @@ test('billing renders plans, the usage breakdown and the FAQ without errors', as
   await expect(page.locator('body')).not.toContainText(/NaN|undefined/);
 
   const question = page.getByRole('button', {
-    name: 'Does OpenPanel have a free tier?',
+    name: 'Does FlarePanel have a free tier?',
   });
   await question.click();
   await expect(page.getByText('30 days free trial')).toBeVisible();

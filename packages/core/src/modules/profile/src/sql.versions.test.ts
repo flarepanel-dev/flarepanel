@@ -4,7 +4,7 @@
 // must match.
 
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { sql } from '@openpanel/db/src/clickhouse/sql';
+import { sql } from '@flarepanel/db/src/clickhouse/sql';
 import { timeAgo } from '../../../../../../test/fixtures';
 import {
   otherProjectId,
@@ -32,11 +32,11 @@ const columns = sql.join(
   ', '
 );
 
-let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
+let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
 let now: Date;
 
 beforeAll(async () => {
-  ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
+  ({ ch } = await import('@flarepanel/db/src/clickhouse/client'));
   const { bootstrapTestDatabases } = await import(
     '../../../../../../test/bootstrap-databases'
   );

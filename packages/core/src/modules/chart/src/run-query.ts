@@ -6,7 +6,7 @@
 import {
   type SqlFragment,
   toStatement,
-} from '@openpanel/db/src/clickhouse/sql';
+} from '@flarepanel/db/src/clickhouse/sql';
 import type { ServiceDeps } from '../../../services';
 
 /** `timezone` travels as ClickHouse's `session_timezone` setting. */

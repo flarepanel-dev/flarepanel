@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { TrackHandlerPayload } from '@openpanel/web';
+import type { TrackHandlerPayload } from '@flarepanel/web';
 import { afterEach, describe, expect, it } from 'vitest';
 import { shouldSendAnalyticsEvent } from './op-filter';
 

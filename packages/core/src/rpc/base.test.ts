@@ -15,7 +15,7 @@ import {
 import { createTrpcFetchHandler } from './handler';
 
 const COOKIE_OPTIONS: CookieOptions = {
-  domain: '.openpanel.dev',
+  domain: '.flarepanel.dev',
   secure: true,
   sameSite: 'lax',
   httpOnly: true,
@@ -49,7 +49,7 @@ test('setCookie writes through resHeaders with the documented option precedence'
   });
 
   expect(resHeaders.get('set-cookie')).toBe(
-    'session=the-token; Max-Age=600; Domain=.openpanel.dev; Path=/; HttpOnly; Secure; SameSite=Lax'
+    'session=the-token; Max-Age=600; Domain=.flarepanel.dev; Path=/; HttpOnly; Secure; SameSite=Lax'
   );
 });
 
@@ -59,7 +59,7 @@ test('maxAge 0 survives (deleteSessionTokenCookie)', async () => {
   (await trpcCtx).setCookie('session', '', { maxAge: 0 });
 
   expect(resHeaders.get('set-cookie')).toBe(
-    'session=; Max-Age=0; Domain=.openpanel.dev; Path=/; HttpOnly; Secure; SameSite=Lax'
+    'session=; Max-Age=0; Domain=.flarepanel.dev; Path=/; HttpOnly; Secure; SameSite=Lax'
   );
 });
 
@@ -203,7 +203,7 @@ function mountWith(
 }
 
 const postTo = (path: string) =>
-  new Request(`https://api.openpanel.dev/trpc/${path}`, {
+  new Request(`https://api.flarepanel.dev/trpc/${path}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: '{}',
@@ -246,7 +246,7 @@ test('the cache middleware keys on path + raw input and honours the ttl', async 
   }));
 
   const url =
-    'https://api.openpanel.dev/trpc/overview?input=' +
+    'https://api.flarepanel.dev/trpc/overview?input=' +
     encodeURIComponent(JSON.stringify({ json: { projectId: 'p1' } }));
 
   await mounted.call(new Request(url));
@@ -271,8 +271,8 @@ test('the cache is written but not served when serveFromCache is off', async () 
       }),
   }));
 
-  await mounted.call(new Request('https://api.openpanel.dev/trpc/overview'));
-  await mounted.call(new Request('https://api.openpanel.dev/trpc/overview'));
+  await mounted.call(new Request('https://api.flarepanel.dev/trpc/overview'));
+  await mounted.call(new Request('https://api.flarepanel.dev/trpc/overview'));
 
   expect(hits).toBe(2);
   expect(writes).toHaveLength(2);
@@ -287,7 +287,7 @@ test('a zero ttl bypasses the cache entirely', async () => {
       .query(() => ({ visitors: 1 })),
   }));
 
-  await mounted.call(new Request('https://api.openpanel.dev/trpc/overview'));
+  await mounted.call(new Request('https://api.flarepanel.dev/trpc/overview'));
 
   expect(reads).toHaveLength(0);
   expect(writes).toHaveLength(0);

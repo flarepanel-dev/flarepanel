@@ -40,7 +40,7 @@ interface MetricsRow {
   overall_bounce_rate: number | null;
 }
 
-let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
+let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
 let OV: typeof import('./overview.sql');
 let getRawWhereClause: typeof import('../overview.service').getRawWhereClause;
 
@@ -108,7 +108,7 @@ const durationSessionViews = [
 }));
 
 beforeAll(async () => {
-  ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
+  ({ ch } = await import('@flarepanel/db/src/clickhouse/client'));
   OV = await import('./overview.sql');
   ({ getRawWhereClause } = await import('../overview.service'));
 

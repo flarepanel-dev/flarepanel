@@ -1,4 +1,4 @@
-import { isOrganizationAdminRole } from '@openpanel/core/modules/organization/organization.constants';
+import { isOrganizationAdminRole } from '@flarepanel/core/modules/organization/organization.constants';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { Building2Icon } from 'lucide-react';

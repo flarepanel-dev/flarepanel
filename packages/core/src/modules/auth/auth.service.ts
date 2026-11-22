@@ -1,4 +1,4 @@
-import type { Session } from '@openpanel/db/src/prisma-client';
+import type { Session } from '@flarepanel/db/src/prisma-client';
 import type { CoreConfig } from '../../config';
 import type { ServiceDeps, Services } from '../../services';
 import {

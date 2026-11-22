@@ -12,7 +12,7 @@ import {
   assertSafeUrl,
   createPinnedLookup,
   decryptCredential,
-} from '@openpanel/shared/server';
+} from '@flarepanel/shared/server';
 import {
   callProvider,
   ProviderError,

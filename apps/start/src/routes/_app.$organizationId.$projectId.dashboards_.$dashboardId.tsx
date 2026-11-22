@@ -1,7 +1,7 @@
 import {
   isSameDashboardFilters,
   parseDashboardFilters,
-} from '@openpanel/core/modules/dashboard/dashboard.constants';
+} from '@flarepanel/core/modules/dashboard/dashboard.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import {

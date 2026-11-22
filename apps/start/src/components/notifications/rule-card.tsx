@@ -1,4 +1,4 @@
-import type { NotificationRule } from '@openpanel/db';
+import type { NotificationRule } from '@flarepanel/db';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FilterIcon } from 'lucide-react';
 import { toast } from 'sonner';

@@ -1,4 +1,4 @@
-import type { IServiceAiTrace } from '@openpanel/core';
+import type { IServiceAiTrace } from '@flarepanel/core';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -218,7 +218,7 @@ export function AiTracesTable({ projectId }: { projectId: string }) {
         empty={{
           title: 'No traces',
           description:
-            'Traces appear once your app sends AI events. Wrap a model with @openpanel/ai or call op.ai().',
+            'Traces appear once your app sends AI events. Wrap a model with @flarepanel/ai or call op.ai().',
         }}
         error={query.isError}
         loading={query.isLoading}

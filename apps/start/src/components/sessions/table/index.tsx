@@ -1,4 +1,4 @@
-import type { IServiceSession } from '@openpanel/core';
+import type { IServiceSession } from '@flarepanel/core';
 import type { UseInfiniteQueryResult } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import type { Table } from '@tanstack/react-table';

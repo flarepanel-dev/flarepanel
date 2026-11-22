@@ -1,4 +1,4 @@
-import type { TrackHandlerPayload } from '@openpanel/web';
+import type { TrackHandlerPayload } from '@flarepanel/web';
 
 // These pages carry a credential (reset token, unsubscribe token) in the URL.
 const PATHS_WITH_URL_CREDENTIALS = new Set(['/reset-password', '/unsubscribe']);

@@ -3,7 +3,7 @@
 // file in the bottom layer could not hold them. The generic Date/Luxon math
 // they build on stays in `shared/date.ts`.
 
-import { DateTime } from '@openpanel/shared';
+import { DateTime } from '@flarepanel/shared';
 import type { IChartRange, IReportInput } from '../report.constants';
 
 const FALLBACK_TIMEZONE = 'UTC';

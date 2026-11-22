@@ -1,4 +1,4 @@
-import type { IProjectAccessGrant } from '@openpanel/core/modules/organization/organization.constants';
+import type { IProjectAccessGrant } from '@flarepanel/core/modules/organization/organization.constants';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import {
   Select,

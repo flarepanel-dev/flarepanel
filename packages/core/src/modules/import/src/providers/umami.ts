@@ -2,13 +2,13 @@ import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createBrotliDecompress, createGunzip } from 'node:zlib';
-import { isSameDomain, parsePath, toDots } from '@openpanel/shared';
-import { safeFetchStream } from '@openpanel/shared/server';
+import { isSameDomain, parsePath, toDots } from '@flarepanel/shared';
+import { safeFetchStream } from '@flarepanel/shared/server';
 import { parse } from 'csv-parse';
 import { assocPath } from 'ramda';
 import { z } from 'zod';
 import type { Logger } from '../../../../logger';
-// Core's own date helper: importing @openpanel/db's clickhouse client constructs
+// Core's own date helper: importing @flarepanel/db's clickhouse client constructs
 // a ClickHouse client and pino-pretty transport at import time (fatal under
 // bun:test's `--isolate` worker threads).
 import { formatClickhouseDate } from '../../../../shared/ch-dates';

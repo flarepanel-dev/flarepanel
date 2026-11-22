@@ -5,7 +5,7 @@
 // A request lands on one replica. `POST /admin/memory/gc?all=1` fans out over
 // Redis pubsub instead, and each process logs its own result.
 
-import { publishEvent, subscribeToPublishedEvent } from '@openpanel/redis';
+import { publishEvent, subscribeToPublishedEvent } from '@flarepanel/redis';
 import { Elysia } from 'elysia';
 import { z } from 'zod';
 import type { AppDeps } from '../context';
@@ -24,7 +24,7 @@ const FORBIDDEN = 403;
 // What a browser sends for a request another site's page started. curl sends
 // no `sec-fetch-site`, and opening the URL directly sends `none`.
 const CROSS_ORIGIN_FETCH_SITES = new Set(['cross-site', 'same-site']);
-const MEMORY_REALM = 'OpenPanel ops';
+const MEMORY_REALM = 'FlarePanel ops';
 const HIDDEN = { hide: true } as const;
 const MAX_TOP_OBJECT_TYPES = 200;
 

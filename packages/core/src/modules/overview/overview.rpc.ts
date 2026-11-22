@@ -2,7 +2,7 @@
 // share-or-membership off the raw `projectId`/`shareId`, BEFORE the input
 // parser.
 
-import { getChartPrevStartEndDate } from '@openpanel/shared';
+import { getChartPrevStartEndDate } from '@flarepanel/shared';
 import { format } from 'date-fns';
 import { z } from 'zod';
 import {

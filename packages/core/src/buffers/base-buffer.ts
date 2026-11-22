@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream';
 import type { ClickHouseSettings } from '@clickhouse/client';
-import { getRedisCache } from '@openpanel/redis';
-import { generateSecureId } from '@openpanel/shared';
+import { getRedisCache } from '@flarepanel/redis';
+import { generateSecureId } from '@flarepanel/shared';
 import { type ChQueryInput, type ChScope, chQuery } from '../ch-query';
 import type { CoreConfig } from '../config';
 import type { Logger } from '../logger';

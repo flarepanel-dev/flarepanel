@@ -1,7 +1,7 @@
-// Tests @openpanel/shared's parser from here because the root `test` script
+// Tests @flarepanel/shared's parser from here because the root `test` script
 // does not run packages/shared.
 import { describe, expect, it } from 'bun:test';
-import { getDevice, parseUserAgent } from '@openpanel/shared/server';
+import { getDevice, parseUserAgent } from '@flarepanel/shared/server';
 
 describe('parseUserAgent', () => {
   it('should return server UA for null/undefined input', () => {

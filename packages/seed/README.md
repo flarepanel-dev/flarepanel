@@ -1,4 +1,4 @@
-# @openpanel/seed
+# @flarepanel/seed
 
 Deterministic seed data for a worktree: one login, one organization, four projects
 with realistic traffic in ClickHouse. `bun run seed` from the repo root.
@@ -50,7 +50,7 @@ whole-unit amounts (`events.revenue` is `UInt64`).
 - **Rows**: shaped like the worker's (`rows.ts`) — `session_start`/`session_end`
   synthesized, one collapsed `sessions` row, one `profiles` row per device window or
   person. Devices/browsers come from real user agents through the real parser.
-- **Isolation**: depends on `@openpanel/db` and `@openpanel/shared` only; row shapes are
+- **Isolation**: depends on `@flarepanel/db` and `@flarepanel/shared` only; row shapes are
   copied from core and checked against `test/clickhouse-schema.sql` by
   `clickhouse-rows.test.ts`.
 

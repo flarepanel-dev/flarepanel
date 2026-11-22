@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
-import type { Cohort } from '@openpanel/db/src/prisma-client';
+import type { Cohort } from '@flarepanel/db/src/prisma-client';
 import type { ServiceDeps } from '../../services';
 import type { CohortDefinition } from './cohort.constants';
 

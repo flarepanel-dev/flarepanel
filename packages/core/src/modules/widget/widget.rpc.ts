@@ -5,8 +5,8 @@
 // Every statement is built with the project's timezone, so `chQuery` is given
 // the same value as `clickhouse_settings.session_timezone`.
 
-import { sql } from '@openpanel/db/src/clickhouse/sql';
-import { getCache } from '@openpanel/redis';
+import { sql } from '@flarepanel/db/src/clickhouse/sql';
+import { getCache } from '@flarepanel/redis';
 import ShortUniqueId from 'short-unique-id';
 import { z } from 'zod';
 import { chQuery } from '../../ch-query';

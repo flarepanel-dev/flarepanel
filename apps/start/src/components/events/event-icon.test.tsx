@@ -7,7 +7,7 @@
 // React throw "Element type is invalid" and discard the whole subtree. On the
 // mobile events list (`event-list-item.tsx`) that is the entire page.
 
-import type { EventMeta } from '@openpanel/db';
+import type { EventMeta } from '@flarepanel/db';
 import { render } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { EventIcon } from './event-icon';

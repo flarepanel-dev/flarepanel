@@ -70,7 +70,7 @@ export default function FeedbackPrompt() {
       gradientColor="rgb(59 130 246)"
       onClose={handleClose}
       show={shouldShow}
-      subtitle="Help us improve OpenPanel with your insights"
+      subtitle="Help us improve FlarePanel with your insights"
       title="Share Your Feedback"
     >
       <div className="col gap-4 px-6">

@@ -1,5 +1,5 @@
+import { sql } from '@flarepanel/db/src/clickhouse/sql';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { z } from 'zod';
 import { chQuery } from '../../../../../ch-query';
 import { TABLE_NAMES } from '../../../../../shared/ch-tables';

@@ -644,7 +644,7 @@ function renderBaseline(rules: RuleBlock[], lines: string[]): void {
 export function renderReport(rules: RuleBlock[]): string {
   const lines: string[] = [
     heavy,
-    'OpenPanel conformance gate — report',
+    'FlarePanel conformance gate — report',
     heavy,
     '',
     'Rules R1..R22 in order. ASSERT rules fail `--assert` above their target;',
@@ -719,7 +719,12 @@ export function renderAssert(rules: RuleBlock[]): {
     };
   }
 
-  lines.unshift(heavy, 'OpenPanel conformance gate — assert FAILED', heavy, '');
+  lines.unshift(
+    heavy,
+    'FlarePanel conformance gate — assert FAILED',
+    heavy,
+    ''
+  );
   lines.push(heavy);
   lines.push(`FAIL: ${failures} asserted violation(s).`);
   lines.push(heavy);

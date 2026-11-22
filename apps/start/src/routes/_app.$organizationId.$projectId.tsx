@@ -1,6 +1,6 @@
-import { FREE_PRODUCT_IDS } from '@openpanel/payments';
-import { subscriptionBlocksDashboard } from '@openpanel/payments/subscription-state';
-import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
+import { FREE_PRODUCT_IDS } from '@flarepanel/payments';
+import { subscriptionBlocksDashboard } from '@flarepanel/payments/subscription-state';
+import { getSubscriptionStateMeta } from '@flarepanel/payments/subscription-state-meta';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import BillingPrompt from '@/components/organization/billing-prompt';

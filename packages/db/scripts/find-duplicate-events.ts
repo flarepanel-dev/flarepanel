@@ -10,11 +10,11 @@
  *
  * Usage (always dry-run unless --danger-yes-delete is passed):
  *
- *   pnpm --filter @openpanel/db duplicate-events                 # last 24h, per day
- *   pnpm --filter @openpanel/db duplicate-events --since=7d --bucket=day
- *   pnpm --filter @openpanel/db duplicate-events --since=2026-06-01 --bucket=hour
- *   pnpm --filter @openpanel/db duplicate-events --project=my-project
- *   pnpm --filter @openpanel/db duplicate-events --since=48h --danger-yes-delete
+ *   pnpm --filter @flarepanel/db duplicate-events                 # last 24h, per day
+ *   pnpm --filter @flarepanel/db duplicate-events --since=7d --bucket=day
+ *   pnpm --filter @flarepanel/db duplicate-events --since=2026-06-01 --bucket=hour
+ *   pnpm --filter @flarepanel/db duplicate-events --project=my-project
+ *   pnpm --filter @flarepanel/db duplicate-events --since=48h --danger-yes-delete
  *
  * Flags:
  *   --since=<24h|7d|ISO>   Lookback window (default: 24h)

@@ -1,4 +1,4 @@
-// Tests @openpanel/shared's SSRF guard from here because the root `test` script
+// Tests @flarepanel/shared's SSRF guard from here because the root `test` script
 // does not run packages/shared.
 import { describe, expect, it, mock } from 'bun:test';
 import {
@@ -6,7 +6,7 @@ import {
   BlockedUrlError,
   createPinnedAgent,
   createPinnedLookup,
-} from '@openpanel/shared/server';
+} from '@flarepanel/shared/server';
 
 // SELF_HOSTED arrives as `config.selfHosted`; only `true`/`1` mean self-hosted.
 const CLOUD = false;

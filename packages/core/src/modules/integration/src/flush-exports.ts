@@ -1,8 +1,8 @@
 // Prisma, ClickHouse and the object-store adapter factory are injected so the
 // orchestration is testable without `mock.module`.
 
-import type { Redis } from '@openpanel/redis';
-import { DateTime, generateSecureId } from '@openpanel/shared';
+import type { Redis } from '@flarepanel/redis';
+import { DateTime, generateSecureId } from '@flarepanel/shared';
 import { defineRedisScript } from '../../../buffers/redis-script';
 import { isProviderError } from '../../../clients/provider-error';
 import type { CoreConfig } from '../../../config';
@@ -52,7 +52,7 @@ return 0
 // would skip all but one row.
 const NIL_UUID = '00000000-0000-0000-0000-000000000000';
 
-// Local literal, not @openpanel/db's TABLE_NAMES: importing that module
+// Local literal, not @flarepanel/db's TABLE_NAMES: importing that module
 // constructs a ClickHouse client at import time.
 const EVENTS_TABLE = 'events';
 
@@ -432,7 +432,7 @@ async function saveCursor(
   });
 }
 
-// Local copy: importing @openpanel/db's clickhouse/client constructs a client
+// Local copy: importing @flarepanel/db's clickhouse/client constructs a client
 // at import time.
 function convertClickhouseDateToJs(date: string): Date {
   return new Date(`${date.replace(' ', 'T')}Z`);

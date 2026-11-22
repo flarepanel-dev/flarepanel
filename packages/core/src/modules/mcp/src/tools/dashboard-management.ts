@@ -156,7 +156,7 @@ function reportUrl(
 
 // `dbNull` is `Prisma.DbNull` (explicit SQL NULL on a nullable Json column),
 // passed as `unknown` via `McpToolDeps.dbJsonNull` instead of importing
-// `@openpanel/db` here.
+// `@flarepanel/db` here.
 function reportData(report: z.infer<typeof reportSchema>, dbNull: unknown) {
   return {
     name: report.name,

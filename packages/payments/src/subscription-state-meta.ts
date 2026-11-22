@@ -80,7 +80,7 @@ export function getSubscriptionStateMeta(
         banner: {
           title: 'Trial ended',
           description:
-            'Your free trial has ended. Upgrade to keep using OpenPanel.',
+            'Your free trial has ended. Upgrade to keep using FlarePanel.',
           cta: 'Upgrade',
           tone: 'destructive',
         },

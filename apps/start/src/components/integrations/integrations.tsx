@@ -1,7 +1,7 @@
 import {
   type IIntegrationType,
   INTEGRATION_DESCRIPTORS,
-} from '@openpanel/core/modules/integration/integration.constants';
+} from '@flarepanel/core/modules/integration/integration.constants';
 import { BoxIcon, CloudIcon, DatabaseIcon, WebhookIcon } from 'lucide-react';
 import { DiscordIntegrationForm } from './forms/discord-integration';
 import { GCSExportIntegrationForm } from './forms/gcs-export-integration';

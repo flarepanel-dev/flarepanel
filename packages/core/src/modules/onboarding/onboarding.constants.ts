@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { zTimezone } from '../organization/organization.constants';
 
-// Set by openpanel.dev on the first visit, readable by the dashboard because
+// Set by flarepanel.dev on the first visit, readable by the dashboard because
 // both share the registrable domain. The value is URL-encoded JSON matching
 // `zOrganizationAttribution`.
 export const ATTRIBUTION_COOKIE_NAME = 'op_attribution';

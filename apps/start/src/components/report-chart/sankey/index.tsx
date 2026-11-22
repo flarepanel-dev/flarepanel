@@ -1,4 +1,4 @@
-import type { IReportInput } from '@openpanel/core/modules/report/report.constants';
+import type { IReportInput } from '@flarepanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
 import { AspectContainer } from '../aspect-container';
 import { ChartWithTable, TableCard } from '../common/chart-with-table';

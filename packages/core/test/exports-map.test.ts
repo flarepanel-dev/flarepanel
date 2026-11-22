@@ -4,12 +4,12 @@ import { TEST_CLICKHOUSE_URL } from '../../../test/databases';
 // The exports map is the only structural barrier between apps/start and a
 // service. Widening it is silent, so it is asserted here.
 test('the curated barrel resolves', async () => {
-  expect(await import('@openpanel/core')).toBeDefined();
+  expect(await import('@flarepanel/core')).toBeDefined();
 });
 
 test('a non-exported internal path does not resolve', async () => {
   // @ts-expect-error not in the exports map, by design
-  const attempt = import('@openpanel/core/context');
+  const attempt = import('@flarepanel/core/context');
   await expect(attempt).rejects.toThrow(/Cannot find/);
 });
 

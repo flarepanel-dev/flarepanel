@@ -1,4 +1,4 @@
-import type { IAiFilters } from '@openpanel/core/modules/ai/ai.constants';
+import type { IAiFilters } from '@flarepanel/core/modules/ai/ai.constants';
 import { useMatches, useNavigate, useSearch } from '@tanstack/react-router';
 import { useCallback, useMemo } from 'react';
 import { z } from 'zod';

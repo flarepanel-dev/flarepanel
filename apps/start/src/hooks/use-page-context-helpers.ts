@@ -1,4 +1,4 @@
-import type { ChatLaunchHint } from '@openpanel/core/modules/assistant/assistant.constants';
+import type { ChatLaunchHint } from '@flarepanel/core/modules/assistant/assistant.constants';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { usePageContext } from '@/contexts/page-context';
 

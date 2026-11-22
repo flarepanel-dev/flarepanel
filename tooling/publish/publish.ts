@@ -279,7 +279,7 @@ const publishPackages = (
       }
     );
 
-    if (dep === '@openpanel/web') {
+    if (dep === '@flarepanel/web') {
       execSync(
         `cp ${workspacePath('packages/sdks/web/dist/src/tracker.global.js')} ${workspacePath('./apps/public/public/op1.js')}`
       );

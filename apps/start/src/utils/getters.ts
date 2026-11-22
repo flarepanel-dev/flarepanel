@@ -1,4 +1,4 @@
-import type { IServiceProfile } from '@openpanel/core';
+import type { IServiceProfile } from '@flarepanel/core';
 
 export type GetProfileNameProps = Partial<
   Pick<

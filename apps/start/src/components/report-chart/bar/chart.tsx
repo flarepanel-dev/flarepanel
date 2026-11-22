@@ -1,4 +1,4 @@
-import { round } from '@openpanel/shared';
+import { round } from '@flarepanel/shared';
 import { useMemo } from 'react';
 import { getLabelNames } from '../common/label-names';
 import { SerieIcon } from '../common/serie-icon';

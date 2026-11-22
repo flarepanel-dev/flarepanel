@@ -7,7 +7,7 @@
 // `` `profile.properties.<key>` `` (see `profilePropertiesCteSelect`), which
 // `sql.id` cannot express and which goes through `compiled.ts`.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import type { IChartBreakdown } from '../../report/report.constants';
 import { PROFILE_SELECT_COLUMNS } from '../chart.constants';
 import { compiledText } from './compiled';

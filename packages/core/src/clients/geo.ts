@@ -14,7 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Resolve a bundled `.mmdb` file, bundled-dist layout first, local package
-// second. apps/api bundles every `@openpanel/*` package into one file, so there
+// second. apps/api bundles every `@flarepanel/*` package into one file, so there
 // `import.meta.url` is `apps/api/dist/index.js` and three levels up is the repo root.
 async function loadDatabase(filename: string): Promise<ReaderModel | null> {
   // The api dist bundle

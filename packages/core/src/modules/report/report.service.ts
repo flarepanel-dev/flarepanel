@@ -4,7 +4,7 @@
 import type {
   Report as DbReport,
   ReportLayout,
-} from '@openpanel/db/src/prisma-client';
+} from '@flarepanel/db/src/prisma-client';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { getFunnel } from '../chart/funnel.service';

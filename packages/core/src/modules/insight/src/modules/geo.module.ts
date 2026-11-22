@@ -1,4 +1,4 @@
-import { sql } from '@openpanel/db/src/clickhouse/sql';
+import { sql } from '@flarepanel/db/src/clickhouse/sql';
 import { formatClickhouseDate } from '../../../../shared/ch-dates';
 import { TABLE_NAMES } from '../../../../shared/ch-tables';
 import { getCountry } from '../../../report/report.constants';

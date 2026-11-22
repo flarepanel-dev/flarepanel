@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
-import { getRedisCache } from '@openpanel/redis';
+import { getRedisCache } from '@flarepanel/redis';
 import { stubBufferDeps } from '../../test/buffer-fixtures';
 import { BaseBuffer, type FlushObservation } from './base-buffer';
 

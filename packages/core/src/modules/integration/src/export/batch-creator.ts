@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createGzip } from 'node:zlib';
-import { generateSecureId } from '@openpanel/shared';
+import { generateSecureId } from '@flarepanel/shared';
 import type { Logger } from '../../../../logger';
 import type { IExportEvent } from './export-event';
 

@@ -10,7 +10,7 @@
 
 import crypto from 'node:crypto';
 import type { ClickHouseSettings } from '@clickhouse/client';
-import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
+import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
 import { type ChScope, chQuery } from '../../../ch-query';
 
 /** Default timezone when the caller specifies none. */

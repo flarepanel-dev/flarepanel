@@ -366,10 +366,12 @@ test('a website project leads to the connect step with its one-time credentials'
 
   // Each framework shows its own snippet and links to its guide.
   await page.getByRole('option', { name: 'Next.js' }).click();
-  await expect(page.locator('code').first()).toContainText('@openpanel/nextjs');
+  await expect(page.locator('code').first()).toContainText(
+    '@flarepanel/nextjs'
+  );
   await expect(
     page.getByRole('link', { name: 'Full Next.js guide' })
-  ).toHaveAttribute('href', 'https://openpanel.dev/docs/sdks/nextjs');
+  ).toHaveAttribute('href', 'https://flarepanel.dev/docs/sdks/nextjs');
   await frameworkSelect.click();
   await page.getByRole('option', { name: 'iOS (swift)' }).click();
   await expect(page.locator('code').last()).toContainText(
@@ -400,11 +402,11 @@ test('the AI prompt carries the client id and the chosen framework guide', async
   await gotoHydrated(page, `/onboarding/${project.id}/connect`);
   const prompt = page.locator('pre');
   await expect(prompt).toContainText(`Client ID: ${project.clientId}`);
-  await expect(prompt).toContainText('https://openpanel.dev/docs/sdks');
+  await expect(prompt).toContainText('https://flarepanel.dev/docs/sdks');
 
   await page.getByRole('combobox', { name: 'Framework (optional)' }).click();
   await page.getByRole('option', { name: 'Next.js' }).click();
-  await expect(prompt).toContainText('https://openpanel.dev/docs/sdks/nextjs');
+  await expect(prompt).toContainText('https://flarepanel.dev/docs/sdks/nextjs');
   await expect(
     page.getByRole('link', { name: 'Open in Cursor' })
   ).toHaveAttribute('href', /^cursor:\/\//);

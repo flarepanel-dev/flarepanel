@@ -1,5 +1,5 @@
 // Fakes are handed in as `deps.db` / `deps.ch` and no module is mocked: a mock
-// of `@openpanel/db/src/clickhouse/client` would replace that specifier for
+// of `@flarepanel/db/src/clickhouse/client` would replace that specifier for
 // every other file in the process (bare `bun test` shares one module registry).
 
 import { beforeAll, expect, mock, test } from 'bun:test';
@@ -31,7 +31,7 @@ const chInsert = mock(async (_opts: { values: unknown[] }) => ({
 // not exercise is still the real one rather than `undefined`. Imported, not
 // mocked: nothing here replaces the specifier for the rest of the process.
 const actualClickhouseClient = await import(
-  '@openpanel/db/src/clickhouse/client'
+  '@flarepanel/db/src/clickhouse/client'
 );
 
 const importUpdate = mock(

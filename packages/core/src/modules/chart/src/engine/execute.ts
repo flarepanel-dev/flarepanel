@@ -1,4 +1,4 @@
-import { getChartPrevStartEndDate } from '@openpanel/shared';
+import { getChartPrevStartEndDate } from '@flarepanel/shared';
 import type { ServiceDeps } from '../../../../services';
 import { getOrganizationSubscriptionChartEndDate } from '../../../organization/organization.service';
 import type {

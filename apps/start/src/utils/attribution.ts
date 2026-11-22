@@ -2,7 +2,7 @@ import {
   ATTRIBUTION_COOKIE_NAME,
   type IOrganizationAttribution,
   zOrganizationAttribution,
-} from '@openpanel/core/modules/onboarding/onboarding.constants';
+} from '@flarepanel/core/modules/onboarding/onboarding.constants';
 
 function readCookie(cookies: string, name: string): string | undefined {
   const prefix = `${name}=`;
@@ -17,7 +17,7 @@ function browserCookies(): string {
   return typeof document === 'undefined' ? '' : document.cookie;
 }
 
-/** The first touch on openpanel.dev, if the marketing site recorded one. */
+/** The first touch on flarepanel.dev, if the marketing site recorded one. */
 export function readAttribution(
   cookies = browserCookies()
 ): IOrganizationAttribution | undefined {

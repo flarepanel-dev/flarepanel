@@ -6,7 +6,7 @@
 // Bounded: the oldest cohort is dropped when the pool is full, which is what
 // lets profiles be written exactly once.
 
-import { parseUserAgent } from '@openpanel/shared/server';
+import { parseUserAgent } from '@flarepanel/shared/server';
 import type { Archetype, RetentionCurve } from './archetypes/archetype';
 import type { ClickhouseProfileRow } from './clickhouse-rows';
 import {

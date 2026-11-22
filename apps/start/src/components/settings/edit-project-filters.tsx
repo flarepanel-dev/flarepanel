@@ -1,16 +1,16 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import type {
   IProjectFilterEvent,
   IProjectFilterIp,
   IProjectFilterProfileId,
-} from '@openpanel/core/modules/project/project.constants';
-import { zProjectFilterEvent } from '@openpanel/core/modules/project/project.constants';
+} from '@flarepanel/core/modules/project/project.constants';
+import { zProjectFilterEvent } from '@flarepanel/core/modules/project/project.constants';
 import type {
   IChartEventFilter,
   IChartEventFilterOperator,
   IChartEventFilterValue,
-} from '@openpanel/core/modules/report/report.constants';
-import { shortId } from '@openpanel/shared';
+} from '@flarepanel/core/modules/report/report.constants';
+import { shortId } from '@flarepanel/shared';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { PlusIcon, SaveIcon, Trash2Icon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';

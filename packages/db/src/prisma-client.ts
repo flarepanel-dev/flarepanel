@@ -1,4 +1,4 @@
-import { getSubscriptionState } from '@openpanel/payments/subscription-state';
+import { getSubscriptionState } from '@flarepanel/payments/subscription-state';
 import { PrismaClient } from './generated/prisma/client';
 import { logger } from './logger';
 

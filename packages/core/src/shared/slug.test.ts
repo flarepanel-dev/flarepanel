@@ -1,7 +1,7 @@
-// Tests @openpanel/shared's slug helper from here because the root `test` script
+// Tests @flarepanel/shared's slug helper from here because the root `test` script
 // does not run packages/shared.
 import { describe, expect, it } from 'bun:test';
-import { slug } from '@openpanel/shared';
+import { slug } from '@flarepanel/shared';
 
 describe('slug', () => {
   it('should remove pipes from string', () => {

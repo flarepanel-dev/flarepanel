@@ -3,7 +3,7 @@ import { rankSections } from './docs';
 
 const SELF_HOSTING_SECTION = {
   title: 'Environment variables',
-  url: 'https://openpanel.dev/docs/self-hosting/environment-variables',
+  url: 'https://flarepanel.dev/docs/self-hosting/environment-variables',
   body: 'OPENAI_API_KEY enables the MCP and chat features on your own install.',
   lowerTitle: 'environment variables',
   lowerBody:
@@ -14,7 +14,7 @@ const sections = [
   SELF_HOSTING_SECTION,
   {
     title: 'MCP Server',
-    url: 'https://openpanel.dev/docs/mcp',
+    url: 'https://flarepanel.dev/docs/mcp',
     body: 'Connect Claude, Cursor and other AI clients to your analytics with the Model Context Protocol. Create a read client to get a token.',
     lowerTitle: 'mcp server',
     lowerBody:
@@ -22,7 +22,7 @@ const sections = [
   },
   {
     title: 'Track events',
-    url: 'https://openpanel.dev/docs/get-started/track-events',
+    url: 'https://flarepanel.dev/docs/get-started/track-events',
     body: 'Call op.track with a name and properties. Events show up in the events page.',
     lowerTitle: 'track events',
     lowerBody:

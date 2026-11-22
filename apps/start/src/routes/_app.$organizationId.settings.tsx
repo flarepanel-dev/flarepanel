@@ -1,4 +1,4 @@
-import { zEditOrganization } from '@openpanel/core/modules/organization/organization.constants';
+import { zEditOrganization } from '@flarepanel/core/modules/organization/organization.constants';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Building2Icon } from 'lucide-react';

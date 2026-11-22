@@ -1,4 +1,4 @@
-import type { IPublicClient } from '@openpanel/core';
+import type { IPublicClient } from '@flarepanel/core';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';

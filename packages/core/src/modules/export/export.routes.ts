@@ -9,7 +9,7 @@
 // mutable reassignment of the Elysia chain inside a `for` loop widens past
 // what `defineRoutes`'s `const T` inference can carry.
 
-import { DateTime } from '@openpanel/shared';
+import { DateTime } from '@flarepanel/shared';
 import { z } from 'zod';
 import type { Ctx } from '../../context';
 import type { ClientType } from '../../http/client-auth';

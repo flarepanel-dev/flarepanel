@@ -1,7 +1,7 @@
 // The overview command bar: one natural-language request becomes one
 // structured filter change, checked against real referrer, country, device
 // and page values before it is applied.
-import { resolveDateRange as resolveDateRangeCore } from '@openpanel/shared';
+import { resolveDateRange as resolveDateRangeCore } from '@flarepanel/shared';
 import { generateText, isStepCount, Output, tool } from 'ai';
 import { z } from 'zod';
 import type { ServiceDeps } from '../../../services';
@@ -215,7 +215,7 @@ function instructions(input: FilterCommandInput): string {
     timeZone: 'UTC',
   });
   return [
-    "You are the OpenPanel filter command bar. Convert the user's short request into a structured filter update and one short confirmation sentence.",
+    "You are the FlarePanel filter command bar. Convert the user's short request into a structured filter update and one short confirmation sentence.",
     '',
     `Today is ${weekday}, ${today} (UTC).`,
     '',

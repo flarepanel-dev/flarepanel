@@ -97,7 +97,7 @@ function Component() {
     ? `/login?inviteId=${encodeURIComponent(inviteId)}`
     : '/login';
   const description = isSelfHosted
-    ? 'Set up your account on this OpenPanel instance.'
+    ? 'Set up your account on this FlarePanel instance.'
     : 'Start your 30-day free trial. No credit card required.';
 
   return (
@@ -163,7 +163,7 @@ function Component() {
         By creating an account you agree to the{' '}
         <a
           className="underline hover:text-foreground"
-          href="https://openpanel.dev/terms"
+          href="https://flarepanel.dev/terms"
           rel="noreferrer"
           target="_blank"
         >
@@ -172,7 +172,7 @@ function Component() {
         and{' '}
         <a
           className="underline hover:text-foreground"
-          href="https://openpanel.dev/privacy"
+          href="https://flarepanel.dev/privacy"
           rel="noreferrer"
           target="_blank"
         >

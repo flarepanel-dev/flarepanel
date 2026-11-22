@@ -1,4 +1,4 @@
-# `bun test` configuration for @openpanel/core.
+# `bun test` configuration for @flarepanel/core.
 
 [test]
 # Runs in every test PROCESS, not once per run — `bun test` has no

@@ -1,7 +1,7 @@
 // `deps.ch` carries the requestId minted at the edge. `getRawWhereClause`
 // returns a `SqlFragment` with bound params; `chQuery` always sends
 // `session_timezone`.
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import { chQuery } from '../../../ch-query';
 import type { ServiceDeps } from '../../../services';
 import { convertClickhouseDateToJs } from '../../../shared/ch-dates';

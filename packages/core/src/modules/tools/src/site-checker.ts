@@ -7,7 +7,7 @@ import {
   BlockedUrlError,
   isBlockedIp,
   safeFetch,
-} from '@openpanel/shared/server';
+} from '@flarepanel/shared/server';
 import * as cheerio from 'cheerio';
 import { getGeoLocation } from '../../../clients/geo';
 import type { CoreConfig } from '../../../config';
@@ -146,7 +146,7 @@ async function checkRobotsTxt(
     const response = await safeFetch(robotsUrl, {
       timeoutMs: 5000,
       maxBytes: 1_000_000,
-      headers: { 'User-Agent': 'OpenPanel-SiteChecker/1.0' },
+      headers: { 'User-Agent': 'FlarePanel-SiteChecker/1.0' },
     });
 
     if (response.status < 200 || response.status >= 300) {
@@ -181,7 +181,7 @@ async function checkSitemap(baseUrl: string): Promise<boolean> {
     const response = await safeFetch(sitemapUrl, {
       timeoutMs: 3000,
       maxBytes: 1_000_000,
-      headers: { 'User-Agent': 'OpenPanel-SiteChecker/1.0' },
+      headers: { 'User-Agent': 'FlarePanel-SiteChecker/1.0' },
     });
 
     return response.status >= 200 && response.status < 300;
@@ -412,7 +412,7 @@ async function fetchWithRedirects(
         maxBytes: MAX_HTML_BYTES,
         headers: {
           'User-Agent':
-            'Mozilla/5.0 (compatible; OpenPanel-SiteChecker/1.0; +https://openpanel.dev)',
+            'Mozilla/5.0 (compatible; FlarePanel-SiteChecker/1.0; +https://flarepanel.dev)',
           Accept:
             'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.5',

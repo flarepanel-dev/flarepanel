@@ -6,7 +6,7 @@
 // so a bad optional field is dropped rather than refusing the legacy SDKs'
 // identify.
 
-import { parseUserAgent } from '@openpanel/shared/server';
+import { parseUserAgent } from '@flarepanel/shared/server';
 import { z } from 'zod';
 import { getGeoLocation } from '../../clients/geo';
 import { defineRoutes } from '../../http/define';

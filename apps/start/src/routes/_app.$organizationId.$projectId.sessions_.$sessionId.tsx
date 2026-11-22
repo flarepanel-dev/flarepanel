@@ -1,4 +1,4 @@
-import type { IServiceProfile, IServiceSession } from '@openpanel/core';
+import type { IServiceProfile, IServiceSession } from '@flarepanel/core';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {

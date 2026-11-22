@@ -1,5 +1,5 @@
+import { zResetPassword } from '@flarepanel/core/modules/auth/auth.constants';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zResetPassword } from '@openpanel/core/modules/auth/auth.constants';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';

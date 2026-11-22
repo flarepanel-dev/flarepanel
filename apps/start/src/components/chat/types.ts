@@ -1,9 +1,9 @@
-import type { IReportInput } from '@openpanel/core/modules/report/report.constants';
+import type { IReportInput } from '@flarepanel/core/modules/report/report.constants';
 
 export type {
   AssistantUIMessage,
   AssistantUIMessagePart,
-} from '@openpanel/core';
+} from '@flarepanel/core';
 
 /** What every chart-producing tool returns; the chart fetches its own data from `report`. */
 export interface ChartOutput {

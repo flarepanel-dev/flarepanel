@@ -5,7 +5,7 @@ import type {
 } from '@clickhouse/client';
 import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
 import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
-import { getSafeJson } from '@openpanel/shared';
+import { getSafeJson } from '@flarepanel/shared';
 import { createLogger } from '../logger';
 import {
   nodeLabel,

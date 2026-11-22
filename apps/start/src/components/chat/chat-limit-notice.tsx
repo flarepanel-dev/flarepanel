@@ -1,7 +1,7 @@
 import {
   type ChatLimitError,
   zChatLimitError,
-} from '@openpanel/core/modules/assistant/assistant.constants';
+} from '@flarepanel/core/modules/assistant/assistant.constants';
 import { Link } from '@tanstack/react-router';
 import { GaugeIcon } from 'lucide-react';
 import { useAppParams } from '@/hooks/use-app-params';

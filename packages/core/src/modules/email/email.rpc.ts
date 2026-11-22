@@ -1,11 +1,11 @@
 // `enforceAccess` only sees a top-level `projectId` / `organizationId`, so
 // anything resolved from another id needs its own explicit check in the handler.
 //
-// `verifyUnsubscribeToken` is imported from @openpanel/email's `unsubscribe.ts`,
-// not its barrel: the barrel pulls in @openpanel/db, a cycle (see
+// `verifyUnsubscribeToken` is imported from @flarepanel/email's `unsubscribe.ts`,
+// not its barrel: the barrel pulls in @flarepanel/db, a cycle (see
 // `clients/email.ts`). `unsubscribe.ts` only touches `node:crypto`.
 
-import { verifyUnsubscribeToken } from '@openpanel/email/src/unsubscribe';
+import { verifyUnsubscribeToken } from '@flarepanel/email/src/unsubscribe';
 import { z } from 'zod';
 import {
   createTRPCRouter,

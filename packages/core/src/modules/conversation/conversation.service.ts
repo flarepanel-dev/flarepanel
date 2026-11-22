@@ -2,7 +2,7 @@ import type {
   ChatMessage,
   Conversation,
   Prisma,
-} from '@openpanel/db/src/prisma-client';
+} from '@flarepanel/db/src/prisma-client';
 import type { ServiceDeps, Services } from '../../services';
 import { CONVERSATION_LIST_LIMIT_DEFAULT } from './conversation.constants';
 

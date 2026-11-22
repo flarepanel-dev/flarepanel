@@ -20,7 +20,7 @@ interface BinaryLike {
   toString(): string;
 }
 
-/** Structurally `@openpanel/core`'s `DeadLetterMessage`: enough to find the message on the source topic. */
+/** Structurally `@flarepanel/core`'s `DeadLetterMessage`: enough to find the message on the source topic. */
 export interface DeadLetterInput {
   key: BinaryLike | null;
   value: BinaryLike | null;

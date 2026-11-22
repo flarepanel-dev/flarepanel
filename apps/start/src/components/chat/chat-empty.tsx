@@ -1,4 +1,4 @@
-import type { ChatLaunchHint } from '@openpanel/core/modules/assistant/assistant.constants';
+import type { ChatLaunchHint } from '@flarepanel/core/modules/assistant/assistant.constants';
 import {
   ActivityIcon,
   ArrowLeftRightIcon,
@@ -147,7 +147,7 @@ export function ChatEmpty({
         </h1>
         <p className="mx-auto max-w-md text-muted-foreground">
           Ask about your numbers, get charts inline, build dashboards, or ask
-          how OpenPanel works.
+          how FlarePanel works.
         </p>
       </div>
       <div className="space-y-2">
@@ -192,7 +192,7 @@ export function ChatNotConfigured() {
       </div>
       <a
         className="inline-flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
-        href="https://openpanel.dev/docs/self-hosting/environment-variables#ai-features"
+        href="https://flarepanel.dev/docs/self-hosting/environment-variables#ai-features"
         rel="noopener"
         target="_blank"
       >

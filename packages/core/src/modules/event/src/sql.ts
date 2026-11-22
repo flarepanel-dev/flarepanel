@@ -7,7 +7,7 @@
 // `distributed_product_mode: 'allow'`. Every `IN` list binds as `Array(String)`, a
 // literal list to the planner.
 
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import {
   EVENT_LIST_COLUMNS,
   type EventListColumn,

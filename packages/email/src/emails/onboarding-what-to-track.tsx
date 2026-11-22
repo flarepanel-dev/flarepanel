@@ -47,7 +47,7 @@ export function OnboardingWhatToTrack({
       ) : (
         <>
           <Text>
-            You created your OpenPanel account two days ago, but no events have
+            You created your FlarePanel account two days ago, but no events have
             come in yet.
           </Text>
           <Text>
@@ -55,7 +55,7 @@ export function OnboardingWhatToTrack({
             blocking the script. Both are quick to sort out:{' '}
             <Link
               href={withUtm(
-                'https://openpanel.dev/docs/get-started/install-openpanel',
+                'https://flarepanel.dev/docs/get-started/install-openpanel',
                 'onboarding-what-to-track'
               )}
             >

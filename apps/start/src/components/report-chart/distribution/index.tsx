@@ -1,4 +1,4 @@
-import { mixesPerUserBucketKinds } from '@openpanel/core/modules/report/report.constants';
+import { mixesPerUserBucketKinds } from '@flarepanel/core/modules/report/report.constants';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';

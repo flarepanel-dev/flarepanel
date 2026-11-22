@@ -1,4 +1,4 @@
-import type { IChartRange } from '@openpanel/core/modules/report/report.constants';
+import type { IChartRange } from '@flarepanel/core/modules/report/report.constants';
 import {
   addDays,
   addMonths,

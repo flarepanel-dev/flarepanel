@@ -2,7 +2,7 @@
 // are refreshed, at most once an hour per project, and usage alert emails go
 // out at 80% / 100% of the billing limit.
 
-import type { Organization } from '@openpanel/db/src/prisma-client';
+import type { Organization } from '@flarepanel/db/src/prisma-client';
 import { cacheablePerDeps } from '../../../cacheable-per-deps';
 import { sendEmail } from '../../../clients/email';
 import type { ServiceDeps } from '../../../services';
@@ -13,7 +13,7 @@ import { getProjectEventsCount } from '../../project/project.service';
 const INT4_MAX = 2_147_483_647;
 const USAGE_WARNING_THRESHOLD = 0.8;
 const UPDATE_EVENTS_COUNT_CACHE_SECONDS = 60 * 60;
-const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
+const DEFAULT_DASHBOARD_URL = 'https://dashboard.flarepanel.dev';
 
 /** Saturating: the columns are INT4 and lifetime counts can exceed them. */
 function clampToInt4(count: number): number {

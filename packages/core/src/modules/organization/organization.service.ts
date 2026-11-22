@@ -1,14 +1,14 @@
 // `cacheable` keys on the call's arguments, so the caller's deps travel beside
 // the key rather than inside it, or the Redis key would change per request.
 
-import { sql } from '@openpanel/db/src/clickhouse/sql';
+import { sql } from '@flarepanel/db/src/clickhouse/sql';
 import type {
   AccessLevel,
   Invite,
   Prisma,
   User,
-} from '@openpanel/db/src/prisma-client';
-import { DateTime, generateSecureId } from '@openpanel/shared';
+} from '@flarepanel/db/src/prisma-client';
+import { DateTime, generateSecureId } from '@flarepanel/shared';
 import {
   cacheablePerDb,
   cacheablePerDeps,

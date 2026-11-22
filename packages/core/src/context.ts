@@ -11,11 +11,11 @@ import type { CookieJar, CookieOptions } from './shared/cookie';
 // Type queries over the modules that construct the clients, so the aliases
 // cannot drift from what `main.ts` passes. Type-only: core imports no database
 // at runtime and `bun test` runs offline.
-export type Db = typeof import('@openpanel/db/src/prisma-client').db;
+export type Db = typeof import('@flarepanel/db/src/prisma-client').db;
 export type ClickHouseClient =
-  typeof import('@openpanel/db/src/clickhouse/client').ch;
+  typeof import('@flarepanel/db/src/clickhouse/client').ch;
 export type RedisClient = ReturnType<
-  typeof import('@openpanel/redis').getRedisCache
+  typeof import('@flarepanel/redis').getRedisCache
 >;
 export type ServiceClients = import('./clients/create-clients').ServiceClients;
 
@@ -24,7 +24,7 @@ export type ServiceClients = import('./clients/create-clients').ServiceClients;
 // a second memo once handed one suite's mocked Prisma client to later files.
 
 export type PrismaNamespace =
-  typeof import('@openpanel/db/src/prisma-client').Prisma;
+  typeof import('@flarepanel/db/src/prisma-client').Prisma;
 
 /**
  * Prisma's JSON sentinels (`DbNull`, `JsonNull`) that write an explicit SQL NULL
@@ -43,7 +43,7 @@ export interface PrismaSentinels {
  * arguments and so cannot take a leading `deps`. Everything else uses `deps.db`.
  */
 export function unscopedDb(): Promise<Db> {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
+  return import('@flarepanel/db/src/prisma-client').then((m) => m.db);
 }
 
 export type { Buffers } from './buffers/create-buffers';

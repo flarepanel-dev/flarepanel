@@ -1,7 +1,7 @@
 import {
   type EncryptionKey,
   encryptCredential,
-} from '@openpanel/shared/server';
+} from '@flarepanel/shared/server';
 import {
   sendDiscordNotification,
   sendTestDiscordNotification,
@@ -35,7 +35,7 @@ export type ConfigOf<T extends IIntegrationConfig['type']> = Extract<
 >;
 
 /**
- * Structural mirror of @openpanel/db `INotificationPayload`, kept local so the
+ * Structural mirror of @flarepanel/db `INotificationPayload`, kept local so the
  * integrations package needn't depend on db. The worker passes the real,
  * fully-typed payload — it's assignable to this looser shape.
  */

@@ -17,7 +17,7 @@ export function TrackingDataStopped({
   firstName,
   projectNames,
   lastEventDate,
-  dashboardUrl = 'https://dashboard.openpanel.dev',
+  dashboardUrl = 'https://dashboard.flarepanel.dev',
   unsubscribeUrl,
 }: Props & { unsubscribeUrl?: string }) {
   const single = projectNames.length === 1;
@@ -50,7 +50,7 @@ export function TrackingDataStopped({
         The{' '}
         <Link
           href={withUtm(
-            'https://openpanel.dev/docs/get-started/install-openpanel',
+            'https://flarepanel.dev/docs/get-started/install-openpanel',
             'tracking-data-stopped'
           )}
         >
@@ -69,5 +69,5 @@ TrackingDataStopped.PreviewProps = {
   firstName: 'Alex',
   projectNames: ['My website'],
   lastEventDate: 'August 14',
-  dashboardUrl: 'https://dashboard.openpanel.dev/org-id',
+  dashboardUrl: 'https://dashboard.flarepanel.dev/org-id',
 };

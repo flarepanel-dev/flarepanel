@@ -1,4 +1,4 @@
-import type { AiPayload } from '@openpanel/sdk';
+import type { AiPayload } from '@flarepanel/sdk';
 
 export interface RecordedRequest {
   url: string;

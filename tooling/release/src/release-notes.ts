@@ -57,7 +57,7 @@ export const fallbackNotes = (input: NotesInput): string => {
   return `## Changes since v${input.previous}\n\n${items.join('\n')}${compareLine(input)}\n`;
 };
 
-const SYSTEM_PROMPT = `You write release notes for OpenPanel, an open-source product analytics tool that people self-host with Docker Compose and upgrade with the \`openpanel\` CLI.
+const SYSTEM_PROMPT = `You write release notes for FlarePanel, an open-source product analytics tool that people self-host with Docker Compose and upgrade with the \`openpanel\` CLI.
 
 You get the commit messages between two releases, and the list of changed files that can affect a self-hosted install. Write Markdown release notes for the people running it.
 

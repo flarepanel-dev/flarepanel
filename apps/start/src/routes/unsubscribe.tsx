@@ -1,4 +1,4 @@
-import { emailCategories } from '@openpanel/core/modules/email/email.constants';
+import { emailCategories } from '@flarepanel/core/modules/email/email.constants';
 import { useMutation } from '@tanstack/react-query';
 import { createFileRoute, useSearch } from '@tanstack/react-router';
 import { MailXIcon } from 'lucide-react';

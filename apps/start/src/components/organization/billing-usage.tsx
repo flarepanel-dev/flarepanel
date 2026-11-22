@@ -1,5 +1,5 @@
-import type { IServiceOrganization } from '@openpanel/core';
-import { round } from '@openpanel/shared';
+import type { IServiceOrganization } from '@flarepanel/core';
+import { round } from '@flarepanel/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2Icon, XIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';

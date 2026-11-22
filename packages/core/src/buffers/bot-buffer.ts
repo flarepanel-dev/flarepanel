@@ -1,4 +1,4 @@
-import { getRedisCache, type Redis } from '@openpanel/redis';
+import { getRedisCache, type Redis } from '@flarepanel/redis';
 import type { IClickhouseBotEvent } from '../modules/event/event.service';
 import { TABLE_NAMES } from '../shared/ch-tables';
 import { BaseBuffer, type BufferDeps } from './base-buffer';

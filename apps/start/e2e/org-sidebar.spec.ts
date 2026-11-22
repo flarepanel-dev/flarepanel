@@ -123,7 +123,7 @@ test('navigation links reach every organization page', async ({ page }) => {
 
 test('footer has docs, feedback and the profile menu', async ({ page }) => {
   const docs = page.getByRole('link', { name: 'Docs' });
-  await expect(docs).toHaveAttribute('href', 'https://openpanel.dev/docs');
+  await expect(docs).toHaveAttribute('href', 'https://flarepanel.dev/docs');
   await expect(docs).toHaveAttribute('target', '_blank');
   await expect(
     page.getByRole('button', { name: 'Give feedback' })

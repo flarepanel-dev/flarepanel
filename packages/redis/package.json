@@ -1,5 +1,5 @@
 {
-  "name": "@openpanel/redis",
+  "name": "@flarepanel/redis",
   "version": "0.0.1",
   "type": "module",
   "main": "index.ts",
@@ -7,14 +7,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/shared": "workspace:*",
+    "@flarepanel/shared": "workspace:*",
     "ioredis": "5.8.2",
     "lru-cache": "11.5.1"
   },
   "devDependencies": {
-    "@openpanel/core": "workspace:*",
-    "@openpanel/db": "workspace:*",
-    "@openpanel/tsconfig": "workspace:*",
+    "@flarepanel/core": "workspace:*",
+    "@flarepanel/db": "workspace:*",
+    "@flarepanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
   }

@@ -2,8 +2,8 @@
 // takes `ServiceDeps` first; the client is `deps.ch`, which is what puts the
 // request's id on the query's log line.
 
-import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
-import { average, sum } from '@openpanel/shared';
+import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
+import { average, sum } from '@flarepanel/shared';
 import { z } from 'zod';
 import type { ServiceDeps, Services } from '../../services';
 import { convertClickhouseDateToJs } from '../chart/src/dates';

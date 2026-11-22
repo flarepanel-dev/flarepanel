@@ -1,4 +1,4 @@
-// The Node-only entrypoint of @openpanel/shared: `@openpanel/shared/server`.
+// The Node-only entrypoint of @flarepanel/shared: `@flarepanel/shared/server`.
 // Everything behind it may use `node:*`.
 export {
   createHash,

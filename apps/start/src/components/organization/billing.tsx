@@ -1,5 +1,5 @@
-import type { IServiceOrganization } from '@openpanel/core';
-import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
+import type { IServiceOrganization } from '@flarepanel/core';
+import { getSubscriptionStateMeta } from '@flarepanel/payments/subscription-state-meta';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { differenceInDays } from 'date-fns';
 import { useQueryState } from 'nuqs';

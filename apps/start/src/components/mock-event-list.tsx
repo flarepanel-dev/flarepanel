@@ -1,4 +1,4 @@
-import type { IServiceEventMinimal } from '@openpanel/core';
+import type { IServiceEventMinimal } from '@flarepanel/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { EventListItem } from '@/components/events/event-list-item';

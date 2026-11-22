@@ -1,15 +1,15 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import type {
   IAmplitudeImportConfig,
   IImportConfig,
   IMixpanelImportConfig,
   IUmamiImportConfig,
-} from '@openpanel/core/modules/import/import.constants';
+} from '@flarepanel/core/modules/import/import.constants';
 import {
   zAmplitudeImportConfig,
   zMixpanelImportConfig,
   zUmamiImportConfig,
-} from '@openpanel/core/modules/import/import.constants';
+} from '@flarepanel/core/modules/import/import.constants';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';

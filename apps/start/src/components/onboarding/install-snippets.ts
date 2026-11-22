@@ -1,4 +1,4 @@
-import type { Framework } from '@openpanel/sdk-info';
+import type { Framework } from '@flarepanel/sdk-info';
 
 export interface SnippetContext {
   clientId: string;
@@ -15,7 +15,7 @@ export interface InstallSnippet {
 }
 
 const SECRET_PLACEHOLDER = 'YOUR_CLIENT_SECRET';
-export const SCRIPT_URL = 'https://openpanel.dev/op1.js';
+export const SCRIPT_URL = 'https://flarepanel.dev/op1.js';
 
 const secretOf = (context: SnippetContext) =>
   context.clientSecret ?? SECRET_PLACEHOLDER;
@@ -38,12 +38,12 @@ export function scriptTagSnippet(context: SnippetContext): string {
 
 function webSdkSnippets(context: SnippetContext): InstallSnippet[] {
   return [
-    { title: 'Install', code: 'npm install @openpanel/web', language: 'bash' },
+    { title: 'Install', code: 'npm install @flarepanel/web', language: 'bash' },
     {
       title: 'Create one shared instance',
       language: 'typescript',
       code: `// src/openpanel.ts
-import { OpenPanel } from '@openpanel/web';
+import { OpenPanel } from '@flarepanel/web';
 
 export const op = new OpenPanel({${apiUrlLine(context, '  ')}
   clientId: '${context.clientId}',
@@ -57,11 +57,11 @@ export const op = new OpenPanel({${apiUrlLine(context, '  ')}
 
 function serverSdkSnippets(context: SnippetContext): InstallSnippet[] {
   return [
-    { title: 'Install', code: 'npm install @openpanel/sdk', language: 'bash' },
+    { title: 'Install', code: 'npm install @flarepanel/sdk', language: 'bash' },
     {
       title: 'Initialize',
       language: 'typescript',
-      code: `import { OpenPanel } from '@openpanel/sdk';
+      code: `import { OpenPanel } from '@flarepanel/sdk';
 
 const op = new OpenPanel({${apiUrlLine(context, '  ')}
   clientId: '${context.clientId}',
@@ -74,7 +74,7 @@ op.track('my_event', { foo: 'bar' });`,
 }
 
 const trackUrl = (context: SnippetContext) =>
-  `${context.apiUrl ?? 'https://api.openpanel.dev'}/track`;
+  `${context.apiUrl ?? 'https://api.flarepanel.dev'}/track`;
 
 export function curlSnippet(context: SnippetContext, eventName: string) {
   return `curl -X POST ${trackUrl(context)} \\
@@ -99,14 +99,14 @@ const SNIPPETS: Record<string, (context: SnippetContext) => InstallSnippet[]> =
     nextjs: (context) => [
       {
         title: 'Install',
-        code: 'npm install @openpanel/nextjs',
+        code: 'npm install @flarepanel/nextjs',
         language: 'bash',
       },
       {
         title: 'Add to your root layout',
         language: 'typescript',
         code: `// app/layout.tsx
-import { OpenPanelComponent } from '@openpanel/nextjs';
+import { OpenPanelComponent } from '@flarepanel/nextjs';
 
 export default function RootLayout({ children }) {
   return (
@@ -128,7 +128,7 @@ export default function RootLayout({ children }) {
     nuxt: (context) => [
       {
         title: 'Install',
-        code: 'npm install @openpanel/nuxt',
+        code: 'npm install @flarepanel/nuxt',
         language: 'bash',
       },
       {
@@ -136,7 +136,7 @@ export default function RootLayout({ children }) {
         language: 'typescript',
         code: `// nuxt.config.ts
 export default defineNuxtConfig({
-  modules: ['@openpanel/nuxt'],
+  modules: ['@flarepanel/nuxt'],
   openpanel: {${apiUrlLine(context, '    ')}
     clientId: '${context.clientId}',
     trackScreenViews: true,
@@ -149,14 +149,14 @@ export default defineNuxtConfig({
     astro: (context) => [
       {
         title: 'Install',
-        code: 'npm install @openpanel/astro',
+        code: 'npm install @flarepanel/astro',
         language: 'bash',
       },
       {
         title: 'Add to your layout <head>',
         language: 'markdown',
         code: `---
-import { OpenPanelComponent } from '@openpanel/astro';
+import { OpenPanelComponent } from '@flarepanel/astro';
 ---
 <html>
   <head>
@@ -183,14 +183,14 @@ import { OpenPanelComponent } from '@openpanel/astro';
     'react-native': (context) => [
       {
         title: 'Install',
-        code: `npm install @openpanel/react-native
+        code: `npm install @flarepanel/react-native
 npx expo install expo-application expo-constants`,
         language: 'bash',
       },
       {
         title: 'Initialize',
         language: 'typescript',
-        code: `import { OpenPanel } from '@openpanel/react-native';
+        code: `import { OpenPanel } from '@flarepanel/react-native';
 
 export const op = new OpenPanel({${apiUrlLine(context, '  ')}
   clientId: '${context.clientId}',
@@ -202,14 +202,14 @@ export const op = new OpenPanel({${apiUrlLine(context, '  ')}
     express: (context) => [
       {
         title: 'Install',
-        code: 'npm install @openpanel/express',
+        code: 'npm install @flarepanel/express',
         language: 'bash',
       },
       {
         title: 'Add the middleware',
         language: 'typescript',
         code: `import express from 'express';
-import createOpenpanelMiddleware from '@openpanel/express';
+import createOpenpanelMiddleware from '@flarepanel/express';
 
 const app = express();
 
@@ -231,7 +231,7 @@ app.post('/sign-up', (req, res) => {
       {
         title: 'Initialize',
         language: 'typescript',
-        code: `from openpanel import OpenPanel
+        code: `from openpanel import FlarePanel
 
 op = OpenPanel(${context.apiUrl ? `\n    api_url="${context.apiUrl}",` : ''}
     client_id="${context.clientId}",
@@ -285,7 +285,7 @@ tracker.track('my_event', { foo: 'bar' })`,
       {
         title: 'Initialize',
         language: 'typescript',
-        code: `import OpenPanel
+        code: `import FlarePanel
 
 OpenPanel.initialize(options: .init(${context.apiUrl ? `\n    apiUrl: "${context.apiUrl}",` : ''}
     clientId: "${context.clientId}",

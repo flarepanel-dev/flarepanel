@@ -3,7 +3,7 @@ import {
   type IChartEvent,
   type IChartEventFilter,
   type IChartEventFilterOperator,
-} from '@openpanel/core/modules/report/report.constants';
+} from '@flarepanel/core/modules/report/report.constants';
 import { FilterIcon, XIcon } from 'lucide-react';
 import { changeEvent } from '../../reportSlice';
 import { FILTER_CARD_CLASS } from '@/components/report/sidebar/sidebar-section';

@@ -1,5 +1,5 @@
+import { zCreateWebhookIntegration } from '@flarepanel/core/modules/integration/integration.constants';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zCreateWebhookIntegration } from '@openpanel/core/modules/integration/integration.constants';
 import { useMutation } from '@tanstack/react-query';
 import { PlusIcon, TrashIcon } from 'lucide-react';
 import { mergeDeepRight, path } from 'ramda';

@@ -8,8 +8,8 @@ import {
   mock,
 } from 'bun:test';
 import type { Readable } from 'node:stream';
-import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
-import { getRedisCache } from '@openpanel/redis';
+import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
+import { getRedisCache } from '@flarepanel/redis';
 import { bufferDepsWithCh } from '../../test/buffer-fixtures';
 import { testCoreConfig } from '../../test/config-fixture';
 
@@ -21,7 +21,7 @@ const chQuery = mock(
 );
 
 // Inserts go through `BufferDeps.ch` (no module mock needed); reads go through
-// core's `chQuery`, mocked here instead of `@openpanel/db`'s client, whose
+// core's `chQuery`, mocked here instead of `@flarepanel/db`'s client, whose
 // import builds a real client and a pino transport thread per test file.
 mock.module('../ch-query', () => ({
   ...realChQuery,

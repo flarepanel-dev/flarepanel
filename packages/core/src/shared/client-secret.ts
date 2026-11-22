@@ -1,9 +1,9 @@
 import crypto from 'node:crypto';
-import { verify as verifyArgon2 } from '@node-rs/argon2';
 import {
   hashPassword as hashScrypt,
   verifyPassword as verifyScrypt,
-} from '@openpanel/shared/server';
+} from '@flarepanel/shared/server';
+import { verify as verifyArgon2 } from '@node-rs/argon2';
 
 const ARGON2_PREFIX = '$argon2';
 

@@ -46,8 +46,8 @@ describe('matchesBasicAuth', () => {
   });
 
   it('challenges with the realm', () => {
-    expect(basicAuthChallenge('OpenPanel ops')).toEqual({
-      'WWW-Authenticate': 'Basic realm="OpenPanel ops"',
+    expect(basicAuthChallenge('FlarePanel ops')).toEqual({
+      'WWW-Authenticate': 'Basic realm="FlarePanel ops"',
     });
   });
 });

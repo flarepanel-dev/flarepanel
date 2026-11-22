@@ -49,7 +49,7 @@ Review the current PR by running `git diff main...HEAD` and examining all change
 
 - Queries should be optimized for very large datasets
 - Static queries are raw SQL with ClickHouse-native `{name:Type}` bound params
-- Dynamic composition (chart engine, filters, breakdowns) uses `@openpanel/db`'s `sql` tagged template — never `${}` of a raw value, never hand-rolled string concatenation (ADR-013)
+- Dynamic composition (chart engine, filters, breakdowns) uses `@flarepanel/db`'s `sql` tagged template — never `${}` of a raw value, never hand-rolled string concatenation (ADR-013)
 
 ---
 

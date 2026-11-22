@@ -9,7 +9,7 @@ import type { ClickHouseSettings, ResponseJSON } from '@clickhouse/client';
 import {
   type SqlFragment,
   toStatement,
-} from '@openpanel/db/src/clickhouse/sql';
+} from '@flarepanel/db/src/clickhouse/sql';
 import type { ServiceDeps } from './services';
 
 /** Narrowed so the buffers, whose `BufferDeps` is not a `ServiceDeps`, can call these too. */
