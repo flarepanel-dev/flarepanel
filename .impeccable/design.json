@@ -1,0 +1,473 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-23T00:00:00Z",
+  "title": "Design System: FlarePanel",
+  "extensions": {
+    "colorMeta": {
+      "coral": {
+        "role": "primary",
+        "displayName": "Hot Coral",
+        "canonical": "#ff496b",
+        "tonalRamp": [
+          "#4B0616",
+          "#741629",
+          "#941C36",
+          "#BB2445",
+          "#E13156",
+          "#FF496B",
+          "#FF96A2",
+          "#FFDFE1"
+        ]
+      },
+      "coral-soft": {
+        "role": "primary",
+        "displayName": "Coral Glow",
+        "canonical": "#ff6b82",
+        "tonalRamp": [
+          "#4B0616",
+          "#741629",
+          "#941C36",
+          "#BB2445",
+          "#E13156",
+          "#FF6B82",
+          "#FFC1C5",
+          "#FFEEEF"
+        ]
+      },
+      "chart-rest": {
+        "role": "primary",
+        "displayName": "Banked Ember",
+        "canonical": "#3a1420",
+        "tonalRamp": [
+          "#1c0a10",
+          "#2b0f18",
+          "#3a1420",
+          "#561d2f",
+          "#74283f",
+          "#9a3a55",
+          "#c46a82",
+          "#ecc4cf"
+        ]
+      },
+      "crimson": {
+        "role": "secondary",
+        "displayName": "Delta Crimson",
+        "canonical": "#f0605d",
+        "tonalRamp": [
+          "#3d1211",
+          "#5e1c1b",
+          "#862a28",
+          "#b23c39",
+          "#f0605d",
+          "#f48a87",
+          "#f8b5b3",
+          "#fce0df"
+        ]
+      },
+      "up": {
+        "role": "secondary",
+        "displayName": "Delta Green",
+        "canonical": "#3ccb7f",
+        "tonalRamp": [
+          "#0c2a1a",
+          "#124027",
+          "#1b6039",
+          "#26874f",
+          "#3ccb7f",
+          "#6fd9a0",
+          "#a3e7c2",
+          "#d6f5e4"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Obsidian",
+        "canonical": "#0d0d10",
+        "tonalRamp": [
+          "#0D0D10",
+          "#18181B",
+          "#27272A",
+          "#3F3F43",
+          "#727276",
+          "#A1A1A5",
+          "#D4D4D8",
+          "#F9FAFE"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel Black",
+        "canonical": "#111114",
+        "tonalRamp": [
+          "#0D0D10",
+          "#111114",
+          "#18181B",
+          "#27272A",
+          "#3F3F43",
+          "#727276",
+          "#D4D4D8",
+          "#F9FAFE"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised Graphite",
+        "canonical": "#18181b",
+        "tonalRamp": [
+          "#0D0D10",
+          "#18181B",
+          "#27272A",
+          "#3F3F43",
+          "#727276",
+          "#A1A1A5",
+          "#D4D4D8",
+          "#F9FAFE"
+        ]
+      },
+      "hover": {
+        "role": "neutral",
+        "displayName": "Hover Graphite",
+        "canonical": "#1c1c20",
+        "tonalRamp": [
+          "#0D0D10",
+          "#18181B",
+          "#1C1C20",
+          "#27272A",
+          "#3F3F43",
+          "#727276",
+          "#D4D4D8",
+          "#F9FAFE"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#27272a",
+        "tonalRamp": [
+          "#0D0D10",
+          "#18181B",
+          "#27272A",
+          "#3F3F43",
+          "#727276",
+          "#A1A1A5",
+          "#D4D4D8",
+          "#F9FAFE"
+        ]
+      },
+      "rule-strong": {
+        "role": "neutral",
+        "displayName": "Strong Hairline",
+        "canonical": "#3f3f43",
+        "tonalRamp": [
+          "#0D0D10",
+          "#18181B",
+          "#27272A",
+          "#3F3F43",
+          "#727276",
+          "#A1A1A5",
+          "#D4D4D8",
+          "#F9FAFE"
+        ]
+      },
+      "faint": {
+        "role": "neutral",
+        "displayName": "Faint Gray",
+        "canonical": "#727276",
+        "tonalRamp": [
+          "#0D0D10",
+          "#18181B",
+          "#27272A",
+          "#3F3F43",
+          "#727276",
+          "#A1A1A5",
+          "#D4D4D8",
+          "#F9FAFE"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Gray",
+        "canonical": "#a1a1a5",
+        "tonalRamp": [
+          "#0D0D10",
+          "#18181B",
+          "#27272A",
+          "#3F3F43",
+          "#727276",
+          "#A1A1A5",
+          "#D4D4D8",
+          "#F9FAFE"
+        ]
+      },
+      "soft": {
+        "role": "neutral",
+        "displayName": "Soft Gray",
+        "canonical": "#d4d4d8",
+        "tonalRamp": [
+          "#0D0D10",
+          "#18181B",
+          "#27272A",
+          "#3F3F43",
+          "#727276",
+          "#A1A1A5",
+          "#D4D4D8",
+          "#F9FAFE"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#f9fafe",
+        "tonalRamp": [
+          "#0D0D10",
+          "#18181B",
+          "#27272A",
+          "#3F3F43",
+          "#727276",
+          "#A1A1A5",
+          "#E4E4E8",
+          "#F9FAFE"
+        ]
+      },
+      "paper-hover": {
+        "role": "neutral",
+        "displayName": "Paper Pressed",
+        "canonical": "#e4e4e8",
+        "tonalRamp": [
+          "#0D0D10",
+          "#18181B",
+          "#27272A",
+          "#3F3F43",
+          "#727276",
+          "#A1A1A5",
+          "#E4E4E8",
+          "#F3F4F8"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The hero claim only; 44px mobile, 60px sm, 74px lg."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headings; 36px mobile, 48px sm, 56px lg; up to 68px for the closing call."
+      },
+      "headline-sm": {
+        "displayName": "Headline Small",
+        "purpose": "Sub-headings inside a section; 28px mobile, 34px sm."
+      },
+      "title-lg": { "displayName": "Title Large", "purpose": "Card titles." },
+      "title": { "displayName": "Title", "purpose": "List and step titles." },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Ledes and section intros, 46 to 60ch; 17px lede from sm."
+      },
+      "body-sm": {
+        "displayName": "Body Small",
+        "purpose": "Row and card copy, FAQ answers."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, nav, tabs (14 to 15px)."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "KPI values and the live count; 22px mobile, 26px sm; tabular figures."
+      },
+      "data-label": {
+        "displayName": "Data Label",
+        "purpose": "Uppercase mono labels inside the product and tables only."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Code blocks and diffs; 11.5px mobile, 14px sm, 15px xl."
+      }
+    },
+    "shadows": [
+      {
+        "name": "stage-drop",
+        "value": "0 40px 120px -40px rgba(0,0,0,0.9)",
+        "purpose": "Only under the hero dashboard frame."
+      },
+      {
+        "name": "focus-ring",
+        "value": "outline: 2px solid #ff496b; outline-offset: 3px; border-radius: 6px",
+        "purpose": "Global :focus-visible treatment."
+      },
+      {
+        "name": "header-scrolled",
+        "value": "background: rgb(13 13 16 / 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid #27272a",
+        "purpose": "Sticky header after 8px of scroll."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "State transitions, arrow nudges, chart bar growth, feed entry."
+      },
+      {
+        "name": "state-fast",
+        "value": "200ms",
+        "purpose": "Button, link, tab and arrow transitions."
+      },
+      {
+        "name": "state-slow",
+        "value": "300ms",
+        "purpose": "Header scroll state, capability hover, FAQ icon rotation."
+      },
+      {
+        "name": "dashboard-tick",
+        "value": "1900ms interval; bar 900ms; feed row 600ms from y -12px, blur 4px",
+        "purpose": "The hero live dashboard; runs only in view, halted under reduced motion."
+      },
+      {
+        "name": "route-pulse",
+        "value": "4.8s cubic-bezier(0.45, 0, 0.2, 1) infinite",
+        "purpose": "The single pulse along the event route; hidden under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Paper-on-ink primary action (Star on GitHub).",
+      "html": "<a class=\"ds-btn-primary\" href=\"#\"><svg viewBox=\"0 0 24 24\" width=\"17\" height=\"17\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4\"/><path d=\"M9 18c-4.51 2-5-2-7-2\"/></svg>Star on GitHub</a>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 9px; background: var(--color-paper, #f9fafe); color: var(--color-ink, #0d0d10); font-family: var(--font-sans, Geist, system-ui, sans-serif); font-weight: 500; font-size: 15px; text-decoration: none; white-space: nowrap; transition: background-color 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-primary:hover { background: #e4e4e8; } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:focus-visible { outline: 2px solid var(--color-coral, #ff496b); outline-offset: 3px; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action with a trailing arrow that nudges on hover (Get early access).",
+      "html": "<a class=\"ds-btn-outline\" href=\"#\">Get early access<svg class=\"ds-btn-outline-arrow\" viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"m12 5 7 7-7 7\"/></svg></a>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 9px; border: 1px solid var(--color-rule-strong, #3f3f43); background: transparent; color: var(--color-paper, #f9fafe); font-family: var(--font-sans, Geist, system-ui, sans-serif); font-weight: 500; font-size: 15px; text-decoration: none; white-space: nowrap; transition: background-color 200ms cubic-bezier(0.16, 1, 0.3, 1), border-color 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-outline:hover { background: var(--color-raised, #18181b); border-color: var(--color-faint, #727276); } .ds-btn-outline-arrow { transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-outline:hover .ds-btn-outline-arrow { transform: translateX(2px); } .ds-btn-outline:active { transform: translateY(1px); } .ds-btn-outline:focus-visible { outline: 2px solid var(--color-coral, #ff496b); outline-offset: 3px; }"
+    },
+    {
+      "name": "Inline Link",
+      "kind": "custom",
+      "refersTo": "text-link",
+      "description": "Coral text link inside prose, underline deepens on hover.",
+      "html": "<p class=\"ds-prose\">Something missing? <a class=\"ds-link\" href=\"#\">Open an issue</a> and we will answer it there.</p>",
+      "css": ".ds-prose { font-family: var(--font-sans, Geist, system-ui, sans-serif); font-size: 16px; line-height: 1.6; color: var(--color-muted, #a1a1a5); } .ds-link { color: var(--color-coral, #ff496b); text-decoration: underline; text-decoration-color: rgb(255 73 107 / 0.4); text-decoration-thickness: 1px; text-underline-offset: 0.22em; transition: text-decoration-color 150ms; } .ds-link:hover { text-decoration-color: var(--color-coral, #ff496b); } .ds-link:focus-visible { outline: 2px solid var(--color-coral, #ff496b); outline-offset: 3px; border-radius: 6px; }"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "refersTo": "button-nav",
+      "description": "Sticky 68px header: logo, muted links, Sign in, compact paper GitHub button.",
+      "html": "<header class=\"ds-nav\"><span class=\"ds-nav-logo\"><svg viewBox=\"0 0 48 48\" width=\"28\" height=\"28\" aria-hidden=\"true\"><rect fill=\"#FFFFFF\" height=\"48\" rx=\"12\" width=\"48\"/><rect fill=\"#0D0D10\" height=\"26\" rx=\"3\" width=\"6\" x=\"12\" y=\"11\"/><rect fill=\"#0D0D10\" height=\"6\" rx=\"3\" width=\"16\" x=\"20.5\" y=\"11\"/><rect fill=\"#0D0D10\" height=\"6\" rx=\"3\" width=\"10.5\" x=\"20.5\" y=\"21\"/><circle cx=\"23.5\" cy=\"34\" fill=\"#FF496B\" r=\"3\"/></svg>FlarePanel</span><nav class=\"ds-nav-links\"><a href=\"#\">Product</a><a href=\"#\">How it works</a><a href=\"#\">Docs</a><a href=\"#\">FAQ</a></nav><div class=\"ds-nav-end\"><a class=\"ds-nav-link\" href=\"#\">Sign in</a><a class=\"ds-nav-btn\" href=\"#\">GitHub</a></div></header>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 36px; height: 68px; padding: 0 56px; background: rgb(13 13 16 / 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--color-rule, #27272a); font-family: var(--font-sans, Geist, system-ui, sans-serif); } .ds-nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 19px; letter-spacing: -0.02em; color: var(--color-paper, #f9fafe); } .ds-nav-links { display: flex; gap: 28px; margin-left: 24px; } .ds-nav-links a, .ds-nav-link { font-size: 14px; color: var(--color-muted, #a1a1a5); text-decoration: none; transition: color 200ms; } .ds-nav-links a:hover, .ds-nav-link:hover { color: var(--color-paper, #f9fafe); } .ds-nav-end { margin-left: auto; display: flex; align-items: center; gap: 20px; } .ds-nav-btn { display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 8px; background: var(--color-paper, #f9fafe); color: var(--color-ink, #0d0d10); font-weight: 500; font-size: 14px; text-decoration: none; transition: background-color 200ms; } .ds-nav-btn:hover { background: #e4e4e8; } .ds-nav a:focus-visible { outline: 2px solid var(--color-coral, #ff496b); outline-offset: 3px; border-radius: 6px; }"
+    },
+    {
+      "name": "Tabs",
+      "kind": "chip",
+      "refersTo": "tab",
+      "description": "Install-option tabs: raised fill marks the active tab.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab\" role=\"tab\" aria-selected=\"true\">Already on OpenPanel</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Script tag</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Track an event</button></div>",
+      "css": ".ds-tabs { display: flex; gap: 4px; padding: 8px; background: var(--color-panel, #111114); border-bottom: 1px solid var(--color-rule, #27272a); } .ds-tab { height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: transparent; color: var(--color-muted, #a1a1a5); font-family: var(--font-sans, Geist, system-ui, sans-serif); font-size: 14px; cursor: pointer; transition: color 200ms, background-color 200ms; } .ds-tab:hover { color: var(--color-paper, #f9fafe); } .ds-tab[aria-selected=\"true\"] { background: var(--color-raised, #18181b); color: var(--color-paper, #f9fafe); } .ds-tab:focus-visible { outline: 2px solid var(--color-coral, #ff496b); outline-offset: 3px; }"
+    },
+    {
+      "name": "Status Pill",
+      "kind": "chip",
+      "refersTo": "status-pill",
+      "description": "Neutral availability label; filled dot for ready, hollow dot for coming soon.",
+      "html": "<span class=\"ds-pill\"><span class=\"ds-pill-dot\"></span>Early access</span> <span class=\"ds-pill ds-pill-soon\"><span class=\"ds-pill-dot\"></span>Coming soon</span>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--color-rule-strong, #3f3f43); color: var(--color-soft, #d4d4d8); font-family: var(--font-sans, Geist, system-ui, sans-serif); font-size: 13px; } .ds-pill-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--color-soft, #d4d4d8); } .ds-pill-soon { border-color: var(--color-rule, #27272a); color: var(--color-muted, #a1a1a5); } .ds-pill-soon .ds-pill-dot { background: transparent; border: 1px solid var(--color-faint, #727276); box-sizing: border-box; }"
+    },
+    {
+      "name": "Option Card",
+      "kind": "card",
+      "refersTo": "card-option",
+      "description": "Run-option card; highlighted variant on panel black with a strong hairline.",
+      "html": "<article class=\"ds-card\"><h3 class=\"ds-card-title\">FlarePanel Cloud</h3><p class=\"ds-card-body\">We run it for you. Create an account, add a project, paste the SDK snippet.</p><ul class=\"ds-card-list\"><li>Sign-up and projects work today</li><li>Choose where your data lives</li></ul><a class=\"ds-card-cta\" href=\"#\"><span>Get early access</span> &rarr;</a></article>",
+      "css": ".ds-card { display: flex; flex-direction: column; max-width: 520px; padding: 36px; border-radius: 16px; border: 1px solid var(--color-rule-strong, #3f3f43); background: var(--color-panel, #111114); font-family: var(--font-sans, Geist, system-ui, sans-serif); } .ds-card-title { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; color: var(--color-paper, #f9fafe); } .ds-card-body { margin: 16px 0 0; font-size: 16px; line-height: 1.6; color: var(--color-muted, #a1a1a5); } .ds-card-list { list-style: none; margin: 28px 0 0; padding: 24px 0 0; border-top: 1px solid var(--color-rule, #27272a); display: grid; gap: 12px; font-size: 15px; color: var(--color-soft, #d4d4d8); } .ds-card-list li { display: flex; gap: 12px; } .ds-card-list li::before { content: \"\"; flex: none; width: 12px; height: 1px; margin-top: 11px; background: var(--color-rule-strong, #3f3f43); } .ds-card-cta { margin-top: 36px; align-self: flex-start; font-weight: 500; font-size: 15px; color: var(--color-paper, #f9fafe); text-decoration: none; } .ds-card-cta span { text-decoration: underline; text-decoration-color: var(--color-rule-strong, #3f3f43); text-underline-offset: 0.3em; transition: text-decoration-color 150ms; } .ds-card-cta:hover span { text-decoration-color: var(--color-coral, #ff496b); } .ds-card-cta:focus-visible { outline: 2px solid var(--color-coral, #ff496b); outline-offset: 3px; border-radius: 6px; }"
+    },
+    {
+      "name": "KPI Strip",
+      "kind": "custom",
+      "refersTo": "dashboard-panel",
+      "description": "Dashboard KPIs: mono values, green up, crimson down, coral only for the live count.",
+      "html": "<div class=\"ds-kpis\"><div class=\"ds-kpi\"><div class=\"ds-kpi-label\">Unique visitors</div><div class=\"ds-kpi-row\"><span class=\"ds-kpi-value\">8,634</span><span class=\"ds-kpi-up\">&#8599;12%</span></div></div><div class=\"ds-kpi\"><div class=\"ds-kpi-label\">Bounce rate</div><div class=\"ds-kpi-row\"><span class=\"ds-kpi-value\">41%</span><span class=\"ds-kpi-down\">&#8600;3%</span></div></div><div class=\"ds-kpi\"><div class=\"ds-kpi-label\">Live now</div><div class=\"ds-kpi-row\"><span class=\"ds-kpi-value ds-kpi-live\"><span class=\"ds-kpi-dot\"></span>14</span></div></div></div>",
+      "css": ".ds-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--color-rule, #27272a); border-radius: 12px; overflow: hidden; background: var(--color-panel, #111114); } .ds-kpi { padding: 16px; } .ds-kpi + .ds-kpi { border-left: 1px solid var(--color-rule, #27272a); } .ds-kpi-label { font-family: var(--font-mono, 'Geist Mono', ui-monospace, monospace); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-faint, #727276); } .ds-kpi-row { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; } .ds-kpi-value { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono, 'Geist Mono', ui-monospace, monospace); font-weight: 600; font-size: 26px; font-variant-numeric: tabular-nums; color: var(--color-paper, #f9fafe); } .ds-kpi-up, .ds-kpi-down { font-family: var(--font-mono, 'Geist Mono', ui-monospace, monospace); font-size: 11px; } .ds-kpi-up { color: var(--color-up, #3ccb7f); } .ds-kpi-down { color: var(--color-crimson, #f0605d); } .ds-kpi-live { color: var(--color-coral, #ff496b); } .ds-kpi-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--color-coral, #ff496b); }"
+    },
+    {
+      "name": "Code Diff",
+      "kind": "custom",
+      "refersTo": "dashboard-panel",
+      "description": "Mono diff: coral wash and + for the added line, crimson strike for the removed line.",
+      "html": "<pre class=\"ds-diff\"><div class=\"ds-diff-line\"><span class=\"ds-diff-n\">3</span><span class=\"ds-diff-m\"></span><code>export const op = new OpenPanel({</code></div><div class=\"ds-diff-line ds-diff-del\"><span class=\"ds-diff-n\">5</span><span class=\"ds-diff-m\">&minus;</span><code>  apiUrl: 'https://api.openpanel.dev',</code></div><div class=\"ds-diff-line ds-diff-add\"><span class=\"ds-diff-n\">6</span><span class=\"ds-diff-m\">+</span><code>  apiUrl: 'https://api.flarepanel.dev',</code></div></pre>",
+      "css": ".ds-diff { margin: 0; padding: 16px 0; border: 1px solid var(--color-rule, #27272a); border-radius: 16px; background: var(--color-panel, #111114); font-family: var(--font-mono, 'Geist Mono', ui-monospace, monospace); font-size: 14px; line-height: 1.9; overflow-x: auto; } .ds-diff code { font-family: inherit; } .ds-diff-line { display: grid; grid-template-columns: 48px 26px 1fr; padding-right: 24px; color: var(--color-soft, #d4d4d8); } .ds-diff-n { padding-right: 16px; text-align: right; color: var(--color-rule-strong, #3f3f43); user-select: none; } .ds-diff-m { user-select: none; } .ds-diff-add { background: rgb(255 73 107 / 0.10); color: var(--color-paper, #f9fafe); } .ds-diff-add .ds-diff-m { color: var(--color-coral, #ff496b); } .ds-diff-del { background: rgb(240 96 93 / 0.07); color: var(--color-muted, #a1a1a5); } .ds-diff-del code { text-decoration: line-through; text-decoration-color: rgb(240 96 93 / 0.5); } .ds-diff-del .ds-diff-m { color: var(--color-crimson, #f0605d); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Live Instrument",
+    "overview": "FlarePanel's marketing surface is a dark instrument panel, the same world as the dashboard it sells. The ground is near-black obsidian, structure is drawn with hairline rules instead of fills or shadows, and almost everything sits in a quiet gray ramp. Against that, one hot coral reads as a signal lamp: it lights the thing that is happening now (today's bar, the live count, the newest event) and the places you can go (links, focus). Because the rest of the panel stays dark, a coral pixel always means something.\n\nType does two clearly separate jobs. Geist at 700 with very tight tracking makes compact, heavy claims; Geist Mono carries every number, code line, path and measurement, the way it would in a terminal or a chart axis. Density is generous at page level (tall sections, wide gutters) and tight inside the instrument (dashboard chips, KPI strips, code rows), so the product reads as dense working UI on a calm stage.\n\nThe page is dark because its readers work next to a dark IDE and the dark FlarePanel dashboard; the marketing world is the dashboard's world, not a separate brand expression. Motion is rare and authored: each moment gets at most one, and every one of them stops under reduced motion.",
+    "keyCharacteristics": [
+      "Obsidian ground with tonal panels and 1px rules; no decorative gradients, glows or textures.",
+      "Coral is a signal, not a fill: live state, links, focus, the added diff line.",
+      "Geist 700 at -0.045em for headings; Geist Mono only for data, code and measurements.",
+      "Up is green, down is crimson, never coral.",
+      "One authored motion per moment, all paused under reduced motion."
+    ],
+    "rules": [
+      {
+        "name": "The Signal Lamp Rule",
+        "body": "Coral marks only what is live (current bar, live count, newest feed row, route pulse), links, focus, and the diff's added line. If it is not happening now and you cannot click it, it is not coral.",
+        "section": "colors"
+      },
+      {
+        "name": "The Crimson Down Rule",
+        "body": "A negative or removed value is crimson, never coral. Coral means \"now\", not \"bad\".",
+        "section": "colors"
+      },
+      {
+        "name": "The Paper Button Rule",
+        "body": "The primary action is a paper-white button with ink text, never a coral fill.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tight Display Rule",
+        "body": "Every display and headline heading is Geist 700 at -0.045em with line-height near 0.98 and balanced wrapping. Lighter weights or looser tracking belong to titles and below.",
+        "section": "typography"
+      },
+      {
+        "name": "The Mono Means Measurement Rule",
+        "body": "Geist Mono is only for code, data and measurements (values, paths, event names, dates, file names, tabular headers). It never sets prose, headings, buttons or navigation.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Lift Rule",
+        "body": "The product frame is the only thing that casts a shadow. Everything else separates by tone and hairline.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** keep coral to live signal (current bar, live count, newest feed row, route pulse), links, focus and the diff's added line.",
+      "**Do** set every display and headline heading in Geist 700 at -0.045em, line-height about 0.98.",
+      "**Do** put every value, path, event name, date and code line in Geist Mono, with tabular figures for numbers that change.",
+      "**Do** show positive deltas in green and negative deltas in crimson, each with an arrow, so color is never the only cue.",
+      "**Do** separate surfaces with 1px hairlines and tonal steps (ink, panel, raised).",
+      "**Do** give each moment at most one authored motion, and stop it under `prefers-reduced-motion` (interval halted, ping removed, pulse hidden, smooth scroll off).",
+      "**Do** label any product imagery built from invented numbers as SAMPLE DATA."
+    ],
+    "donts": [
+      "**Don't** fill buttons, cards or backgrounds with coral; the primary button is paper on ink.",
+      "**Don't** use coral for negative, error or removed states; that is crimson.",
+      "**Don't** set prose, headings, buttons or navigation in Geist Mono.",
+      "**Don't** add shadows beyond the single stage drop under the product frame.",
+      "**Don't** put uppercase mono labels above section headings; tracked uppercase mono belongs to data labels inside the product and tables.",
+      "**Don't** run a second ambient animation alongside a moment's authored motion."
+    ]
+  }
+}

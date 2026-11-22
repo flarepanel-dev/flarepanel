@@ -1,0 +1,32 @@
+{
+  "name": "@flarepanel/landing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3100",
+    "build:tracker": "bun scripts/build-tracker.ts",
+    "build": "bun run build:tracker && next build",
+    "preview": "bun run build && wrangler dev",
+    "deploy": "bun run build && wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "geist": "1.9.2",
+    "lucide-react": "1.77.0",
+    "motion": "14.14.0",
+    "next": "16.4.6",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.5",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "postcss": "8.5.6",
+    "tailwindcss": "4.3.5",
+    "typescript": "catalog:",
+    "wrangler": "4.85.0"
+  }
+}

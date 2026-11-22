@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --color-ink: #0d0d10;
+  --color-panel: #111114;
+  --color-raised: #18181b;
+  --color-hover: #1c1c20;
+  --color-rule: #27272a;
+  --color-rule-strong: #3f3f43;
+  --color-faint: #727276;
+  --color-muted: #a1a1a5;
+  --color-soft: #d4d4d8;
+  --color-paper: #f9fafe;
+
+  --color-coral: #ff496b;
+  --color-coral-soft: #ff6b82;
+  --color-coral-past: #3a1420;
+  --color-paper-hover: #e4e4e8;
+  --color-crimson: #f0605d;
+  --color-up: #3ccb7f;
+
+  /* Brand chart palette (brand/tokens.json), used for data only */
+  --color-chart-indigo: #6b79ea;
+  --color-chart-teal: #08b6af;
+  --color-chart-amber: #e9ab2b;
+  --color-chart-violet: #a064db;
+  --color-chart-sky: #4cb0e5;
+  --color-chart-lime: #83c758;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html {
+    background: var(--color-ink);
+    color: var(--color-paper);
+    color-scheme: dark;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+    scroll-padding-top: 88px;
+    scrollbar-color: var(--color-rule-strong) var(--color-ink);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  ::selection {
+    background: var(--color-coral);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-coral);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-ink);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-rule-strong);
+    border-radius: 999px;
+    border: 2px solid var(--color-ink);
+  }
+
+  a {
+    text-underline-offset: 0.22em;
+    text-decoration-thickness: 1px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  code,
+  kbd,
+  samp {
+    font-family: var(--font-mono);
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility display {
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+
+/* One pulse travels the event route in "How it works". */
+@keyframes route-x {
+  0% {
+    transform: translateX(0);
+  }
+  70%,
+  100% {
+    transform: translateX(calc(100% + 6rem));
+  }
+}
+
+@keyframes route-y {
+  0% {
+    transform: translateY(0);
+  }
+  70%,
+  100% {
+    transform: translateY(calc(100% + 4rem));
+  }
+}
+
+.route-pulse-x {
+  animation: route-x 4.8s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+.route-pulse-y {
+  animation: route-y 4.8s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-pulse-x,
+  .route-pulse-y {
+    animation: none;
+    display: none;
+  }
+}
