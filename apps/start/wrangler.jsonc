@@ -1,15 +1,12 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "flarepanel-dashboard",
-  "compatibility_date": "2025-09-02",
+  "compatibility_date": "2026-03-10",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
-  "routes": [
-    {
-      "pattern": "dashboard.flarepanel.dev/*",
-      "zone_name": "flarepanel.dev"
-    }
-  ],
+  "routes": [{ "pattern": "dashboard.flarepanel.dev", "custom_domain": true }],
+  // Per-Worker cost cap .
+  "limits": { "cpu_ms": 10000 },
   "vars": {
     "API_URL": "https://api.flarepanel.dev",
     "DASHBOARD_URL": "https://dashboard.flarepanel.dev",
@@ -19,7 +16,7 @@
   "observability": {
     "logs": {
       "enabled": true,
-      "head_sampling_rate": 1,
+      "head_sampling_rate": 0.1,
       "invocation_logs": true
     }
   }

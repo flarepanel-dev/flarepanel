@@ -4,13 +4,16 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-03-10",
   "compatibility_flags": ["nodejs_compat"],
-  // Local development only for now: `bun run dev` (Miniflare, free).
-  // Deploying needs a real D1 id and the user's go-ahead (docs/cloudflare-runtime.md).
+  // Production: api.flarepanel.dev. Local: `bun run dev` with .dev.vars
+  // overriding the vars below (Miniflare, free).
+  "routes": [{ "pattern": "api.flarepanel.dev", "custom_domain": true }],
+  // Per-Worker cost cap : at most 10 s CPU per invocation.
+  "limits": { "cpu_ms": 10000 },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "flarepanel",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "6c5754e3-81e9-40ce-9112-2608ee72a257",
       "migrations_dir": "../../packages/db/migrations"
     }
   ],
@@ -37,7 +40,8 @@
         "max_batch_size": 10,
         "max_batch_timeout": 5,
         "max_retries": 5,
-        "max_concurrency": 2
+        "max_concurrency": 2,
+        "dead_letter_queue": "flarepanel-jobs-dlq"
       }
     ]
   },
@@ -59,8 +63,13 @@
     "unzipper": "./src/shims/empty-module.ts"
   },
   "vars": {
-    "NODE_ENV": "development",
-    "SELF_HOSTED": "true"
+    "NODE_ENV": "production",
+    "SELF_HOSTED": "true",
+    "API_URL": "https://api.flarepanel.dev",
+    "DASHBOARD_URL": "https://dashboard.flarepanel.dev",
+    "CUSTOM_COOKIE_DOMAIN": ".flarepanel.dev",
+    // Cloudflare sets cf-connecting-ip itself; clients cannot spoof it.
+    "TRUSTED_IP_HEADER_ORDER": "cf-connecting-ip"
   },
   "observability": { "enabled": true, "head_sampling_rate": 0.1 }
 }

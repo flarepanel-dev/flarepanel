@@ -56,15 +56,28 @@ two clients) 194 ms, sign-in 202 ms, then the dashboard in a browser.
 - The bundle is ~24 MB raw, ~4.6 MB gzipped: it needs the **Workers Paid**
   plan (limit 10 MB; Free is 3 MB).
 
-## Deploying
+## Deployed
 
-Not deployed yet. Before the first deploy:
+| | |
+|---|---|
+| API | `flarepanel-api` → https://api.flarepanel.dev |
+| Dashboard | `flarepanel-dashboard` (apps/start) → https://dashboard.flarepanel.dev |
+| D1 | `flarepanel` (no jurisdiction; placed in EEUR) |
+| Queues | `flarepanel-jobs`, dead letters in `flarepanel-jobs-dlq` |
+| Secrets | `COOKIE_SECRET`, `AUTH_SECRET` (generated, only in Cloudflare) |
 
-1. Set a Workers spending limit and a billing alert in the Cloudflare
-   dashboard.
-2. `wrangler d1 create flarepanel` and put its id in `wrangler.jsonc`.
-3. `wrangler queues create flarepanel-jobs` (and `flarepanel-jobs-dlq`).
-4. `wrangler secret put COOKIE_SECRET` and `AUTH_SECRET`.
-5. `wrangler d1 migrations apply flarepanel --remote`, then `wrangler deploy`.
+First deployed 2026-11-22 and checked live: sign-up, project creation and a
+client ID through the dashboard (the test account was deleted afterwards).
+
+Costs are capped per Worker: `limits.cpu_ms`, `max_retries` + a dead-letter queue,
+`max_concurrency`, sampled logs. Add a billing alert email in the Cloudflare
+dashboard.
+
+To redeploy:
+
+```bash
+cd apps/worker && wrangler d1 migrations apply flarepanel --remote && wrangler deploy
+cd apps/start && bun run deploy
+```
 
 Limits and expected usage: `docs/cloudflare-runtime.md`.
