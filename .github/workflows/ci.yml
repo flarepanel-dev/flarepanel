@@ -30,8 +30,13 @@ jobs:
       - name: Check formatting
         run: bun run lint:format
 
+      # The dashboard's tsc needs more than Node's default heap on the
+      # standard runner (it ran out of memory at 4 GB-ish defaults).
       - name: Run TypeScript checks
         run: bun run typecheck
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+          TYPECHECK_CONCURRENCY: "2"
 
       - name: Check dependency boundaries
         run: bun run check:deps

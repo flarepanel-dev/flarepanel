@@ -121,7 +121,10 @@ const typecheck = (workspace: Workspace): Promise<boolean> => {
 
 const run = async () => {
   const all = workspaces();
-  const concurrency = cpus().length || DEFAULT_CONCURRENCY;
+  // TYPECHECK_CONCURRENCY caps parallel tsc runs where memory is tight (CI).
+  const override = Number.parseInt(process.env.TYPECHECK_CONCURRENCY ?? '', 10);
+  const concurrency =
+    override > 0 ? override : cpus().length || DEFAULT_CONCURRENCY;
   const failures: string[] = [];
   const queue = [...all];
 

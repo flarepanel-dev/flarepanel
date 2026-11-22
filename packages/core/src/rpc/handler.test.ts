@@ -210,7 +210,7 @@ test('Set-Cookie survives the raw Response the handler returns', async () => {
 
   expect(response.status).toBe(200);
   expect(response.headers.get('set-cookie')).toBe(
-    'session=token-for-carl%40openpanel.dev; Max-Age=600; Domain=.flarepanel.dev; Path=/; HttpOnly; Secure; SameSite=Lax'
+    'session=token-for-carl%40flarepanel.dev; Max-Age=600; Domain=.flarepanel.dev; Path=/; HttpOnly; Secure; SameSite=Lax'
   );
 });
 
