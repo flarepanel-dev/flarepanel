@@ -58,7 +58,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       {
         name: 'theme-color',
-        content: '#FF5B1F',
+        content: '#0D0D10',
       },
     ],
     title: 'FlarePanel',

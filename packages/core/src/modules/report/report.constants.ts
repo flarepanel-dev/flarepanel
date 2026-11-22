@@ -641,15 +641,17 @@ export function getCountry(code?: string) {
   return countries[code as keyof typeof countries];
 }
 
+// FlarePanel brand chart palette first (coral, indigo, teal, amber, violet, sky,
+// lime, slate); see brand/README.md. Keep in sync with --chart-0..7 in styles.css.
 export const chartColors = [
-  { main: '#2563EB', translucent: 'rgba(37, 99, 235, 0.1)' },
-  { main: '#ff7557', translucent: 'rgba(255, 117, 87, 0.1)' },
-  { main: '#7fe1d8', translucent: 'rgba(127, 225, 216, 0.1)' },
-  { main: '#f8bc3c', translucent: 'rgba(248, 188, 60, 0.1)' },
-  { main: '#b3596e', translucent: 'rgba(179, 89, 110, 0.1)' },
-  { main: '#72bef4', translucent: 'rgba(114, 190, 244, 0.1)' },
-  { main: '#ffb27a', translucent: 'rgba(255, 178, 122, 0.1)' },
-  { main: '#0f7ea0', translucent: 'rgba(15, 126, 160, 0.1)' },
+  { main: '#FF496B', translucent: 'rgba(255, 73, 107, 0.1)' },
+  { main: '#6B79EA', translucent: 'rgba(107, 121, 234, 0.1)' },
+  { main: '#08B6AF', translucent: 'rgba(8, 182, 175, 0.1)' },
+  { main: '#E9AB2B', translucent: 'rgba(233, 171, 43, 0.1)' },
+  { main: '#A064DB', translucent: 'rgba(160, 100, 219, 0.1)' },
+  { main: '#4CB0E5', translucent: 'rgba(76, 176, 229, 0.1)' },
+  { main: '#83C758', translucent: 'rgba(131, 199, 88, 0.1)' },
+  { main: '#A1A1A5', translucent: 'rgba(161, 161, 165, 0.1)' },
   { main: '#3ba974', translucent: 'rgba(59, 169, 116, 0.1)' },
   { main: '#febbb2', translucent: 'rgba(254, 187, 178, 0.1)' },
   { main: '#cb80dc', translucent: 'rgba(203, 128, 220, 0.1)' },
