@@ -1,7 +1,7 @@
 // Plain exported functions, not only methods on `createInsightService`'s
 // container: a caller with no Ctx yet still needs a direct call. They take
 // `ServiceDeps` so the requestId minted at the edge reaches every query, and the
-// explain cache runs on `deps.redis`, whose lifecycle the app shell owns.
+// explain cache runs on `deps.stores.cache`, whose lifecycle the app shell owns.
 
 import { sendEmail } from '../../clients/email';
 import type { Logger } from '../../logger';
@@ -618,7 +618,7 @@ export async function explainInsight(
   input: ExplainInsightInput,
   cacheKey: string
 ): Promise<InsightExplanation | null> {
-  const cached = await deps.redis.get(cacheKey);
+  const cached = await deps.stores.cache.get(cacheKey);
   if (cached) {
     return JSON.parse(cached) as InsightExplanation;
   }
@@ -628,10 +628,10 @@ export async function explainInsight(
   // Only cache a successful explanation — a null is a transient LLM failure
   // and should be retried on the next click.
   if (explanation) {
-    await deps.redis.setex(
+    await deps.stores.cache.set(
       cacheKey,
-      EXPLAIN_CACHE_TTL_SEC,
-      JSON.stringify(explanation)
+      JSON.stringify(explanation),
+      EXPLAIN_CACHE_TTL_SEC
     );
   }
 

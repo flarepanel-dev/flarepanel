@@ -1,0 +1,14 @@
+{
+  "name": "flarepanel-platform-test",
+  "main": "./worker.ts",
+  "compatibility_date": "2026-03-10",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [
+      { "name": "COORDINATOR", "class_name": "CoordinatorDurableObject" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["CoordinatorDurableObject"] }
+  ]
+}

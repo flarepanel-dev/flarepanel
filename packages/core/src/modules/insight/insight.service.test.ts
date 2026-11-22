@@ -4,6 +4,7 @@
 // subject's first call.
 
 import { beforeAll, expect, mock, test } from 'bun:test';
+import { createMemoryStores } from '@flarepanel/platform';
 import { testCoreConfig } from '../../../test/config-fixture';
 import { testServices } from '../../../test/service-deps';
 import type { AppDeps, Buffers } from '../../context';
@@ -23,14 +24,18 @@ const $executeRaw = mock((..._args: unknown[]) => {
   executeRawCalls.push(_args);
   return Promise.resolve(executeRawReturns.shift() ?? 0);
 });
-// The explain cache is `deps.redis`, so the fake is a map on the scope — no
-// `@flarepanel/redis` module mock, which would replace that barrel process-wide
-// for every other file in the run.
-const redisStore = new Map<string, string>();
-const redis = {
-  get: mock((key: string) => Promise.resolve(redisStore.get(key) ?? null)),
-  setex: mock((key: string, _ttl: number, value: string) => {
-    redisStore.set(key, value);
+// The explain cache is `deps.stores.cache`, so the fake is a map on the scope —
+// no module mock, which would replace a barrel process-wide for every other
+// file in the run.
+const cacheEntries = new Map<string, string>();
+const cache = {
+  get: mock((key: string) => Promise.resolve(cacheEntries.get(key) ?? null)),
+  set: mock((key: string, value: string, _ttlSeconds: number) => {
+    cacheEntries.set(key, value);
+    return Promise.resolve();
+  }),
+  delete: mock((key: string) => {
+    cacheEntries.delete(key);
     return Promise.resolve();
   }),
 };
@@ -74,7 +79,7 @@ const projectAccess = { findMany: mock(async () => []) };
 
 const deps = {
   db: { $executeRaw, project, projectInsight, member, projectAccess },
-  redis,
+  stores: { cache },
   config: testCoreConfig(),
 } as unknown as import('../../services').ServiceDeps;
 
@@ -197,8 +202,8 @@ test('explainInsight is a cache-aside over the AI call, keyed by the caller-supp
   expect(second).toEqual(first);
 
   // The cache used is the one the scope handed in, not a module-level connection.
-  expect(redis.setex).toHaveBeenCalledTimes(1);
-  expect(redis.get).toHaveBeenCalledTimes(2);
+  expect(cache.set).toHaveBeenCalledTimes(1);
+  expect(cache.get).toHaveBeenCalledTimes(2);
 });
 
 test('createInsightService binds every InsightService method', () => {
@@ -219,6 +224,7 @@ test('createInsightService binds every InsightService method', () => {
       prisma: undefined as unknown as AppDeps['prisma'],
       ch: undefined as unknown as AppDeps['ch'],
       redis: undefined as unknown as AppDeps['redis'],
+      stores: createMemoryStores(),
       clients: undefined as unknown as AppDeps['clients'],
       buffers: undefined as unknown as Buffers,
       logger,

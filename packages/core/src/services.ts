@@ -45,6 +45,7 @@ export type ServiceDeps = Pick<
   | 'prisma'
   | 'ch'
   | 'redis'
+  | 'stores'
   | 'clients'
   | 'buffers'
   | 'logger'

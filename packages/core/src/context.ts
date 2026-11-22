@@ -18,6 +18,8 @@ export type RedisClient = ReturnType<
   typeof import('@flarepanel/redis').getRedisCache
 >;
 export type ServiceClients = import('./clients/create-clients').ServiceClients;
+/** Cache and coordination stores: Redis on Bun, Cache API + Durable Objects on Workers. */
+export type PlatformStores = import('@flarepanel/platform').PlatformStores;
 
 // `unscopedDb` and the Prisma namespace are lazy so importing core constructs no
 // database. Neither memoizes: the module registry already caches the import, and
@@ -58,6 +60,7 @@ export interface AppDeps {
   prisma: PrismaSentinels;
   ch: ClickHouseClient;
   redis: RedisClient;
+  stores: PlatformStores;
   clients: ServiceClients;
   buffers: Buffers;
   producers: QueueProducerHandle;
@@ -73,6 +76,7 @@ export interface Ctx {
   prisma: PrismaSentinels;
   ch: ClickHouseClient;
   redis: RedisClient;
+  stores: PlatformStores;
   clients: ServiceClients;
   buffers: Buffers;
   logger: Logger;
@@ -118,6 +122,7 @@ export function createCtx(deps: AppDeps, scope: ScopeMeta): Ctx {
     prisma: deps.prisma,
     ch: scope.signal ? bindReadsToSignal(deps.ch, scope.signal) : deps.ch,
     redis: deps.redis,
+    stores: deps.stores,
     clients: deps.clients,
     buffers: deps.buffers,
     logger: scope.logger,
@@ -155,6 +160,7 @@ function installLazyServices(ctx: Ctx): void {
         prisma: ctx.prisma,
         ch: ctx.ch,
         redis: ctx.redis,
+        stores: ctx.stores,
         clients: ctx.clients,
         buffers: ctx.buffers,
         logger: ctx.logger,

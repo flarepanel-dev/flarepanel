@@ -3,6 +3,7 @@
 // every other file in the process (bare `bun test` shares one module registry).
 
 import { beforeAll, expect, mock, test } from 'bun:test';
+import { createMemoryStores } from '@flarepanel/platform';
 import { testCoreConfig } from '../../../test/config-fixture';
 import { testServices } from '../../../test/service-deps';
 import type { AppDeps, Buffers } from '../../context';
@@ -148,6 +149,7 @@ test('ImportService.enqueue adds the import job onto the import queue', async ()
       prisma: {} as AppDeps['prisma'],
       ch: {} as AppDeps['ch'],
       redis: {} as AppDeps['redis'],
+      stores: createMemoryStores(),
       clients: {} as AppDeps['clients'],
       buffers: {} as Buffers,
       logger: stubLogger(),

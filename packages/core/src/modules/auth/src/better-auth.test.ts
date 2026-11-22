@@ -43,7 +43,7 @@ function authWith(auth: Partial<ServiceDeps['config']['auth']> = {}) {
   const instance = createAuth({
     db: deps.db,
     logger: deps.logger,
-    redis: deps.redis,
+    coordination: deps.stores.coordination,
     config: {
       ...config,
       auth: {

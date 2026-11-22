@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "license": "MIT",
-  "author": "Carl-Gerhard Lindesvärd",
+  "author": "Carl-Gerhard Lindesv\u00e4rd",
   "engines": {
     "bun": ">=1.4.4",
     "node": ">=24.22.1"
@@ -58,7 +58,7 @@
   "scripts": {
     "test": "bun run test:core && bun run test:rest",
     "test:core": "bun run --filter @flarepanel/core test",
-    "test:rest": "bun run --filter @flarepanel/db test && bun run --filter @flarepanel/api test && bun run --filter @flarepanel/seed test && bun run --filter @flarepanel/web test && bun run --filter start test && bun run --filter @flarepanel/release test && vitest run && bun test tooling/gates/conformance",
+    "test:rest": "bun run --filter @flarepanel/db test && bun run --filter @flarepanel/platform test && bun run --filter @flarepanel/api test && bun run --filter @flarepanel/seed test && bun run --filter @flarepanel/web test && bun run --filter start test && bun run --filter @flarepanel/release test && vitest run && bun test tooling/gates/conformance",
     "gen:bots": "bun run --filter @flarepanel/core gen:bots",
     "gen:referrers": "bun run --filter @flarepanel/core gen:referrers",
     "dock:up": "docker compose up -d",

@@ -16,7 +16,7 @@ import {
 } from 'better-auth/social-providers';
 import { sendEmail } from '../../../clients/email';
 import type { CoreConfig } from '../../../config';
-import type { Db, RedisClient } from '../../../context';
+import type { Db, PlatformStores } from '../../../context';
 import type { Logger } from '../../../logger';
 import type { ISetCookie } from '../../../shared/cookie';
 import { connectUserToOrganization } from '../../organization/organization.service';
@@ -47,7 +47,6 @@ const LAST_LOGIN_METHOD_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 const RATE_LIMIT_WINDOW_SECONDS = 60;
 const RATE_LIMIT_MAX = 100;
 const MIN_PASSWORD_LENGTH = 8;
-const KEY_MISSING = -2;
 const MAX_PASSWORD_LENGTH = 128;
 /** Accounts imported from Clerk still hold its bcrypt digest. */
 const ARGON2_PREFIX = '$argon2';
@@ -70,7 +69,8 @@ interface AuthDeps {
   db: Db;
   config: CoreConfig;
   logger: Logger;
-  redis: RedisClient;
+  /** Rate-limit counters, shared by every API process. */
+  coordination: PlatformStores['coordination'];
 }
 
 function isExposedPath(path: string): boolean {
@@ -158,27 +158,19 @@ function invitePlugin(deps: AuthDeps) {
 }
 
 /** One counter per key, shared by every API process. */
-function redisRateLimitStorage(redis: RedisClient) {
+function rateLimitStorage(store: PlatformStores['coordination']) {
   return {
     consume: async (key: string, rule: { window: number; max: number }) => {
-      const redisKey = `rl:auth:${key}`;
-      const results = await redis
-        .pipeline()
-        .incr(redisKey)
-        .ttl(redisKey)
-        .exec();
-      const hits = Number(results?.[0]?.[1] ?? 1);
-      let ttl = Number(results?.[1]?.[1] ?? KEY_MISSING);
-      // The window opens on the first hit; a counter without an expiry would
-      // lock the caller out for good.
-      if (hits === 1 || ttl < 0) {
-        await redis.expire(redisKey, rule.window);
-        ttl = rule.window;
-      }
-      if (hits <= rule.max) {
+      // The window opens on the first hit; the store re-arms a counter without
+      // an expiry, so the caller is never locked out for good.
+      const { count, ttlMs } = await store.increment(
+        `rl:auth:${key}`,
+        rule.window * 1000
+      );
+      if (count <= rule.max) {
         return { allowed: true, retryAfter: null };
       }
-      return { allowed: false, retryAfter: ttl };
+      return { allowed: false, retryAfter: Math.ceil(ttlMs / 1000) };
     },
   };
 }
@@ -250,7 +242,7 @@ function socialProviders(config: CoreConfig) {
 }
 
 function buildAuth(deps: AuthDeps, secret: string) {
-  const { db, config, logger, redis } = deps;
+  const { db, config, logger, coordination } = deps;
   return betterAuth({
     secret,
     basePath: AUTH_BASE_PATH,
@@ -338,7 +330,7 @@ function buildAuth(deps: AuthDeps, secret: string) {
       enabled: true,
       window: RATE_LIMIT_WINDOW_SECONDS,
       max: RATE_LIMIT_MAX,
-      customStorage: redisRateLimitStorage(redis),
+      customStorage: rateLimitStorage(coordination),
     },
     advanced: {
       cookiePrefix: COOKIE_PREFIX,

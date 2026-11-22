@@ -1,6 +1,11 @@
+import {
+  getPlatformStores,
+  registerDefaultPlatformStores,
+} from '@flarepanel/platform';
 import { getSuperJson, setSuperJson } from '@flarepanel/shared';
 import type { RedisOptions } from 'ioredis';
 import { Redis } from 'ioredis';
+import { createRedisStores } from './stores';
 
 const options: RedisOptions = {
   connectTimeout: 10_000,
@@ -190,7 +195,11 @@ export function getRedisQueue() {
   return redisQueue;
 }
 
-export async function getLock(key: string, value: string, timeout: number) {
-  const lock = await getRedisCache().set(key, value, 'PX', timeout, 'NX');
-  return lock === 'OK';
+/** Takes `key` for `timeout` ms when nobody holds it. */
+export function getLock(key: string, value: string, timeout: number) {
+  return getPlatformStores().coordination.setIfAbsent(key, value, timeout);
 }
+
+// On Bun the platform stores default to this process's Redis connection; the
+// Workers build configures Cloudflare stores instead.
+registerDefaultPlatformStores(() => createRedisStores(getRedisCache()));

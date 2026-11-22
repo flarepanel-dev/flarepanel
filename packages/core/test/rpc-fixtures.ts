@@ -1,5 +1,6 @@
 // Stubs shared by the rpc tests.
 
+import { createMemoryStores } from '@flarepanel/platform';
 import {
   type AppDeps,
   type Buffers,
@@ -99,6 +100,7 @@ export function stubHttpCtx(
     prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],
     redis: {} as AppDeps['redis'],
+    stores: createMemoryStores(),
     clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     producers: createRecordingProducers(queues),

@@ -1,10 +1,14 @@
+import { getPlatformStores } from '@flarepanel/platform';
 import { LRUCache } from 'lru-cache';
-import { getRedisCache } from './redis';
+
+// The shared cache layer is the configured platform cache store: Redis on Bun,
+// the Cache API on Workers (see @flarepanel/platform).
+const cacheStore = () => getPlatformStores().cache;
 
 export { LRUCache } from 'lru-cache';
 
 export const deleteCache = (key: string) => {
-  return getRedisCache().del(key);
+  return cacheStore().delete(key);
 };
 
 const globalLruCache = new LRUCache<string, any>({
@@ -25,7 +29,7 @@ export async function getCache<T>(
     }
   }
 
-  const hit = await getRedisCache().get(key);
+  const hit = await cacheStore().get(key);
   if (hit) {
     const parsed = parseCache(hit);
 
@@ -45,8 +49,10 @@ export async function getCache<T>(
       ttl: expireInSec * 1000,
     });
   }
-  // Fire-and-forget: the caller does not wait on the Redis write.
-  getRedisCache().setex(key, expireInSec, JSON.stringify(data));
+  // Fire-and-forget: the caller does not wait on the cache write.
+  cacheStore()
+    .set(key, JSON.stringify(data), expireInSec)
+    .catch(() => undefined);
 
   return data;
 }
@@ -237,8 +243,8 @@ export function cacheable<T extends (...args: any) => any>(
       return lruHit as Awaited<ReturnType<T>>;
     }
 
-    // L2: Redis (shared across instances)
-    const cached = await getRedisCache().get(key);
+    // L2: shared cache store (shared across instances)
+    const cached = await cacheStore().get(key);
     if (cached) {
       const parsed = parseCache(cached);
       if (shouldCache(parsed, options)) {
@@ -251,8 +257,8 @@ export function cacheable<T extends (...args: any) => any>(
 
     if (shouldCache(result, options)) {
       lruCache?.set(key, result);
-      getRedisCache()
-        .setex(key, expireInSec, JSON.stringify(result))
+      cacheStore()
+        .set(key, JSON.stringify(result), expireInSec)
         .catch(() => {
           // ignore error
         });
@@ -265,7 +271,7 @@ export function cacheable<T extends (...args: any) => any>(
   cachedFn.clear = (...args: Parameters<T>) => {
     const key = getKey(...args);
     lruCache?.delete(key);
-    return getRedisCache().del(key);
+    return cacheStore().delete(key);
   };
   cachedFn.set =
     (...args: Parameters<T>) =>
@@ -273,8 +279,8 @@ export function cacheable<T extends (...args: any) => any>(
       const key = getKey(...args);
       if (shouldCache(payload, options)) {
         lruCache?.set(key, payload);
-        return getRedisCache()
-          .setex(key, expireInSec, JSON.stringify(payload))
+        return cacheStore()
+          .set(key, JSON.stringify(payload), expireInSec)
           .catch(() => {
             // ignore error
           });

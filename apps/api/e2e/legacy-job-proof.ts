@@ -40,6 +40,7 @@ import {
   queues,
   startWorkers,
 } from '@flarepanel/core';
+import { createMemoryStores } from '@flarepanel/platform';
 import { Redis } from '@flarepanel/redis';
 import pino from 'pino';
 import { loadConfig } from '../src/config/env';
@@ -289,6 +290,7 @@ async function main() {
     prisma: undefined as unknown as AppDeps['prisma'],
     ch: undefined as unknown as AppDeps['ch'],
     redis: undefined as unknown as AppDeps['redis'],
+    stores: createMemoryStores(),
     clients: undefined as unknown as AppDeps['clients'],
     buffers,
     producers,

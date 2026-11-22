@@ -1,7 +1,7 @@
 // The HTTP limiter: a fixed window with no escalation, matching the published
 // rate-limit docs.
 
-import { getRedisCache } from '@flarepanel/redis';
+import { getPlatformStores } from '@flarepanel/platform';
 import { Elysia } from 'elysia';
 import type { IpHeaderConfig } from '../config';
 import type { AppDeps } from '../context';
@@ -10,8 +10,6 @@ import { getTrustedIpFromHeaders } from '../shared/get-client-ip';
 import { requestContext } from './context';
 
 const TOO_MANY_REQUESTS = 429;
-const KEY_MISSING = -2;
-const KEY_WITHOUT_EXPIRY = -1;
 
 /** Exact response body the rate-limit docs publish. */
 const TOO_MANY_REQUESTS_BODY = {
@@ -142,7 +140,7 @@ export function bucketsFor(
 
 /**
  * `true` when the caller is over its limit and the request must be refused.
- * A Redis failure allows the request: this guards a documented quota, not a
+ * A store failure allows the request: this guards a documented quota, not a
  * credential.
  */
 export async function isRateLimited(
@@ -153,23 +151,16 @@ export async function isRateLimited(
   const buckets = bucketsFor(limit, caller);
 
   try {
-    const redis = getRedisCache();
-    const pipeline = redis.pipeline();
-    for (const { key } of buckets) {
-      pipeline.incr(key).pttl(key);
-    }
-    const results = await pipeline.exec();
+    const store = getPlatformStores().coordination;
+    // The window opens on the first hit; the store re-arms a counter that lost
+    // its expiry, so it can never count up forever and lock the caller out.
+    const counts = await Promise.all(
+      buckets.map(({ key, windowMs }) => store.increment(key, windowMs))
+    );
 
     let isLimited = false;
     for (const [index, { key, max, windowMs }] of buckets.entries()) {
-      const hits = Number(results?.[index * 2]?.[1] ?? 1);
-      const ttlMs = Number(results?.[index * 2 + 1]?.[1] ?? KEY_MISSING);
-
-      // The window opens on the first hit. Re-arm a counter that lost its
-      // expiry, or it would count up forever and lock the caller out for good.
-      if (hits === 1 || ttlMs === KEY_WITHOUT_EXPIRY || ttlMs === KEY_MISSING) {
-        await redis.pexpire(key, windowMs);
-      }
+      const hits = counts[index]?.count ?? 1;
 
       if (hits > max) {
         logger.warn(

@@ -1,4 +1,5 @@
-import { getRedisCache, LRUCache } from '@flarepanel/redis';
+import { getPlatformStores } from '@flarepanel/platform';
+import { LRUCache } from '@flarepanel/redis';
 import { TRPCError } from '@trpc/server';
 import { getTrustedIpFromHeaders } from '../shared/get-client-ip';
 import type { EnforceRateLimit } from './base';
@@ -31,8 +32,6 @@ const SECONDS_IN_MINUTE = 60;
 const READABLE_SECONDS_LIMIT = 90;
 const READABLE_MINUTES_LIMIT = 90;
 const FALLBACK_CACHE_MAX = 10_000;
-const KEY_MISSING = -2;
-const KEY_WITHOUT_EXPIRY = -1;
 
 /** Per-process fallback while Redis is unreachable, so sign-in is not left unthrottled. */
 const fallbackCounters = new LRUCache<string, number>({
@@ -72,24 +71,20 @@ async function escalate(
   blockKey: string,
   cooldownKey: string
 ): Promise<{ strikes: number; blockMs: number }> {
-  const redis = getRedisCache();
+  const store = getPlatformStores().coordination;
 
-  // Counter and its expiry go out together: a strike key that lost its TTL
-  // would keep an IP at the maximum lockout forever.
-  const results = await redis
-    .pipeline()
-    .incr(strikeKey)
-    .pexpire(strikeKey, STRIKE_TTL_MS)
-    .exec();
+  // Every strike pushes the expiry out again (see STRIKE_TTL_MS), so the
+  // count is re-written with a fresh TTL after the atomic increment.
+  const { count } = await store.increment(strikeKey, STRIKE_TTL_MS);
+  await store.set(strikeKey, String(count), STRIKE_TTL_MS);
 
-  const strikes = Math.min(Number(results?.[0]?.[1] ?? 1), MAX_STRIKES);
+  const strikes = Math.min(count, MAX_STRIKES);
   const blockMs = getBlockDurationMs(strikes);
 
-  await redis
-    .pipeline()
-    .set(blockKey, String(strikes), 'PX', blockMs)
-    .set(cooldownKey, '1', 'PX', ESCALATION_COOLDOWN_MS)
-    .exec();
+  await Promise.all([
+    store.set(blockKey, String(strikes), blockMs),
+    store.set(cooldownKey, '1', ESCALATION_COOLDOWN_MS),
+  ]);
 
   return { strikes, blockMs };
 }
@@ -147,25 +142,15 @@ export const enforceRateLimit: EnforceRateLimit = async ({
   let hits: number;
 
   try {
-    const redis = getRedisCache();
-    const results = await redis
-      .pipeline()
-      .pttl(blockKey)
-      .pttl(counterKey)
-      .incr(counterKey)
-      .exec();
-
-    // `pttl` returns -2 when the key is gone and -1 when it has no expiry.
-    blockTtlMs = Number(results?.[0]?.[1] ?? KEY_MISSING);
-    const counterTtlMs = Number(results?.[1]?.[1] ?? KEY_MISSING);
-    hits = Number(results?.[2]?.[1] ?? 1);
-
-    // The window opens on the first hit. Re-arming a counter that somehow lost
-    // its expiry matters too: with no TTL it would count up forever and lock
-    // the IP out permanently after `max` requests.
-    if (hits === 1 || counterTtlMs === KEY_WITHOUT_EXPIRY) {
-      await redis.pexpire(counterKey, windowMs);
-    }
+    const store = getPlatformStores().coordination;
+    const [blockTtl, counter] = await Promise.all([
+      store.ttl(blockKey),
+      // The window opens on the first hit; the store re-arms a counter that
+      // lost its expiry, so it can never lock the IP out permanently.
+      store.increment(counterKey, windowMs),
+    ]);
+    blockTtlMs = blockTtl ?? 0;
+    hits = counter.count;
   } catch (error) {
     logger.error({ err: error, path }, 'rate limit store unavailable');
     const fallbackHits = (fallbackCounters.get(counterKey) ?? 0) + 1;
@@ -184,12 +169,10 @@ export const enforceRateLimit: EnforceRateLimit = async ({
     let escalated: { strikes: number; blockMs: number } | null = null;
 
     try {
-      const acquired = await getRedisCache().set(
+      const acquired = await getPlatformStores().coordination.setIfAbsent(
         cooldownKey,
         '1',
-        'PX',
-        ESCALATION_COOLDOWN_MS,
-        'NX'
+        ESCALATION_COOLDOWN_MS
       );
       if (acquired) {
         escalated = await escalate(strikeKey, blockKey, cooldownKey);
@@ -212,7 +195,7 @@ export const enforceRateLimit: EnforceRateLimit = async ({
     try {
       escalated = await escalate(strikeKey, blockKey, cooldownKey);
       // Start the next window clean so the block, not a stale counter, decides.
-      await getRedisCache().del(counterKey);
+      await getPlatformStores().coordination.delete(counterKey);
     } catch (error) {
       logger.error({ err: error, path }, 'rate limit store unavailable');
       throw tooManyRequests(windowMs);

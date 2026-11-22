@@ -95,20 +95,17 @@ class MemoryStore implements ChatLimitStore {
     const value = this.values.get(key);
     return Promise.resolve(value === undefined ? null : String(value));
   }
-  incr(key: string) {
+  increment(key: string, windowMs: number) {
     if (this.failing) {
-      return Promise.reject(new Error('redis down'));
+      return Promise.reject(new Error('store down'));
     }
     const next = (this.values.get(key) ?? 0) + 1;
     this.values.set(key, next);
-    return Promise.resolve(next);
-  }
-  pttl(key: string) {
-    return Promise.resolve(this.expiries.get(key) ?? -2);
-  }
-  pexpire(key: string, ms: number) {
-    this.expiries.set(key, ms);
-    return Promise.resolve(1);
+    // Like the real stores: the window opens on the first hit.
+    if (!this.expiries.has(key)) {
+      this.expiries.set(key, windowMs);
+    }
+    return Promise.resolve({ count: next, ttlMs: this.expiries.get(key) ?? 0 });
   }
 }
 
@@ -123,7 +120,7 @@ const silentLogger: Logger = {
 };
 
 function deps(store: MemoryStore) {
-  return { redis: store, logger: silentLogger };
+  return { stores: { coordination: store }, logger: silentLogger };
 }
 
 describe('checkChatLimits', () => {

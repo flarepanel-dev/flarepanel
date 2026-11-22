@@ -3,6 +3,7 @@
 // stay unbuilt, so a test that reaches one gets a named error instead of
 // silently working against a half-built container.
 
+import { createMemoryStores } from '@flarepanel/platform';
 import type { Logger } from '../src/logger';
 import type { ServiceDeps, Services } from '../src/services';
 import { testCoreConfig } from './config-fixture';
@@ -55,6 +56,8 @@ export async function testServiceDeps(
     prisma: { DbNull: Prisma.DbNull, JsonNull: Prisma.JsonNull },
     ch,
     redis,
+    // In-memory stores: each suite starts clean and needs no Redis for them.
+    stores: createMemoryStores(),
     logger: recordingLogger(),
     config: testCoreConfig(),
     auth: null,

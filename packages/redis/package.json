@@ -9,7 +9,8 @@
   "dependencies": {
     "@flarepanel/shared": "workspace:*",
     "ioredis": "5.8.2",
-    "lru-cache": "11.5.1"
+    "lru-cache": "11.5.1",
+    "@flarepanel/platform": "workspace:*"
   },
   "devDependencies": {
     "@flarepanel/core": "workspace:*",

@@ -3,6 +3,7 @@ import {
   type SubscriptionStateInput,
   subscriptionBlocksDashboard,
 } from '@flarepanel/payments/subscription-state';
+import type { CoordinationStore } from '@flarepanel/platform';
 import type { Logger } from '../../../logger';
 import {
   CHAT_BURST_LIMIT,
@@ -14,8 +15,6 @@ import {
 
 const SECOND = 1000;
 const DAY_MS = 24 * 60 * 60 * SECOND;
-const KEY_MISSING = -2;
-const KEY_WITHOUT_EXPIRY = -1;
 const DATE_LENGTH = 'YYYY-MM-DD'.length;
 
 const TIER_LABELS: Record<ChatTier, string> = {
@@ -58,16 +57,11 @@ export function resolveChatTier(
   return 'scale';
 }
 
-/** The subset of the Redis client the counters need; narrow so tests can stub it. */
-export interface ChatLimitStore {
-  get(key: string): Promise<string | null>;
-  incr(key: string): Promise<number>;
-  pttl(key: string): Promise<number>;
-  pexpire(key: string, ms: number): Promise<unknown>;
-}
+/** The subset of the coordination store the counters need; narrow so tests can stub it. */
+export type ChatLimitStore = Pick<CoordinationStore, 'get' | 'increment'>;
 
 export interface ChatLimitDeps {
-  redis: ChatLimitStore;
+  stores: { coordination: ChatLimitStore };
   logger: Logger;
 }
 
@@ -86,19 +80,14 @@ function nextUtcMidnight(now: Date): Date {
   return new Date(Math.floor(now.getTime() / DAY_MS) * DAY_MS + DAY_MS);
 }
 
-/** Fixed window: the first hit opens it; a counter that lost its expiry is re-armed so it cannot lock a caller out for good. */
+/** Fixed window: the first hit opens it; the store re-arms a counter that lost its expiry, so it cannot lock a caller out for good. */
 async function countHit(
   store: ChatLimitStore,
   key: string,
   windowMs: number
 ): Promise<{ hits: number; ttlMs: number }> {
-  const hits = await store.incr(key);
-  let ttlMs = await store.pttl(key);
-  if (hits === 1 || ttlMs === KEY_WITHOUT_EXPIRY || ttlMs === KEY_MISSING) {
-    await store.pexpire(key, windowMs);
-    ttlMs = windowMs;
-  }
-  return { hits, ttlMs };
+  const { count, ttlMs } = await store.increment(key, windowMs);
+  return { hits: count, ttlMs };
 }
 
 function blockedError(tier: ChatTier, resetsAt: Date): ChatLimitError {
@@ -139,7 +128,7 @@ function dailyError(tier: ChatTier, limit: number, now: Date): ChatLimitError {
 /**
  * Counts one user turn and answers with the refusal to send, or `null` when
  * the turn may run. The burst window is checked first so a refused burst does
- * not consume a daily slot. A Redis failure lets the turn through: this guards
+ * not consume a daily slot. A store failure lets the turn through: this guards
  * spend, not access.
  */
 export async function checkChatLimits(
@@ -153,7 +142,7 @@ export async function checkChatLimits(
   }
   try {
     const burst = await countHit(
-      deps.redis,
+      deps.stores.coordination,
       burstKey(input.userId),
       CHAT_BURST_LIMIT.windowMs
     );
@@ -165,7 +154,7 @@ export async function checkChatLimits(
       return null;
     }
     const day = await countHit(
-      deps.redis,
+      deps.stores.coordination,
       dayKey(input.organizationId, now),
       nextUtcMidnight(now).getTime() - now.getTime()
     );

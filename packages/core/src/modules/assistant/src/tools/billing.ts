@@ -123,7 +123,7 @@ export function billingTools(ctx: ChatToolContext) {
         const used = organization.subscriptionPeriodEventsCount;
         const tier = resolveChatTier(organization, ctx.config.selfHosted);
         const messagesToday = await readChatUsageToday(
-          deps.redis,
+          deps.stores.coordination,
           organizationId
         );
 

@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test';
+import { createMemoryStores } from '@flarepanel/platform';
 import { z } from 'zod';
 import { testCoreConfig } from '../../test/config-fixture';
 import type { AppDeps, Buffers, JobCtx } from '../context';
@@ -30,6 +31,7 @@ function stubDeps(): AppDeps {
     prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],
     redis: {} as AppDeps['redis'],
+    stores: createMemoryStores(),
     clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     producers: createRecordingProducers(queues),

@@ -1,5 +1,6 @@
 // Stubs shared by the http tests.
 
+import { createMemoryStores } from '@flarepanel/platform';
 import type { AppDeps, Buffers } from '../src/context';
 import { createRecordingProducers } from '../src/jobs/testing';
 import { queues } from '../src/jobs.registry';
@@ -43,6 +44,7 @@ export function stubAppDeps(): AppDepsStub {
       prisma: {} as AppDeps['prisma'],
       ch: {} as AppDeps['ch'],
       redis: {} as AppDeps['redis'],
+      stores: createMemoryStores(),
       clients: {} as AppDeps['clients'],
       buffers: {} as Buffers,
       producers,

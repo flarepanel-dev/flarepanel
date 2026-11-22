@@ -1,0 +1,11 @@
+{
+  "extends": "@flarepanel/tsconfig/base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
+    "strictNullChecks": true,
+    "types": ["bun-types"]
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "src/cloudflare"]
+}

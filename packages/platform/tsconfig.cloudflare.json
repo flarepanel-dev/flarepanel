@@ -1,0 +1,18 @@
+{
+  "extends": "@flarepanel/tsconfig/base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.cloudflare.json",
+    "strictNullChecks": true,
+    "lib": ["esnext"],
+    "types": ["@cloudflare/workers-types", "@cloudflare/vitest-pool-workers"]
+  },
+  "include": [
+    "src/ports.ts",
+    "src/testing",
+    "src/cloudflare",
+    "test/cloudflare",
+    "vitest.cloudflare.config.ts"
+  ],
+  "exclude": ["node_modules"]
+}

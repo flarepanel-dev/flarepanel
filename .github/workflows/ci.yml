@@ -41,6 +41,11 @@ jobs:
       - name: Check dependency boundaries
         run: bun run check:deps
 
+      # The Cloudflare platform stores run inside workerd (Miniflare): local,
+      # free, no services needed.
+      - name: Test Cloudflare platform stores
+        run: bun run --filter @flarepanel/platform test:cloudflare
+
   # packages/core runs one process per file, so it is split across runners.
   test:
     name: test (${{ matrix.suite }})

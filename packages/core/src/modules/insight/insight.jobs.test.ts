@@ -1,6 +1,7 @@
 // Job/cron-fragment wiring only; the service methods are in insight.service.test.ts.
 
 import { expect, test } from 'bun:test';
+import { createMemoryStores } from '@flarepanel/platform';
 import { testCoreConfig } from '../../../test/config-fixture';
 import type { AppDeps, Buffers, JobCtx } from '../../context';
 import { createRecordingProducers } from '../../jobs/testing';
@@ -78,6 +79,7 @@ function stubJobCtx(
     prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],
     redis: {} as AppDeps['redis'],
+    stores: createMemoryStores(),
     clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     logger: stubLogger(),
@@ -141,6 +143,7 @@ test('insightsDaily fans out one insightsProject enqueue per candidate, jobId de
     prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],
     redis: {} as AppDeps['redis'],
+    stores: createMemoryStores(),
     clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     logger: stubLogger(),

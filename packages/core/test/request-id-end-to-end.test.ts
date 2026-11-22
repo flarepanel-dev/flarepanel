@@ -5,6 +5,7 @@
 // request through all six hops.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { createMemoryStores } from '@flarepanel/platform';
 import { Elysia } from 'elysia';
 import { z } from 'zod';
 import type { AppDeps, Buffers } from '../src/context';
@@ -152,6 +153,7 @@ function stubDeps() {
     prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],
     redis: {} as AppDeps['redis'],
+    stores: createMemoryStores(),
     clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     producers: producers as unknown as QueueProducerHandle,
@@ -327,6 +329,7 @@ function chartDeps() {
     prisma: {} as AppDeps['prisma'],
     ch: chartClickHouse(),
     redis: {} as AppDeps['redis'],
+    stores: createMemoryStores(),
     clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     producers: producers as unknown as QueueProducerHandle,
@@ -521,6 +524,7 @@ function ingestDeps() {
     } as unknown as AppDeps['db'],
     ch: {} as AppDeps['ch'],
     redis: {} as AppDeps['redis'],
+    stores: createMemoryStores(),
     clients: {} as AppDeps['clients'],
     buffers,
     producers: producers as unknown as QueueProducerHandle,
@@ -739,6 +743,7 @@ function chainDeps() {
     prisma: {} as AppDeps['prisma'],
     ch,
     redis: {} as AppDeps['redis'],
+    stores: createMemoryStores(),
     clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     producers: producers as unknown as QueueProducerHandle,

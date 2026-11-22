@@ -73,9 +73,11 @@ import {
   runMigration,
 } from '@flarepanel/db/src/code-migrations/migrate';
 import { db, Prisma } from '@flarepanel/db/src/prisma-client';
+import { configurePlatformStores } from '@flarepanel/platform';
 import {
   configureRedisCache,
   createDeadLetterRecorder,
+  createRedisStores,
   getRedisCache,
   getRedisPub,
   getRedisQueue,
@@ -174,6 +176,10 @@ function findBullQueue(producers: QueueProducerHandle, name: string) {
 
 function buildDeps(): AppDeps {
   const producers = buildProducerHandle();
+  // Cache and coordination stores on this process's Redis; module-level
+  // helpers (`cacheable`, rate limits) read the same instance.
+  const stores = createRedisStores(getRedisCache());
+  configurePlatformStores(stores);
   return {
     // References to the `packages/db` and `packages/redis` singletons, not new connections.
     db,
@@ -182,6 +188,7 @@ function buildDeps(): AppDeps {
     prisma: { DbNull: Prisma.DbNull, JsonNull: Prisma.JsonNull },
     ch,
     redis: getRedisCache(),
+    stores,
     clients: createClients(),
     buffers: createBuffers(bufferDeps(producers)),
     producers,
@@ -191,7 +198,7 @@ function buildDeps(): AppDeps {
       db,
       config: config.core,
       logger,
-      redis: getRedisCache(),
+      coordination: stores.coordination,
     }),
   };
 }

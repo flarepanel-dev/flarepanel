@@ -69,7 +69,8 @@
     "superjson": "2.2.2",
     "unzipper": "0.12.5",
     "uuid": "9.0.1",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@flarepanel/platform": "workspace:*"
   },
   "devDependencies": {
     "@clickhouse/client": "1.18.5",

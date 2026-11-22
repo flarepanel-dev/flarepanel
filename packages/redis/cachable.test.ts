@@ -315,7 +315,8 @@ describe('cachable', () => {
       expect(await redis.get(key)).toBe('[]');
 
       const deleted = await cachedFn.clear('arg1');
-      expect(deleted).toBe(1);
+      // The store delete resolves with nothing; the key check below proves it.
+      expect(deleted).toBeUndefined();
       expect(await redis.get(key)).toBeNull();
     });
 
@@ -506,7 +507,8 @@ describe('cachable', () => {
       expect(cached).not.toBeNull();
 
       const result = await cachedFn.clear('arg1', 'arg2');
-      expect(result).toBe(1);
+      // The store delete resolves with nothing; the key check below proves it.
+      expect(result).toBeUndefined();
 
       cached = await redis.get(key);
       expect(cached).toBeNull();

@@ -1,4 +1,5 @@
-import { getCache, getRedisCache } from '@flarepanel/redis';
+import { getPlatformStores } from '@flarepanel/platform';
+import { getCache } from '@flarepanel/redis';
 import { chQuery } from '../../ch-query';
 import { type GeoLocation, getGeoLocation } from '../../clients/geo';
 import type { CoreConfig } from '../../config';
@@ -37,22 +38,31 @@ export type ImageAssetResult = ImageAssetOk | ImageAssetFailure;
 // v4: keyed by hostname. Earlier namespaces were keyed by the caller's URL and
 // held bytes rasterized from it.
 function createCacheKey(hostname: string): string {
-  return `favicon:v4:${hostname}`;
+  return `favicon:v5:${hostname}`;
 }
 
-// Reaches the redis singleton directly: callers of these two functions hold no `deps`/`ctx`.
+// Reaches the process cache store directly: callers of these two functions
+// hold no `deps`/`ctx`. Body and content type are one entry, so they can never
+// be evicted separately.
 async function getFromCacheBinary(
   key: string
 ): Promise<{ buffer: Buffer; contentType: string } | null> {
-  const redis = getRedisCache();
-  const [bufferBase64, contentType] = await Promise.all([
-    redis.get(key),
-    redis.get(`${key}:ctype`),
-  ]);
-  if (!(bufferBase64 && contentType)) {
+  const cached = await getPlatformStores().cache.get(key);
+  if (!cached) {
     return null;
   }
-  return { buffer: Buffer.from(bufferBase64, 'base64'), contentType };
+  try {
+    const { body, contentType } = JSON.parse(cached) as {
+      body?: string;
+      contentType?: string;
+    };
+    if (!(body && contentType)) {
+      return null;
+    }
+    return { buffer: Buffer.from(body, 'base64'), contentType };
+  } catch {
+    return null;
+  }
 }
 
 async function setToCacheBinary(
@@ -60,11 +70,11 @@ async function setToCacheBinary(
   buffer: Buffer,
   contentType: string
 ): Promise<void> {
-  const redis = getRedisCache();
-  await Promise.all([
-    redis.set(key, buffer.toString('base64'), 'EX', CACHE_TTL_SECONDS),
-    redis.set(`${key}:ctype`, contentType, 'EX', CACHE_TTL_SECONDS),
-  ]);
+  await getPlatformStores().cache.set(
+    key,
+    JSON.stringify({ body: buffer.toString('base64'), contentType }),
+    CACHE_TTL_SECONDS
+  );
 }
 
 function imageHeaders(

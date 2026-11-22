@@ -4,7 +4,8 @@
 // 5-minute verify cache whose key holds base64(<plaintext secret>) are all
 // deliberate.
 
-import { getRedisCache, LRUCache } from '@flarepanel/redis';
+import { getPlatformStores } from '@flarepanel/platform';
+import { LRUCache } from '@flarepanel/redis';
 import { path } from 'ramda';
 import type { DbScope } from '../../../cacheable-per-deps';
 import { verifyClientSecret as verifyClientSecretHash } from '../../../shared/client-secret';
@@ -90,7 +91,7 @@ async function verifyClientSecret(
     return true;
   }
 
-  if ((await getRedisCache().get(cacheKey)) === 'true') {
+  if ((await getPlatformStores().cache.get(cacheKey)) === 'true') {
     verifiedInProcess.set(cacheKey, true);
     return true;
   }
@@ -99,8 +100,8 @@ async function verifyClientSecret(
 
   if (isVerified) {
     verifiedInProcess.set(cacheKey, true);
-    getRedisCache()
-      .setex(cacheKey, VERIFY_CACHE_SECONDS, 'true')
+    getPlatformStores()
+      .cache.set(cacheKey, 'true', VERIFY_CACHE_SECONDS)
       .catch(() => {
         // a cache write failure only costs the next request a hash compare
       });

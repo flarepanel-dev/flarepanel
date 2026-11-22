@@ -1,6 +1,7 @@
 // Job/cron-fragment wiring only; no ClickHouse/Postgres touched.
 
 import { expect, test } from 'bun:test';
+import { createMemoryStores } from '@flarepanel/platform';
 import { testCoreConfig } from '../../../test/config-fixture';
 import type { AppDeps, Buffers, JobCtx } from '../../context';
 import { createRecordingProducers } from '../../jobs/testing';
@@ -74,6 +75,7 @@ function stubJobCtx(
     prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],
     redis: {} as AppDeps['redis'],
+    stores: createMemoryStores(),
     clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     logger: stubLogger(),
@@ -154,6 +156,7 @@ test('gscSync fans out one gscProjectSync enqueue per connected project', async 
     prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],
     redis: {} as AppDeps['redis'],
+    stores: createMemoryStores(),
     clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     logger: stubLogger(),
