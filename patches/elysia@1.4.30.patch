@@ -1,0 +1,26 @@
+diff --git a/dist/dynamic-handle.js b/dist/dynamic-handle.js
+index b75b48309c7a27c7c4ac728ae0128dcb81c58a86..1dca61387e6145b582f987e0e08b0c9120974326 100644
+--- a/dist/dynamic-handle.js
++++ b/dist/dynamic-handle.js
+@@ -138,7 +138,7 @@ const createDynamicHandler = (app) => {
+       if (hooks = handler.store.hooks, hooks.config?.mount)
+         return await hooks.config.mount(request);
+       let body;
+-      if (request.method !== "GET" && request.method !== "HEAD")
++      if (request.method !== "GET" && request.method !== "HEAD" && !hooks.parse?.some?.((hook) => hook.fn === "none"))
+         if (content)
+           switch (content) {
+             case "application/json":
+diff --git a/dist/dynamic-handle.mjs b/dist/dynamic-handle.mjs
+index efb6264241625f41bd88b9294d36df6064ab3779..28a457d875cd142889a168abad6ba8785ddabb38 100644
+--- a/dist/dynamic-handle.mjs
++++ b/dist/dynamic-handle.mjs
+@@ -127,7 +127,7 @@ const createDynamicHandler = (app) => {
+       if (hooks = handler.store.hooks, hooks.config?.mount)
+         return await hooks.config.mount(request);
+       let body;
+-      if (request.method !== "GET" && request.method !== "HEAD")
++      if (request.method !== "GET" && request.method !== "HEAD" && !hooks.parse?.some?.((hook) => hook.fn === "none"))
+         if (content)
+           switch (content) {
+             case "application/json":

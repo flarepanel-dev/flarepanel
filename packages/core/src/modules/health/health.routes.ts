@@ -80,7 +80,10 @@ export const healthRoutes = defineRoutes((app) =>
         // client.query(...))`, see ch-query.ts).
         const [redisResult, dbResult, chResult] = await Promise.all([
           tryCatch(async () => (await ctx.redis.ping()) === 'PONG'),
-          tryCatch(async () => Boolean(await ctx.db.$executeRaw`SELECT 1`)),
+          tryCatch(
+            async () =>
+              (await ctx.db.$queryRaw<unknown[]>`SELECT 1 AS ok`).length > 0
+          ),
           tryCatch(async () => (await chQuery(ctx, 'SELECT 1')).length > 0),
         ]);
 

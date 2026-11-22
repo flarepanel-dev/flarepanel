@@ -3,7 +3,7 @@
 // cannot name a column it has no business reading.
 import { describe, expect, it } from 'bun:test';
 import { JOINABLE_PROFILE_COLUMNS } from '../chart.constants';
-import { profileJoinFields } from './funnel.sql';
+import { profileJoinFields } from './funnel-sql';
 
 describe('profile join columns', () => {
   it('keeps the joinable columns a filter names', () => {

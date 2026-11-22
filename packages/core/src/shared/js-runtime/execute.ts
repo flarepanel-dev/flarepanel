@@ -39,8 +39,10 @@ const MAX_CONCURRENT_SANDBOXES = 3;
 const limitSandboxes = createConcurrencyLimit(MAX_CONCURRENT_SANDBOXES);
 
 // `apps/start` typechecks this source without Bun's types, which declare `dir`.
-const { dir: MODULE_DIR } = import.meta as ImportMeta & { dir: string };
-const SANDBOX_CHILD_PATH = join(MODULE_DIR, 'sandbox-child.ts');
+// Resolved on first use: a Workers bundle has no module directory (and cannot
+// spawn the Bun sandbox; integrations that need it stay on Bun for now).
+const sandboxChildPath = () =>
+  join((import.meta as ImportMeta & { dir: string }).dir, 'sandbox-child.ts');
 
 /**
  * `ulimit` applies to the shell and survives `exec`, so the cap is in place
@@ -62,7 +64,7 @@ const DEFAULT_LIMITS: SandboxLimits = {
 };
 
 function sandboxCommand(): [string, string[]] {
-  const bunArgs = ['--no-env-file', SANDBOX_CHILD_PATH];
+  const bunArgs = ['--no-env-file', sandboxChildPath()];
   if (process.platform !== 'linux') {
     return [process.execPath, bunArgs];
   }

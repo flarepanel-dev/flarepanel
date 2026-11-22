@@ -11,7 +11,7 @@ import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
 const PROJECT_ID = 'retention-sql-validation';
 
 let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
-let RET: typeof import('./retention.sql');
+let RET: typeof import('./retention-sql');
 
 async function explain(fragment: SqlFragment): Promise<void> {
   const { query, query_params } = fragment.toStatement();
@@ -20,7 +20,7 @@ async function explain(fragment: SqlFragment): Promise<void> {
 
 beforeAll(async () => {
   ({ ch } = await import('@flarepanel/db/src/clickhouse/client'));
-  RET = await import('./retention.sql');
+  RET = await import('./retention-sql');
 });
 
 describe('rollingActiveUsersQuery', () => {

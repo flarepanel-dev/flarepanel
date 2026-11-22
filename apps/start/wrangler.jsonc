@@ -1,7 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "openpanel-dashboard",
-  "account_id": "ff15074258b1981316524df0b09047df",
+  "name": "flarepanel-dashboard",
   "compatibility_date": "2025-09-02",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
@@ -12,7 +11,6 @@
     }
   ],
   "vars": {
-    "VITE_OP_CLIENT_ID": "301c6dc1-424c-4bc3-9886-a8beab09b615",
     "API_URL": "https://api.flarepanel.dev",
     "DASHBOARD_URL": "https://dashboard.flarepanel.dev",
     "NODE_ENV": "production",

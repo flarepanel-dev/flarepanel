@@ -26,7 +26,7 @@ import {
   sankeyBetweenTransitionsQuery,
   sankeyTopEntriesQuery,
   sankeyTransitionsQuery,
-} from './src/sankey.sql';
+} from './src/sankey-sql';
 
 /** Destinations kept per node when the flow branches. */
 const TOP_DESTINATIONS_PER_NODE = 3;

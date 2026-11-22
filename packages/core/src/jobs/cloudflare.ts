@@ -56,7 +56,7 @@ export interface CloudflareJobMessage {
 
 /** The part of a Queue producer binding we use. */
 export interface QueueSender {
-  send(body: unknown, options?: { delaySeconds?: number }): Promise<void>;
+  send(body: unknown, options?: { delaySeconds?: number }): Promise<unknown>;
 }
 
 /** The part of a consumed Queue message we use. */

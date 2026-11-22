@@ -6,7 +6,7 @@ import { beforeAll, describe, expect, it } from 'bun:test';
 import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
 
 let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
-let eventFieldValuesQuery: typeof import('./field-values.sql').eventFieldValuesQuery;
+let eventFieldValuesQuery: typeof import('./field-values-sql').eventFieldValuesQuery;
 let getSelectPropertyKey: typeof import('./field-resolution').getSelectPropertyKey;
 
 const PROJECT_ID = 'test-field-values';
@@ -34,7 +34,7 @@ function query(event: string, column: string, lookbackDays?: number) {
 
 beforeAll(async () => {
   ({ ch } = await import('@flarepanel/db/src/clickhouse/client'));
-  ({ eventFieldValuesQuery } = await import('./field-values.sql'));
+  ({ eventFieldValuesQuery } = await import('./field-values-sql'));
   ({ getSelectPropertyKey } = await import('./field-resolution'));
   const { bootstrapTestDatabases } = await import(
     '../../../../../../test/bootstrap-databases'

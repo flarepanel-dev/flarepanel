@@ -1,0 +1,4 @@
+COOKIE_SECRET="replace-with-a-random-64-hex-string"
+AUTH_SECRET="replace-with-a-random-64-hex-string"
+DASHBOARD_URL="http://localhost:3000"
+API_URL="http://localhost:8787"

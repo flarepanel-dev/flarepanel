@@ -8,7 +8,7 @@ import {
   type TopPagesSortColumn,
 } from '../../event/event.constants';
 import type { IInterval } from '../../report/report.constants';
-import { fillClause, toStartOf } from './overview.sql';
+import { fillClause, toStartOf } from './overview-sql';
 
 function dateRangeWhere(
   column: string,

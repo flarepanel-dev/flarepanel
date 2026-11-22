@@ -4,35 +4,23 @@ import { cn } from '@/utils/cn';
 
 const ROTATE_EVERY_MS = 7000;
 
+// Product statements, not customer quotes: FlarePanel is new and has none yet.
 const TESTIMONIALS: { quote: string; author: string; site?: string }[] = [
   {
     quote:
-      "FlarePanel is by far the best open-source analytics I've ever seen. Better UX, more features, and incredible support from the founder.",
-    author: 'Thomas Sanlis',
-    site: 'uneed.best',
+      'Web and product analytics that run entirely on your own Cloudflare account. No servers, no databases to babysit.',
+    author: 'Self-hosted on Cloudflare',
   },
   {
     quote:
-      'It combines the power of Mixpanel with the ease of use of Plausible into a fully open-source product.',
-    author: 'Steven Tey',
-    site: 'dub.co',
+      'Events land at the edge closest to your visitors, and your data stays in the region you choose.',
+    author: 'Fast and private',
   },
   {
     quote:
-      'After testing several product analytics tools we chose FlarePanel. Profiles and conversion events are our favorite features.',
-    author: 'Julien Hany',
-    site: 'strackr.com',
-  },
-  {
-    quote:
-      'The Overview tab has everything I need: stats, graph, traffic sources, locations, devices. Clean, modern, very pleasing to the eye.',
-    author: 'Piotr Kulpinski',
-    site: 'producthunt.com',
-  },
-  {
-    quote:
-      'After paying a lot to PostHog for years, FlarePanel gives us the same analytics while keeping full ownership of our data.',
-    author: 'Self-hosting team',
+      'Open source under AGPL-3.0, and compatible with existing OpenPanel SDKs.',
+    author: 'Open source',
+    site: 'github.com/flarepanel-dev',
   },
 ];
 

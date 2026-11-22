@@ -69,7 +69,8 @@ export function getServiceName(config: CoreConfig, name: string): string {
 // Pretty printing is therefore off under Bun.
 const isBun = !!process.versions.bun;
 
-const requireFromCore = createRequire(import.meta.url);
+// Created on first use: a Workers bundle has no module URL at import time.
+const requireFromCore = () => createRequire(import.meta.url);
 
 /**
  * The HyperDX transport with its target resolved from this package, which
@@ -84,7 +85,7 @@ export function hyperdxTransport(
     detectResources: true,
     service,
   });
-  return { ...transport, target: requireFromCore.resolve(transport.target) };
+  return { ...transport, target: requireFromCore().resolve(transport.target) };
 }
 
 export function createLogger({

@@ -53,11 +53,14 @@ const deleteMany = mock(
   }
 );
 
-const saltDelegate = { findMany, create, deleteMany };
+const findFirst = mock(async () => sortedByCreatedAtDesc(saltStore)[0] ?? null);
 
-const $transaction = mock(
-  async (fn: (tx: { salt: typeof saltDelegate }) => Promise<unknown>) =>
-    fn({ salt: saltDelegate })
+const saltDelegate = { findMany, findFirst, create, deleteMany };
+
+// A batch: the operations were started in order as the array was built, like
+// Prisma's `$transaction([...])`.
+const $transaction = mock(async (operations: Promise<unknown>[]) =>
+  Promise.all(operations)
 );
 
 // Bypasses the Redis cache-aside; only the `cacheable(name, fn, ttl)` overload

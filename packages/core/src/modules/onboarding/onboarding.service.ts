@@ -191,9 +191,11 @@ export async function createOnboardingProject(
   ]);
 
   // One transaction: a project without its clients would leave the user
-  // with an error and no credentials to retry with.
-  const { client, mcpClient } = await db.$transaction(async (tx) => {
-    const project = await tx.project.create({
+  // with an error and no credentials to retry with. A batch, not an
+  // interactive transaction: Cloudflare D1 runs a batch atomically but has no
+  // interactive transactions, and nothing here reads before it writes.
+  const [, client, mcpClient] = await db.$transaction([
+    db.project.create({
       data: {
         id: projectId,
         name: input.project,
@@ -202,27 +204,26 @@ export async function createOnboardingProject(
         domain: input.domain ? stripTrailingSlash(input.domain) : null,
         cors: cors.map((c) => stripTrailingSlash(c)),
       },
-    });
-    const createdClient = await tx.client.create({
+    }),
+    db.client.create({
       data: {
-        name: `${project.name} Client`,
+        name: `${input.project} Client`,
         organizationId: organization.id,
-        projectId: project.id,
+        projectId,
         type: 'write',
         secret: hashedSecret,
       },
-    });
-    const createdMcpClient = await tx.client.create({
+    }),
+    db.client.create({
       data: {
-        name: `${project.name} MCP client`,
+        name: `${input.project} MCP client`,
         organizationId: organization.id,
-        projectId: project.id,
+        projectId,
         type: 'read',
         secret: hashedMcpSecret,
       },
-    });
-    return { client: createdClient, mcpClient: createdMcpClient };
-  });
+    }),
+  ]);
 
   return { ...client, secret, mcpToken: toMcpToken(mcpClient.id, mcpSecret) };
 }

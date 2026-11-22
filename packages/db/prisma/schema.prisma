@@ -9,6 +9,19 @@ generator client {
   importFileExtension    = "ts"
 }
 
+// The same client for Cloudflare Workers: no Rust engine (query compiler)
+// and the D1 driver adapter. Imported only by the Worker build
+// (src/prisma-client.workerd.ts).
+generator workerd {
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma-workerd"
+  runtime                = "workerd"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "ts"
+  previewFeatures        = ["queryCompiler", "driverAdapters"]
+}
+
 // generator json {
 //   provider = "prisma-json-types-generator"
 // }

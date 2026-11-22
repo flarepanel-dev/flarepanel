@@ -41,7 +41,7 @@ interface MetricsRow {
 }
 
 let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
-let OV: typeof import('./overview.sql');
+let OV: typeof import('./overview-sql');
 let getRawWhereClause: typeof import('../overview.service').getRawWhereClause;
 
 async function metricsFor(path: string): Promise<MetricsRow[]> {
@@ -109,7 +109,7 @@ const durationSessionViews = [
 
 beforeAll(async () => {
   ({ ch } = await import('@flarepanel/db/src/clickhouse/client'));
-  OV = await import('./overview.sql');
+  OV = await import('./overview-sql');
   ({ getRawWhereClause } = await import('../overview.service'));
 
   const { bootstrapTestDatabases } = await import(

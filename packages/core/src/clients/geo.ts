@@ -10,17 +10,24 @@ import { Reader } from '@maxmind/geoip2-node';
 import { LRUCache } from 'lru-cache';
 import datacenterAsns from './datacenter-asns';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Resolved on first use, not at import: a Workers bundle has no file URL for
+// this module (and no .mmdb files; Workers use request.cf instead).
+const moduleDir = () => dirname(fileURLToPath(import.meta.url));
 
 // Resolve a bundled `.mmdb` file, bundled-dist layout first, local package
 // second. apps/api bundles every `@flarepanel/*` package into one file, so there
 // `import.meta.url` is `apps/api/dist/index.js` and three levels up is the repo root.
 async function loadDatabase(filename: string): Promise<ReaderModel | null> {
+  let directory: string;
+  try {
+    directory = moduleDir();
+  } catch {
+    return null;
+  }
   // The api dist bundle
-  const dbPath = path.join(__dirname, `../../../packages/core/${filename}`);
+  const dbPath = path.join(directory, `../../../packages/core/${filename}`);
   // The local package (core's own tests, unbundled)
-  const dbPathLocal = path.join(__dirname, `../../${filename}`);
+  const dbPathLocal = path.join(directory, `../../${filename}`);
   try {
     const dbBuffer = await readFile(dbPath);
     return Reader.openBuffer(dbBuffer);

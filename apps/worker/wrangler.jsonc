@@ -1,0 +1,66 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "flarepanel-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-03-10",
+  "compatibility_flags": ["nodejs_compat"],
+  // Local development only for now: `bun run dev` (Miniflare, free).
+  // Deploying needs a real D1 id and the user's go-ahead (docs/cloudflare-runtime.md).
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "flarepanel",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "../../packages/db/migrations"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "COORDINATOR", "class_name": "CoordinatorDurableObject" },
+      { "name": "PUBSUB_HUB", "class_name": "PubSubHubDurableObject" }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "CoordinatorDurableObject",
+        "PubSubHubDurableObject"
+      ]
+    }
+  ],
+  "queues": {
+    "producers": [{ "binding": "JOBS", "queue": "flarepanel-jobs" }],
+    "consumers": [
+      {
+        "queue": "flarepanel-jobs",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 5,
+        "max_concurrency": 2
+      }
+    ]
+  },
+  "triggers": { "crons": ["* * * * *"] },
+  // Node-only dependencies swapped for Worker versions or loud stand-ins.
+  "alias": {
+    "@flarepanel/db/src/prisma-client": "../../packages/db/src/prisma-client.workerd.ts",
+    "@clickhouse/client": "@clickhouse/client-web",
+    "@node-rs/argon2": "./src/shims/argon2.ts",
+    "ioredis": "./src/shims/ioredis.ts",
+    "bullmq": "./src/shims/bullmq.ts",
+    "kafkajs": "./src/shims/kafkajs.ts",
+    "nodemailer": "./src/shims/nodemailer.ts",
+    "pino": "./src/shims/pino.ts",
+    "@hyperdx/node-opentelemetry": "./src/shims/hyperdx.ts",
+    "@slack/bolt": "./src/shims/empty-module.ts",
+    "@google-cloud/storage": "./src/shims/empty-module.ts",
+    "@maxmind/geoip2-node": "./src/shims/empty-module.ts",
+    "unzipper": "./src/shims/empty-module.ts"
+  },
+  "vars": {
+    "NODE_ENV": "development",
+    "SELF_HOSTED": "true"
+  },
+  "observability": { "enabled": true, "head_sampling_rate": 0.1 }
+}

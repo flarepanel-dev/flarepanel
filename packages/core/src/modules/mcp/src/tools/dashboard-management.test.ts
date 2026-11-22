@@ -19,6 +19,7 @@ const mockDb = {
     delete: mock(),
   },
   report: {
+    count: mock(),
     create: mock(),
     findFirst: mock(),
     findMany: mock(),
@@ -249,8 +250,10 @@ beforeEach(() => {
   mockDb.report.deleteMany.mockResolvedValue({ count: 1 });
   mockDb.reportLayout.upsert.mockResolvedValue({ reportId: REPORT.id, x: 1 });
   mockDb.reportLayout.deleteMany.mockResolvedValue({ count: 1 });
-  mockDb.$transaction.mockImplementation(async (callback: any) =>
-    callback(mockDb)
+  mockDb.report.count.mockResolvedValue(0);
+  // A batch, like Prisma's `$transaction([...])`: operations already started in order.
+  mockDb.$transaction.mockImplementation(async (operations: any) =>
+    Promise.all(operations)
   );
 });
 
@@ -487,10 +490,8 @@ describe('dashboard management behavior', () => {
     });
   });
 
-  it('rejects a non-empty dashboard atomically without force', async () => {
-    mockDb.report.findMany.mockResolvedValue([
-      { id: '11111111-1111-4111-8111-111111111111', projectId: 'project-1' },
-    ]);
+  it('rejects a non-empty dashboard without force, before any write', async () => {
+    mockDb.report.count.mockResolvedValue(1);
     const server = register();
 
     const result = await server.invoke('delete_dashboard', {
@@ -501,14 +502,12 @@ describe('dashboard management behavior', () => {
     expect(result.error).toContain(
       'Cannot delete dashboard with associated reports'
     );
-    expect(mockDb.$transaction).toHaveBeenCalled();
+    expect(mockDb.$transaction).not.toHaveBeenCalled();
     expect(mockDb.dashboard.delete).not.toHaveBeenCalled();
   });
 
   it('force deletes reports and their layouts in one transaction', async () => {
-    mockDb.report.findMany.mockResolvedValue([
-      { id: '11111111-1111-4111-8111-111111111111', projectId: 'project-1' },
-    ]);
+    mockDb.report.count.mockResolvedValue(1);
     const server = register();
 
     await server.invoke('delete_dashboard', {
@@ -517,11 +516,14 @@ describe('dashboard management behavior', () => {
       forceDelete: true,
     });
 
+    expect(mockDb.$transaction).toHaveBeenCalledTimes(1);
     expect(mockDb.report.deleteMany).toHaveBeenCalledWith({
-      where: { id: { in: ['11111111-1111-4111-8111-111111111111'] } },
+      where: { dashboardId: 'dashboard-1', projectId: 'project-1' },
     });
     expect(mockDb.reportLayout.deleteMany).toHaveBeenCalledWith({
-      where: { reportId: { in: ['11111111-1111-4111-8111-111111111111'] } },
+      where: {
+        report: { dashboardId: 'dashboard-1', projectId: 'project-1' },
+      },
     });
     expect(
       mockDb.reportLayout.deleteMany.mock.invocationCallOrder[0]!

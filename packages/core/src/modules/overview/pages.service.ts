@@ -14,7 +14,7 @@ import {
   pageTimeseriesQuery,
   type TopPagesQueryInput,
   topPagesQuery,
-} from './src/pages.sql';
+} from './src/pages-sql';
 import { runQuery } from './src/run-query';
 
 export interface IGetPagesInput extends Omit<TopPagesQueryInput, 'offset'> {

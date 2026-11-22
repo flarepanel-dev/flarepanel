@@ -11,7 +11,7 @@ const START = '2026-08-01 00:00:00';
 const END = '2026-08-08 00:00:00';
 
 let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
-let PG: typeof import('./pages.sql');
+let PG: typeof import('./pages-sql');
 
 async function explain(fragment: SqlFragment): Promise<void> {
   const { query, query_params } = fragment.toStatement();
@@ -20,7 +20,7 @@ async function explain(fragment: SqlFragment): Promise<void> {
 
 beforeAll(async () => {
   ({ ch } = await import('@flarepanel/db/src/clickhouse/client'));
-  PG = await import('./pages.sql');
+  PG = await import('./pages-sql');
 });
 
 describe('pages.sql — parses against ClickHouse', () => {

@@ -86,24 +86,19 @@ export function createSaltService(
   _services: () => Services
 ) {
   async function generateNewSalt() {
-    const created = await deps.db.$transaction(async (tx) => {
-      const existingSalts = await tx.salt.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: SALT_HISTORY_SIZE,
-      });
-
-      const newSalt = await tx.salt.create({ data: { salt: generateSalt() } });
-
-      // Keep the new salt + the previous newest (if any).
-      const previousNewest = existingSalts[0];
-      const saltsToKeep = previousNewest
-        ? [newSalt.salt, previousNewest.salt]
-        : [newSalt.salt];
-
-      await tx.salt.deleteMany({ where: { salt: { notIn: saltsToKeep } } });
-
-      return newSalt;
+    // Read, then one atomic batch: Cloudflare D1 has no interactive
+    // transactions. Rotation is a single daily cron run, so nothing races the
+    // read.
+    const previousNewest = await deps.db.salt.findFirst({
+      orderBy: { createdAt: 'desc' },
     });
+    const salt = generateSalt();
+    // Keep the new salt + the previous newest (if any).
+    const saltsToKeep = previousNewest ? [salt, previousNewest.salt] : [salt];
+    const [created] = await deps.db.$transaction([
+      deps.db.salt.create({ data: { salt } }),
+      deps.db.salt.deleteMany({ where: { salt: { notIn: saltsToKeep } } }),
+    ]);
 
     await getSalts.clear(deps);
 

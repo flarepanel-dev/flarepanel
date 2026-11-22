@@ -6,18 +6,18 @@ import {
   TEST_CLICKHOUSE_DATABASE,
   TEST_CLICKHOUSE_URL,
 } from '../../../test/databases';
-import { conversionQuery } from '../src/modules/chart/src/conversion.sql';
+import { conversionQuery } from '../src/modules/chart/src/conversion-sql';
 import {
   funnelBase,
   funnelChartQuery,
-} from '../src/modules/chart/src/funnel.sql';
-import { sankeySessionPathsQuery } from '../src/modules/chart/src/sankey.sql';
+} from '../src/modules/chart/src/funnel-sql';
+import { sankeySessionPathsQuery } from '../src/modules/chart/src/sankey-sql';
 import {
   metricsWithPageFilterQuery,
   topEntriesQuery,
   transitionsQuery,
-} from '../src/modules/overview/src/overview.sql';
-import { topPagesQuery } from '../src/modules/overview/src/pages.sql';
+} from '../src/modules/overview/src/overview-sql';
+import { topPagesQuery } from '../src/modules/overview/src/pages-sql';
 
 const database = `${TEST_CLICKHOUSE_DATABASE}_sessionless_${crypto.randomUUID().replaceAll('-', '')}`;
 const admin = createClient({ url: TEST_CLICKHOUSE_URL });

@@ -427,38 +427,34 @@ function registerDashboardWriteTools(
         const dashboard = await requireDashboard(deps, projectId, dashboardId);
 
         try {
-          await db.$transaction(async (transaction) => {
-            const current = await transaction.dashboard.findFirst({
-              where: { id: dashboardId, projectId },
-            });
-            if (!current) {
-              throw new Error('Dashboard not found');
-            }
-
-            const reports = await transaction.report.findMany({
-              where: { dashboardId, projectId },
-              select: { id: true },
-            });
-            if (reports.length > 0 && !forceDelete) {
-              throw new Error(
-                'Cannot delete dashboard with associated reports'
-              );
-            }
-
-            if (forceDelete && reports.length > 0) {
-              const reportIds = reports.map((report) => report.id);
-              // Layouts hold the foreign key to reports, so they go first —
-              // this order stays correct even if that cascade ever changes.
-              await transaction.reportLayout.deleteMany({
-                where: { reportId: { in: reportIds } },
-              });
-              await transaction.report.deleteMany({
-                where: { id: { in: reportIds } },
-              });
-            }
-
-            await transaction.dashboard.delete({ where: { id: dashboardId } });
+          // Checks, then one atomic batch: Cloudflare D1 has no interactive
+          // transactions. Reports are deleted by dashboard, not by the ids read
+          // here, so one added in between cannot be left behind.
+          const current = await db.dashboard.findFirst({
+            where: { id: dashboardId, projectId },
           });
+          if (!current) {
+            throw new Error('Dashboard not found');
+          }
+          const reportCount = await db.report.count({
+            where: { dashboardId, projectId },
+          });
+          if (reportCount > 0 && !forceDelete) {
+            throw new Error('Cannot delete dashboard with associated reports');
+          }
+          await db.$transaction([
+            // Layouts hold the foreign key to reports, so they go first —
+            // this order stays correct even if that cascade ever changes.
+            ...(forceDelete
+              ? [
+                  db.reportLayout.deleteMany({
+                    where: { report: { dashboardId, projectId } },
+                  }),
+                  db.report.deleteMany({ where: { dashboardId, projectId } }),
+                ]
+              : []),
+            db.dashboard.delete({ where: { id: dashboardId } }),
+          ]);
         } catch (error) {
           if (
             typeof error === 'object' &&

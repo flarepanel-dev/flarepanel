@@ -18,13 +18,13 @@ import type {
   IChartEvent,
 } from '../../report/report.constants';
 import { compiledText } from './compiled';
-import { conversionQuery } from './conversion.sql';
+import { conversionQuery } from './conversion-sql';
 import {
   getProfilePropertySelect,
   getSelectPropertyKey,
   profileIdsInWindow,
 } from './field-resolution';
-import { funnelBase, funnelChartQuery } from './funnel.sql';
+import { funnelBase, funnelChartQuery } from './funnel-sql';
 import {
   aggregateChartQuery,
   chartBucketProfilesQuery,

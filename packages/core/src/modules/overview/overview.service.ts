@@ -33,7 +33,7 @@ import {
   topLinkOutQuery,
   topPagesQuery,
   transitionsQuery,
-} from './src/overview.sql';
+} from './src/overview-sql';
 import { runQuery } from './src/run-query';
 
 // Maximum number of records to return (for detail modals)

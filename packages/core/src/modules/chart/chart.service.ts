@@ -49,7 +49,7 @@ import {
   isKnownEventField,
   normalizeEventField,
 } from './src/field-resolution';
-import { eventFieldValuesQuery } from './src/field-values.sql';
+import { eventFieldValuesQuery } from './src/field-values-sql';
 import { runQuery } from './src/run-query';
 import {
   chartBucketProfilesQuery,

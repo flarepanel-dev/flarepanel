@@ -1,0 +1,29 @@
+{
+  "name": "@flarepanel/worker",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "db:migrate:local": "wrangler d1 migrations apply flarepanel --local",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clickhouse/client-web": "1.18.5",
+    "@flarepanel/core": "workspace:*",
+    "@flarepanel/db": "workspace:*",
+    "@flarepanel/platform": "workspace:*",
+    "@flarepanel/redis": "workspace:*",
+    "@flarepanel/shared": "workspace:*",
+    "elysia": "1.4.30",
+    "@noble/hashes": "2.4.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261121.1",
+    "@flarepanel/tsconfig": "workspace:*",
+    "typescript": "catalog:",
+    "wrangler": "4.85.0",
+    "bun-types": "1.4.4"
+  }
+}

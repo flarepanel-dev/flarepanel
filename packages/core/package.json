@@ -6,7 +6,8 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./modules/*.constants": "./src/modules/*.constants.ts"
+    "./modules/*.constants": "./src/modules/*.constants.ts",
+    "./jobs/cloudflare": "./src/jobs/cloudflare.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

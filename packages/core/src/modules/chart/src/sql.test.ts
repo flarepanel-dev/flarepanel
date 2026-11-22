@@ -660,7 +660,7 @@ describe('profile join window', () => {
   });
 
   it('bounds the conversion join by both steps and the range', async () => {
-    const { conversionQuery } = await import('./conversion.sql');
+    const { conversionQuery } = await import('./conversion-sql');
     const { getSelectPropertyKey } = await import('./field-resolution');
     const expression = getSelectPropertyKey(
       'profile.properties.plan',
@@ -1091,7 +1091,7 @@ describe('first time for user', () => {
   });
 
   it('gates a conversion step on the qualified events table', async () => {
-    const { conversionQuery } = await import('./conversion.sql');
+    const { conversionQuery } = await import('./conversion-sql');
     const { firstTimeCondition, rangePeriod } = await import('./first-time');
     const firstStepWhere = firstTimeCondition({
       event: { name: 'screen_view', firstTime: true },

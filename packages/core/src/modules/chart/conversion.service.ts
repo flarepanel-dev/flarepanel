@@ -11,7 +11,7 @@ import {
 } from '../report/src/series';
 import { JOINABLE_PROFILE_COLUMNS } from './chart.constants';
 import { compiledText } from './src/compiled';
-import { type ConversionGroup, conversionQuery } from './src/conversion.sql';
+import { type ConversionGroup, conversionQuery } from './src/conversion-sql';
 import { eventMatchCondition, eventNamesOf } from './src/event-match';
 import {
   buildInlineCohortJoin,

@@ -40,10 +40,10 @@ afterAll(async () => {
 
 let ch: typeof import('@flarepanel/db/src/clickhouse/client').ch;
 let buildFunnelBase: typeof import('../funnel.service').buildFunnelBase;
-let funnelChartQuery: typeof import('./funnel.sql').funnelChartQuery;
-let funnelProfilesQuery: typeof import('./funnel.sql').funnelProfilesQuery;
-let funnelStepConditions: typeof import('./funnel.sql').funnelStepConditions;
-let funnelTimeToConvertQuery: typeof import('./funnel.sql').funnelTimeToConvertQuery;
+let funnelChartQuery: typeof import('./funnel-sql').funnelChartQuery;
+let funnelProfilesQuery: typeof import('./funnel-sql').funnelProfilesQuery;
+let funnelStepConditions: typeof import('./funnel-sql').funnelStepConditions;
+let funnelTimeToConvertQuery: typeof import('./funnel-sql').funnelTimeToConvertQuery;
 let onlyReportEvents: typeof import('../../report/src/series').onlyReportEvents;
 let rangePeriod: typeof import('./first-time').rangePeriod;
 let deps: import('../../../services').ServiceDeps;
@@ -166,7 +166,7 @@ beforeAll(async () => {
     funnelProfilesQuery,
     funnelStepConditions,
     funnelTimeToConvertQuery,
-  } = await import('./funnel.sql'));
+  } = await import('./funnel-sql'));
   ({ onlyReportEvents } = await import('../../report/src/series'));
   ({ rangePeriod } = await import('./first-time'));
   const { testServiceDeps } = await import('../../../../test/service-deps');

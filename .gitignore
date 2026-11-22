@@ -1,5 +1,6 @@
 .secrets
 packages/db/src/generated/prisma
+packages/db/src/generated/prisma-workerd
 packages/core/src/code-migrations/*.sql
 **/.open-next
 
@@ -216,3 +217,8 @@ test-results/
 
 # Local SQLite databases (metadata; D1 in production)
 .data/
+
+# Wrangler local secrets
+.dev.vars
+.wrangler/
+apps/worker/dist/

@@ -46,6 +46,11 @@ jobs:
       - name: Test Cloudflare platform stores
         run: bun run --filter @flarepanel/platform test:cloudflare
 
+      # Bundles the Workers API without deploying (no Cloudflare account
+      # needed): catches a dependency that cannot run on Workers.
+      - name: Build the Workers API bundle
+        run: bun run --filter @flarepanel/worker build
+
   # packages/core runs one process per file, so it is split across runners.
   test:
     name: test (${{ matrix.suite }})

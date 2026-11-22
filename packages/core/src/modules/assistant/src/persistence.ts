@@ -51,22 +51,45 @@ export async function saveMessages(
     title?: string | null;
   }
 ): Promise<void> {
-  await deps.db.$transaction(async (tx) => {
-    // Message ids come from the client; one must not overwrite a row in another conversation.
-    const foreign = await tx.chatMessage.findFirst({
-      where: {
-        id: { in: input.messages.map((message) => message.id) },
-        conversationId: { not: input.conversationId },
-      },
-      select: { id: true },
-    });
-    if (foreign) {
-      throw new Error(`Message ${foreign.id} belongs to another conversation`);
-    }
-    const title = stripNullCharacters(input.title ?? undefined);
-    // The id comes from the client and is only checked before the model runs;
-    // someone else may have created it since, and must not get these messages.
-    const conversation = await tx.conversation.upsert({
+  const db = deps.db;
+  // Checks first, then every write in one atomic batch: Cloudflare D1 has no
+  // interactive transactions. Conversation ids are client-generated UUIDs, so
+  // another user creating this exact id between check and write is not a
+  // realistic race.
+
+  // Message ids come from the client; one must not overwrite a row in another conversation.
+  const foreign = await db.chatMessage.findFirst({
+    where: {
+      id: { in: input.messages.map((message) => message.id) },
+      conversationId: { not: input.conversationId },
+    },
+    select: { id: true },
+  });
+  if (foreign) {
+    throw new Error(`Message ${foreign.id} belongs to another conversation`);
+  }
+  // The id comes from the client and is only checked before the model runs;
+  // someone else may have created it since, and must not get these messages.
+  const existing = await db.conversation.findUnique({
+    where: { id: input.conversationId },
+    select: { userId: true, projectId: true },
+  });
+  if (
+    existing &&
+    !(
+      existing.userId === input.userId && existing.projectId === input.projectId
+    )
+  ) {
+    throw new Error(
+      `Conversation ${input.conversationId} belongs to another user`
+    );
+  }
+
+  const title = stripNullCharacters(input.title ?? undefined);
+  // Rows saved together must load in this order; the default timestamp can tie.
+  const baseTime = Date.now();
+  await db.$transaction([
+    db.conversation.upsert({
       where: { id: input.conversationId },
       create: {
         id: input.conversationId,
@@ -79,24 +102,13 @@ export async function saveMessages(
         updatedAt: new Date(),
         ...(title ? { title } : {}),
       },
-      select: { userId: true, projectId: true },
-    });
-    const ownedByCaller =
-      conversation.userId === input.userId &&
-      conversation.projectId === input.projectId;
-    if (!ownedByCaller) {
-      throw new Error(
-        `Conversation ${input.conversationId} belongs to another user`
-      );
-    }
-    // Rows saved together must load in this order; the default timestamp can tie.
-    const baseTime = Date.now();
-    for (const [index, message] of input.messages.entries()) {
+    }),
+    ...input.messages.map((message, index) => {
       const parts = stripNullCharacters(message.parts as unknown[]);
       const metadata = stripNullCharacters(
         (message.metadata ?? {}) as Record<string, unknown>
       );
-      await tx.chatMessage.upsert({
+      return db.chatMessage.upsert({
         where: { id: message.id },
         create: {
           id: message.id,
@@ -108,8 +120,8 @@ export async function saveMessages(
         },
         update: { parts, metadata },
       });
-    }
-  });
+    }),
+  ]);
 }
 
 /** Regeneration: drop the message and everything after it. */

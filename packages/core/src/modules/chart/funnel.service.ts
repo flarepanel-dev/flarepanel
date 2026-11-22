@@ -23,7 +23,7 @@ import {
   funnelSessionsQuery,
   funnelTimeToConvertQuery,
   knownFunnelBreakdowns,
-} from './src/funnel.sql';
+} from './src/funnel-sql';
 import { runQuery } from './src/run-query';
 import { fetchCohortsMetadata } from './src/statement';
 
@@ -32,7 +32,7 @@ export {
   type FunnelBase,
   type FunnelProfilesInput,
   funnelProfilesQuery,
-} from './src/funnel.sql';
+} from './src/funnel-sql';
 
 /** Default funnel window, in hours, when the report does not set one. */
 const DEFAULT_FUNNEL_WINDOW_HOURS = 24;

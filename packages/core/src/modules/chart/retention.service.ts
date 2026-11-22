@@ -14,13 +14,13 @@ import {
   retentionLastSeenSeriesQuery,
   retentionSeriesQuery,
   rollingActiveUsersQuery,
-} from './src/retention.sql';
+} from './src/retention-sql';
 import { runQuery } from './src/run-query';
 
 export type {
   IRetentionCriteria,
   IRetentionInterval,
-} from './src/retention.sql';
+} from './src/retention-sql';
 
 /** Days-since-last-seen buckets the engagement summary reports on. */
 const ENGAGEMENT_ACTIVE_DAYS = 7;

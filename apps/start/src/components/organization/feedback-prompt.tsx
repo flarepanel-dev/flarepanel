@@ -45,9 +45,13 @@ export default function FeedbackPrompt() {
   }, [isDemo, isSelfHosted, onChatPage, feedbackPromptSeen]);
 
   const handleGiveFeedback = () => {
-    // Open userjot widget
-    if (typeof window !== 'undefined' && 'uj' in window) {
-      (window.uj as any).showWidget();
+    // Feedback goes to GitHub issues.
+    if (typeof window !== 'undefined') {
+      window.open(
+        'https://github.com/flarepanel-dev/flarepanel/issues/new/choose',
+        '_blank',
+        'noopener,noreferrer'
+      );
     }
     // Set cookie with current timestamp
     setFeedbackPromptSeen(new Date().toISOString());

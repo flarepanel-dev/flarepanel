@@ -255,6 +255,27 @@
         "vite": "7.3.0",
       },
     },
+    "apps/worker": {
+      "name": "@flarepanel/worker",
+      "version": "0.0.1",
+      "dependencies": {
+        "@clickhouse/client-web": "1.18.5",
+        "@flarepanel/core": "workspace:*",
+        "@flarepanel/db": "workspace:*",
+        "@flarepanel/platform": "workspace:*",
+        "@flarepanel/redis": "workspace:*",
+        "@flarepanel/shared": "workspace:*",
+        "@noble/hashes": "2.4.0",
+        "elysia": "1.4.30",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "5.20261121.1",
+        "@flarepanel/tsconfig": "workspace:*",
+        "bun-types": "1.4.4",
+        "typescript": "catalog:",
+        "wrangler": "4.85.0",
+      },
+    },
     "packages/core": {
       "name": "@flarepanel/core",
       "version": "0.0.1",
@@ -334,6 +355,7 @@
         "@flarepanel/redis": "workspace:*",
         "@flarepanel/shared": "workspace:*",
         "@hyperdx/node-opentelemetry": "catalog:",
+        "@prisma/adapter-d1": "6.14.0",
         "@prisma/client": "6.14.0",
         "pino": "catalog:",
         "pino-pretty": "catalog:",
@@ -654,6 +676,7 @@
   },
   "patchedDependencies": {
     "react-grid-layout@2.3.0": "patches/react-grid-layout@2.3.0.patch",
+    "elysia@1.4.30": "patches/elysia@1.4.30.patch",
     "@polar-sh/sdk@0.49.0": "patches/@polar-sh__sdk.patch",
   },
   "overrides": {
@@ -1109,6 +1132,8 @@
 
     "@clickhouse/client-common": ["@clickhouse/client-common@1.18.5", "", {}, "sha512-g9LwcS1dvkatKDsIjT1PwUHldsiYzwdKAB0nXfd9APLd+t4PrNJa+my+dXcqJdmcWyhWjKLP/2/ztBwgxp+sbQ=="],
 
+    "@clickhouse/client-web": ["@clickhouse/client-web@1.18.5", "", { "dependencies": { "@clickhouse/client-common": "1.18.5" } }, "sha512-uQXOTC4+1a1O6E3CbiZvpSu8tHwaoZDMFAiiwODLGFKgePpL8yNUWLCA/U722GZj6GGT2qkRD0/WMr8UVTfP5w=="],
+
     "@cloudflare/kv-asset-handler": ["@cloudflare/kv-asset-handler@0.4.2", "", {}, "sha512-SIOD2DxrRRwQ+jgzlXCqoEFiKOFqaPjhnNTGKXSRLvp1HiOvapLaFG2kEr9dYQTYe8rKrd9uvDUzmAITeNyaHQ=="],
 
     "@cloudflare/unenv-preset": ["@cloudflare/unenv-preset@2.16.1", "", { "peerDependencies": { "unenv": "2.0.0-rc.24", "workerd": ">1.20260305.0 <2.0.0-0" }, "optionalPeers": ["workerd"] }, "sha512-ECxObrMfyTl5bhQf/lZCXwo5G6xX9IAUo+nDMKK4SZ8m4Jvvxp52vilxyySSWh2YTZz8+HQ07qGH/2rEom1vDw=="],
@@ -1348,6 +1373,8 @@
     "@flarepanel/tsconfig": ["@flarepanel/tsconfig@workspace:tooling/typescript"],
 
     "@flarepanel/web": ["@flarepanel/web@workspace:packages/sdks/web"],
+
+    "@flarepanel/worker": ["@flarepanel/worker@workspace:apps/worker"],
 
     "@floating-ui/core": ["@floating-ui/core@1.8.0", "", { "dependencies": { "@floating-ui/utils": "^0.2.12" } }, "sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ=="],
 
@@ -1895,11 +1922,15 @@
 
     "@poppinss/exception": ["@poppinss/exception@1.2.3", "", {}, "sha512-dCED+QRChTVatE9ibtoaxc+WkdzOSjYTKi/+uacHWIsfodVfpsueo3+DKpgU5Px8qXjgmXkSvhXvSCz3fnP9lw=="],
 
+    "@prisma/adapter-d1": ["@prisma/adapter-d1@6.14.0", "", { "dependencies": { "@cloudflare/workers-types": "4.20250214.0", "@prisma/driver-adapter-utils": "6.14.0", "ky": "1.7.5" } }, "sha512-g1hwexzxhtXwSZDDY/tyjp/ZuiOUN71llIuOffRpi6M+hSpckcXrUGpyMu1+IbTFH+Fgli+BQOSoMxMQq3SnAA=="],
+
     "@prisma/client": ["@prisma/client@6.14.0", "", { "peerDependencies": { "prisma": "*", "typescript": ">=5.1.0" }, "optionalPeers": ["prisma", "typescript"] }, "sha512-8E/Nk3eL5g7RQIg/LUj1ICyDmhD053STjxrPxUtCRybs2s/2sOEcx9NpITuAOPn07HEpWBfhAVe1T/HYWXUPOw=="],
 
     "@prisma/config": ["@prisma/config@6.14.0", "", { "dependencies": { "c12": "3.1.0", "deepmerge-ts": "7.1.5", "effect": "3.16.12", "empathic": "2.0.0" } }, "sha512-IwC7o5KNNGhmblLs23swnfBjADkacBb7wvyDXUWLwuvUQciKJZqyecU0jw0d7JRkswrj+XTL8fdr0y2/VerKQQ=="],
 
     "@prisma/debug": ["@prisma/debug@6.14.0", "", {}, "sha512-j4Lf+y+5QIJgQD4sJWSbkOD7geKx9CakaLp/TyTy/UDu9Wo0awvWCBH/BAxTHUaCpIl9USA5VS/KJhDqKJSwug=="],
+
+    "@prisma/driver-adapter-utils": ["@prisma/driver-adapter-utils@6.14.0", "", { "dependencies": { "@prisma/debug": "6.14.0" } }, "sha512-On9vTNiJ7J/O1kVqedLtfdhhrfRYprkUOhxjlmmWEv12WNdG6v5x4PsrfZXdBtZqRZaqK1i1TigO6IdtYh8z+A=="],
 
     "@prisma/engines": ["@prisma/engines@6.14.0", "", { "dependencies": { "@prisma/debug": "6.14.0", "@prisma/engines-version": "6.14.0-25.717184b7b35ea05dfa71a3236b7af656013e1e49", "@prisma/fetch-engine": "6.14.0", "@prisma/get-platform": "6.14.0" } }, "sha512-LhJjqsALFEcoAtF07nSaOkVguaxw/ZsgfROIYZ8bAZDobe7y8Wy+PkYQaPOK1iLSsFgV2MhCO/eNrI1gdSOj6w=="],
 
@@ -4157,6 +4188,8 @@
 
     "knitwork": ["knitwork@1.3.0", "", {}, "sha512-4LqMNoONzR43B1W0ek0fhXMsDNW/zxa1NdFAVMY+k28pgZLovR4G3PB5MrpTxCy1QaZCqNoiaKPr5w5qZHfSNw=="],
 
+    "ky": ["ky@1.7.5", "", {}, "sha512-HzhziW6sc5m0pwi5M196+7cEBtbt0lCYi67wNsiwMUmz833wloE0gbzJPWKs1gliFKQb34huItDQX97LyOdPdA=="],
+
     "kysely": ["kysely@0.29.7", "", {}, "sha512-fmIq+7kv4WbFm2tcfznRzikqB4cuNpgZ40PSU2fAJ2/OO5XhojqnTPrmgrCjYSRJVwBln03XcRXJGnw9H099IQ=="],
 
     "lan-network": ["lan-network@0.2.1", "", { "bin": { "lan-network": "dist/lan-network-cli.js" } }, "sha512-ONPnazC96VKDntab9j9JKwIWhZ4ZUceB4A9Epu4Ssg0hYFmtHZSeQ+n15nIwTFmcBUKtExOer8WTJ4GF9MO64A=="],
@@ -5877,6 +5910,8 @@
 
     "@flarepanel/seed/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
 
+    "@flarepanel/worker/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
+
     "@google-cloud/storage/mime": ["mime@3.0.0", "", { "bin": { "mime": "cli.js" } }, "sha512-jSCU7/VB1loIWBZe14aEYHU/+1UMEHoaO7qxCOVJOw9GgH72VAWppxNcjU+x9a2k3GSIBXNKxXQFqRvvZ7vr3A=="],
 
     "@google-cloud/storage/p-limit": ["p-limit@3.1.0", "", { "dependencies": { "yocto-queue": "^0.1.0" } }, "sha512-TYOanM3wGwNGsZN2cVTYPArw454xnXj5qmWF1bEoAc4+cU/ol7GVh7odevjp1FNHduHc3KZMcFduxU5Xc6uJRQ=="],
@@ -6020,6 +6055,8 @@
     "@poppinss/colors/kleur": ["kleur@4.1.5", "", {}, "sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ=="],
 
     "@poppinss/dumper/supports-color": ["supports-color@10.2.2", "", {}, "sha512-SS+jx45GF1QjgEXQx4NJZV9ImqmO2NPz5FNsIHrsDjh2YsHnawpan7SNQ1o8NuhrbHZy9AZhIoCUiCeaW/C80g=="],
+
+    "@prisma/adapter-d1/@cloudflare/workers-types": ["@cloudflare/workers-types@4.20250214.0", "", {}, "sha512-+M8oOFVbyXT5GeJrYLWMUGyPf5wGB4+k59PPqdedtOig7NjZ5r4S79wMdaZ/EV5IV8JPtZBSNjTKpDnNmfxjaQ=="],
 
     "@prisma/config/c12": ["c12@3.1.0", "", { "dependencies": { "chokidar": "^4.0.3", "confbox": "^0.2.2", "defu": "^6.1.4", "dotenv": "^16.6.1", "exsolve": "^1.0.7", "giget": "^2.0.0", "jiti": "^2.4.2", "ohash": "^2.0.11", "pathe": "^2.0.3", "perfect-debounce": "^1.0.0", "pkg-types": "^2.2.0", "rc9": "^2.1.2" }, "peerDependencies": { "magicast": "^0.3.5" }, "optionalPeers": ["magicast"] }, "sha512-uWoS8OU1MEIsOv8p/5a82c3H31LsWVR5qiyXVfBNOzfffjUWtPnhAb4BYI2uG2HfGmZmFjCtui5XNWaps+iFuw=="],
 
