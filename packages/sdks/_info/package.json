@@ -1,0 +1,16 @@
+{
+  "name": "@flarepanel/sdk-info",
+  "version": "0.0.1",
+  "main": "index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@flarepanel/tsconfig": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

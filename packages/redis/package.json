@@ -1,0 +1,21 @@
+{
+  "name": "@flarepanel/redis",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@flarepanel/shared": "workspace:*",
+    "ioredis": "5.8.2",
+    "lru-cache": "11.5.1"
+  },
+  "devDependencies": {
+    "@flarepanel/core": "workspace:*",
+    "@flarepanel/db": "workspace:*",
+    "@flarepanel/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}
