@@ -8,12 +8,7 @@ import { v4 as uuid } from 'uuid';
 import type { Buffers } from '../../buffers/create-buffers';
 import { resolveSessionTimeoutMs } from '../../buffers/session-buffer';
 import type { DbScope } from '../../cacheable-per-deps';
-import {
-  type AsnInfo,
-  type GeoLocation,
-  getAsnInfo,
-  getGeoLocation,
-} from '../../clients/geo';
+import type { AsnInfo, GeoLocation } from '../../clients/geo';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
 import { headerValue, type IngestHeaders } from '../../shared/headers';
@@ -41,16 +36,30 @@ import {
   type ITrackPayload,
   zLooseIdentifyPayload,
 } from './ingest.constants';
+import type {
+  DeviceRequest,
+  IngestBackend,
+  PartitionBy,
+  TrackDraft,
+} from './src/backend';
 import { isBot } from './src/bots/detect';
 import { applyBotSuspicion, stripBotProperties } from './src/bots/suspicion';
+import { createBunIngestBackend } from './src/bun-backend';
 import { isDuplicatedEvent } from './src/deduplicate';
-import { getDeviceId } from './src/device-id';
-import type {
-  IncomingEventPayload,
-  IncomingEventProducer,
-} from './src/incoming-event';
+import type { DeviceIdResult } from './src/device-id';
+import type { IncomingEventProducer } from './src/incoming-event';
 
 export type { IngestHeaders } from '../../shared/headers';
+export type {
+  DeviceRequest,
+  DuplicateCheck,
+  GeoRequest,
+  IngestBackend,
+  IngestSink,
+  PartitionBy,
+  ResolvedGeo,
+  TrackDraft,
+} from './src/backend';
 export type { BotMatch } from './src/bots/detect';
 export { detectBot, isBot } from './src/bots/detect';
 export {
@@ -60,6 +69,10 @@ export {
   stripBotProperties,
   summarizeBotSignals,
 } from './src/bots/suspicion';
+export {
+  type BunIngestBackendOptions,
+  createBunIngestBackend,
+} from './src/bun-backend';
 export {
   type IngestAuthErrorPayload,
   type IngestAuthOutcome,
@@ -76,8 +89,9 @@ export type {
 export type IngestBuffers = Pick<Buffers, 'session' | 'replay' | 'group'>;
 
 export interface IngestTransport {
-  buffers: IngestBuffers;
-  produceIncomingEvent: IncomingEventProducer;
+  /** Replay chunks and group rows; events go through `backend.sink`. */
+  buffers: Pick<IngestBuffers, 'replay' | 'group'>;
+  backend: IngestBackend;
   deps: ServiceDeps;
 }
 
@@ -106,7 +120,7 @@ const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
  */
 const EARLIEST_ACCEPTED_TIMESTAMP_MS = Date.UTC(2000, 0, 1);
 const FALLBACK_USER_AGENT = 'unknown/1.0';
-const NO_DEVICE = { deviceId: '', sessionId: '' } as const;
+const NO_DEVICE: DeviceIdResult = { deviceId: '', sessionId: '' };
 
 /** The whitelisted subset that ships with the queue payload. */
 export function getStringHeaders(
@@ -234,8 +248,11 @@ export interface TrackContext {
   clientSecretAuth: boolean;
   timestamp: { value: number; isFromPast: boolean };
   identity?: IIdentifyPayload;
+  /** Resolved up front, except for event types the sink resolves itself. */
   deviceId: string;
   sessionId: string;
+  /** Null for an event with no device of its own (an AI call). */
+  device: DeviceRequest | null;
   geo: GeoLocation;
   asnInfo: AsnInfo;
 }
@@ -249,6 +266,8 @@ export interface TrackRequest {
   /** The request-arrival timestamp. */
   timestamp: number | undefined;
   body: ITrackHandlerPayload;
+  /** `request.cf` on Workers. */
+  cf?: unknown;
 }
 
 export type TrackOutcome =
@@ -260,21 +279,24 @@ export type TrackOutcome =
   | { status: 'profile-not-found' }
   | { status: 'profile-property-not-a-number' };
 
+/** `track` and `ai` events resolve their device inside `sink.track`. */
+const SINK_RESOLVED_TYPES = new Set(['track', 'ai']);
+
 async function buildContext(
   deps: IngestScope,
   request: TrackRequest,
-  buffers: IngestBuffers
+  backend: IngestBackend
 ): Promise<TrackContext> {
-  const sessionTimeoutMs = resolveSessionTimeoutMs(deps.config);
   const projectId = request.projectId as string;
   const timestamp = getTimestamp(
     request.timestamp,
     getUserDefinedTimestamp(request.body)
   );
-  const ip =
-    request.body.type === 'track' && request.body.payload.properties?.__ip
-      ? (request.body.payload.properties.__ip as string)
-      : request.clientIp;
+  const overrideIp =
+    request.body.type === 'track'
+      ? request.body.payload.properties?.__ip
+      : undefined;
+  const ip = overrideIp ? (overrideIp as string) : request.clientIp;
   const ua = headerValue(request.headers, 'user-agent') ?? FALLBACK_USER_AGENT;
 
   const headers = getStringHeaders(request.headers);
@@ -288,30 +310,29 @@ async function buildContext(
   const overrideDeviceId = getOverrideDeviceId(request.body);
 
   // Get geo location (needed for track and identify) + ASN (bot detection).
-  // Both hit the same MaxMind readers keyed on the same IP and are cached, so
-  // resolving them together adds no meaningful latency.
-  const [geo, asnInfo, salts] = await Promise.all([
-    getGeoLocation(ip),
-    getAsnInfo(ip),
+  const [{ geo, asnInfo }, salts] = await Promise.all([
+    backend.geo({ ip, ipOverridden: Boolean(overrideIp), cf: request.cf }),
     getSalts(deps),
   ]);
 
   // The ip + user-agent hash identifies a browser; for an AI call it would
   // only name the backend that made it, and show up as an anonymous user.
   const isDeviceless = request.body.type === 'ai' && !overrideDeviceId;
-  const deviceIdResult = isDeviceless
-    ? NO_DEVICE
-    : await getDeviceId({
+  const device: DeviceRequest | null = isDeviceless
+    ? null
+    : {
         projectId,
         ip,
         ua,
         salts,
         overrideDeviceId,
         eventTimeMs: timestamp.timestamp,
-        sessionBuffer: buffers.session,
-        sessionTimeoutMs,
-        logger: deps.logger,
-      });
+      };
+  const isResolvedBySink = SINK_RESOLVED_TYPES.has(request.body.type);
+  const deviceIdResult =
+    device && !isResolvedBySink
+      ? await backend.sink.resolveDevice(device)
+      : NO_DEVICE;
 
   return {
     projectId,
@@ -327,6 +348,7 @@ async function buildContext(
     identity,
     deviceId: deviceIdResult.deviceId,
     sessionId: deviceIdResult.sessionId,
+    device,
     geo,
     asnInfo,
   };
@@ -336,8 +358,8 @@ async function handleTrack(
   payload: ITrackPayload,
   context: TrackContext,
   transport: IngestTransport
-): Promise<void> {
-  const { projectId, deviceId, geo, headers, timestamp, sessionId } = context;
+): Promise<DeviceIdResult> {
+  const { projectId, geo, headers, timestamp } = context;
 
   const uaInfo = parseUserAgent(headers['user-agent'], payload.properties);
   // Mark (never block) likely bot traffic with __bot / __bot_reasons props.
@@ -347,40 +369,38 @@ async function handleTrack(
     clientSecretAuth: context.clientSecretAuth,
     isServer: uaInfo.isServer,
   });
-  const groupId = uaInfo.isServer
-    ? payload.profileId
-      ? `${projectId}:${payload.profileId}`
-      : undefined
-    : deviceId;
-  const promises: Promise<unknown>[] = [];
-
-  if (context.identity && Object.keys(context.identity).length > 1) {
-    promises.push(handleIdentify(transport.deps, context.identity, context));
-  }
-
-  const queueData: IncomingEventPayload = {
-    // The id of the ClickHouse row this event becomes, minted here so a
-    // redelivered Kafka message is a duplicate we can recognise.
-    id: uuid(),
-    projectId,
-    headers,
+  const serverPartition: PartitionBy = payload.profileId
+    ? { by: 'key', key: `${projectId}:${payload.profileId}` }
+    : { by: 'random' };
+  const draft: TrackDraft = {
+    device: context.device,
     event: {
-      ...payload,
-      groups: payload.groups ?? [],
-      timestamp: timestamp.value,
-      isTimestampFromThePast: timestamp.isFromPast,
+      // The id of the ClickHouse row this event becomes, minted here so a
+      // redelivered Kafka message is a duplicate we can recognise.
+      id: uuid(),
+      projectId,
+      headers,
+      event: {
+        ...payload,
+        groups: payload.groups ?? [],
+        timestamp: timestamp.value,
+        isTimestampFromThePast: timestamp.isFromPast,
+      },
+      uaInfo,
+      geo,
     },
-    uaInfo,
-    geo,
-    deviceId,
-    sessionId,
+    partitionBy: uaInfo.isServer ? serverPartition : { by: 'device' },
   };
 
-  const partitionKey = groupId || generateId();
-
-  promises.push(transport.produceIncomingEvent(queueData, partitionKey));
-
-  await Promise.all(promises);
+  const hasIdentity =
+    context.identity && Object.keys(context.identity).length > 1;
+  const [identity] = await Promise.all([
+    transport.backend.sink.track(draft),
+    hasIdentity && context.identity
+      ? handleIdentify(transport.deps, context.identity, context)
+      : undefined,
+  ]);
+  return identity;
 }
 
 /**
@@ -392,36 +412,35 @@ async function handleAi(
   payload: IAiPayload,
   context: TrackContext,
   transport: IngestTransport
-): Promise<void> {
-  const { projectId, deviceId, geo, headers, timestamp, sessionId } = context;
+): Promise<DeviceIdResult> {
+  const { projectId, geo, headers, timestamp } = context;
   const normalized = normalizeAiPayload(payload);
   const uaInfo = parseUserAgent(headers['user-agent'], undefined);
   const profileId =
     payload.profileId === undefined ? undefined : String(payload.profileId);
 
-  const queueData: IncomingEventPayload = {
-    id: uuid(),
-    projectId,
-    headers,
+  return await transport.backend.sink.track({
+    device: context.device,
     event: {
-      name: normalized.name,
-      properties: normalized.properties,
-      profileId,
-      groups: payload.groups ?? [],
-      timestamp: timestamp.value,
-      isTimestampFromThePast: timestamp.isFromPast,
+      id: uuid(),
+      projectId,
+      headers,
+      event: {
+        name: normalized.name,
+        properties: normalized.properties,
+        profileId,
+        groups: payload.groups ?? [],
+        timestamp: timestamp.value,
+        isTimestampFromThePast: timestamp.isFromPast,
+      },
+      uaInfo,
+      geo,
+      ai: normalized.draft,
     },
-    uaInfo,
-    geo,
-    deviceId,
-    sessionId,
-    ai: normalized.draft,
-  };
-
-  const partitionKey = profileId
-    ? `${projectId}:${profileId}`
-    : deviceId || generateId();
-  await transport.produceIncomingEvent(queueData, partitionKey);
+    partitionBy: profileId
+      ? { by: 'key', key: `${projectId}:${profileId}` }
+      : { by: 'device' },
+  });
 }
 
 async function handleIdentify(
@@ -552,12 +571,16 @@ export async function ingestTrack(
   const context = await buildContext(
     transport.deps,
     request,
-    transport.buffers
+    transport.backend
   );
+  let identity: DeviceIdResult = {
+    deviceId: context.deviceId,
+    sessionId: context.sessionId,
+  };
 
   switch (body.type) {
     case 'track':
-      await handleTrack(body.payload, context, transport);
+      identity = await handleTrack(body.payload, context, transport);
       break;
     case 'identify':
       await handleIdentify(transport.deps, body.payload, context);
@@ -608,17 +631,13 @@ export async function ingestTrack(
       await handleAssignGroup(transport.deps, body.payload, context);
       break;
     case 'ai':
-      await handleAi(body.payload, context, transport);
+      identity = await handleAi(body.payload, context, transport);
       break;
     default:
       return { status: 'invalid-type' };
   }
 
-  return {
-    status: 'ok',
-    deviceId: context.deviceId,
-    sessionId: context.sessionId,
-  };
+  return { status: 'ok', ...identity };
 }
 
 /**
@@ -713,6 +732,8 @@ export async function ingestLegacyEvent(
     /** The request-arrival timestamp. */
     timestamp: number | undefined;
     body: DeprecatedPostEventPayload | null | undefined;
+    /** `request.cf` on Workers. */
+    cf?: unknown;
   },
   transport: IngestTransport
 ): Promise<LegacyEventOutcome> {
@@ -738,20 +759,10 @@ export async function ingestLegacyEvent(
   const ua = headerValue(request.headers, 'user-agent') ?? FALLBACK_USER_AGENT;
   const headers = getStringHeaders(request.headers);
 
-  const [salts, geo, asnInfo] = await Promise.all([
+  const [salts, { geo, asnInfo }] = await Promise.all([
     getSalts(transport.deps),
-    getGeoLocation(ip),
-    getAsnInfo(ip),
+    transport.backend.geo({ ip, ipOverridden: false, cf: request.cf }),
   ]);
-  const { deviceId, sessionId } = await getDeviceId({
-    projectId,
-    ip,
-    ua,
-    salts,
-    sessionBuffer: transport.buffers.session,
-    sessionTimeoutMs: resolveSessionTimeoutMs(transport.deps.config),
-    logger: transport.deps.logger,
-  });
 
   const uaInfo = parseUserAgent(ua, request.body?.properties);
   // Mark (never block) likely bot traffic with __bot / __bot_reasons props.
@@ -765,12 +776,16 @@ export async function ingestLegacyEvent(
     });
   }
 
-  const groupId = uaInfo.isServer
-    ? `${projectId}:${request.body?.profileId ?? generateId()}`
-    : deviceId;
+  const partitionBy: PartitionBy = uaInfo.isServer
+    ? {
+        by: 'key',
+        key: `${projectId}:${request.body?.profileId ?? generateId()}`,
+      }
+    : { by: 'device' };
 
-  await transport.produceIncomingEvent(
-    {
+  await transport.backend.sink.track({
+    device: { projectId, ip, ua, salts },
+    event: {
       // See handleTrack: the producer mints the event id.
       id: uuid(),
       projectId,
@@ -788,11 +803,9 @@ export async function ingestLegacyEvent(
       },
       uaInfo,
       geo,
-      deviceId,
-      sessionId: sessionId ?? '',
-    } as IncomingEventPayload,
-    groupId
-  );
+    } as TrackDraft['event'],
+    partitionBy,
+  });
 
   return { status: 'ok' };
 }
@@ -888,12 +901,15 @@ export async function fetchDeviceIdentity(
 }
 
 /** The web SDK can fire the same event twice; this catches the duplicate. */
-export async function isDuplicateIngestRequest(request: {
-  method: string;
-  clientIp: string | undefined;
-  headers: IngestHeaders;
-  body: unknown;
-}): Promise<boolean> {
+export async function isDuplicateIngestRequest(
+  request: {
+    method: string;
+    clientIp: string | undefined;
+    headers: IngestHeaders;
+    body: unknown;
+  },
+  backend: Pick<IngestBackend, 'isDuplicate'>
+): Promise<boolean> {
   const ip = request.clientIp;
   const origin = headerValue(request.headers, 'origin');
   const clientId = headerValue(request.headers, 'openpanel-client-id');
@@ -904,7 +920,7 @@ export async function isDuplicateIngestRequest(request: {
     return false;
   }
 
-  return await isDuplicatedEvent({
+  return await backend.isDuplicate({
     ip,
     origin,
     payload: request.body as Record<string, unknown>,
@@ -938,13 +954,13 @@ export type BotVerdict = { name: string; type: string } | null;
  * (origin-authenticated) traffic.
  */
 export async function checkIngestBot(
-  deps: ServiceDeps,
   request: {
     headers: IngestHeaders;
     clientSecretAuth: boolean;
     projectId: string | null | undefined;
     body: unknown;
-  }
+  },
+  backend: Pick<IngestBackend, 'recordBot'>
 ): Promise<BotVerdict> {
   if (request.clientSecretAuth) {
     return null;
@@ -959,7 +975,7 @@ export async function checkIngestBot(
 
   const path = getBotEventPath(request.body);
   if (path) {
-    await createBotEvent(deps, {
+    await backend.recordBot({
       ...bot,
       projectId: request.projectId,
       path,
@@ -1004,21 +1020,36 @@ export function createIngestService(
   deps: ServiceDeps,
   _services: () => Services
 ) {
+  const bunBackend = (produceIncomingEvent: IncomingEventProducer) =>
+    createBunIngestBackend({
+      deps,
+      sessionBuffer: deps.buffers.session,
+      produceIncomingEvent,
+    });
+
   const track = (
     request: TrackRequest,
     produceIncomingEvent: IncomingEventProducer
   ): Promise<TrackOutcome> =>
     ingestTrack(request, {
       buffers: deps.buffers,
-      produceIncomingEvent,
+      backend: bunBackend(produceIncomingEvent),
       deps,
     });
 
   const checkBot = (
-    request: Parameters<typeof checkIngestBot>[1]
-  ): Promise<BotVerdict> => checkIngestBot(deps, request);
+    request: Parameters<typeof checkIngestBot>[0]
+  ): Promise<BotVerdict> =>
+    checkIngestBot(request, {
+      recordBot: async (event) => {
+        await createBotEvent(deps, event);
+      },
+    });
 
-  const isDuplicate = isDuplicateIngestRequest;
+  const isDuplicate = (
+    request: Parameters<typeof isDuplicateIngestRequest>[0]
+  ): Promise<boolean> =>
+    isDuplicateIngestRequest(request, { isDuplicate: isDuplicatedEvent });
 
   return { track, checkBot, isDuplicate };
 }

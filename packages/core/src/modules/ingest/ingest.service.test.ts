@@ -24,6 +24,7 @@ import {
 import { testCoreConfig } from '../../../test/config-fixture';
 import type { Buffers } from '../../buffers/create-buffers';
 import type { GeoLocation } from '../../clients/geo';
+import type { ServiceDeps } from '../../services';
 import type { IReplayPayload, ITrackHandlerPayload } from './ingest.constants';
 
 const getGeoLocation = mock(
@@ -56,6 +57,7 @@ let getPropertyTimestamp: typeof import('./ingest.service').getPropertyTimestamp
 let getUserDefinedTimestamp: typeof import('./ingest.service').getUserDefinedTimestamp;
 let handleReplay: typeof import('./ingest.service').handleReplay;
 let ingestTrack: typeof import('./ingest.service').ingestTrack;
+let createBunIngestBackend: typeof import('./src/bun-backend').createBunIngestBackend;
 
 // The profile module is spread and then overridden by name: event.service
 // imports more of profile.service than ingest.service does. Overriding
@@ -88,6 +90,7 @@ beforeAll(async () => {
     handleReplay,
     ingestTrack,
   } = await import('./ingest.service'));
+  ({ createBunIngestBackend } = await import('./src/bun-backend'));
 });
 
 afterAll(() => {
@@ -263,16 +266,24 @@ const getExistingSessions = mock(
 
 const transport = (
   produceIncomingEvent: ReturnType<typeof mock>
-): Parameters<typeof ingestTrack>[1] =>
-  ({
+): Parameters<typeof ingestTrack>[1] => {
+  const deps = {
+    buffers: {},
+    config: testCoreConfig(),
+  } as unknown as ServiceDeps;
+  return {
     buffers: {
-      session: { getExistingSessions },
       replay: { add: mock(async () => undefined) },
       group: { add: mock(async () => undefined) },
     },
-    produceIncomingEvent,
-    deps: { buffers: {}, config: testCoreConfig() },
-  }) as unknown as Parameters<typeof ingestTrack>[1];
+    backend: createBunIngestBackend({
+      deps,
+      sessionBuffer: { getExistingSessions },
+      produceIncomingEvent,
+    }),
+    deps,
+  } as unknown as Parameters<typeof ingestTrack>[1];
+};
 
 const request = (body: ITrackHandlerPayload) => ({
   projectId: PROJECT_ID,

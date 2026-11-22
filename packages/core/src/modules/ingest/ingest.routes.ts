@@ -17,7 +17,9 @@ import type { DeprecatedPostEventPayload } from './ingest.constants';
 import { zTrackHandlerPayload } from './ingest.constants';
 import {
   checkIngestBot,
+  createBunIngestBackend,
   fetchDeviceIdentity,
+  type IngestBackend,
   ingestLegacyEvent,
   ingestTrack,
   isDuplicateIngestRequest,
@@ -36,6 +38,24 @@ const WIND_DOWN_STATUS = 202;
 const ACCEPTED_STATUS = 202;
 
 type StatusFn = (code: number, body?: unknown) => unknown;
+
+/** The configured backend, else today's Redis/MaxMind/Kafka one. */
+function ingestBackend(deps: AppDeps, ctx: HttpCtx): IngestBackend {
+  return (
+    deps.ingest ??
+    createBunIngestBackend({
+      deps: ctx,
+      sessionBuffer: ctx.buffers.session,
+      produceIncomingEvent: (payload, partitionKey) =>
+        produceIncomingEvent(ctx.config, payload, partitionKey),
+    })
+  );
+}
+
+/** `request.cf` on Workers; undefined on Bun. */
+function cfProperties(request: Request): unknown {
+  return (request as Request & { cf?: unknown }).cf;
+}
 
 const PAYLOAD_TOO_LARGE = 413;
 
@@ -110,26 +130,31 @@ function respondToOutcome(outcome: TrackOutcome, status: StatusFn) {
 
 // A route-level `beforeHandle`, which runs after the macro resolved the
 // principal, so it can read `client.secretVerified`.
-async function botGuard({
-  body,
-  client,
-  ctx,
-  status,
-}: {
-  body: unknown;
-  client: { projectId: string | null; secretVerified: boolean };
-  ctx: HttpCtx;
-  status: StatusFn;
-}) {
-  const bot = await checkIngestBot(ctx, {
-    headers: toIngestHeaders(ctx.headers),
-    clientSecretAuth: client.secretVerified,
-    projectId: client.projectId,
+function botGuard(deps: AppDeps) {
+  return async ({
     body,
-  });
-  if (bot) {
-    return status(202, { bot });
-  }
+    client,
+    ctx,
+    status,
+  }: {
+    body: unknown;
+    client: { projectId: string | null; secretVerified: boolean };
+    ctx: HttpCtx;
+    status: StatusFn;
+  }) => {
+    const bot = await checkIngestBot(
+      {
+        headers: toIngestHeaders(ctx.headers),
+        clientSecretAuth: client.secretVerified,
+        projectId: client.projectId,
+        body,
+      },
+      ingestBackend(deps, ctx)
+    );
+    if (bot) {
+      return status(202, { bot });
+    }
+  };
 }
 
 /** The wind-down gate: the last `beforeHandle` on both ingest routers. */
@@ -156,6 +181,7 @@ function windDownGuard(deps: AppDeps) {
 
 export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
   const blockWhenWoundDown = windDownGuard(deps);
+  const blockBots = botGuard(deps);
 
   return app.guard(
     {
@@ -165,12 +191,15 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
       // beforeHandle.
       async beforeHandle({ body, ctx, request, status }) {
         if (
-          await isDuplicateIngestRequest({
-            method: request.method,
-            clientIp: ctx.ip,
-            headers: toIngestHeaders(ctx.headers),
-            body,
-          })
+          await isDuplicateIngestRequest(
+            {
+              method: request.method,
+              clientIp: ctx.ip,
+              headers: toIngestHeaders(ctx.headers),
+              body,
+            },
+            ingestBackend(deps, ctx)
+          )
         ) {
           return status(200, { duplicate: true });
         }
@@ -180,7 +209,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
       routes
         .post(
           '/track',
-          async ({ body, client, ctx, status, timestamp }) => {
+          async ({ body, client, ctx, request, status, timestamp }) => {
             const outcome = await ingestTrack(
               {
                 projectId: client.projectId,
@@ -189,11 +218,11 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
                 clientSecretAuth: client.secretVerified,
                 timestamp,
                 body,
+                cf: cfProperties(request),
               },
               {
                 buffers: ctx.buffers,
-                produceIncomingEvent: (payload, partitionKey) =>
-                  produceIncomingEvent(ctx.config, payload, partitionKey),
+                backend: ingestBackend(deps, ctx),
                 deps: ctx,
               }
             );
@@ -203,7 +232,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
           {
             clientAuth: { ingest: validateIngestRequest },
             body: zTrackHandlerPayload,
-            beforeHandle: [refuseOversizedBody, botGuard, blockWhenWoundDown],
+            beforeHandle: [refuseOversizedBody, blockBots, blockWhenWoundDown],
             detail: {
               tags: TAGS,
               description:
@@ -242,7 +271,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
           },
           {
             clientAuth: { ingest: validateIngestRequest },
-            beforeHandle: [botGuard, blockWhenWoundDown],
+            beforeHandle: [blockBots, blockWhenWoundDown],
             detail: {
               tags: TAGS,
               description:
@@ -252,7 +281,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
         )
         .post(
           '/event',
-          async ({ body, client, ctx, status, timestamp }) => {
+          async ({ body, client, ctx, request, status, timestamp }) => {
             const outcome = await ingestLegacyEvent(
               {
                 projectId: client.projectId,
@@ -261,11 +290,11 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
                 clientSecretAuth: client.secretVerified,
                 timestamp,
                 body: body as DeprecatedPostEventPayload | null,
+                cf: cfProperties(request),
               },
               {
                 buffers: ctx.buffers,
-                produceIncomingEvent: (payload, partitionKey) =>
-                  produceIncomingEvent(ctx.config, payload, partitionKey),
+                backend: ingestBackend(deps, ctx),
                 deps: ctx,
               }
             );
@@ -284,7 +313,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
               ({ client }: { client: { id: string } }) => {
                 recordLegacyEventRequest(client.id);
               },
-              botGuard,
+              blockBots,
               blockWhenWoundDown,
             ],
             detail: {

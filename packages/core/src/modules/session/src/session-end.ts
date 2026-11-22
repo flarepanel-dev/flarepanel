@@ -20,7 +20,15 @@ import {
   sessionEndsSkipped,
   sessionEventsOnClose,
 } from './session.metrics';
+import { buildSessionEndPayload } from './session-end-payload';
 import { sessionEventsQuery } from './sql';
+
+export {
+  buildSessionEndPayload,
+  type EnqueueSessionEndInput,
+  type SessionEndJobData,
+  sessionEndJobPayload,
+} from './session-end-payload';
 
 const SESSION_END_JOB_ID_PREFIX = 'sessionEnd:v2';
 const SESSION_END_ATTEMPTS = 3;
@@ -32,8 +40,6 @@ const MAX_SESSION_EVENTS = 500;
 const SESSION_END_CLAIM_TTL_SECONDS = 60 * 60 * 2;
 /** The events query pads the session's own bounds by this much on each side. */
 const SESSION_EVENTS_WINDOW_PADDING_MS = 1000;
-/** The session_end event lands one second after the last event. */
-const SESSION_END_OFFSET_MS = 1000;
 
 /**
  * Deterministic jobId for a closed session, so concurrent / retried closes
@@ -52,17 +58,6 @@ export function sessionEndEnqueueOptions(sessionId: string): EnqueueOptions {
   };
 }
 
-export interface EnqueueSessionEndInput {
-  payload: IServiceCreateEventPayload;
-  closedSession: IClickhouseSession;
-}
-
-/** What rides on the `sessions` queue. */
-export interface SessionEndJobData {
-  event: IServiceCreateEventPayload;
-  snapshot: IClickhouseSession;
-}
-
 /**
  * `SessionEndJobData` as it comes back OFF the queue. BullMQ stores job data as
  * JSON, so `event.createdAt` is a string by the time a handler sees it however
@@ -73,22 +68,6 @@ export interface SessionEndJobData {
 export interface SessionEndJobWire {
   event: Omit<IServiceCreateEventPayload, 'createdAt'> & { createdAt: string };
   snapshot: IClickhouseSession;
-}
-
-export function sessionEndJobPayload({
-  payload,
-  closedSession,
-}: EnqueueSessionEndInput): SessionEndJobData {
-  return {
-    event: {
-      ...payload,
-      projectId: closedSession.project_id,
-      deviceId: closedSession.device_id,
-      sessionId: closedSession.id,
-      profileId: closedSession.profile_id || payload.profileId,
-    },
-    snapshot: closedSession,
-  };
 }
 
 /** What the emission needs beyond the shared runtime; tests hand in stubs. */
@@ -220,22 +199,9 @@ export async function createSessionEnd(
     });
   }
 
-  const { document: sessionEndEvent } = await deps.createEvent({
-    ...payload,
-    sessionId: session.id,
-    properties: {
-      ...payload.properties,
-      __bounce: session.is_bounce,
-    },
-    name: 'session_end',
-    duration: session.duration ?? 0,
-    path: session.exit_path ?? '',
-    createdAt: new Date(
-      convertClickhouseDateToJs(session.ended_at).getTime() +
-        SESSION_END_OFFSET_MS
-    ),
-    profileId,
-  });
+  const { document: sessionEndEvent } = await deps.createEvent(
+    buildSessionEndPayload(payload, session)
+  );
 
   try {
     await notifyFunnelRules(

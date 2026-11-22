@@ -10,28 +10,20 @@ import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { BotMatch } from './bots/detect';
 
 const isBot = mock(async (_ua: string): Promise<BotMatch | null> => null);
-const createBotEvent = mock(
-  async (_deps: unknown, _payload: unknown) => undefined
-);
+const recordBot = mock(async (_payload: unknown) => undefined);
 
 let checkIngestBot: typeof import('../ingest.service').checkIngestBot;
 
-// `checkIngestBot` takes `ServiceDeps` first and hands it to `createBotEvent`,
-// which is mocked below — nothing here reads a client.
-const deps = {} as unknown as import('../../../services').ServiceDeps;
+// The bot row goes through the ingest backend, so a recording double stands
+// in for it — nothing here reads a client.
+const backend = { recordBot };
 
-// Spread the real modules and override by name: ingest.service re-exports
-// `detectBot` and reaches more of event.service than `createBotEvent`, and a
-// factory returning only the overrides makes those exports vanish under
-// `--isolate`.
+// Spread the real module and override by name: ingest.service re-exports
+// `detectBot`, and a factory returning only the override makes it vanish
+// under `--isolate`.
 beforeAll(async () => {
   const detect = await import('./bots/detect');
-  const eventService = await import('../../event/event.service');
   mock.module('./bots/detect', () => ({ ...detect, isBot }));
-  mock.module('../../event/event.service', () => ({
-    ...eventService,
-    createBotEvent,
-  }));
   ({ checkIngestBot } = await import('../ingest.service'));
 });
 
@@ -44,29 +36,29 @@ const baseRequest = {
 
 beforeEach(() => {
   isBot.mockReset();
-  createBotEvent.mockReset();
+  recordBot.mockReset();
 });
 
 describe('checkIngestBot', () => {
   it('skips bot detection entirely for client-secret (server-side) traffic', async () => {
-    const bot = await checkIngestBot(deps, {
-      ...baseRequest,
-      clientSecretAuth: true,
-    });
+    const bot = await checkIngestBot(
+      { ...baseRequest, clientSecretAuth: true },
+      backend
+    );
 
     expect(isBot).not.toHaveBeenCalled();
-    expect(createBotEvent).not.toHaveBeenCalled();
+    expect(recordBot).not.toHaveBeenCalled();
     expect(bot).toBeNull();
   });
 
   it('records a bot event and reports the bot for public bot traffic', async () => {
     isBot.mockResolvedValue({ name: 'Googlebot', type: 'Search bot' });
 
-    const bot = await checkIngestBot(deps, baseRequest);
+    const bot = await checkIngestBot(baseRequest, backend);
 
     expect(isBot).toHaveBeenCalledWith('Googlebot/2.1');
-    expect(createBotEvent).toHaveBeenCalledTimes(1);
-    expect(createBotEvent.mock.calls[0]?.[1]).toMatchObject({
+    expect(recordBot).toHaveBeenCalledTimes(1);
+    expect(recordBot.mock.calls[0]?.[0]).toMatchObject({
       name: 'Googlebot',
       type: 'Search bot',
       projectId: 'proj-1',
@@ -78,12 +70,12 @@ describe('checkIngestBot', () => {
   it('passes legitimate public traffic through untouched', async () => {
     isBot.mockResolvedValue(null);
 
-    const bot = await checkIngestBot(deps, {
-      ...baseRequest,
-      headers: { 'user-agent': 'node' },
-    });
+    const bot = await checkIngestBot(
+      { ...baseRequest, headers: { 'user-agent': 'node' } },
+      backend
+    );
 
-    expect(createBotEvent).not.toHaveBeenCalled();
+    expect(recordBot).not.toHaveBeenCalled();
     expect(bot).toBeNull();
   });
 });

@@ -5,6 +5,7 @@ import type { QueueProducerHandle, QueueProducers } from './jobs.registry';
 import type { Logger } from './logger';
 import type { Auth } from './modules/auth/src/better-auth';
 import type { SessionValidationResult } from './modules/auth/src/login-session';
+import type { IngestBackend } from './modules/ingest/src/backend';
 import { createServices, type Services } from './services';
 import type { CookieJar, CookieOptions } from './shared/cookie';
 
@@ -68,6 +69,11 @@ export interface AppDeps {
   config: CoreConfig;
   /** Null when no secret is configured; see `createAuth`. */
   auth: Auth | null;
+  /**
+   * Where `/track` dedupes, resolves geo and stores events. Absent on Bun,
+   * where the routes build the Redis/MaxMind/Kafka backend per request.
+   */
+  ingest?: IngestBackend;
 }
 
 /** Work scope. One per HTTP request, RPC call, job run or Kafka batch. */

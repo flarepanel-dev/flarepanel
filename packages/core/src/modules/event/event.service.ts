@@ -1,7 +1,7 @@
 import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
 import type { EventMeta, Prisma } from '@flarepanel/db/src/prisma-client';
 import { getCache } from '@flarepanel/redis';
-import { DateTime, resolveDateRange, toDots } from '@flarepanel/shared';
+import { resolveDateRange } from '@flarepanel/shared';
 import { clone, mergeDeepRight, uniq } from 'ramda';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
@@ -24,6 +24,7 @@ import {
   type EventListColumn,
   type QueryEventsEqualityColumn,
 } from './event.constants';
+import { buildClickhouseEvent } from './src/clickhouse-event';
 import { convertClickhouseDateToJs, formatClickhouseDate } from './src/dates';
 import type { CompiledFilterClauses } from './src/filter-clauses';
 import {
@@ -58,7 +59,6 @@ const TOP_EVENT_NAMES_CACHE_SECONDS = 60 * 10;
 const EVENT_LIST_DEFAULT_LOOKBACK_DAYS = 0.5;
 const EVENT_LIST_MAX_LOOKBACK_DAYS_DEFAULT = 365 * 5;
 const QUERY_EVENTS_DEFAULT_LIMIT = 20;
-const CLICKHOUSE_DATETIME_FORMAT = 'yyyy-MM-dd HH:mm:ss.SSS';
 const MASK_CHARACTER = '*';
 const MASK_VISIBLE_PREFIX = 4;
 const MASK_MIN_LENGTH_FOR_PREFIX = 8;
@@ -457,45 +457,7 @@ export async function createEvent(
     payload.profileId = payload.deviceId;
   }
 
-  const event: IClickhouseEvent = {
-    id: payload.id ?? crypto.randomUUID(),
-    name: payload.name,
-    device_id: payload.deviceId,
-    profile_id: payload.profileId ? String(payload.profileId) : '',
-    project_id: payload.projectId,
-    session_id: payload.sessionId,
-    properties: toDots(payload.properties),
-    path: payload.path ?? '',
-    origin: payload.origin ?? '',
-    created_at: DateTime.fromJSDate(payload.createdAt)
-      .setZone('UTC')
-      .toFormat(CLICKHOUSE_DATETIME_FORMAT),
-    country: payload.country ?? '',
-    city: payload.city ?? '',
-    region: payload.region ?? '',
-    longitude: payload.longitude ?? null,
-    latitude: payload.latitude ?? null,
-    os: payload.os ?? '',
-    os_version: payload.osVersion ?? '',
-    browser: payload.browser ?? '',
-    browser_version: payload.browserVersion ?? '',
-    device: payload.device ?? '',
-    brand: payload.brand ?? '',
-    model: payload.model ?? '',
-    duration: payload.duration ?? 0,
-    referrer: payload.referrer ?? '',
-    referrer_name: payload.referrerName ?? '',
-    referrer_type: payload.referrerType ?? '',
-    imported_at: null,
-    // Ingestion time, used as the export cursor. Stamped here rather than via the
-    // column DEFAULT so backdated events (server-side, offline, past timestamps)
-    // still get a real, monotonic-ish insert time instead of their event time.
-    inserted_at: DateTime.utc().toFormat(CLICKHOUSE_DATETIME_FORMAT),
-    sdk_name: payload.sdkName ?? '',
-    sdk_version: payload.sdkVersion ?? '',
-    revenue: payload.revenue,
-    groups: payload.groups ?? [],
-  };
+  const event = buildClickhouseEvent(payload);
 
   deps.buffers.event.add(event);
 

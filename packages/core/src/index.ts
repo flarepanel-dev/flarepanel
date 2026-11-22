@@ -43,6 +43,11 @@ export type { Buffers } from './buffers/create-buffers';
 export { createBuffers } from './buffers/create-buffers';
 export { createClients } from './clients/create-clients';
 export {
+  type CfGeoProperties,
+  type CfGeoResult,
+  getGeoFromCf,
+} from './clients/geo-cf';
+export {
   isRetryableStatus,
   ProviderError,
 } from './clients/provider-error';
@@ -182,8 +187,16 @@ export { getGscCannibalization } from './modules/gsc/gsc.service';
 export { setBooting, setShuttingDown } from './modules/health/src/shutdown';
 export type {
   BotMatch,
+  DeviceRequest,
+  DuplicateCheck,
+  GeoRequest,
   IncomingEventPayload,
+  IngestBackend,
+  IngestSink,
   IngestTransport,
+  PartitionBy,
+  ResolvedGeo,
+  TrackDraft,
 } from './modules/ingest/ingest.service';
 export {
   applyBotSuspicion,

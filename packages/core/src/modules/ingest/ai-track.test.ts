@@ -40,6 +40,7 @@ const getSalts = mock(async (_deps: unknown) => ({
 mock.module('../../clients/geo', () => ({ getGeoLocation, getAsnInfo }));
 
 let ingestTrack: typeof import('./ingest.service').ingestTrack;
+let createBunIngestBackend: typeof import('./src/bun-backend').createBunIngestBackend;
 
 let realSaltService: typeof import('../salt/salt.service');
 beforeAll(async () => {
@@ -49,6 +50,7 @@ beforeAll(async () => {
     getSalts,
   }));
   ({ ingestTrack } = await import('./ingest.service'));
+  ({ createBunIngestBackend } = await import('./src/bun-backend'));
 });
 
 afterAll(() => {
@@ -72,11 +74,20 @@ const buffers = {
   group: {},
 } as unknown as Buffers;
 
-const transport = {
+const transportDeps = {
   buffers,
-  produceIncomingEvent,
-  deps: { buffers, config: testCoreConfig() } as unknown as ServiceDeps,
-};
+  config: testCoreConfig(),
+} as unknown as ServiceDeps;
+
+const transport = () => ({
+  buffers,
+  deps: transportDeps,
+  backend: createBunIngestBackend({
+    deps: transportDeps,
+    sessionBuffer: buffers.session,
+    produceIncomingEvent,
+  }),
+});
 
 const aiRequest = (payload: Record<string, unknown> = {}) => ({
   projectId: PROJECT_ID,
@@ -102,7 +113,7 @@ beforeEach(() => {
 
 describe('ingestTrack with an ai body', () => {
   it('mints no device or session id, even with a browser user-agent', async () => {
-    const outcome = await ingestTrack(aiRequest(), transport);
+    const outcome = await ingestTrack(aiRequest(), transport());
 
     expect(outcome).toEqual({ status: 'ok', deviceId: '', sessionId: '' });
     expect(getGeoLocation).toHaveBeenCalled();
@@ -116,7 +127,7 @@ describe('ingestTrack with an ai body', () => {
   it('keeps a device id the caller sends', async () => {
     const outcome = await ingestTrack(
       aiRequest({ deviceId: 'device-from-caller' }),
-      transport
+      transport()
     );
 
     expect(outcome).toMatchObject({

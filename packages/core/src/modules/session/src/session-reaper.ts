@@ -1,6 +1,4 @@
 import type { Logger } from '../../../logger';
-import type { IServiceCreateEventPayload } from '../../event/event.service';
-import type { IClickhouseSession } from '../session.service';
 import {
   DEFAULT_SESSION_TIMEOUT_MS,
   PROJECTS_SET_KEY,
@@ -13,6 +11,7 @@ import {
   sessionsReaperOrphans,
 } from './session.metrics';
 import type { EnqueueSessionEndInput } from './session-end';
+import { sessionEndPayloadFromSnapshot } from './session-end-payload';
 
 const DEFAULT_REAPER_BATCH_SIZE = 5000;
 const LOCK_TTL_SECONDS = 60;
@@ -143,7 +142,7 @@ async function closeSession(
 
   try {
     await deps.enqueueSessionEnd({
-      payload: sessionEndPayload(session),
+      payload: sessionEndPayloadFromSnapshot(session),
       closedSession: session,
     });
 
@@ -162,39 +161,4 @@ async function closeSession(
     );
     return false;
   }
-}
-
-function sessionEndPayload(
-  session: IClickhouseSession
-): IServiceCreateEventPayload {
-  return {
-    projectId: session.project_id,
-    deviceId: session.device_id,
-    sessionId: session.id,
-    profileId: session.profile_id ?? '',
-    name: 'session_end',
-    properties: {},
-    groups: session.groups ?? [],
-    createdAt: new Date(session.ended_at),
-    duration: session.duration ?? 0,
-    sdkName: '',
-    sdkVersion: '',
-    city: session.city ?? '',
-    country: session.country ?? '',
-    region: session.region ?? '',
-    longitude: session.longitude ?? undefined,
-    latitude: session.latitude ?? undefined,
-    path: session.exit_path ?? '',
-    origin: session.exit_origin ?? '',
-    referrer: session.referrer ?? '',
-    referrerName: session.referrer_name ?? '',
-    referrerType: session.referrer_type ?? '',
-    os: session.os ?? '',
-    osVersion: session.os_version ?? '',
-    browser: session.browser ?? '',
-    browserVersion: session.browser_version ?? '',
-    device: session.device ?? '',
-    brand: session.brand ?? '',
-    model: session.model ?? '',
-  };
 }

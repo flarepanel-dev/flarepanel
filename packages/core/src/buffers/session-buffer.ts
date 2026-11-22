@@ -1,14 +1,16 @@
 import { getRedisCache, type Redis } from '@flarepanel/redis';
-import { DateTime, getSafeJson } from '@flarepanel/shared';
+import { getSafeJson } from '@flarepanel/shared';
 import type { CoreConfig } from '../config';
 import type { IServiceCreateEventPayload } from '../modules/event/event.service';
 import type { IClickhouseSession } from '../modules/session/session.service';
 import { TABLE_NAMES } from '../shared/ch-tables';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
 import { defineRedisScript } from './redis-script';
-
-// 30min of idle in event-time → session ends.
-const DEFAULT_SESSION_TIMEOUT_MS = 1000 * 60 * 30;
+import {
+  DEFAULT_SESSION_TIMEOUT_MS,
+  decideSession,
+  isSessionActivity,
+} from './session-state';
 
 // The profile pointer is refreshed on every persist, so it only has to outlive
 // the idle timeout plus the reaper's lag. It sits in no index, so a TTL is the
@@ -24,9 +26,6 @@ const PROFILE_POINTER_TTL_FACTOR = 2;
 export function resolveSessionTimeoutMs(config: CoreConfig): number {
   return config.session.timeoutMs ?? DEFAULT_SESSION_TIMEOUT_MS;
 }
-
-/** A session row is rewritten on every event, so its group union is capped. */
-const MAX_SESSION_GROUPS = 100;
 
 const sessionKey = (projectId: string, deviceId: string) =>
   `session:${projectId}:${deviceId}`;
@@ -63,29 +62,6 @@ export type SessionIngestResult =
       current: IClickhouseSession;
       closed: IClickhouseSession;
     };
-
-function toClickhouseDate(date: Date): string {
-  return DateTime.fromJSDate(date)
-    .setZone('UTC')
-    .toFormat('yyyy-MM-dd HH:mm:ss.SSS');
-}
-
-function fromClickhouseDate(s: string): Date {
-  return DateTime.fromFormat(s, 'yyyy-MM-dd HH:mm:ss.SSS', {
-    zone: 'UTC',
-  }).toJSDate();
-}
-
-function pickUtm(
-  payload: IServiceCreateEventPayload,
-  key: 'utm_medium' | 'utm_source' | 'utm_campaign' | 'utm_content' | 'utm_term'
-): string {
-  const query = (
-    payload.properties as { __query?: Record<string, unknown> } | undefined
-  )?.__query;
-  const v = query?.[key];
-  return v ? String(v) : '';
-}
 
 // Large enough that a busy session's versions share a batch and squash.
 const DEFAULT_BATCH_SIZE = 10_000;
@@ -166,10 +142,7 @@ export class SessionBuffer extends BaseBuffer {
   async ingest(
     payload: IServiceCreateEventPayload
   ): Promise<SessionIngestResult | null> {
-    if (!(payload.projectId && payload.deviceId)) {
-      return null;
-    }
-    if (payload.name === 'session_start' || payload.name === 'session_end') {
+    if (!isSessionActivity(payload)) {
       return null;
     }
 
@@ -178,26 +151,27 @@ export class SessionBuffer extends BaseBuffer {
         projectId: payload.projectId,
         deviceId: payload.deviceId,
       });
+      const decision = decideSession(existing, payload, this.idleTimeoutMs);
 
-      const eventTimeMs = payload.createdAt.getTime();
-      const isBoundary =
-        existing &&
-        eventTimeMs - fromClickhouseDate(existing.ended_at).getTime() >
-          this.idleTimeoutMs;
-
-      if (existing && !isBoundary) {
-        const { current, chRows } = this.extendSession(existing, payload);
-        await this.persist(current, chRows, existing);
-        return { kind: 'extend', current };
+      if (decision.kind === 'extend') {
+        await this.persist(
+          decision.current,
+          decision.chRows,
+          decision.previous
+        );
+        return { kind: 'extend', current: decision.current };
       }
 
-      const current = this.newSession(payload);
-      await this.persist(current, [current]);
+      await this.persist(decision.current, decision.chRows);
 
-      if (existing && isBoundary) {
-        return { kind: 'boundary', current, closed: existing };
+      if (decision.kind === 'boundary') {
+        return {
+          kind: 'boundary',
+          current: decision.current,
+          closed: decision.closed,
+        };
       }
-      return { kind: 'new', current };
+      return { kind: 'new', current: decision.current };
     } catch (error) {
       this.logger.error({ err: error }, 'Failed to ingest session');
       return null;
@@ -239,143 +213,6 @@ export class SessionBuffer extends BaseBuffer {
       [sessionKey(projectId, deviceId), wallclockSetKey(projectId), pointerKey],
       [sessionId, deviceId]
     );
-  }
-
-  /**
-   * Extend an in-flight session with a new event. Returns the updated
-   * session AND the pair of CollapsingMergeTree rows that ClickHouse needs
-   * to replace the previous row (sign=-1 cancels, sign=+1 inserts).
-   */
-  private extendSession(
-    existing: IClickhouseSession,
-    payload: IServiceCreateEventPayload
-  ): {
-    current: IClickhouseSession;
-    chRows: [IClickhouseSession, IClickhouseSession];
-  } {
-    const oldRow: IClickhouseSession = { ...existing, sign: -1 };
-    const current: IClickhouseSession = {
-      ...existing,
-      sign: 1,
-      version: existing.version + 1,
-    };
-
-    // Out-of-order safety: treat the session window as [min(event ts),
-    // max(event ts)]. Late-arriving events (offline mobile flush, retries)
-    // can't drag ended_at backwards or push duration negative.
-    const eventTimeMs = payload.createdAt.getTime();
-    const startMs = fromClickhouseDate(current.created_at).getTime();
-    const endMs = fromClickhouseDate(current.ended_at).getTime();
-    const eventCh = toClickhouseDate(payload.createdAt);
-
-    if (eventTimeMs >= endMs) {
-      current.ended_at = eventCh;
-      if (payload.path) {
-        current.exit_path = payload.path;
-      }
-      if (payload.origin) {
-        current.exit_origin = payload.origin;
-      }
-    }
-
-    if (eventTimeMs < startMs) {
-      current.created_at = eventCh;
-      if (payload.path) {
-        current.entry_path = payload.path;
-      }
-      if (payload.origin) {
-        current.entry_origin = payload.origin;
-      }
-    } else {
-      if (!current.entry_path && payload.path) {
-        current.entry_path = payload.path;
-      }
-      if (!current.entry_origin && payload.origin) {
-        current.entry_origin = payload.origin;
-      }
-    }
-
-    current.duration =
-      fromClickhouseDate(current.ended_at).getTime() -
-      fromClickhouseDate(current.created_at).getTime();
-
-    if (payload.name === 'revenue') {
-      current.revenue = (current.revenue ?? 0) + (payload.revenue ?? 0);
-    }
-
-    if (payload.name === 'screen_view' && payload.path) {
-      current.screen_view_count += 1;
-    } else {
-      current.event_count += 1;
-    }
-
-    if (current.screen_view_count > 1) {
-      current.is_bounce = false;
-    }
-
-    if (payload.profileId && payload.profileId !== payload.deviceId) {
-      current.profile_id = payload.profileId;
-    }
-
-    if (payload.groups?.length) {
-      current.groups = [
-        ...new Set([...(current.groups ?? []), ...payload.groups]),
-      ].slice(0, MAX_SESSION_GROUPS);
-    }
-
-    return { current, chRows: [current, oldRow] };
-  }
-
-  /**
-   * Open a brand-new session from this event's payload. Called for the first
-   * event of a device AND on boundary (gap > 30min closing the old session).
-   */
-  private newSession(payload: IServiceCreateEventPayload): IClickhouseSession {
-    const createdAt = toClickhouseDate(payload.createdAt);
-    // For anonymous traffic the SDK doesn't send a profileId — fall back to
-    // the deviceId so each anonymous device shows up as a unique visitor in
-    // the dashboard. Matches what `createEvent` does for the events table.
-    const profileId = payload.profileId || payload.deviceId;
-    return {
-      id: payload.sessionId,
-      project_id: payload.projectId,
-      device_id: payload.deviceId,
-      profile_id: profileId,
-      is_bounce: true,
-      created_at: createdAt,
-      ended_at: createdAt,
-      event_count: payload.name === 'screen_view' ? 0 : 1,
-      screen_view_count: payload.name === 'screen_view' ? 1 : 0,
-      entry_path: payload.path ?? '',
-      entry_origin: payload.origin ?? '',
-      exit_path: payload.path ?? '',
-      exit_origin: payload.origin ?? '',
-      revenue: payload.name === 'revenue' ? (payload.revenue ?? 0) : 0,
-      referrer: payload.referrer ?? '',
-      referrer_name: payload.referrerName ?? '',
-      referrer_type: payload.referrerType ?? '',
-      os: payload.os ?? '',
-      os_version: payload.osVersion ?? '',
-      browser: payload.browser ?? '',
-      browser_version: payload.browserVersion ?? '',
-      device: payload.device ?? '',
-      brand: payload.brand ?? '',
-      model: payload.model ?? '',
-      country: payload.country ?? '',
-      region: payload.region ?? '',
-      city: payload.city ?? '',
-      longitude: payload.longitude ?? null,
-      latitude: payload.latitude ?? null,
-      duration: payload.duration ?? 0,
-      utm_medium: pickUtm(payload, 'utm_medium'),
-      utm_source: pickUtm(payload, 'utm_source'),
-      utm_campaign: pickUtm(payload, 'utm_campaign'),
-      utm_content: pickUtm(payload, 'utm_content'),
-      utm_term: pickUtm(payload, 'utm_term'),
-      groups: (payload.groups ?? []).slice(0, MAX_SESSION_GROUPS),
-      sign: 1,
-      version: 1,
-    };
   }
 
   /**

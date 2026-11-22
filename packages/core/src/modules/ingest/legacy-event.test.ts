@@ -52,6 +52,7 @@ const getSalts = mock(async (_deps: unknown) => ({
 mock.module('../../clients/geo', () => ({ getGeoLocation, getAsnInfo }));
 
 let ingestLegacyEvent: typeof import('./ingest.service').ingestLegacyEvent;
+let createBunIngestBackend: typeof import('./src/bun-backend').createBunIngestBackend;
 
 // Ingest.service.ts calls salt.service.ts's module-scope `getSalts` with the
 // scope it holds, so that is the specifier mocked here — spread-actual like
@@ -64,6 +65,7 @@ beforeAll(async () => {
     getSalts,
   }));
   ({ ingestLegacyEvent } = await import('./ingest.service'));
+  ({ createBunIngestBackend } = await import('./src/bun-backend'));
 });
 
 afterAll(() => {
@@ -95,6 +97,16 @@ const transportDeps = {
   buffers,
   config: testCoreConfig(),
 } as unknown as ServiceDeps;
+
+const transport = () => ({
+  buffers,
+  deps: transportDeps,
+  backend: createBunIngestBackend({
+    deps: transportDeps,
+    sessionBuffer: buffers.session,
+    produceIncomingEvent,
+  }),
+});
 
 const legacyBody = (
   overrides: Partial<DeprecatedPostEventPayload> = {}
@@ -129,11 +141,7 @@ beforeEach(() => {
 
 describe('ingestLegacyEvent', () => {
   it('produces the legacy payload to Kafka and reports ok', async () => {
-    const outcome = await ingestLegacyEvent(makeRequest(), {
-      buffers,
-      produceIncomingEvent,
-      deps: transportDeps,
-    });
+    const outcome = await ingestLegacyEvent(makeRequest(), transport());
 
     expect(outcome.status).toBe('ok');
     expect(produced).toHaveLength(1);
@@ -156,7 +164,7 @@ describe('ingestLegacyEvent', () => {
           clientSecret: 'sec_from_body',
         } as unknown as DeprecatedPostEventPayload,
       },
-      { buffers, produceIncomingEvent, deps: transportDeps }
+      transport()
     );
 
     const { event } = produced[0]!.payload;
@@ -166,21 +174,13 @@ describe('ingestLegacyEvent', () => {
   });
 
   it('mints the event id at the producer, like /track', async () => {
-    await ingestLegacyEvent(makeRequest(), {
-      buffers,
-      produceIncomingEvent,
-      deps: transportDeps,
-    });
+    await ingestLegacyEvent(makeRequest(), transport());
 
     expect(produced[0]?.payload.id).toMatch(UUID_PATTERN);
   });
 
   it('replaces the client-supplied timestamp with the server timestamp', async () => {
-    await ingestLegacyEvent(makeRequest(), {
-      buffers,
-      produceIncomingEvent,
-      deps: transportDeps,
-    });
+    await ingestLegacyEvent(makeRequest(), transport());
 
     const { payload } = produced[0]!;
     expect(payload.event.timestamp).toBe(requestTimestamp);
@@ -188,11 +188,7 @@ describe('ingestLegacyEvent', () => {
   });
 
   it('refuses when the client carries no project', async () => {
-    const outcome = await ingestLegacyEvent(makeRequest(null), {
-      buffers,
-      produceIncomingEvent,
-      deps: transportDeps,
-    });
+    const outcome = await ingestLegacyEvent(makeRequest(null), transport());
 
     expect(outcome.status).toBe('missing-project-id');
     expect(produced).toHaveLength(0);
