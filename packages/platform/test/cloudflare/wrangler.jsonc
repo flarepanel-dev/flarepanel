@@ -5,10 +5,12 @@
   "compatibility_flags": ["nodejs_compat"],
   "durable_objects": {
     "bindings": [
-      { "name": "COORDINATOR", "class_name": "CoordinatorDurableObject" }
+      { "name": "COORDINATOR", "class_name": "CoordinatorDurableObject" },
+      { "name": "PUBSUB_HUB", "class_name": "PubSubHubDurableObject" }
     ]
   },
   "migrations": [
-    { "tag": "v1", "new_sqlite_classes": ["CoordinatorDurableObject"] }
+    { "tag": "v1", "new_sqlite_classes": ["CoordinatorDurableObject"] },
+    { "tag": "v2", "new_sqlite_classes": ["PubSubHubDurableObject"] }
   ]
 }

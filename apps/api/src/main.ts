@@ -81,6 +81,7 @@ import {
   getRedisCache,
   getRedisPub,
   getRedisQueue,
+  getRedisSub,
 } from '@flarepanel/redis';
 import { Elysia } from 'elysia';
 import pino from 'pino';
@@ -178,7 +179,10 @@ function buildDeps(): AppDeps {
   const producers = buildProducerHandle();
   // Cache and coordination stores on this process's Redis; module-level
   // helpers (`cacheable`, rate limits) read the same instance.
-  const stores = createRedisStores(getRedisCache());
+  const stores = createRedisStores(getRedisCache(), {
+    publisher: getRedisPub,
+    subscriber: getRedisSub,
+  });
   configurePlatformStores(stores);
   return {
     // References to the `packages/db` and `packages/redis` singletons, not new connections.

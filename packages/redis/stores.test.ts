@@ -9,8 +9,18 @@ const redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:23379', {
   maxRetriesPerRequest: 1,
 });
 
-afterAll(() => redis.quit());
+const subscriber = new Redis(
+  process.env.REDIS_URL ?? 'redis://localhost:23379',
+  { lazyConnect: true, maxRetriesPerRequest: 1 }
+);
+
+afterAll(async () => {
+  await Promise.all([redis.quit(), subscriber.quit()]);
+});
 
 storeContract({ describe, test, expect }, 'redis', () =>
-  createRedisStores(redis)
+  createRedisStores(redis, {
+    publisher: () => redis,
+    subscriber: () => subscriber,
+  })
 );

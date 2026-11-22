@@ -54,7 +54,27 @@ export interface CoordinationStore {
   ping(): Promise<boolean>;
 }
 
+export interface Subscription {
+  /** Stops delivery to this listener. Safe to call twice. */
+  unsubscribe(): void;
+  /** Settles once messages published from now on will be delivered. */
+  ready: Promise<void>;
+}
+
+/**
+ * Fire-and-forget fan-out between processes (live dashboards, ops signals).
+ * At-most-once: a message published while nobody listens is dropped.
+ *
+ * Cloudflare: a Durable Object hub holding hibernating WebSockets.
+ */
+export interface PubSub {
+  /** Returns how many subscribers it reached (best effort). */
+  publish(channel: string, message: string): Promise<number>;
+  subscribe(channel: string, listener: (message: string) => void): Subscription;
+}
+
 export interface PlatformStores {
   cache: CacheStore;
   coordination: CoordinationStore;
+  pubsub: PubSub;
 }

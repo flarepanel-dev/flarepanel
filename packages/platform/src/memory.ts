@@ -2,6 +2,8 @@ import type {
   CacheStore,
   CoordinationStore,
   PlatformStores,
+  PubSub,
+  Subscription,
   WindowCount,
 } from './ports';
 
@@ -106,11 +108,53 @@ export class MemoryCacheStore implements CacheStore {
   }
 }
 
+/** In-process fan-out; delivery is asynchronous like the real backends. */
+export class MemoryPubSub implements PubSub {
+  private readonly listeners = new Map<
+    string,
+    Set<(message: string) => void>
+  >();
+
+  async publish(channel: string, message: string) {
+    const listeners = [...(this.listeners.get(channel) ?? [])];
+    queueMicrotask(() => {
+      for (const listener of listeners) {
+        listener(message);
+      }
+    });
+    return listeners.length;
+  }
+
+  subscribe(
+    channel: string,
+    listener: (message: string) => void
+  ): Subscription {
+    const set = this.listeners.get(channel) ?? new Set();
+    set.add(listener);
+    this.listeners.set(channel, set);
+    let isActive = true;
+    return {
+      ready: Promise.resolve(),
+      unsubscribe: () => {
+        if (!isActive) {
+          return;
+        }
+        isActive = false;
+        set.delete(listener);
+        if (set.size === 0) {
+          this.listeners.delete(channel);
+        }
+      },
+    };
+  }
+}
+
 export function createMemoryStores(
   now: () => number = Date.now
 ): PlatformStores {
   return {
     cache: new MemoryCacheStore(now),
     coordination: new MemoryCoordinationStore(now),
+    pubsub: new MemoryPubSub(),
   };
 }

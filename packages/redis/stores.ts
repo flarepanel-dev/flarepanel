@@ -8,6 +8,8 @@ import type {
   CacheStore,
   CoordinationStore,
   PlatformStores,
+  PubSub,
+  Subscription,
   WindowCount,
 } from '@flarepanel/platform';
 import type Redis from 'ioredis';
@@ -108,9 +110,100 @@ export class RedisCacheStore implements CacheStore {
   }
 }
 
-export function createRedisStores(redis: Redis): PlatformStores {
+/**
+ * Every subscriber in the process shares ONE subscriber connection. SUBSCRIBE
+ * and UNSUBSCRIBE on it are process-wide, so a per-subscriber UNSUBSCRIBE
+ * would silence every other subscriber on that channel (closing one `/live`
+ * socket once left every other socket receiving nothing). Channels are
+ * therefore reference-counted: the wire SUBSCRIBE happens only on 0 -> 1 and
+ * the wire UNSUBSCRIBE only on 1 -> 0, and one `message` handler dispatches by
+ * channel name. ioredis re-subscribes on reconnect (`autoResubscribe`).
+ */
+export class RedisPubSub implements PubSub {
+  private readonly listeners = new Map<
+    string,
+    Set<(message: string) => void>
+  >();
+  private isDispatcherInstalled = false;
+
+  constructor(
+    private readonly publisher: () => Redis,
+    private readonly subscriber: () => Redis
+  ) {}
+
+  publish(channel: string, message: string) {
+    return this.publisher().publish(channel, message);
+  }
+
+  private installDispatcherOnce() {
+    if (this.isDispatcherInstalled) {
+      return;
+    }
+    this.isDispatcherInstalled = true;
+    this.subscriber().on('message', (channel: string, message: string) => {
+      for (const listener of this.listeners.get(channel) ?? []) {
+        listener(message);
+      }
+    });
+  }
+
+  subscribe(
+    channel: string,
+    listener: (message: string) => void
+  ): Subscription {
+    this.installDispatcherOnce();
+    let ready: Promise<void> = Promise.resolve();
+    const existing = this.listeners.get(channel);
+    if (existing) {
+      existing.add(listener);
+    } else {
+      this.listeners.set(channel, new Set([listener]));
+      ready = this.subscriber()
+        .subscribe(channel)
+        .then(() => undefined);
+    }
+
+    let isActive = true;
+    return {
+      ready,
+      unsubscribe: () => {
+        if (!isActive) {
+          return;
+        }
+        isActive = false;
+        const set = this.listeners.get(channel);
+        if (!set?.delete(listener) || set.size > 0) {
+          return;
+        }
+        this.listeners.delete(channel);
+        this.subscriber().unsubscribe(channel);
+      },
+    };
+  }
+}
+
+export interface RedisPubSubConnections {
+  /** Any command connection. */
+  publisher: () => Redis;
+  /** A dedicated connection: once subscribed it can run nothing else. */
+  subscriber: () => Redis;
+}
+
+export function createRedisStores(
+  redis: Redis,
+  pubsub?: RedisPubSubConnections
+): PlatformStores {
+  let ownSubscriber: Redis | undefined;
   return {
     cache: new RedisCacheStore(redis),
     coordination: new RedisCoordinationStore(redis),
+    pubsub: new RedisPubSub(
+      pubsub?.publisher ?? (() => redis),
+      pubsub?.subscriber ??
+        (() => {
+          ownSubscriber ??= redis.duplicate();
+          return ownSubscriber;
+        })
+    ),
   };
 }

@@ -22,6 +22,18 @@ export interface TestApi {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Waits for async delivery: true once `check` holds, false after `timeoutMs`. */
+async function eventually(check: () => boolean, timeoutMs = 2000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (check()) {
+      return true;
+    }
+    await sleep(10);
+  }
+  return check();
+}
+
 let counter = 0;
 /** Unique per test, so implementations backed by a shared server never collide. */
 const uniqueKey = (name: string) =>
@@ -123,6 +135,47 @@ export function storeContract(
     test('coordination: ping', async () => {
       const { coordination } = await create();
       expect(await coordination.ping()).toBe(true);
+    });
+
+    test('pubsub: a subscriber receives what is published, in order', async () => {
+      const { pubsub } = await create();
+      const channel = uniqueKey('pub');
+      const received: string[] = [];
+      const subscription = pubsub.subscribe(channel, (m) => received.push(m));
+      await subscription.ready;
+      expect(await pubsub.publish(channel, 'one')).toBeGreaterThan(0);
+      await pubsub.publish(channel, 'two');
+      expect(await eventually(() => received.length === 2)).toBe(true);
+      expect(received.join(',')).toBe('one,two');
+      subscription.unsubscribe();
+    });
+
+    test('pubsub: channels are isolated and unsubscribe stops one listener only', async () => {
+      const { pubsub } = await create();
+      const channel = uniqueKey('fanout');
+      const other = uniqueKey('other');
+      const a: string[] = [];
+      const b: string[] = [];
+      const c: string[] = [];
+      const subA = pubsub.subscribe(channel, (m) => a.push(m));
+      const subB = pubsub.subscribe(channel, (m) => b.push(m));
+      const subC = pubsub.subscribe(other, (m) => c.push(m));
+      await Promise.all([subA.ready, subB.ready, subC.ready]);
+
+      await pubsub.publish(channel, 'x');
+      expect(await eventually(() => a.length === 1 && b.length === 1)).toBe(
+        true
+      );
+
+      subA.unsubscribe();
+      subA.unsubscribe();
+      await pubsub.publish(channel, 'y');
+      expect(await eventually(() => b.length === 2)).toBe(true);
+      await sleep(50);
+      expect(a.length).toBe(1);
+      expect(c.length).toBe(0);
+      subB.unsubscribe();
+      subC.unsubscribe();
     });
 
     test('cache: get, set and delete', async () => {

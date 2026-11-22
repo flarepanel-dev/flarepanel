@@ -202,4 +202,9 @@ export function getLock(key: string, value: string, timeout: number) {
 
 // On Bun the platform stores default to this process's Redis connection; the
 // Workers build configures Cloudflare stores instead.
-registerDefaultPlatformStores(() => createRedisStores(getRedisCache()));
+registerDefaultPlatformStores(() =>
+  createRedisStores(getRedisCache(), {
+    publisher: getRedisPub,
+    subscriber: getRedisSub,
+  })
+);

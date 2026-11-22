@@ -1,6 +1,7 @@
 import type { Prisma } from '@flarepanel/db';
+import { getPlatformStores } from '@flarepanel/platform';
 import { getSuperJson, setSuperJson } from '@flarepanel/shared';
-import { getRedisPub, getRedisSub, type Redis } from './redis';
+import { getRedisSub, type Redis } from './redis';
 
 export type IPublishChannels = {
   organization: {
@@ -26,14 +27,23 @@ export function getSubscribeChannel<Channel extends keyof IPublishChannels>(
   return `${channel}:${String(type)}`;
 }
 
+/**
+ * Publishes on the configured platform pub/sub (Redis on Bun, a Durable Object
+ * hub on Workers). `multi` keeps the old transactional form for callers that
+ * publish inside a Redis MULTI; it is Redis-only.
+ */
 export function publishEvent<Channel extends keyof IPublishChannels>(
   channel: Channel,
   type: keyof IPublishChannels[Channel],
   event: IPublishChannels[Channel][typeof type],
   multi?: ReturnType<Redis['multi']>
 ) {
-  const redis = multi ?? getRedisPub();
-  return redis.publish(getSubscribeChannel(channel, type), setSuperJson(event));
+  const message = setSuperJson(event);
+  const subscribeChannel = getSubscribeChannel(channel, type);
+  if (multi) {
+    return multi.publish(subscribeChannel, message);
+  }
+  return getPlatformStores().pubsub.publish(subscribeChannel, message);
 }
 
 export function parsePublishedEvent<Channel extends keyof IPublishChannels>(
@@ -42,77 +52,6 @@ export function parsePublishedEvent<Channel extends keyof IPublishChannels>(
   message: string
 ): IPublishChannels[Channel][typeof _type] {
   return getSuperJson<IPublishChannels[Channel][typeof _type]>(message)!;
-}
-
-type ChannelMessageListener = (message: string) => void;
-
-/**
- * Every subscriber in the process shares ONE ioredis connection (`getRedisSub`,
- * a module-level singleton). SUBSCRIBE and UNSUBSCRIBE on it are process-wide,
- * so a per-subscriber UNSUBSCRIBE silences every other subscriber on that
- * channel: closing one `/live` socket left every other open socket receiving
- * nothing for 30 s, across routes and across projects, because
- * `/live/events` and `/live/visitors` both ride `events:batch`.
- *
- * So the channel is reference-counted here rather than at each call site: the
- * wire SUBSCRIBE happens only on 0 -> 1 and the wire UNSUBSCRIBE only on 1 ->
- * 0. One `message` handler is installed on the shared connection for the whole
- * process and dispatches by channel name, which also keeps the connection off
- * Node's max-listeners warning as sockets accumulate.
- *
- * RECONNECT NEEDS NO HANDLING HERE: ioredis re-issues SUBSCRIBE for every channel it holds (`autoResubscribe`,
- * default true), and the wire commands stay one-to-one with the 0 -> 1 and 1 -> 0 edges.
- */
-const listenersByChannel = new Map<string, Set<ChannelMessageListener>>();
-
-let isDispatcherInstalled = false;
-
-// Deleting a not-yet-visited entry mid-iteration skips it, which is what an
-// unsubscribe from inside a callback should do.
-function dispatchToChannelListeners(channel: string, message: string) {
-  const listeners = listenersByChannel.get(channel);
-  if (!listeners) {
-    return;
-  }
-  for (const listener of listeners) {
-    listener(message);
-  }
-}
-
-function installDispatcherOnce() {
-  if (isDispatcherInstalled) {
-    return;
-  }
-  isDispatcherInstalled = true;
-  getRedisSub().on('message', dispatchToChannelListeners);
-}
-
-function addChannelListener(channel: string, listener: ChannelMessageListener) {
-  installDispatcherOnce();
-  const listeners = listenersByChannel.get(channel);
-  if (listeners) {
-    listeners.add(listener);
-    return;
-  }
-
-  listenersByChannel.set(channel, new Set([listener]));
-  getRedisSub().subscribe(channel);
-}
-
-function removeChannelListener(
-  channel: string,
-  listener: ChannelMessageListener
-) {
-  const listeners = listenersByChannel.get(channel);
-  if (!listeners?.delete(listener)) {
-    return;
-  }
-  if (listeners.size > 0) {
-    return;
-  }
-
-  listenersByChannel.delete(channel);
-  getRedisSub().unsubscribe(channel);
 }
 
 export function subscribeToPublishedEvent<
@@ -124,23 +63,19 @@ export function subscribeToPublishedEvent<
 ) {
   const subscribeChannel = getSubscribeChannel(channel, type);
 
-  const listener: ChannelMessageListener = (message) => {
-    const event = parsePublishedEvent(channel, type, message);
-    if (event) {
-      callback(event);
+  // Reference counting per channel lives in the pub/sub implementation, so
+  // closing one subscriber never silences another on the same channel.
+  const subscription = getPlatformStores().pubsub.subscribe(
+    subscribeChannel,
+    (message) => {
+      const event = parsePublishedEvent(channel, type, message);
+      if (event) {
+        callback(event);
+      }
     }
-  };
+  );
 
-  addChannelListener(subscribeChannel, listener);
-
-  let isReleased = false;
-  return () => {
-    if (isReleased) {
-      return;
-    }
-    isReleased = true;
-    removeChannelListener(subscribeChannel, listener);
-  };
+  return () => subscription.unsubscribe();
 }
 
 export function psubscribeToPublishedEvent(

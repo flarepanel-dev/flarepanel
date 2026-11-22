@@ -49,6 +49,20 @@ vi.mock('./redis', () => ({
   getRedisSub: () => redisSub,
 }));
 
+const { configurePlatformStores, createMemoryStores } = await import(
+  '@flarepanel/platform'
+);
+const { RedisPubSub } = await import('./stores');
+// The publisher reads the configured pub/sub; back it with the stand-in
+// connection so these tests still see the wire SUBSCRIBE/UNSUBSCRIBE calls.
+configurePlatformStores({
+  ...createMemoryStores(),
+  pubsub: new RedisPubSub(
+    () => redisSub as never,
+    () => redisSub as never
+  ),
+});
+
 const { subscribeToPublishedEvent } = await import('./publisher');
 
 const publishBatch = (projectId: string, count: number) =>

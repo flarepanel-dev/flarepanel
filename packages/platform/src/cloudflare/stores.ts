@@ -16,6 +16,7 @@ import type {
   WindowCount,
 } from '../ports';
 import type { CoordinatorDurableObject } from './coordinator';
+import { DurablePubSub, type PubSubHubDurableObject } from './pubsub';
 
 const DEFAULT_SHARDS = 16;
 const CACHE_ORIGIN = 'https://platform-cache.flarepanel.internal';
@@ -114,6 +115,7 @@ export class CacheApiStore implements CacheStore {
 
 export interface CloudflarePlatformBindings {
   COORDINATOR: DurableObjectNamespace<CoordinatorDurableObject>;
+  PUBSUB_HUB: DurableObjectNamespace<PubSubHubDurableObject>;
 }
 
 export async function createCloudflareStores(
@@ -123,5 +125,6 @@ export async function createCloudflareStores(
   return {
     cache: new CacheApiStore(cache ?? (await caches.open('flarepanel'))),
     coordination: new DurableCoordinationStore(env.COORDINATOR),
+    pubsub: new DurablePubSub(env.PUBSUB_HUB),
   };
 }
