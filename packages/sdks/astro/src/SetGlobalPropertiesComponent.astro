@@ -1,0 +1,7 @@
+---
+type Props = Record<string, unknown>;
+
+const props = Astro.props as Props;
+---
+
+<script is:inline set:html={`window.op('setGlobalProperties', ${JSON.stringify(filterProps(props))});`} />
