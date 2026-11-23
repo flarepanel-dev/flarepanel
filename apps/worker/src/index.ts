@@ -61,7 +61,14 @@ import { createEmptyClickHouse } from './ingest/empty-clickhouse';
 import { liveAccessRoute, matchLivePath } from './ingest/live';
 import { ProjectEventsDurableObject } from './ingest/project-events-do';
 import { createConsoleLogger } from './logger';
+import {
+  DEAD_LETTER_QUEUE,
+  keepDeadLetters,
+  reportFailedJob,
+} from './ops-alerts';
+import { handleOps, isOpsPath } from './ops-routes';
 import { unavailableOnWorkers } from './unavailable-deps';
+import { isUptimeMinute, runUptimeCheck } from './uptime';
 
 export {
   BasinUsageDurableObject,
@@ -83,6 +90,12 @@ export interface Env {
   FLAREPANEL_EVENT_RETENTION_DAYS?: string;
   /** Cloudflare Email Service; account emails go out through it when bound. */
   EMAIL?: SendEmail;
+  /** Where failed-job alerts go (one per job and hour). Unset: no email. */
+  OPS_ALERT_EMAIL?: string;
+  /** Secret: enables the /__ops recovery endpoints (see ops-routes.ts). */
+  OPS_TOKEN?: string;
+  /** Comma-separated public URLs the cron checks every 5 minutes. */
+  UPTIME_URLS?: string;
   /** Advanced analytics (opt-in, Basin): the install's monthly query budget. */
   BASIN_USAGE: DurableObjectNamespace<BasinUsageDurableObject>;
   /** `on` turns advanced analytics on; anything else (the default) is off. */
@@ -249,6 +262,19 @@ export default {
       }
     }
 
+    if (isOpsPath(url.pathname)) {
+      return handleOps(
+        request,
+        env,
+        (projectId) =>
+          projectEventsStub(env, projectId) as unknown as Parameters<
+            typeof handleOps
+          >[2] extends (id: string) => infer S
+            ? S
+            : never
+      );
+    }
+
     const { fetch } = await getBooted(env);
 
     const live = matchLivePath(url.pathname);
@@ -269,16 +295,46 @@ export default {
     return fetch(request);
   },
 
-  async queue(batch: MessageBatch, env: Env): Promise<void> {
+  async queue(
+    batch: MessageBatch,
+    env: Env,
+    ctx: ExecutionContext
+  ): Promise<void> {
     const { deps } = await getBooted(env);
+    if (batch.queue === DEAD_LETTER_QUEUE) {
+      await keepDeadLetters(batch.messages, env, deps.logger);
+      return;
+    }
     await processCloudflareJobBatch(
       batch.messages as unknown as QueueMessageLike[],
-      { definitions: queues, deps }
+      {
+        definitions: queues,
+        deps,
+        onTerminalFailure: (failure) =>
+          ctx.waitUntil(
+            reportFailedJob(env, deps.logger, {
+              source: 'retries-exhausted',
+              queue: failure.queue,
+              job: failure.job,
+              jobId: failure.jobId,
+              attempts: failure.attempts,
+              error: failure.error.message,
+              data: failure.data,
+            })
+          ),
+      }
     );
   },
 
-  async scheduled(controller: ScheduledController, env: Env): Promise<void> {
+  async scheduled(
+    controller: ScheduledController,
+    env: Env,
+    ctx: ExecutionContext
+  ): Promise<void> {
     const { deps } = await getBooted(env);
+    if (isUptimeMinute(controller.scheduledTime)) {
+      ctx.waitUntil(runUptimeCheck(env, deps.logger));
+    }
     await dispatchDueSchedules({
       schedulers: CRON_SCHEDULES,
       enqueueCron: cronEnqueuer(deps.producers, queues.cron),

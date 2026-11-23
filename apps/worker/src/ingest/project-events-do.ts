@@ -37,9 +37,9 @@ import {
   type GroupQuery,
   type GroupStore,
   type GscQuery,
+  type GscStore,
   type ImportQuery,
   type ImportStore,
-  type GscStore,
   type JourneyScanQuery,
   type ListEventsQuery,
   loadAiContent,
@@ -404,6 +404,33 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     return engine.dimensionDays(dim, fromDay, toDay);
   }
 
+  // -------------------------------------------------------------------------
+  // Point-in-time recovery (operators only, through /__ops): the object's
+  // SQLite can go back to any moment in the last 30 days. A restore returns an
+  // undo bookmark, then restarts the object so the restore takes effect.
+
+  async recoveryStatus() {
+    const { engine } = await this.state;
+    const day = 24 * 60 * 60 * 1000;
+    return {
+      bookmark: await this.ctx.storage.getCurrentBookmark(),
+      eventsLast30Days: engine
+        .dailyStats(new Date(Date.now() - 30 * day), new Date())
+        .reduce((sum, row) => sum + row.events, 0),
+    };
+  }
+
+  async restoreTo(target: { at?: number; bookmark?: string }) {
+    const bookmark =
+      target.bookmark ??
+      (await this.ctx.storage.getBookmarkForTime(target.at ?? Date.now()));
+    const undoBookmark =
+      await this.ctx.storage.onNextSessionRestoreBookmark(bookmark);
+    // After this call returns: restarting the object applies the restore.
+    setTimeout(() => this.ctx.abort('point-in-time restore'), 0);
+    return { restoredTo: bookmark, undoBookmark };
+  }
+
   async countEvents(from: Date, to: Date) {
     const { engine } = await this.state;
     return engine
@@ -673,7 +700,10 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     const events: unknown[] = [];
     let through = after;
     for (const chunk of await engine.readChunks(after, EXPORT_READ_CHUNKS)) {
-      if (events.length > 0 && events.length + chunk.events.length > maxEvents) {
+      if (
+        events.length > 0 &&
+        events.length + chunk.events.length > maxEvents
+      ) {
         break;
       }
       events.push(...chunk.events);

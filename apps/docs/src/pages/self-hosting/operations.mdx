@@ -1,0 +1,111 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Operations and recovery
+description: Alerts, failed jobs, backups and rollbacks for a FlarePanel install on Cloudflare.
+---
+
+# Operations and recovery
+
+What FlarePanel watches by itself, what to turn on in your Cloudflare account, and how to get data back.
+
+## Alerts from FlarePanel
+
+Set an operator address on the API Worker:
+
+```bash
+cd apps/worker
+bunx wrangler secret put OPS_ALERT_EMAIL   # where alerts go
+```
+
+It needs the `send_email` binding from [Deploy](/self-hosting/deploy#email). Then the API Worker emails that address, at most once an hour per problem, when:
+
+- **a background job fails for good**: its retries are used up, or Cloudflare Queues gave up on it (a crash, CPU limit or timeout on every delivery). Each failed job is also kept in R2 as `dead-letters/<date>/<queue>-<job>-<id>-<time>.json`, with its data and error, whether or not an email is set.
+- **an uptime check fails**: every 5 minutes the cron checks D1, R2 and the sites in `UPTIME_URLS` (in `apps/worker/wrangler.jsonc`; set it to your dashboard, docs and landing addresses). A 5xx answer, a timeout or a storage error counts as a failure.
+
+The API Worker cannot report itself being down. Point an external monitor (any free uptime service) at `https://api.example.com/healthcheck`, which answers `{"ready":true,...}`.
+
+## Alerts in your Cloudflare account
+
+These are account settings, not part of the code:
+
+- **Budget alert**: Manage Account → Billing → Billable Usage → Set Budget Alert. Emails you when the month's projected usage spend reaches an amount.
+- **Spending limit** (optional): Billing → Spend Management, per product (Workers, Durable Objects). Blocks usage at the amount, so tracking stops: use an alert first.
+- **Error alerts**: Observability → Alerts → Monitors, on the API Worker's logs, for example on `level = "error"` lines.
+
+Workers Logs keep a sample of requests (`head_sampling_rate` in `wrangler.jsonc`, 0.1 by default). Failed jobs and uptime failures do not depend on it: they are kept in R2 and emailed.
+
+## Failed jobs
+
+```bash
+bunx wrangler r2 object get flarepanel-events/dead-letters/2026-11-23/<file>.json --remote --pipe
+```
+
+Each file holds the queue, job, attempts, error and the job's data. Fix the cause, then run the job again from the dashboard where there is a button (imports: **Retry**), or wait for its next scheduled run.
+
+## Back up and restore accounts and projects (D1)
+
+D1 keeps every change for 30 days (Time Travel). To go back:
+
+```bash
+bunx wrangler d1 time-travel info flarepanel                 # current bookmark
+bunx wrangler d1 time-travel restore flarepanel --timestamp=2026-11-23T10:00:00Z
+```
+
+A restore replaces the whole database and prints a bookmark to undo it. For a copy outside Cloudflare, export it:
+
+```bash
+bunx wrangler d1 export flarepanel --remote --output flarepanel.sql
+```
+
+To load an export into an empty database, create every table before inserting rows (D1 checks foreign keys, and the export writes tables alphabetically):
+
+```bash
+sqlite3 restore.db < flarepanel.sql
+{ sqlite3 restore.db .schema | grep -v sqlite_sequence
+  echo "PRAGMA defer_foreign_keys = true;"
+  sqlite3 restore.db ".dump --data-only" | grep -v "^PRAGMA\|^BEGIN\|^COMMIT\|sqlite_sequence"
+} > restore.sql
+bunx wrangler d1 execute <new-database> --remote --file restore.sql
+```
+
+## Restore a project's analytics (Durable Object)
+
+Each project's events, rollups, profiles, groups, cohorts, AI calls and Search Console numbers live in its Durable Object, which can go back to any moment in the last 30 days. Set an operator token once:
+
+```bash
+openssl rand -hex 32 | bunx wrangler secret put OPS_TOKEN
+```
+
+Then, with the token in `$OPS_TOKEN`:
+
+```bash
+# Where the project is now
+curl -H "Authorization: Bearer $OPS_TOKEN" \
+  https://api.example.com/__ops/projects/<projectId>/recovery
+
+# Back to a moment (within 30 days)
+curl -X POST -H "Authorization: Bearer $OPS_TOKEN" \
+  -d '{"at":"2026-11-23T10:00:00Z"}' \
+  https://api.example.com/__ops/projects/<projectId>/restore
+
+# Undo: restore to the undoBookmark the previous call returned
+curl -X POST -H "Authorization: Bearer $OPS_TOKEN" \
+  -d '{"bookmark":"<undoBookmark>"}' \
+  https://api.example.com/__ops/projects/<projectId>/restore
+```
+
+Without `OPS_TOKEN` these routes answer 404. Events that were already copied to the R2 archive stay there after a restore.
+
+The R2 archive (`v1/events/...`) keeps every raw event for good and is not affected by Durable Object retention. Turn on [R2 bucket versioning or object lock](https://developers.cloudflare.com/r2/buckets/) if you also want protection from deletes.
+
+## Roll back a deploy
+
+```bash
+cd apps/worker              # or apps/start for the dashboard
+bunx wrangler deployments list
+bunx wrangler rollback      # to the previous version, or: rollback <version-id>
+```
+
+A rollback changes code only. D1 migrations and Durable Object data stay as they are, so roll back past a migration only if the older code still reads the newer schema.

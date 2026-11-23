@@ -67,6 +67,7 @@ export default defineConfig({
         { text: 'Overview', link: '/self-hosting' },
         { text: 'Deploy to Cloudflare', link: '/self-hosting/deploy' },
         { text: 'Architecture', link: '/self-hosting/architecture' },
+        { text: 'Operations and recovery', link: '/self-hosting/operations' },
         {
           text: 'Advanced analytics',
           link: '/self-hosting/advanced-analytics',

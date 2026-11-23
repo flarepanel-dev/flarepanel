@@ -64,7 +64,9 @@
         "max_retries": 5,
         "max_concurrency": 2,
         "dead_letter_queue": "flarepanel-jobs-dlq"
-      }
+      },
+      // Jobs Queues gave up on: kept in R2 under dead-letters/ and alerted.
+      { "queue": "flarepanel-jobs-dlq", "max_batch_size": 10, "max_retries": 3 }
     ]
   },
   "triggers": { "crons": ["* * * * *"] },
@@ -93,7 +95,9 @@
     // Cloudflare sets cf-connecting-ip itself; clients cannot spoof it.
     "TRUSTED_IP_HEADER_ORDER": "cf-connecting-ip",
     // Hot events kept in each project's Durable Object; R2 keeps them all.
-    "FLAREPANEL_EVENT_RETENTION_DAYS": "90"
+    "FLAREPANEL_EVENT_RETENTION_DAYS": "90",
+    // Checked every 5 minutes by the cron; failures email OPS_ALERT_EMAIL.
+    "UPTIME_URLS": "https://dashboard.flarepanel.dev/login,https://docs.flarepanel.dev/,https://flarepanel.dev/"
   },
   "observability": { "enabled": true, "head_sampling_rate": 0.1 }
 }
