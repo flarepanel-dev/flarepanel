@@ -201,6 +201,7 @@ export function createWorkerEventStore(
         options?.anonymous ?? false
       ),
     ai: (projectId, query) => projectEventsStub(env, projectId).ai(query),
+    gsc: (projectId, query) => projectEventsStub(env, projectId).gsc(query),
     tools: (projectId, query) =>
       projectEventsStub(env, projectId).tools(query),
     cohorts: (projectId, query) =>

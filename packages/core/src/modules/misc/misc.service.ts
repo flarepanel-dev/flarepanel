@@ -170,11 +170,41 @@ export interface StatsResult {
   eventsLast24hCount: number;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Workers: every project's billable events (session bookkeeping left out)
+ * from its Durable Object, the same shape as the ClickHouse statements give.
+ */
+async function storedStats(
+  deps: ServiceDeps,
+  store: NonNullable<ServiceDeps['eventStore']>
+) {
+  const ids = (await deps.db.project.findMany({ select: { id: true } })).map(
+    (project) => project.id
+  );
+  const now = new Date();
+  const dayAgo = new Date(now.getTime() - DAY_MS);
+  const [lifetime, last24h] = await Promise.all([
+    Promise.all(ids.map((id) => store.countEvents(id, new Date(0), now))),
+    Promise.all(ids.map((id) => store.countEvents(id, dayAgo, now))),
+  ]);
+  return {
+    projects: ids
+      .map((id, index) => ({ project_id: id, count: lifetime[index] ?? 0 }))
+      .filter((row) => row.count > 0),
+    last24hCount: last24h.reduce((sum, count) => sum + count, 0),
+  };
+}
+
 export async function getStats(deps: ServiceDeps): Promise<StatsResult> {
   const res = await getCache(
     STATS_CACHE_KEY,
     STATS_CACHE_TTL_SECONDS,
     async () => {
+      if (deps.eventStore) {
+        return storedStats(deps, deps.eventStore);
+      }
       const projects = await chQuery<{ project_id: string; count: number }>(
         deps,
         `SELECT project_id, count(*) as count from ${TABLE_NAMES.events} GROUP by project_id order by count()`
@@ -204,6 +234,14 @@ export async function insertPingRecord(
   deps: ServiceDeps,
   record: PingRecord
 ): Promise<void> {
+  // Workers keep no ClickHouse table for this: the ping lands in the logs.
+  if (deps.eventStore) {
+    deps.logger.info(
+      { domain: record.domain, count: record.count },
+      'Self-hosting ping'
+    );
+    return;
+  }
   await deps.ch.insert({
     table: TABLE_NAMES.self_hosting,
     values: [
@@ -274,10 +312,19 @@ export async function runPingCron(deps: ServiceDeps): Promise<unknown> {
     return;
   }
 
-  const [res] = await chQuery<{ count: number }>(
-    deps,
-    `SELECT COUNT(*) as count FROM ${TABLE_NAMES.events}`
-  );
+  const [res] = deps.eventStore
+    ? [
+        {
+          count: (await storedStats(deps, deps.eventStore)).projects.reduce(
+            (sum, row) => sum + row.count,
+            0
+          ),
+        },
+      ]
+    : await chQuery<{ count: number }>(
+        deps,
+        `SELECT COUNT(*) as count FROM ${TABLE_NAMES.events}`
+      );
 
   if (typeof res?.count !== 'number') {
     return;

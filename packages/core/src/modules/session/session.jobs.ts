@@ -139,6 +139,10 @@ export const sessionCronJobs = {
     payload: z.null(),
     cron: { pattern: SESSION_VACUUM_CRON },
     handler: async ({ ctx }) => {
+      // Workers: each project's Durable Object ends idle sessions itself.
+      if (ctx.eventStore) {
+        return;
+      }
       await vacuumStaleSessions({
         ...sessionRuntimeFrom(ctx),
         logger: ctx.logger.child({ job: 'session-vacuum' }),

@@ -87,6 +87,12 @@ export {
   type FindProfilesQuery,
   type ToolQuery,
 } from './tool-scans';
+export {
+  type GscQuery,
+  type GscStore,
+  type GscStoredRow,
+  openGscStore,
+} from './gsc-store';
 export type { GroupQuery } from './group-query';
 export type { GroupSummary } from './group-scan';
 export {

@@ -159,6 +159,16 @@ export async function upsertIntegration(
   // scope — not the attacker-controlled input.projectId — so a user with access
   // to one project can't update another project's integration in the same org.
   rejectEncryptedSecrets(input.config);
+  // Workers: the S3/GCS uploaders need Node's HTTP and DNS stack, and the
+  // export drain reads ClickHouse; an export saved here would never run.
+  if (
+    deps.eventStore &&
+    (input.config.type === 's3_export' || input.config.type === 'gcs_export')
+  ) {
+    throw new TRPCBadRequestError(
+      'S3 and GCS exports are not available on the Cloudflare edition yet. Every event is already archived to your R2 bucket.'
+    );
+  }
 
   const db = deps.db;
 

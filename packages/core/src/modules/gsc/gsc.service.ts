@@ -15,6 +15,10 @@ import type { ServiceDeps, Services } from '../../services';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { getAccessChecks, googleGscClient } from '../auth/auth.service';
 import type { RowFilter } from '../ingest/cloudflare/filter-eval';
+import type {
+  GscQuery,
+  GscStoredRow,
+} from '../ingest/cloudflare/gsc-store';
 
 const BACKFILL_MONTHS = 6;
 const CHUNK_DAYS = 14;
@@ -230,6 +234,68 @@ function nowString(): string {
   return new Date().toISOString().replace('T', ' ').replace('Z', '');
 }
 
+/** Rows per Durable Object call when a sync stores its numbers on Workers. */
+const GSC_STORE_WRITE_BATCH = 5000;
+
+async function fromGscStore<T>(
+  deps: ServiceDeps,
+  projectId: string,
+  query: GscQuery
+): Promise<T> {
+  const store = deps.eventStore as NonNullable<ServiceDeps['eventStore']>;
+  return JSON.parse(await store.gsc(projectId, query)) as T;
+}
+
+/**
+ * Workers: one sync's rows into the project's Durable Object; ClickHouse
+ * otherwise. Search Console answers with `keys` = [date] or [date, page|query].
+ */
+async function storeGscRows(
+  deps: ServiceDeps,
+  projectId: string,
+  table: 'daily' | 'pages' | 'queries',
+  syncedAt: string,
+  rows: Awaited<ReturnType<typeof queryGscSearchAnalytics>>
+): Promise<void> {
+  if (rows.length === 0) {
+    return;
+  }
+  if (deps.eventStore) {
+    const stored: GscStoredRow[] = rows.map((row) => ({
+      date: row.keys[0] ?? '',
+      ...(table === 'daily' ? {} : { key: row.keys[1] ?? '' }),
+      clicks: row.clicks,
+      impressions: row.impressions,
+      ctr: row.ctr,
+      position: row.position,
+    }));
+    for (let index = 0; index < stored.length; index += GSC_STORE_WRITE_BATCH) {
+      await fromGscStore<number>(deps, projectId, {
+        kind: 'write',
+        table,
+        syncedAt,
+        rows: stored.slice(index, index + GSC_STORE_WRITE_BATCH),
+      });
+    }
+    return;
+  }
+  const column = table === 'pages' ? 'page' : 'query';
+  await deps.ch.insert({
+    table: { daily: 'gsc_daily', pages: 'gsc_pages_daily', queries: 'gsc_queries_daily' }[table],
+    values: rows.map((row) => ({
+      project_id: projectId,
+      date: row.keys[0] ?? '',
+      ...(table === 'daily' ? {} : { [column]: row.keys[1] ?? '' }),
+      clicks: row.clicks,
+      impressions: row.impressions,
+      ctr: row.ctr,
+      position: row.position,
+      synced_at: syncedAt,
+    })),
+    format: 'JSONEachRow',
+  });
+}
+
 export async function syncGscData(
   deps: ServiceDeps,
   projectId: string,
@@ -249,7 +315,6 @@ export async function syncGscData(
   const start = formatDate(startDate);
   const end = formatDate(endDate);
   const syncedAt = nowString();
-  const ch = deps.ch;
 
   // 1. Daily totals — authoritative numbers for overview chart
   const dailyRows = await queryGscSearchAnalytics(
@@ -259,22 +324,7 @@ export async function syncGscData(
     end,
     ['date']
   );
-
-  if (dailyRows.length > 0) {
-    await ch.insert({
-      table: 'gsc_daily',
-      values: dailyRows.map((row) => ({
-        project_id: projectId,
-        date: row.keys[0] ?? '',
-        clicks: row.clicks,
-        impressions: row.impressions,
-        ctr: row.ctr,
-        position: row.position,
-        synced_at: syncedAt,
-      })),
-      format: 'JSONEachRow',
-    });
-  }
+  await storeGscRows(deps, projectId, 'daily', syncedAt, dailyRows);
 
   // 2. Per-page breakdown
   const pageRows = await queryGscSearchAnalytics(
@@ -284,23 +334,7 @@ export async function syncGscData(
     end,
     ['date', 'page']
   );
-
-  if (pageRows.length > 0) {
-    await ch.insert({
-      table: 'gsc_pages_daily',
-      values: pageRows.map((row) => ({
-        project_id: projectId,
-        date: row.keys[0] ?? '',
-        page: row.keys[1] ?? '',
-        clicks: row.clicks,
-        impressions: row.impressions,
-        ctr: row.ctr,
-        position: row.position,
-        synced_at: syncedAt,
-      })),
-      format: 'JSONEachRow',
-    });
-  }
+  await storeGscRows(deps, projectId, 'pages', syncedAt, pageRows);
 
   // 3. Per-query breakdown
   const queryRows = await queryGscSearchAnalytics(
@@ -310,23 +344,7 @@ export async function syncGscData(
     end,
     ['date', 'query']
   );
-
-  if (queryRows.length > 0) {
-    await ch.insert({
-      table: 'gsc_queries_daily',
-      values: queryRows.map((row) => ({
-        project_id: projectId,
-        date: row.keys[0] ?? '',
-        query: row.keys[1] ?? '',
-        clicks: row.clicks,
-        impressions: row.impressions,
-        ctr: row.ctr,
-        position: row.position,
-        synced_at: syncedAt,
-      })),
-      format: 'JSONEachRow',
-    });
-  }
+  await storeGscRows(deps, projectId, 'queries', syncedAt, queryRows);
 }
 
 export async function getGscOverview(
@@ -344,6 +362,14 @@ export async function getGscOverview(
     position: number;
   }>
 > {
+  if (deps.eventStore) {
+    return fromGscStore(deps, projectId, {
+      kind: 'overview',
+      startDate,
+      endDate,
+      interval,
+    });
+  }
   const dateExpr =
     interval === 'month'
       ? 'toStartOfMonth(date)'
@@ -389,6 +415,15 @@ export async function getGscPages(
     position: number;
   }>
 > {
+  if (deps.eventStore) {
+    return fromGscStore(deps, projectId, {
+      kind: 'top',
+      table: 'pages',
+      startDate,
+      endDate,
+      limit,
+    });
+  }
   const ch = deps.ch;
   const result = await ch.query({
     query: `
@@ -675,6 +710,15 @@ export async function getGscQueries(
     position: number;
   }>
 > {
+  if (deps.eventStore) {
+    return fromGscStore(deps, projectId, {
+      kind: 'top',
+      table: 'queries',
+      startDate,
+      endDate,
+      limit,
+    });
+  }
   const ch = deps.ch;
   const result = await ch.query({
     query: `

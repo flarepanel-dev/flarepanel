@@ -37,6 +37,13 @@ export const importRouter = createTRPCRouter({
         projectId: input.projectId,
         level: 'write',
       });
+      // Workers: the import pipeline stages and rebuilds sessions in
+      // ClickHouse; started here it would store nothing.
+      if (ctx.eventStore) {
+        throw new TRPCBadRequestError(
+          'Imports are not available on the Cloudflare edition yet.'
+        );
+      }
       await requireMappedProjectsWriteAccess(
         ctx.services.auth,
         userId,

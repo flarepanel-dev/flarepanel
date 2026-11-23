@@ -36,6 +36,8 @@ import {
   flushAiContent,
   type GroupQuery,
   type GroupStore,
+  type GscQuery,
+  type GscStore,
   type JourneyScanQuery,
   type ListEventsQuery,
   loadAiContent,
@@ -43,6 +45,7 @@ import {
   openAiStore,
   openCohortStore,
   openGroupStore,
+  openGscStore,
   openProfileStore,
   openProjectEventsEngine,
   type PageSeriesQuery,
@@ -145,6 +148,7 @@ interface State {
   groups: GroupStore;
   cohorts: CohortStore;
   ai: AiStore;
+  gsc: GscStore;
   sql: EngineSql;
   service: ProjectEventsService;
 }
@@ -242,6 +246,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     const groups = openGroupStore(sql, () => Date.now());
     const cohorts = openCohortStore(sql, () => Date.now());
     const ai = openAiStore(sql, () => Date.now());
+    const gsc = openGscStore(sql);
     const service = createProjectEventsService({
       engine,
       logger: this.logger,
@@ -284,7 +289,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       this.unstreamed =
         (await engine.readChunks(streamedThrough, 1)).length > 0;
     }
-    return { engine, service, profiles, groups, cohorts, ai, sql };
+    return { engine, service, profiles, groups, cohorts, ai, gsc, sql };
   }
 
   private async rememberProject(projectId: string) {
@@ -596,6 +601,12 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
         );
       }
     }
+  }
+
+  /** Search Console writes and SEO page reads; JSON text. */
+  async gsc(query: GscQuery): Promise<string> {
+    const { gsc } = await this.state;
+    return JSON.stringify(gsc.answer(query));
   }
 
   /** Assistant, MCP and REST reads; JSON text in the ClickHouse row shapes. */

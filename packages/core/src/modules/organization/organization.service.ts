@@ -408,6 +408,20 @@ export async function getOrganizationBillingEventsCount(
   return res[0]?.count;
 }
 
+/** Workers: billable events (no session bookkeeping) since `from`, summed over projects. */
+async function storedBillableEvents(
+  store: NonNullable<ServiceDeps['eventStore']>,
+  projectIds: string[],
+  from: Date
+): Promise<number> {
+  const counts = await Promise.all(
+    projectIds.map((projectId) =>
+      store.countEvents(projectId, from, new Date())
+    )
+  );
+  return counts.reduce((sum, count) => sum + count, 0);
+}
+
 // Lifetime event count for a set of projects (excluding session bookkeeping
 // events). The onboarding emails use this instead of subscriptionPeriodEventsCount,
 // which only refreshes when sessions end.
@@ -417,6 +431,9 @@ export async function getOrganizationEventsCount(
 ): Promise<number> {
   if (projectIds.length === 0) {
     return 0;
+  }
+  if (deps.eventStore) {
+    return storedBillableEvents(deps.eventStore, projectIds, new Date(0));
   }
 
   const statement = sql`
@@ -441,6 +458,9 @@ export async function getOrganizationEventsCountSince(
 ): Promise<number> {
   if (projectIds.length === 0) {
     return 0;
+  }
+  if (deps.eventStore) {
+    return storedBillableEvents(deps.eventStore, projectIds, since);
   }
 
   const statement = sql`
