@@ -2,8 +2,8 @@
  * `/track` on Workers: geo from `request.cf`, a best-effort duplicate check in
  * the colo's Cache API, and one RPC to the project's Durable Object, which
  * resolves the device and session, stores the event and answers once it is
- * durable. Profiles, groups and replays have no store until Phase 4 and are
- * accepted without being stored.
+ * durable. Profiles live in the same Durable Object; groups and replays are
+ * accepted without being stored until Phase 4.
  */
 import {
   type AppDeps,
@@ -13,6 +13,7 @@ import {
   type EventStore,
   getGeoFromCf,
   getProjectByIdCached,
+  type IClickhouseProfile,
   type IngestBackend,
   type TrackDraft,
   updateEventsCount,
@@ -65,8 +66,6 @@ export function createCloudflareIngestBackend({
   };
 
   return {
-    storesProfiles: false,
-
     async isDuplicate({ ip, origin, payload, projectId }) {
       const key = `ingest:dedupe:${await sha256Hex(
         JSON.stringify([projectId, ip, origin, payload])
@@ -142,6 +141,8 @@ export function createWorkerEventStore(
       projectEventsStub(env, projectId).activeVisitors(),
     overview: (projectId, from, to) =>
       projectEventsStub(env, projectId).overview(from, to),
+    listProfiles: (projectId, query) =>
+      projectEventsStub(env, projectId).listProfiles(query),
     countEvents: (projectId, from, to) =>
       projectEventsStub(env, projectId).countEvents(from, to),
     async deleteProjects(projectIds) {
@@ -172,9 +173,16 @@ export function createWorkerBuffers(env: Pick<Env, 'PROJECT_EVENTS'>): Buffers {
           deviceIds
         ),
     },
+    // identify / increment / decrement / group assignment go to the
+    // project's Durable Object profile store.
     profile: {
-      add: noop,
-      fetchFromCache: () => Promise.resolve(null),
+      add: (profile: IClickhouseProfile, isFromEvent = false) =>
+        projectEventsStub(env, profile.project_id).upsertProfile(
+          profile,
+          isFromEvent
+        ),
+      fetchFromCache: (profileId: string, projectId: string) =>
+        projectEventsStub(env, projectId).getProfile(profileId),
     },
     group: { add: noop },
     replay: { add: noop },

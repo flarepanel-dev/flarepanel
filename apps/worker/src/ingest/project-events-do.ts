@@ -10,14 +10,17 @@
 
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { DurableObject } from 'cloudflare:workers';
-import type { DeviceRequest } from '@flarepanel/core';
+import type { DeviceRequest, IClickhouseProfile } from '@flarepanel/core';
 import {
   archivePrefix,
   buildArchiveObjects,
   createProjectEventsService,
   type EngineSql,
   type ListEventsQuery,
+  openProfileStore,
   openProjectEventsEngine,
+  type ProfileListQuery,
+  type ProfileStore,
   type ProjectEventsEngine,
   type ProjectEventsService,
   type ProjectEventsTrackInput,
@@ -49,6 +52,7 @@ type LiveKind = 'events' | 'visitors' | 'notifications';
 
 interface State {
   engine: ProjectEventsEngine;
+  profiles: ProfileStore;
   service: ProjectEventsService;
 }
 
@@ -124,7 +128,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     const archivedThrough =
       (await storage.get<number>(KEY_ARCHIVED_THROUGH)) ?? 0;
     this.unarchived = (await engine.readChunks(archivedThrough, 1)).length > 0;
-    return { engine, service };
+    return { engine, service, profiles: openProfileStore(sql) };
   }
 
   private async rememberProject(projectId: string) {
@@ -172,6 +176,22 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   async dailyStats(from: Date, to: Date) {
     const { engine } = await this.state;
     return engine.dailyStats(from, to);
+  }
+
+  async upsertProfile(profile: IClickhouseProfile, isFromEvent: boolean) {
+    const { profiles } = await this.state;
+    await this.rememberProject(profile.project_id);
+    profiles.upsert(profile, { onlyIfNew: isFromEvent });
+  }
+
+  async getProfile(profileId: string) {
+    const { profiles } = await this.state;
+    return profiles.get(profileId);
+  }
+
+  async listProfiles(query: ProfileListQuery) {
+    const { profiles } = await this.state;
+    return profiles.list(query);
   }
 
   async countEvents(from: Date, to: Date) {

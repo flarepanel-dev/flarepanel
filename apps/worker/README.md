@@ -35,7 +35,8 @@ cookie is shared.
 | Ingest: `/track`, `/event`, `/track/device-id` | works (Phase 3a): one Durable Object per project stores the events |
 | Onboarding "first event", event list, project card, live visitors and live event sockets | works, read from the project's Durable Object |
 | R2 archive (`flarepanel-events`) and retention | every 10 min while there is new data; 90 days hot, R2 keeps all |
-| Profiles, groups, replays (identify, increment, group, replay) | accepted and not stored yet (Phase 4) |
+| Profiles: identify, increment, decrement, profile list and profile page | works: stored in the project's Durable Object (`identities` table) |
+| Groups, replays | accepted and not stored yet |
 | Overview charts, funnels, retention, filters, notifications | not yet: they need the Phase 4 query layer |
 
 Checked end to end with `wrangler dev`: sign-up 264 ms, onboarding (project +

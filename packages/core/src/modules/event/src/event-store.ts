@@ -9,6 +9,10 @@ import type {
   ListEventsQuery,
   ProjectCard,
 } from '../../ingest/cloudflare/engine';
+import type {
+  ProfileListPage,
+  ProfileListQuery,
+} from '../../ingest/cloudflare/profile-store';
 
 export interface EventStore {
   /** Newest first; `cursor` is opaque and comes from the previous page. */
@@ -21,6 +25,11 @@ export interface EventStore {
   /** UTC daily rollups for `from`..`to` and the range's distinct visitors. */
   /** Billable events (everything but session_start/session_end) in `from`..`to`. */
   countEvents(projectId: string, from: Date, to: Date): Promise<number>;
+  /** Identified profiles, newest activity first. */
+  listProfiles(
+    projectId: string,
+    query: ProfileListQuery
+  ): Promise<ProfileListPage>;
   /** Removes every stored and archived event of these projects. */
   deleteProjects(projectIds: string[]): Promise<void>;
   overview(

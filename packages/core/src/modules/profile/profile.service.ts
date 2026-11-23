@@ -579,6 +579,20 @@ export async function getProfileListPage(
   deps: ServiceDeps,
   input: GetProfileListOptions
 ) {
+  if (deps.eventStore) {
+    // Workers: identified profiles from the project's Durable Object. Event
+    // filters and the activity window need the Phase 4 query port.
+    const page = await deps.eventStore.listProfiles(input.projectId, {
+      cursor: input.cursor,
+      take: input.take,
+      search: input.search,
+      isExternal: input.isExternal,
+    });
+    return {
+      data: page.profiles.map(transformProfile),
+      meta: { count: page.count, pageCount: input.take },
+    };
+  }
   const [data, count] = await Promise.all([
     getProfileList(deps, input),
     getProfileListCount(deps, input),
