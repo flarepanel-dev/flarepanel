@@ -73,6 +73,18 @@ export async function handleOps(
     return json({ error: 'Not found' }, 404);
   }
   const stub = stubFor(projectId);
+  // A refused restore (a time before the project's first event, an unknown
+  // bookmark) is the caller's to fix: answer it, do not fail the request.
+  const restore = async (target: { at?: number; bookmark?: string }) => {
+    try {
+      return json({ projectId, ...(await stub.restoreTo(target)) });
+    } catch (error) {
+      return json(
+        { error: error instanceof Error ? error.message : String(error) },
+        400
+      );
+    }
+  };
 
   if (action === 'recovery' && request.method === 'GET') {
     return json({ projectId, ...(await stub.recoveryStatus()) });
@@ -86,10 +98,7 @@ export async function handleOps(
       if (!BOOKMARK.test(body.bookmark)) {
         return json({ error: 'Invalid bookmark' }, 400);
       }
-      return json({
-        projectId,
-        ...(await stub.restoreTo({ bookmark: body.bookmark })),
-      });
+      return restore({ bookmark: body.bookmark });
     }
     const at = body.at ? Date.parse(body.at) : Number.NaN;
     if (
@@ -102,7 +111,7 @@ export async function handleOps(
         400
       );
     }
-    return json({ projectId, ...(await stub.restoreTo({ at })) });
+    return restore({ at });
   }
   return json({ error: 'Method not allowed' }, 405);
 }

@@ -87,4 +87,28 @@ describe('ops recovery routes', () => {
       bookmark: '0000000c-00000002-0000512c-ca19',
     });
   });
+
+  it('answers a refused restore with 400 and the reason', async () => {
+    const refusing = {
+      ...stub,
+      restoreTo: () =>
+        Promise.reject(
+          new Error('Requested time is before this database existed.')
+        ),
+    };
+    const response = await handleOps(
+      request('/__ops/projects/p1/restore', {
+        method: 'POST',
+        body: JSON.stringify({
+          at: new Date(Date.now() - 60_000).toISOString(),
+        }),
+      }),
+      env,
+      () => refusing
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: 'Requested time is before this database existed.',
+    });
+  });
 });
