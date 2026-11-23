@@ -8,6 +8,8 @@ export {
 } from './archive';
 export {
   type DailyStats,
+  type Dimension,
+  type DimensionRow,
   type EngineClock,
   type EngineCodec,
   type EngineSql,

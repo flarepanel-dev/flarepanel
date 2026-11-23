@@ -85,7 +85,61 @@ const SCHEMA = [
   'CREATE TABLE IF NOT EXISTS daily (day TEXT PRIMARY KEY, visitors BLOB, sessions INT, bounces INT, duration_ms INT, screen_views INT, events INT, revenue INT) WITHOUT ROWID',
   'CREATE TABLE IF NOT EXISTS event_names (name TEXT PRIMARY KEY, count INT, last_seen INT) WITHOUT ROWID',
   'CREATE TABLE IF NOT EXISTS profiles (id TEXT PRIMARY KEY, body TEXT, last_seen INT) WITHOUT ROWID',
+  // Per-day counts by page, source, place and device for the overview's top
+  // lists. Written additively at each checkpoint, like event_names.
+  'CREATE TABLE IF NOT EXISTS dims (day TEXT, dim TEXT, value TEXT, sessions INT, pageviews INT, revenue INT, PRIMARY KEY (day, dim, value)) WITHOUT ROWID',
 ];
+
+/** Session-level dimensions, counted once per session at session_start. */
+const SESSION_DIMENSIONS = [
+  'referrer',
+  'referrer_name',
+  'referrer_type',
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+  'country',
+  'region',
+  'city',
+  'device',
+  'brand',
+  'model',
+  'browser',
+  'browser_version',
+  'os',
+  'os_version',
+] as const;
+export type SessionDimension = (typeof SESSION_DIMENSIONS)[number];
+/** Page dimensions: views by page, sessions by entry and exit page. */
+export type PageDimension = 'path' | 'entry' | 'exit';
+export type Dimension = SessionDimension | PageDimension;
+/** Separates a value from its parent (country for a city, origin for a path). */
+const DIM_PREFIX_SEPARATOR = '\u0001';
+const DIM_KEY_SEPARATOR = '\u0000';
+const DIM_PREFIX: Partial<Record<SessionDimension, SessionDimension>> = {
+  region: 'country',
+  city: 'country',
+  browser_version: 'browser',
+  os_version: 'os',
+};
+const DEFAULT_TOP_LIMIT = 50;
+
+export interface DimensionRow {
+  /** The parent value (country, browser, os, or a page's origin). */
+  prefix?: string;
+  name: string;
+  sessions: number;
+  pageviews: number;
+  revenue: number;
+}
+
+interface DimensionDelta {
+  sessions: number;
+  pageviews: number;
+  revenue: number;
+}
 
 // ---------------------------------------------------------------------------
 // Injected runtime
@@ -445,6 +499,9 @@ export async function openProjectEventsEngine({
   const days = new Map<string, DailyRollup>();
   const dirtyDays = new Set<string>();
   const nameDeltas = new Map<string, { count: number; lastSeen: number }>();
+  const dimDeltas = new Map<string, DimensionDelta>();
+  /** Pages each live session has viewed, so a page counts a session once. */
+  const sessionPages = new Map<string, Set<string>>();
   const dirtyProfiles = new Map<string, ProfileSnapshot>();
   const recentRequests = new Map<string, number>();
   const chunkCache = new Map<number, IClickhouseEvent[]>();
@@ -576,6 +633,106 @@ export async function openProjectEventsEngine({
     return rollup;
   }
 
+  function addDimension(
+    day: string,
+    dim: Dimension,
+    value: string,
+    delta: DimensionDelta
+  ) {
+    const key = [day, dim, value].join(DIM_KEY_SEPARATOR);
+    const current = dimDeltas.get(key) ?? {
+      sessions: 0,
+      pageviews: 0,
+      revenue: 0,
+    };
+    current.sessions += delta.sessions;
+    current.pageviews += delta.pageviews;
+    current.revenue += delta.revenue;
+    dimDeltas.set(key, current);
+  }
+
+  function sessionDimensionValue(
+    event: IClickhouseEvent,
+    dim: SessionDimension
+  ): string {
+    const raw = dim.startsWith('utm_')
+      ? event.properties[`${UTM_PREFIX}${dim}`]
+      : (event as unknown as Record<string, unknown>)[dim];
+    const value = raw === undefined || raw === null ? '' : String(raw);
+    const parent = DIM_PREFIX[dim];
+    if (!parent) {
+      return value;
+    }
+    const parentValue = (event as unknown as Record<string, unknown>)[parent];
+    return `${parentValue ?? ''}${DIM_PREFIX_SEPARATOR}${value}`;
+  }
+
+  function pageValue(event: IClickhouseEvent): string {
+    return `${event.origin ?? ''}${DIM_PREFIX_SEPARATOR}${event.path ?? ''}`;
+  }
+
+  function recordDimensions(
+    event: IClickhouseEvent,
+    day: string,
+    isSessionStart: boolean,
+    isSessionEnd: boolean
+  ) {
+    const isView = event.name === 'screen_view';
+    const revenue = isSessionStart || isSessionEnd ? 0 : (event.revenue ?? 0);
+    if (isSessionStart) {
+      for (const dim of SESSION_DIMENSIONS) {
+        addDimension(day, dim, sessionDimensionValue(event, dim), {
+          sessions: 1,
+          pageviews: 0,
+          revenue: 0,
+        });
+      }
+      if (event.path) {
+        addDimension(day, 'entry', pageValue(event), {
+          sessions: 1,
+          pageviews: 0,
+          revenue: 0,
+        });
+      }
+      return;
+    }
+    if (isSessionEnd) {
+      sessionPages.delete(event.session_id);
+      if (event.path) {
+        addDimension(day, 'exit', pageValue(event), {
+          sessions: 1,
+          pageviews: 0,
+          revenue: 0,
+        });
+      }
+      return;
+    }
+    if (isView || revenue) {
+      for (const dim of SESSION_DIMENSIONS) {
+        addDimension(day, dim, sessionDimensionValue(event, dim), {
+          sessions: 0,
+          pageviews: isView ? 1 : 0,
+          revenue,
+        });
+      }
+    }
+    // Pages without a path (server-side events) are left out of page lists.
+    if (event.path && (isView || revenue)) {
+      const page = pageValue(event);
+      const seen = sessionPages.get(event.session_id) ?? new Set<string>();
+      const firstInSession = event.session_id ? !seen.has(page) : false;
+      if (event.session_id) {
+        seen.add(page);
+        sessionPages.set(event.session_id, seen);
+      }
+      addDimension(day, 'path', page, {
+        sessions: firstInSession ? 1 : 0,
+        pageviews: isView ? 1 : 0,
+        revenue,
+      });
+    }
+  }
+
   function applyCommitted(event: IClickhouseEvent) {
     const at = eventTimeMs(event.created_at);
     const day = loadDay(dayKey(at));
@@ -603,6 +760,7 @@ export async function openProjectEventsEngine({
     name.count += 1;
     name.lastSeen = Math.max(name.lastSeen, at);
     nameDeltas.set(event.name, name);
+    recordDimensions(event, dayKey(at), isSessionStart, isSessionEnd);
 
     const isIdentified =
       event.profile_id && event.profile_id !== event.device_id;
@@ -821,6 +979,18 @@ export async function openProjectEventsEngine({
         delta.lastSeen
       );
     }
+    for (const [key, delta] of dimDeltas) {
+      const [day, dim, value] = key.split(DIM_KEY_SEPARATOR);
+      sql.exec(
+        'INSERT INTO dims (day, dim, value, sessions, pageviews, revenue) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (day, dim, value) DO UPDATE SET sessions = sessions + excluded.sessions, pageviews = pageviews + excluded.pageviews, revenue = revenue + excluded.revenue',
+        day ?? '',
+        dim ?? '',
+        value ?? '',
+        delta.sessions,
+        delta.pageviews,
+        delta.revenue
+      );
+    }
     for (const [id, profile] of dirtyProfiles) {
       const onConflict = profile.insertOnly
         ? 'DO NOTHING'
@@ -847,6 +1017,7 @@ export async function openProjectEventsEngine({
     dirtyDays.clear();
     days.clear();
     nameDeltas.clear();
+    dimDeltas.clear();
     dirtyProfiles.clear();
   }
 
@@ -1186,6 +1357,65 @@ export async function openProjectEventsEngine({
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   }
 
+  /** Top values of one dimension over the UTC days `from`..`to`. */
+  function topDimension(
+    dim: Dimension,
+    from: Date,
+    to: Date,
+    limit = DEFAULT_TOP_LIMIT
+  ): DimensionRow[] {
+    const fromDay = dayKey(from.getTime());
+    const toDay = dayKey(to.getTime());
+    const totals = new Map<string, DimensionDelta>();
+    const add = (value: string, delta: DimensionDelta) => {
+      const current = totals.get(value) ?? {
+        sessions: 0,
+        pageviews: 0,
+        revenue: 0,
+      };
+      current.sessions += delta.sessions;
+      current.pageviews += delta.pageviews;
+      current.revenue += delta.revenue;
+      totals.set(value, current);
+    };
+    for (const row of sql.exec(
+      'SELECT value, sum(sessions) AS sessions, sum(pageviews) AS pageviews, sum(revenue) AS revenue FROM dims WHERE dim = ? AND day >= ? AND day <= ? GROUP BY value',
+      dim,
+      fromDay,
+      toDay
+    )) {
+      add(String(row.value), {
+        sessions: toNumber(row.sessions),
+        pageviews: toNumber(row.pageviews),
+        revenue: toNumber(row.revenue),
+      });
+    }
+    for (const [key, delta] of dimDeltas) {
+      const [day = '', deltaDim, value = ''] = key.split(DIM_KEY_SEPARATOR);
+      if (deltaDim === dim && day >= fromDay && day <= toDay) {
+        add(value, delta);
+      }
+    }
+    return [...totals.entries()]
+      .map(([value, delta]) => {
+        const split = value.indexOf(DIM_PREFIX_SEPARATOR);
+        return split >= 0
+          ? {
+              prefix: value.slice(0, split),
+              name: value.slice(split + 1),
+              ...delta,
+            }
+          : { name: value, ...delta };
+      })
+      .sort(
+        (a, b) =>
+          b.sessions - a.sessions ||
+          b.pageviews - a.pageviews ||
+          a.name.localeCompare(b.name)
+      )
+      .slice(0, Math.max(1, limit));
+  }
+
   function activeVisitors(windowMs = DEFAULT_ACTIVE_WINDOW_MS): number {
     const since = clock.now() - windowMs;
     const visitors = new Set<string>();
@@ -1428,6 +1658,7 @@ export async function openProjectEventsEngine({
     projectCard,
     dailyStats,
     rangeVisitors,
+    topDimension,
     eventNames,
     activeVisitors,
     readChunks,

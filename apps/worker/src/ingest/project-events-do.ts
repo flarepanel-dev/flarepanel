@@ -15,6 +15,7 @@ import {
   archivePrefix,
   buildArchiveObjects,
   createProjectEventsService,
+  type Dimension,
   type EngineSql,
   type ListEventsQuery,
   openProfileStore,
@@ -192,6 +193,11 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   async listProfiles(query: ProfileListQuery) {
     const { profiles } = await this.state;
     return profiles.list(query);
+  }
+
+  async topDimension(dim: Dimension, from: Date, to: Date, limit?: number) {
+    const { engine } = await this.state;
+    return engine.topDimension(dim, from, to, limit);
   }
 
   async countEvents(from: Date, to: Date) {

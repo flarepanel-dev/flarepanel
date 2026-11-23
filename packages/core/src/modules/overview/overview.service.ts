@@ -678,6 +678,22 @@ export async function getTopPages(
   deps: ServiceDeps,
   { projectId, filters, startDate, endDate, timezone, limit }: IGetTopPagesInput
 ) {
+  if (deps.eventStore) {
+    const rows = await deps.eventStore.topDimension(
+      projectId,
+      'path',
+      new Date(startDate),
+      new Date(endDate),
+      Math.min(limit ?? MAX_RECORDS_LIMIT, MAX_RECORDS_LIMIT)
+    );
+    return rows.map((row) => ({
+      origin: row.prefix ?? '',
+      path: row.name,
+      sessions: row.sessions,
+      pageviews: row.pageviews,
+      revenue: row.revenue,
+    }));
+  }
   return runQuery<{
     origin: string;
     path: string;
@@ -709,6 +725,22 @@ export async function getTopEntryExit(
     limit,
   }: IGetTopEntryExitInput
 ) {
+  if (deps.eventStore) {
+    const rows = await deps.eventStore.topDimension(
+      projectId,
+      mode,
+      new Date(startDate),
+      new Date(endDate),
+      Math.min(limit ?? MAX_RECORDS_LIMIT, MAX_RECORDS_LIMIT)
+    );
+    return rows.map((row) => ({
+      origin: row.prefix ?? '',
+      path: row.name,
+      sessions: row.sessions,
+      pageviews: row.pageviews,
+      revenue: row.revenue,
+    }));
+  }
   const sessionsFilter = sessionsFilterMode({
     filters,
     projectId,
@@ -749,6 +781,24 @@ export async function getTopGeneric(
 ) {
   if (!WHITELISTED_FILTERS.includes(column)) {
     return [];
+  }
+
+  if (deps.eventStore) {
+    // Workers: daily per-dimension rollups; filters need the Phase 4 port.
+    const rows = await deps.eventStore.topDimension(
+      projectId,
+      column,
+      new Date(startDate),
+      new Date(endDate),
+      MAX_RECORDS_LIMIT
+    );
+    return rows.map((row) => ({
+      ...(row.prefix === undefined ? {} : { prefix: row.prefix }),
+      name: row.name,
+      sessions: row.sessions,
+      pageviews: row.pageviews,
+      revenue: row.revenue,
+    }));
   }
 
   const prefixColumn = COLUMN_PREFIX_MAP[column] ?? null;
@@ -1236,6 +1286,23 @@ export async function getMapData(
     count: number;
   }>
 > {
+  if (deps.eventStore) {
+    const rows = await deps.eventStore.topDimension(
+      projectId,
+      'country',
+      new Date(startDate),
+      new Date(endDate),
+      MAX_RECORDS_LIMIT
+    );
+    return rows
+      .filter((row) => row.name)
+      .map((row) => ({
+        country: row.name,
+        lat: 0,
+        lng: 0,
+        count: row.sessions,
+      }));
+  }
   const results = await runQuery<{
     country: string;
     region: string | null;

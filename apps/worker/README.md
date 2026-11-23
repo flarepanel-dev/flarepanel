@@ -37,7 +37,8 @@ cookie is shared.
 | R2 archive (`flarepanel-events`) and retention | every 10 min while there is new data; 90 days hot, R2 keeps all |
 | Profiles: identify, increment, decrement, profile list and profile page | works: stored in the project's Durable Object (`identities` table) |
 | Groups, replays | accepted and not stored yet |
-| Overview charts, funnels, retention, filters, notifications | not yet: they need the Phase 4 query layer |
+| Overview numbers and chart, top pages, entry/exit pages, referrers/UTM, countries/regions/cities, devices/browsers/OS, map | works: daily rollups in the project's Durable Object (`daily`, `dims`); filters not applied yet |
+| Funnels, retention, insights, filters, notifications, live 30-min card | not yet: they need the Phase 4 query layer |
 
 Checked end to end with `wrangler dev`: sign-up 264 ms, onboarding (project +
 two clients) 194 ms, sign-in 202 ms, then the dashboard in a browser.

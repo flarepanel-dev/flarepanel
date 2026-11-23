@@ -28,8 +28,7 @@ const noopLogger: Logger = (() => {
   return logger;
 })();
 
-async function createService() {
-  const db = new Database(':memory:');
+async function createService(db = new Database(':memory:')) {
   const sql: EngineSql = {
     exec(query, ...bindings) {
       const statement = db.query(query);
@@ -60,7 +59,7 @@ async function createService() {
       stored += 1;
     },
   });
-  return { engine, service, storedCount: () => stored };
+  return { db, engine, service, storedCount: () => stored };
 }
 
 function draft(name: string, path = '/'): TrackDraft {
@@ -218,5 +217,72 @@ describe('project events service', () => {
     expect(lines.length).toBe(object?.events ?? -1);
     expect(total).toBe(chunks.reduce((sum, c) => sum + c.events.length, 0));
     expect(JSON.parse(lines[0] ?? '{}').project_id).toBe(PROJECT_ID);
+  });
+
+  it('keeps top pages, sources, places and devices per day', async () => {
+    const { db, engine, service } = await createService();
+    const visit = (
+      ip: string,
+      path: string,
+      country: string,
+      referrer?: string
+    ) => {
+      const event = draft('screen_view', path);
+      if (event.device) {
+        event.device = { ...event.device, ip };
+      }
+      event.event.geo = { ...event.event.geo, country };
+      if (referrer) {
+        event.event.event.properties = {
+          ...event.event.event.properties,
+          __referrer: referrer,
+        };
+      }
+      return service.track({ draft: event, project: null });
+    };
+    await visit('203.0.113.1', '/', 'PT', 'https://news.ycombinator.com/');
+    await visit('203.0.113.1', '/pricing', 'PT');
+    await visit('203.0.113.1', '/pricing', 'PT');
+    await visit('203.0.113.2', '/pricing', 'DE');
+    await engine.flush();
+
+    const from = new Date(Date.now() - 60 * 60 * 1000);
+    const to = new Date();
+    const countries = engine.topDimension('country', from, to);
+    // Equal sessions: more page views first.
+    expect(countries.map((row) => [row.name, row.sessions])).toEqual([
+      ['PT', 1],
+      ['DE', 1],
+    ]);
+    expect(countries.find((row) => row.name === 'PT')?.pageviews).toBe(3);
+
+    const pages = engine.topDimension('path', from, to);
+    const pricing = pages.find((row) => row.name === '/pricing');
+    expect(pricing).toMatchObject({
+      prefix: 'https://example.com',
+      sessions: 2,
+      pageviews: 3,
+    });
+    const entry = engine.topDimension('entry', from, to);
+    expect(entry.map((row) => [row.name, row.sessions])).toEqual([
+      ['/', 1],
+      ['/pricing', 1],
+    ]);
+    const sources = engine.topDimension('referrer_name', from, to);
+    expect(sources.reduce((sum, row) => sum + row.sessions, 0)).toBe(2);
+    const cities = engine.topDimension('city', from, to);
+    expect(cities[0]?.prefix).toBeDefined();
+
+    // Saved at the checkpoint and read back by a new engine on the same storage.
+    await engine.checkpoint();
+    const reopened = await createService(db);
+    expect(
+      reopened.engine
+        .topDimension('country', from, to)
+        .map((row) => [row.name, row.sessions, row.pageviews])
+    ).toEqual([
+      ['PT', 1, 3],
+      ['DE', 1, 1],
+    ]);
   });
 });

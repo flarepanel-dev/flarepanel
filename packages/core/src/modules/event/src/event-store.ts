@@ -5,6 +5,8 @@
 
 import type {
   DailyStats,
+  Dimension,
+  DimensionRow,
   ListEventsPage,
   ListEventsQuery,
   ProjectCard,
@@ -25,6 +27,14 @@ export interface EventStore {
   /** UTC daily rollups for `from`..`to` and the range's distinct visitors. */
   /** Billable events (everything but session_start/session_end) in `from`..`to`. */
   countEvents(projectId: string, from: Date, to: Date): Promise<number>;
+  /** Top values of a page, source, place or device dimension over a range. */
+  topDimension(
+    projectId: string,
+    dim: Dimension,
+    from: Date,
+    to: Date,
+    limit?: number
+  ): Promise<DimensionRow[]>;
   /** Identified profiles, newest activity first. */
   listProfiles(
     projectId: string,
