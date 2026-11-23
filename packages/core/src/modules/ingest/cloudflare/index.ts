@@ -82,6 +82,11 @@ export type {
 } from './event-count-scan';
 export { type RowFilter, unsupportedFilters } from './filter-eval';
 export type { FunnelScanQuery, FunnelScanResult } from './funnel-scan';
+export {
+  answerToolQuery,
+  type FindProfilesQuery,
+  type ToolQuery,
+} from './tool-scans';
 export type { GroupQuery } from './group-query';
 export type { GroupSummary } from './group-scan';
 export {
@@ -136,5 +141,6 @@ export {
   type WeekStart,
   wallClockIso,
   wallClockText,
+  wallClockEndMs,
   wallClockToMs,
 } from './time-buckets';

@@ -43,6 +43,19 @@ export function wallClockToMs(value: string, timezone: string): number {
   return parsed.isValid ? parsed.toMillis() : Date.parse(value);
 }
 
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * The end of a range: a bare `yyyy-MM-dd` (as MCP and the REST API send it)
+ * covers that whole day, as ClickHouse's `toRangeBoundaryLiteral` reads it.
+ */
+export function wallClockEndMs(value: string, timezone: string): number {
+  return wallClockToMs(
+    DATE_ONLY.test(value) ? `${value} 23:59:59` : value,
+    timezone
+  );
+}
+
 /** The wall-clock time of `ms` in `timezone` as `yyyy-MM-dd HH:mm:ss`. */
 export function wallClockText(ms: number, timezone: string): string {
   return wallClockIso(ms, timezone).slice(0, 19).replace('T', ' ');

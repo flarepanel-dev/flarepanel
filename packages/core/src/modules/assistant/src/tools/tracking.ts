@@ -325,7 +325,27 @@ function inspectHtml(html: string): TrackingFacts['snippet'] {
   };
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Origins the page-view check lists, as the ClickHouse query's LIMIT. */
+const RECENT_ORIGINS_LIMIT = 20;
+
 async function recentPageViews(ctx: ChatToolContext) {
+  const store = ctx.deps.eventStore;
+  if (store) {
+    const now = Date.now();
+    const { rows: counted } = await store.eventCounts(ctx.projectId, {
+      from: now - RECENT_WINDOW_DAYS * DAY_MS,
+      to: now,
+      by: 'origin',
+      names: ['screen_view'],
+      limit: RECENT_ORIGINS_LIMIT,
+    });
+    return counted.map((row) => ({
+      origin: row.key,
+      count: row.count,
+      lastSeen: row.lastAt,
+    }));
+  }
   const rows = await chQuery<{
     origin: string;
     count: string;
@@ -349,6 +369,11 @@ async function recentPageViews(ctx: ChatToolContext) {
 }
 
 async function lastEventAt(ctx: ChatToolContext): Promise<string | null> {
+  const store = ctx.deps.eventStore;
+  if (store) {
+    const { events } = await store.listEvents(ctx.projectId, { take: 1 });
+    return events[0]?.created_at ?? null;
+  }
   const rows = await chQuery<{ last_event: string | null }>(
     ctx.deps,
     sql`SELECT max(created_at) AS last_event FROM events WHERE project_id = ${sql.string(ctx.projectId)}`

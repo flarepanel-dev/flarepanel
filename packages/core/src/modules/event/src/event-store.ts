@@ -4,6 +4,7 @@
 // port when it is present. Bun leaves it unset and keeps its ClickHouse reads.
 
 import type { AiQuery } from '../../ingest/cloudflare/ai-query';
+import type { ToolQuery } from '../../ingest/cloudflare/tool-scans';
 import type {
   ChartRow,
   ChartScanQuery,
@@ -116,6 +117,8 @@ export interface EventStore {
   ): Promise<{ rows: EventCountRow[]; partial: boolean }>;
   /** AI page reads, answered as JSON text in the ClickHouse row shapes. */
   ai(projectId: string, query: AiQuery): Promise<string>;
+  /** Assistant, MCP and REST reads (retention activity, profile search), as JSON text. */
+  tools(projectId: string, query: ToolQuery): Promise<string>;
   /** Cohort compute, members and member activity, answered as JSON text. */
   cohorts(projectId: string, query: CohortQuery): Promise<string>;
   /** Group reads and writes, answered as JSON text. */

@@ -3,7 +3,11 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { chQuery } from '../../../../../ch-query';
 import { TABLE_NAMES } from '../../../../../shared/ch-tables';
-import { EVENT_COLUMNS } from '../../../../event/event.service';
+import {
+  EVENT_COLUMNS,
+  getEventPropertyValuesCore,
+  listEventPropertiesCore,
+} from '../../../../event/event.service';
 import {
   type McpToolDeps,
   projectIdSchema,
@@ -78,6 +82,18 @@ export function registerPropertyValueTools(
     async ({ projectId: inputProjectId, eventName, limit }) =>
       withErrorHandling(deps, async () => {
         const projectId = await resolveProjectId(deps, context, inputProjectId);
+        // Workers: keys seen on the project's recent stored events.
+        if (deps.eventStore) {
+          const { properties } = await listEventPropertiesCore(deps, {
+            projectId,
+            eventName,
+          });
+          return {
+            ...(eventName ? { event_name: eventName } : {}),
+            columns: EVENT_COLUMNS,
+            ...compactPropertyKeys(properties, limit ?? DEFAULT_PROPERTY_LIMIT),
+          };
+        }
         // GROUP BY rather than DISTINCT so the epv_keys projection can serve
         // this (a multi-column DISTINCT cannot be matched against an
         // aggregating projection); `name` tie-breaks the ORDER BY so the
@@ -128,6 +144,24 @@ export function registerPropertyValueTools(
       withErrorHandling(deps, async () => {
         const projectId = await resolveProjectId(deps, context, inputProjectId);
         const take = limit ?? DEFAULT_VALUE_LIMIT;
+        if (deps.eventStore) {
+          const { values } = await getEventPropertyValuesCore(deps, {
+            projectId,
+            eventName,
+            propertyKey,
+          });
+          return {
+            event: eventName,
+            property: propertyKey,
+            values: values.slice(0, take),
+            total_distinct: values.length,
+            ...(values.length > take
+              ? {
+                  note: `Showing ${take} of ${values.length} distinct values. This property is high-cardinality — it is a poor breakdown dimension. Raise \`limit\` if you need more.`,
+                }
+              : {}),
+          };
+        }
         // The MV holds one row per (property, value, day), so the same value
         // recurs across the window — dedupe before counting against the limit,
         // otherwise a single stable value can fill the whole response.

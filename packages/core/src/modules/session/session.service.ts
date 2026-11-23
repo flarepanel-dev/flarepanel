@@ -504,6 +504,18 @@ export interface QuerySessionsInput {
   limit?: number;
 }
 
+/** `QuerySessionsInput` fields that match one session column exactly. */
+const QUERY_SESSIONS_EQUALS = [
+  ['country', 'country'],
+  ['city', 'city'],
+  ['device', 'device'],
+  ['browser', 'browser'],
+  ['os', 'os'],
+  ['referrer', 'referrer'],
+  ['referrerName', 'referrer_name'],
+  ['referrerType', 'referrer_type'],
+] as const;
+
 export async function querySessionsCore(
   deps: ServiceDeps,
   input: QuerySessionsInput
@@ -517,6 +529,27 @@ export async function querySessionsCore(
   // day, and an explicit datetime must not be read in the server's local zone.
   const from = toRangeBoundaryLiteral(startDate, 'start');
   const to = toRangeBoundaryLiteral(endDate, 'end');
+
+  // Workers: the project's Durable Object (open sessions and the log).
+  if (deps.eventStore) {
+    const query = storeSessionQuery({
+      profileId: input.profileId,
+      filters: input.filters,
+      startDate: convertClickhouseDateToJs(from),
+      endDate: convertClickhouseDateToJs(to),
+    });
+    for (const [key, column] of QUERY_SESSIONS_EQUALS) {
+      const value = input[key];
+      if (value) {
+        query.filters.push({ name: column, operator: 'is', value: [value] });
+      }
+    }
+    const rows = await deps.eventStore.listSessions(input.projectId, {
+      ...query,
+      take: input.limit ?? QUERY_SESSIONS_DEFAULT_LIMIT,
+    });
+    return rows.map(withReadableCountry);
+  }
 
   const rows = await chQuery<IClickhouseSession>(
     deps,

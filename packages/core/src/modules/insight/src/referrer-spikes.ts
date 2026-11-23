@@ -8,6 +8,7 @@ import { convertClickhouseDateToJs } from '../../../shared/ch-dates';
 import { TABLE_NAMES } from '../../../shared/ch-tables';
 import {
   buildBuckets,
+  wallClockEndMs,
   wallClockToMs,
 } from '../../ingest/cloudflare/time-buckets';
 import {
@@ -181,7 +182,7 @@ async function spikeDataFromEventStore(
   input: GetReferrerSpikesInput
 ): Promise<SpikeData | null> {
   const from = wallClockToMs(input.startDate, input.timezone);
-  const to = wallClockToMs(input.endDate, input.timezone);
+  const to = wallClockEndMs(input.endDate, input.timezone);
   const interval = input.interval;
   const query = {
     from,

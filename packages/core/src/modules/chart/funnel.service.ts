@@ -4,7 +4,7 @@ import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
 import { expandCustomEvents } from '../custom-event/custom-event.service';
 import type { FunnelScanQuery } from '../ingest/cloudflare/funnel-scan';
-import { wallClockToMs } from '../ingest/cloudflare/time-buckets';
+import { wallClockEndMs, wallClockToMs } from '../ingest/cloudflare/time-buckets';
 import { getSettingsForProject } from '../organization/organization.service';
 import type {
   IChartBreakdown,
@@ -418,7 +418,7 @@ function funnelScanQuery(input: {
   const { base } = input;
   return {
     from: wallClockToMs(input.startDate, base.timezone),
-    to: wallClockToMs(input.endDate, base.timezone),
+    to: wallClockEndMs(input.endDate, base.timezone),
     steps: base.eventSeries.map((event) => ({
       name: event.name,
       anyOf: event.anyOf?.map((item) => ({

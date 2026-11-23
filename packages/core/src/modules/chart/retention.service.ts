@@ -5,6 +5,7 @@ import { DateTime, round } from '@flarepanel/shared';
 import { range } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
 import { TimeRangeError } from '../../shared/time-buckets';
+import type { ToolQuery } from '../ingest/cloudflare/tool-scans';
 import type { IChartEventFilter } from '../report/report.constants';
 import { toRowFilters } from './src/engine/store-rows';
 import {
@@ -75,6 +76,34 @@ export interface IGetRetentionCohortInput {
   filters?: IChartEventFilter[];
 }
 
+/** A window boundary (ISO, `yyyy-MM-dd[ HH:mm:ss]`, read as UTC) in epoch ms. */
+function windowMs(value: string | undefined): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const ms = value.includes('T')
+    ? Date.parse(value)
+    : Date.parse(`${value.replace(' ', 'T')}${value.length > 10 ? 'Z' : ''}`);
+  return Number.isFinite(ms) ? ms : undefined;
+}
+
+/** Workers: the project's Durable Object answers in the ClickHouse row shape. */
+async function fromToolStore<T>(
+  deps: ServiceDeps,
+  projectId: string,
+  query: ToolQuery
+): Promise<T> {
+  const store = deps.eventStore as NonNullable<ServiceDeps['eventStore']>;
+  return JSON.parse(await store.tools(projectId, query)) as T;
+}
+
+/** Both ends, or neither: ClickHouse applies the window only when it has two. */
+function storeWindow(input: IGetWeekRetentionInput) {
+  const from = windowMs(input.startDate);
+  const to = windowMs(input.endDate);
+  return from !== undefined && to !== undefined ? { from, to } : {};
+}
+
 // Week-over-week retention graph: for each week, how many active users were
 // also active the following week.
 //
@@ -85,12 +114,19 @@ export function getRetentionSeries(
   deps: ServiceDeps,
   input: IGetWeekRetentionInput
 ) {
-  return runQuery<{
+  type Row = {
     date: string;
     active_users: number;
     retained_users: number;
     retention: number;
-  }>(deps, retentionSeriesQuery(input));
+  };
+  if (deps.eventStore) {
+    return fromToolStore<Row[]>(deps, input.projectId, {
+      kind: 'weeklyRetention',
+      ...storeWindow(input),
+    });
+  }
+  return runQuery<Row>(deps, retentionSeriesQuery(input));
 }
 
 // https://medium.com/@andre_bodro/how-to-fast-calculating-mau-in-clickhouse-fd793559b229
@@ -98,6 +134,13 @@ export function getRollingActiveUsers(
   deps: ServiceDeps,
   { projectId, days }: { projectId: string; days: number }
 ) {
+  if (deps.eventStore) {
+    return fromToolStore<IServiceRetentionRollingActiveUsers[]>(
+      deps,
+      projectId,
+      { kind: 'rollingActive', days }
+    );
+  }
   return runQuery<IServiceRetentionRollingActiveUsers>(
     deps,
     rollingActiveUsersQuery(projectId, days)
@@ -108,6 +151,13 @@ export function getRetentionLastSeenSeries(
   deps: ServiceDeps,
   input: IGetWeekRetentionInput
 ) {
+  if (deps.eventStore) {
+    return fromToolStore<{ days: number; users: number }[]>(
+      deps,
+      input.projectId,
+      { kind: 'lastSeen', ...storeWindow(input) }
+    );
+  }
   return runQuery<{
     days: number;
     users: number;

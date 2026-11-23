@@ -2,7 +2,7 @@ import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
-import { wallClockToMs } from '../ingest/cloudflare/time-buckets';
+import { wallClockEndMs, wallClockToMs } from '../ingest/cloudflare/time-buckets';
 import { getSettingsForProject } from '../organization/organization.service';
 import {
   chartColors,
@@ -192,7 +192,7 @@ export async function getSankey(
   if (deps.eventStore) {
     const result = await deps.eventStore.sankeyRows(projectId, {
       from: wallClockToMs(startDate, timezone),
-      to: wallClockToMs(endDate, timezone),
+      to: wallClockEndMs(endDate, timezone),
       steps,
       mode,
       ...(startEvent

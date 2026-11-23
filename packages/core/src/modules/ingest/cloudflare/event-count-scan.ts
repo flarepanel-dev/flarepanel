@@ -15,18 +15,23 @@ export interface EventCountQuery {
   names?: string[];
   excludeNames?: string[];
   filters?: RowFilter[];
+  /** Only events whose `groups` hold this id. */
+  groupId?: string;
   limit?: number;
 }
 
 export interface EventCountRow {
   key: string;
   count: number;
+  /** The newest counted event, ClickHouse date text (UTC). */
+  lastAt: string;
 }
 
 const DEFAULT_LIMIT = 1000;
 
 export class EventCountAccumulator {
   private readonly counts = new Map<string, number>();
+  private readonly last = new Map<string, string>();
   private readonly names: Set<string> | null;
   private readonly excluded: Set<string>;
   private readonly needsProfile: boolean;
@@ -45,7 +50,8 @@ export class EventCountAccumulator {
   add(event: IClickhouseEvent): void {
     if (
       (this.names && !this.names.has(event.name)) ||
-      this.excluded.has(event.name)
+      this.excluded.has(event.name) ||
+      (this.query.groupId && !event.groups?.includes(this.query.groupId))
     ) {
       return;
     }
@@ -65,11 +71,18 @@ export class EventCountAccumulator {
     }
     const key = String(value);
     this.counts.set(key, (this.counts.get(key) ?? 0) + 1);
+    if (event.created_at > (this.last.get(key) ?? '')) {
+      this.last.set(key, event.created_at);
+    }
   }
 
   rows(): EventCountRow[] {
     return [...this.counts.entries()]
-      .map(([key, count]) => ({ key, count }))
+      .map(([key, count]) => ({
+        key,
+        count,
+        lastAt: this.last.get(key) ?? '',
+      }))
       .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key))
       .slice(0, this.query.limit ?? DEFAULT_LIMIT);
   }

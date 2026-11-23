@@ -3,7 +3,7 @@
 // `sessions` scoped by filters) with different inputs.
 
 import type { ServiceDeps, Services } from '../../services';
-import { wallClockToMs } from '../ingest/cloudflare/time-buckets';
+import { wallClockEndMs, wallClockToMs } from '../ingest/cloudflare/time-buckets';
 import { getSettingsForProject } from '../organization/organization.service';
 import type { IChartEventFilter, IInterval } from '../report/report.constants';
 import {
@@ -54,7 +54,7 @@ async function queryTopPages(
   if (deps.eventStore) {
     const { rows } = await deps.eventStore.pageRows(query.projectId, {
       from: wallClockToMs(query.startDate, timezone),
-      to: wallClockToMs(query.endDate, timezone),
+      to: wallClockEndMs(query.endDate, timezone),
       search: query.search,
       pages: query.pages ? [...query.pages] : undefined,
       sortBy: query.sortBy,
@@ -110,7 +110,7 @@ export async function getPageTimeseries(
   if (deps.eventStore) {
     const { rows } = await deps.eventStore.pageSeries(projectId, {
       from: wallClockToMs(startDate, timezone),
-      to: wallClockToMs(endDate, timezone),
+      to: wallClockEndMs(endDate, timezone),
       interval,
       timezone,
       origin: filterOrigin,
@@ -245,6 +245,19 @@ export async function getPageConversionsCore(
     limit?: number;
   }
 ): Promise<IPageConversionRow[]> {
+  // Workers: two scans of the project's stored events (UTC range, as below).
+  if (deps.eventStore) {
+    return JSON.parse(
+      await deps.eventStore.tools(input.projectId, {
+        kind: 'pageConversions',
+        from: wallClockToMs(input.startDate, 'UTC'),
+        to: wallClockEndMs(input.endDate, 'UTC'),
+        conversionEvent: input.conversionEvent,
+        windowHours: input.windowHours ?? DEFAULT_CONVERSION_WINDOW_HOURS,
+        limit: input.limit ?? DEFAULT_CONVERSION_LIMIT,
+      })
+    ) as IPageConversionRow[];
+  }
   return runQuery<IPageConversionRow>(
     deps,
     pageConversionsQuery({

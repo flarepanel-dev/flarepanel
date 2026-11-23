@@ -16,6 +16,7 @@ import type { RowFilter } from '../ingest/cloudflare/filter-eval';
 import {
   buildBuckets,
   wallClockIso,
+  wallClockEndMs,
   wallClockToMs,
 } from '../ingest/cloudflare/time-buckets';
 import { getSettingsForProject } from '../organization/organization.service';
@@ -452,6 +453,11 @@ function atInstant(value: string, timezone: string): Date {
   return new Date(wallClockToMs(value, timezone));
 }
 
+/** A range's end as a real instant (a bare date covers that whole day). */
+function atEndInstant(value: string, timezone: string): Date {
+  return new Date(wallClockEndMs(value, timezone));
+}
+
 /**
  * The overview's filters for the Durable Object: the same whitelist and
  * names as the ClickHouse path; cohort filters test stored membership.
@@ -497,7 +503,7 @@ async function getMetricsFromEventStore(
 ) {
   const result = await store.metrics(input.projectId, {
     from: wallClockToMs(input.startDate, input.timezone),
-    to: wallClockToMs(input.endDate, input.timezone),
+    to: wallClockEndMs(input.endDate, input.timezone),
     interval: input.interval,
     timezone: input.timezone,
     filters: toStoreFilters(input.filters),
@@ -707,7 +713,7 @@ export async function getTopPages(
       projectId,
       'path',
       atInstant(startDate, timezone),
-      atInstant(endDate, timezone),
+      atEndInstant(endDate, timezone),
       Math.min(limit ?? MAX_RECORDS_LIMIT, MAX_RECORDS_LIMIT),
       toStoreFilters(filters)
     );
@@ -755,7 +761,7 @@ export async function getTopEntryExit(
       projectId,
       mode,
       atInstant(startDate, timezone),
-      atInstant(endDate, timezone),
+      atEndInstant(endDate, timezone),
       Math.min(limit ?? MAX_RECORDS_LIMIT, MAX_RECORDS_LIMIT),
       toStoreFilters(filters)
     );
@@ -815,7 +821,7 @@ export async function getTopGeneric(
       projectId,
       column,
       atInstant(startDate, timezone),
-      atInstant(endDate, timezone),
+      atEndInstant(endDate, timezone),
       MAX_RECORDS_LIMIT,
       toStoreFilters(filters)
     );
@@ -882,7 +888,7 @@ async function topGenericSeriesFromEventStore(
   }
   const filters = toStoreFilters(input.filters);
   const from = wallClockToMs(input.startDate, input.timezone);
-  const to = wallClockToMs(input.endDate, input.timezone);
+  const to = wallClockEndMs(input.endDate, input.timezone);
   const [top, series] = await Promise.all([
     store.topDimension(
       input.projectId,
@@ -1114,7 +1120,7 @@ export async function getUserJourney(
   const journey = deps.eventStore
     ? await deps.eventStore.journeyRows(projectId, {
         from: wallClockToMs(startDate, timezone),
-        to: wallClockToMs(endDate, timezone),
+        to: wallClockEndMs(endDate, timezone),
         steps,
         topEntries: TOP_ENTRIES,
         filters: toStoreFilters(filters),
@@ -1349,7 +1355,7 @@ export async function getTopEvents(
   if (deps.eventStore) {
     const { rows } = await deps.eventStore.eventCounts(projectId, {
       from: wallClockToMs(startDate, timezone),
-      to: wallClockToMs(endDate, timezone),
+      to: wallClockEndMs(endDate, timezone),
       by: 'name',
       excludeNames: excludeEvents,
       filters: toStoreFilters(filters),
@@ -1388,7 +1394,7 @@ export async function getTopLinkOut(
   if (deps.eventStore) {
     const { rows } = await deps.eventStore.eventCounts(projectId, {
       from: wallClockToMs(startDate, timezone),
-      to: wallClockToMs(endDate, timezone),
+      to: wallClockEndMs(endDate, timezone),
       by: 'properties.href',
       names: ['link_out'],
       filters: toStoreFilters(filters),
@@ -1437,7 +1443,7 @@ export async function getMapData(
       projectId,
       'country',
       atInstant(startDate, timezone),
-      atInstant(endDate, timezone),
+      atEndInstant(endDate, timezone),
       MAX_RECORDS_LIMIT,
       toStoreFilters(filters)
     );

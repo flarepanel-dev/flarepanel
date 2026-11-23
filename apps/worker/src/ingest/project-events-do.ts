@@ -18,6 +18,7 @@ import {
   type AiStore,
   aiContentPrefix,
   answerAiQuery,
+  answerToolQuery,
   archivePrefix,
   buildArchiveObjects,
   type ChartScanQuery,
@@ -60,6 +61,7 @@ import {
   type SessionListQuery,
   type SqlRow,
   type SqlValue,
+  type ToolQuery,
   toBasinRow,
 } from '@flarepanel/core/ingest/cloudflare';
 import { setSuperJson } from '@flarepanel/shared';
@@ -594,6 +596,19 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
         );
       }
     }
+  }
+
+  /** Assistant, MCP and REST reads; JSON text in the ClickHouse row shapes. */
+  async tools(query: ToolQuery): Promise<string> {
+    const { engine, profiles } = await this.state;
+    return JSON.stringify(
+      await answerToolQuery(query, {
+        now: Date.now(),
+        hotFrom: Date.now() - this.retentionDays() * DAY_MS,
+        scan: (from, to, visit) => engine.scanRange(from, to, visit),
+        profiles: () => profiles.all(),
+      })
+    );
   }
 
   /** AI page reads; JSON text in the ClickHouse row shapes. */

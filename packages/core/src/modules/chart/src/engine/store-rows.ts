@@ -18,6 +18,7 @@ import type { RowFilter } from '../../../ingest/cloudflare/filter-eval';
 import {
   buildBuckets,
   wallClockText,
+  wallClockEndMs,
   wallClockToMs,
 } from '../../../ingest/cloudflare/time-buckets';
 import type {
@@ -155,7 +156,7 @@ export async function storeSeriesRows(
   }
 ): Promise<ISerieDataItem[]> {
   const from = wallClockToMs(input.startDate, input.timezone);
-  const to = wallClockToMs(input.endDate, input.timezone);
+  const to = wallClockEndMs(input.endDate, input.timezone);
   if (input.chartType === 'distribution') {
     // Users bucketed by one value each: counted in the Durable Object only.
     const { rows } = await deps.eventStore.chartRows(input.projectId, {
@@ -199,7 +200,7 @@ export async function storeAggregateRows(
   }
 ): Promise<ISerieDataItem[]> {
   const from = wallClockToMs(input.startDate, input.timezone);
-  const to = wallClockToMs(input.endDate, input.timezone);
+  const to = wallClockEndMs(input.endDate, input.timezone);
   const rows = await chartRowsFor(deps, input.projectId, {
     from,
     to,

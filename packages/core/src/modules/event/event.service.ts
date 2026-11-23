@@ -9,6 +9,8 @@ import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
 import { stripFixedStringPadding } from '../../shared/ch-fixed-string';
 import { toRowFilters } from '../chart/src/engine/store-rows';
+import type { ListEventsQuery } from '../ingest/cloudflare/engine';
+import type { RowFilter } from '../ingest/cloudflare/filter-eval';
 import { getEventFiltersWhereClause } from '../chart/src/filter-where';
 import { buildFilterWhere } from '../chart/src/table-filter-where';
 import {
@@ -429,6 +431,63 @@ async function attachMetas(
   }
 }
 
+/** Store list pages a tool read may take (each holds up to 1,000 events). */
+const STORED_EVENTS_MAX_CALLS = 50;
+/** Without a start date, a filtered Workers count covers the hot window. */
+const STORED_COUNT_DEFAULT_DAYS = 90;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** A UTC `yyyy-MM-dd HH:mm:ss` boundary as a Date. */
+function utcBoundary(literal: string): Date {
+  return new Date(`${literal.replace(' ', 'T')}Z`);
+}
+
+/**
+ * Newest-first events from the project's Durable Object: `skip` of them
+ * passed over, then up to `limit` returned.
+ */
+async function readStoredEvents(
+  store: NonNullable<ServiceDeps['eventStore']>,
+  projectId: string,
+  query: Omit<ListEventsQuery, 'cursor' | 'take'>,
+  limit: number,
+  skip = 0
+): Promise<IClickhouseEvent[]> {
+  const events: IClickhouseEvent[] = [];
+  let toSkip = skip;
+  let cursor: string | null = null;
+  for (let call = 0; call < STORED_EVENTS_MAX_CALLS; call++) {
+    const page = await store.listEvents(projectId, {
+      ...query,
+      cursor,
+      take: Math.min(1000, toSkip + limit - events.length),
+    });
+    const dropped = Math.min(toSkip, page.events.length);
+    toSkip -= dropped;
+    events.push(...page.events.slice(dropped));
+    cursor = page.cursor;
+    if (events.length >= limit || cursor === null) {
+      break;
+    }
+  }
+  return events.slice(0, limit);
+}
+
+/** The event list filters of `GetEventListOptions` as the store reads them. */
+function storedListFilters(
+  options: Pick<GetEventListOptions, 'filters' | 'cohortId'>
+): RowFilter[] {
+  const filters = toRowFilters(options.filters);
+  if (options.cohortId) {
+    filters.push({
+      name: 'profile_id',
+      operator: 'inCohort',
+      value: [options.cohortId],
+    });
+  }
+  return filters;
+}
+
 export async function getEvents(
   deps: ServiceDeps,
   query: SqlFragment,
@@ -640,6 +699,41 @@ export async function getEventList(
     dateIntervalInDays = EVENT_LIST_DEFAULT_LOOKBACK_DAYS,
   } = options;
 
+  // Workers: the project's Durable Object, newest first; a page number skips
+  // that many pages, a Date cursor ends the window there.
+  if (deps.eventStore) {
+    const until =
+      cursor instanceof Date && (!endDate || cursor < endDate)
+        ? cursor
+        : endDate;
+    const stored = await readStoredEvents(
+      deps.eventStore,
+      projectId,
+      {
+        profileId,
+        sessionId,
+        groupId,
+        names: events?.length ? events : conversionNames,
+        filters: storedListFilters({ filters, cohortId }),
+        startDate,
+        endDate: until,
+      },
+      take,
+      typeof cursor === 'number' ? Math.max(0, cursor * take) : 0
+    );
+    const wants = mergeDeepRight(
+      DEFAULT_EVENT_LIST_SELECT,
+      incomingSelect ?? {}
+    ) as EventListSelect;
+    if (wants.profile ?? true) {
+      await attachProfiles(deps, stored, projectId);
+    }
+    if (wants.meta ?? true) {
+      await attachMetas(deps, stored, projectId);
+    }
+    return stored.map(transformEvent);
+  }
+
   // Deployment-tunable ceiling for the empty-result lookback
   // (EVENT_LIST_MAX_LOOKBACK_DAYS).
   const maxLookbackDays =
@@ -705,6 +799,25 @@ export async function getEventsCount(
     endDate,
   }: Omit<GetEventListOptions, 'cursor' | 'take'>
 ): Promise<number> {
+  if (deps.eventStore) {
+    const rowFilters = storedListFilters({ filters, cohortId });
+    if (profileId) {
+      rowFilters.push({ name: 'profile_id', operator: 'is', value: [profileId] });
+    }
+    const to = endDate ?? new Date();
+    const { rows } = await deps.eventStore.eventCounts(projectId, {
+      from:
+        startDate?.getTime() ??
+        to.getTime() - STORED_COUNT_DEFAULT_DAYS * DAY_MS,
+      to: to.getTime(),
+      by: 'name',
+      names: events?.length ? events : undefined,
+      filters: rowFilters,
+      groupId,
+      limit: Number.MAX_SAFE_INTEGER,
+    });
+    return rows.reduce((sum, row) => sum + row.count, 0);
+  }
   const { filterClauses, joins } = await compileEventFilters(
     filters,
     projectId
@@ -817,10 +930,18 @@ export async function getEventById(
   return event;
 }
 
+/** Same cap as the ClickHouse top-event-names query. */
+const TOP_EVENT_NAMES_WORKERS_LIMIT = 50;
+
 export async function getTopEventNames(
   deps: ServiceDeps,
   projectId: string
 ): Promise<string[]> {
+  if (deps.eventStore) {
+    return (await deps.eventStore.eventNames(projectId))
+      .slice(0, TOP_EVENT_NAMES_WORKERS_LIMIT)
+      .map((row) => row.name);
+  }
   return getCache(
     `mcp:event-names:${projectId}`,
     TOP_EVENT_NAMES_CACHE_SECONDS,
@@ -850,6 +971,19 @@ export async function listEventPropertiesCore(
   columns: readonly string[];
   properties: Array<{ property_key: string; event_name: string }>;
 }> {
+  if (deps.eventStore) {
+    const keys = await deps.eventStore.propertyKeys(
+      input.projectId,
+      input.eventName
+    );
+    return {
+      columns: EVENT_COLUMNS,
+      properties: keys.map((key) => ({
+        property_key: key,
+        event_name: input.eventName ?? '',
+      })),
+    };
+  }
   const rows = await chQuery<{ property_key: string; event_name: string }>(
     deps,
     eventPropertiesQuery(input),
@@ -866,6 +1000,21 @@ export async function getEventPropertyValuesCore(
     propertyKey: string;
   }
 ): Promise<{ event: string; property: string; values: string[] }> {
+  if (deps.eventStore) {
+    // The ClickHouse view holds custom properties only.
+    const key = input.propertyKey.startsWith('properties.')
+      ? input.propertyKey
+      : `properties.${input.propertyKey}`;
+    return {
+      event: input.eventName,
+      property: input.propertyKey,
+      values: await deps.eventStore.propertyValues(
+        input.projectId,
+        input.eventName,
+        key
+      ),
+    };
+  }
   const rows = await chQuery<{ value: string }>(
     deps,
     eventPropertyValuesQuery(input),
@@ -954,6 +1103,32 @@ export async function queryEventsCore(
   deps: ServiceDeps,
   input: QueryEventsInput
 ): Promise<IClickhouseEvent[]> {
+  if (deps.eventStore) {
+    const filters = toRowFilters(input.filters);
+    if (input.profileIds?.length) {
+      filters.push({ name: 'profile_id', operator: 'is', value: input.profileIds });
+    }
+    for (const [column, value] of Object.entries(queryEventsEquals(input))) {
+      filters.push({ name: column, operator: 'is', value: [value] });
+    }
+    for (const [key, value] of Object.entries(input.properties ?? {})) {
+      filters.push({ name: `properties.${key}`, operator: 'is', value: [value] });
+    }
+    const range = queryEventsDateRange(input);
+    return readStoredEvents(
+      deps.eventStore,
+      input.projectId,
+      {
+        profileId: input.profileId,
+        sessionId: input.sessionId,
+        names: input.eventNames,
+        filters,
+        startDate: range ? utcBoundary(range.start) : undefined,
+        endDate: range ? utcBoundary(range.end) : undefined,
+      },
+      input.limit ?? QUERY_EVENTS_DEFAULT_LIMIT
+    );
+  }
   let filterClauses: CompiledFilterClauses = {};
   if (input.filters?.length) {
     filterClauses = buildFilterWhere(

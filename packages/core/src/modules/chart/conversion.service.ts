@@ -2,7 +2,11 @@ import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import { omit } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
 import { expandCustomEvents } from '../custom-event/custom-event.service';
-import { buildBuckets, wallClockToMs } from '../ingest/cloudflare/time-buckets';
+import {
+  buildBuckets,
+  wallClockEndMs,
+  wallClockToMs,
+} from '../ingest/cloudflare/time-buckets';
 import type { IReportInput } from '../report/report.constants';
 import { NOT_SET_VALUE } from '../report/report.constants';
 import {
@@ -193,14 +197,14 @@ export async function getConversion(
     ? ((
         await deps.eventStore.conversionRows(projectId, {
           from: wallClockToMs(startDate, timezone),
-          to: wallClockToMs(endDate, timezone),
+          to: wallClockEndMs(endDate, timezone),
           steps: [scanStep(eventA), scanStep(eventB)],
           breakdowns: knownBreakdowns.map((breakdown) => breakdown.name),
           windowMs: funnelWindow * SECONDS_PER_HOUR * 1000,
           group,
           buckets: buildBuckets(
             wallClockToMs(startDate, timezone),
-            wallClockToMs(endDate, timezone),
+            wallClockEndMs(endDate, timezone),
             interval,
             timezone
           ),

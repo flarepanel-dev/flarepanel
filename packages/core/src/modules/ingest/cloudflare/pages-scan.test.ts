@@ -159,7 +159,7 @@ describe('event count scan', () => {
     for (const [row] of events) {
       accumulator.add(row);
     }
-    expect(accumulator.rows()).toEqual([{ key: 'link_out', count: 1 }]);
+    expect(accumulator.rows()).toMatchObject([{ key: 'link_out', count: 1 }]);
   });
 
   it('groups link outs by href and applies filters', () => {
@@ -176,7 +176,7 @@ describe('event count scan', () => {
       for (const [row] of events) {
         accumulator.add(row);
       }
-      return accumulator.rows();
+      return accumulator.rows().map(({ key, count }) => ({ key, count }));
     };
     expect(count([])).toEqual([{ key: 'https://x.com/example', count: 1 }]);
     expect(

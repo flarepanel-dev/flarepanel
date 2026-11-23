@@ -4,6 +4,7 @@ import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
+import { toRowFilters } from '../chart/src/engine/store-rows';
 import { buildFilterWhere } from '../chart/src/table-filter-where';
 import type { IClickhouseEvent } from '../event/event.service';
 import type { IChartEventFilter } from '../report/report.constants';
@@ -454,6 +455,39 @@ export async function findProfilesCore(
   deps: ServiceDeps,
   input: FindProfilesInput
 ): Promise<IClickhouseProfile[]> {
+  const limit = Math.min(
+    input.limit ?? FIND_PROFILES_DEFAULT_LIMIT,
+    FIND_PROFILES_MAX_LIMIT
+  );
+  // Workers: the project's Durable Object; activity conditions (inactivity,
+  // sessions, a performed event) read the events it keeps.
+  if (deps.eventStore) {
+    return JSON.parse(
+      await deps.eventStore.tools(input.projectId, {
+        kind: 'findProfiles',
+        query: {
+          name: input.name,
+          email: input.email,
+          country: input.country,
+          city: input.city,
+          device: input.device,
+          browser: input.browser,
+          inactiveDays:
+            input.inactiveDays === undefined
+              ? undefined
+              : Math.floor(input.inactiveDays),
+          minSessions:
+            input.minSessions === undefined
+              ? undefined
+              : Math.floor(input.minSessions),
+          performedEvent: input.performedEvent,
+          filters: toRowFilters(input.filters),
+          sortOrder: input.sortOrder === 'asc' ? 'asc' : 'desc',
+          limit,
+        },
+      })
+    ) as IClickhouseProfile[];
+  }
   return chQuery<IClickhouseProfile>(
     deps,
     findProfilesQuery({
@@ -493,6 +527,16 @@ export async function getProfileWithEvents(
   profile: IClickhouseProfile | null;
   recent_events: IClickhouseEvent[];
 }> {
+  if (deps.eventStore) {
+    const [profile, page] = await Promise.all([
+      deps.buffers.profile.fetchFromCache(profileId, projectId),
+      deps.eventStore.listEvents(projectId, { profileId, take: eventLimit }),
+    ]);
+    return {
+      profile: profile ?? null,
+      recent_events: page.events.map(withReadableCountry),
+    };
+  }
   const [profiles, recent_events] = await Promise.all([
     chQuery<IClickhouseProfile>(
       deps,
@@ -517,6 +561,13 @@ export async function getProfileSessionsCore(
   profileId: string,
   limit = SESSIONS_DEFAULT_LIMIT
 ): Promise<IClickhouseSession[]> {
+  if (deps.eventStore) {
+    const stored = await deps.eventStore.listSessions(projectId, {
+      profileId,
+      take: limit,
+    });
+    return stored.map(withReadableCountry);
+  }
   const sessions = await chQuery<IClickhouseSession>(
     deps,
     profileSessionsQuery({ projectId, profileId, limit }),
