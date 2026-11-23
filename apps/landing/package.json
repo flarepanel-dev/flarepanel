@@ -6,10 +6,11 @@
   "scripts": {
     "dev": "next dev --port 3100",
     "build:tracker": "bun scripts/build-tracker.ts",
-    "build": "bun run build:tracker && next build",
+    "build": "bun run build:tracker && bun run build:llms && next build",
     "preview": "bun run build && wrangler dev",
     "deploy": "bun run build && wrangler deploy",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:llms": "bun scripts/build-llms.ts"
   },
   "dependencies": {
     "geist": "1.9.2",

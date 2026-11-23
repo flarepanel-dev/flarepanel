@@ -5,3 +5,4 @@ next-env.d.ts
 public/op1.js
 public/op1-replay.js
 *.tsbuildinfo
+public/llms.txt
