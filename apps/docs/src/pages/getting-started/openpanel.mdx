@@ -53,6 +53,6 @@ The script tag version needs no `apiUrl`: FlarePanel's `op1.js` sends to `https:
 | Screen views, outgoing links, `data-track` attributes | Same options |
 | Server SDKs with a client secret | Same headers (`openpanel-client-id`, `openpanel-client-secret`) |
 
-Existing OpenPanel data is not imported. See [What works today](/getting-started/status) for the reports that are still being moved over.
+Existing OpenPanel data is not imported; FlarePanel can import history from Umami, Mixpanel and Amplitude under a project's **Settings → Imports**. See [What works today](/getting-started/status) for the full list.
 
 You can also switch to FlarePanel's own packages on npm (`@flarepanel/web`, `@flarepanel/nextjs`, `@flarepanel/sdk` and the rest). They have the same API, export both the `OpenPanel` and `FlarePanel` names, and send to `https://api.flarepanel.dev` without an `apiUrl`.

@@ -44,6 +44,17 @@ In `apps/worker/wrangler.jsonc`, set the `routes` custom domain and the `API_URL
 cd apps/worker
 openssl rand -hex 32 | bunx wrangler secret put COOKIE_SECRET
 openssl rand -hex 32 | bunx wrangler secret put AUTH_SECRET
+openssl rand -hex 32 | bunx wrangler secret put ENCRYPTION_KEY
+```
+
+`ENCRYPTION_KEY` encrypts the credentials FlarePanel stores for you: S3 and GCS export keys and Search Console tokens. Without it, saving an export fails. Keep it stable: if you replace it, stored credentials can no longer be read and have to be entered again.
+
+### Expire AI prompt text in R2
+
+Prompt and response text of [AI calls](#ai-analytics) is kept 30 days, like OpenPanel's. Add a lifecycle rule so R2 removes its copies after that:
+
+```bash
+bunx wrangler r2 bucket lifecycle add flarepanel-events ai-text-30-days ai/ --expire-days 30
 ```
 
 ### Migrate and deploy
@@ -59,6 +70,53 @@ cd ../start && bun run deploy
 Open `https://api.example.com/healthcheck` (it answers `{"ready":true,...}`), then sign up on your dashboard domain and create a project.
 
 ::::
+
+## Optional features
+
+These need a key or an external account. Everything else works without them.
+
+### Google Search Console (SEO page)
+
+1. In [Google Cloud](https://console.cloud.google.com/), create or pick a project, enable the **Google Search Console API**, and set up the OAuth consent screen with the `https://www.googleapis.com/auth/webmasters.readonly` scope.
+2. Create an **OAuth client ID** of type **Web application** with the authorized redirect URI `https://api.example.com/gsc/callback` (your API domain).
+3. Add the client to the API Worker:
+
+```bash
+cd apps/worker
+bunx wrangler secret put GOOGLE_CLIENT_ID
+bunx wrangler secret put GOOGLE_CLIENT_SECRET
+bunx wrangler secret put GSC_GOOGLE_REDIRECT_URI   # https://api.example.com/gsc/callback
+```
+
+Then connect a site under a project's **Settings → Google Search**. Search Console numbers are synced daily (six months back on connect) and stored in the project's Durable Object.
+
+### AI chat assistant
+
+The dashboard's **Chat** and the natural-language filters call a language model. Add one provider key:
+
+```bash
+bunx wrangler secret put OPENAI_API_KEY     # or ANTHROPIC_API_KEY
+```
+
+Each message is billed by that provider to your account. Without a key, Chat and the natural-language filters stay unavailable.
+
+### S3 exports with an IAM role
+
+S3 and GCS exports work with access keys or a service-account key that you enter in the dashboard. Exports that **assume an IAM role** need an AWS identity for the server to assume it from:
+
+```bash
+bunx wrangler secret put AWS_ACCESS_KEY_ID
+bunx wrangler secret put AWS_SECRET_ACCESS_KEY
+```
+
+## AI analytics
+
+AI calls sent with `@flarepanel/ai` (or `op.ai`) are stored per call in the project's Durable Object. Prompt and response text waits there until its trace is quiet for 5 minutes, then moves to R2 as one gzip file per trace (`ai/<project>/<trace>.json.gz`) and is shown for 30 days.
+
+## Imports and exports
+
+- **Imports** (Umami CSV files, Mixpanel and Amplitude) need the R2 bucket: the source is copied to `imports/<project>/<import>/` and read in short steps, then removed when the import ends. A Mixpanel rate limit pauses the import instead of failing it.
+- **Exports** to S3, S3-compatible storage (R2, MinIO, Spaces) and Google Cloud Storage run every minute. Raw events are not removed from a project's Durable Object before every running export has uploaded them.
 
 ## Costs
 

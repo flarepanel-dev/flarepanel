@@ -18,7 +18,8 @@ SDK ─► POST /track (Worker)
        ◄─ { deviceId, sessionId }
 
 alarm: close idle sessions (session_end), checkpoint,
-       archive to R2 every 10 minutes, apply retention
+       archive to R2 every 10 minutes, move quiet AI traces'
+       text to R2, apply retention
 ```
 
 ## Per-project Durable Object
@@ -27,7 +28,13 @@ Each project has one Durable Object holding:
 
 - **chunks**: events as gzip-compressed JSON, one row per group commit. These are the source of truth.
 - **daily** and **dims**: per-day totals (visitors as HyperLogLog, sessions, bounces, duration, page views, revenue) and per-day counts by page, source, place and device for the overview.
-- **sessions** and **identities**: live sessions checkpointed for restarts, and identified profiles.
+- **sessions** and **identities**: live sessions checkpointed for restarts, and profiles.
+- **groups** and **cohort_members**: groups with their properties, and the stored members of each cohort (recomputed every 30 minutes).
+- **ai_events**: one row per AI call (cost, tokens, latency, errors, a short preview); prompt and response text waits in **ai_content** until the trace is quiet, then moves to R2.
+- **gsc_daily**, **gsc_pages_daily**, **gsc_queries_daily**: Search Console numbers per day, page and query.
+- **import_staging**: an import's events while it runs, before they are committed in time order.
+
+Reports, the REST API, the MCP server and the chat assistant all read the same Durable Object, so every page answers from one place.
 
 Rollups live in memory and are written at checkpoints. After a restart, everything newer than the last checkpoint is rebuilt from chunks, so nothing is counted twice or lost.
 
@@ -39,11 +46,17 @@ Raw events are copied to R2 as newline-delimited JSON, one object per project an
 v1/events/project_id=<id>/date=YYYY-MM-DD/hour=HH/<firstChunk>-<lastChunk>.ndjson.gz
 ```
 
+The same bucket holds each AI trace's prompt and response text (`ai/<project>/<trace>.json.gz`, removed after 30 days by a lifecycle rule) and the copies an import reads (`imports/<project>/<import>/`, removed when it ends).
+
 Recent events stay in the Durable Object for 90 days by default (`FLAREPANEL_EVENT_RETENTION_DAYS`); R2 keeps everything. Reports that reach further back read the older hours from the R2 archive (at most 3,000 archive files per report, so very long ranges on very busy projects show what was read).
 
 ## D1
 
 Accounts, organizations, members, projects, clients and settings live in D1 through Prisma's D1 adapter. D1 has no interactive transactions, so writes that must happen together are sent as one batch.
+
+## Background jobs
+
+Jobs run on Cloudflare Queues; a Cron Trigger every minute enqueues the ones that are due: Search Console sync (daily), cohort refresh (every 30 minutes), insights (daily), S3/GCS exports (every minute, behind a per-export position in each project's Durable Object), and account emails. Imports run as a chain of short queue steps, each well inside a Worker's CPU limit.
 
 ## Live dashboard
 
