@@ -1,0 +1,24 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Revenue
+description: Track purchases and see revenue in the overview.
+---
+
+# Revenue
+
+```ts
+op.revenue(49.0, { currency: 'USD', plan: 'team' });
+```
+
+`revenue(amount, properties)` sends a `revenue` event. Revenue is summed per day in the overview and attributed to the pages, sources and countries it came from.
+
+Track revenue from your server once payment succeeds, so refunds and failed payments never count:
+
+```ts
+// server, after the payment provider confirms
+await op.revenue(49.0, { profileId: user.id, invoice: invoice.id });
+```
+
+In the browser, `pendingRevenue(amount)` stores an amount and `flushRevenue()` sends everything stored, which helps when the purchase confirmation happens on a later page.

@@ -151,7 +151,7 @@ export function SidebarContainer({
             <FeedbackButton className={cn(SIDEBAR_FOOTER_BUTTON, 'px-2')} />
             <a
               className={cn(SIDEBAR_FOOTER_BUTTON, 'px-2')}
-              href="https://flarepanel.dev/docs"
+              href="https://docs.flarepanel.dev"
               rel="noopener noreferrer"
               target="_blank"
             >

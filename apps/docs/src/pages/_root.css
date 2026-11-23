@@ -1,0 +1,53 @@
+/* FlarePanel brand on Vocs: Obsidian neutrals, Hot coral accent, Geist. */
+
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/fonts/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --vocs-font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --vocs-font-family-mono:
+    "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --vocs-color-accent: #ff496b;
+
+  --vocs-background-color-primary: #0d0d10;
+  --vocs-background-color-surface: #111114;
+  --vocs-background-color-surfaceMuted: #18181b;
+  --vocs-background-color-surfaceTint: #18181b;
+
+  --vocs-text-color-primary: #e4e4e8;
+  --vocs-text-color-secondary: #a1a1a5;
+  --vocs-text-color-muted: #727276;
+  --vocs-text-color-heading: #f9fafe;
+  --vocs-text-color-link: #ff496b;
+  --vocs-text-color-link-hover: #ff6b82;
+  --vocs-text-color-quote: #a1a1a5;
+
+  --vocs-border-color-primary: #27272a;
+  --vocs-border-color-secondary: #1f1f23;
+  --vocs-border-color-tab-active: #ff496b;
+
+  --vocs-background-color-blockquote: #111114;
+  --vocs-background-color-code-block: #111114;
+  --vocs-background-color-code-highlighted: rgba(255, 73, 107, 0.1);
+  --vocs-border-color-code-highlighted: #ff496b;
+  --vocs-background-color-inline-code: #18181b;
+}
+
+::selection {
+  background: #ff496b;
+  color: #0d0d10;
+}

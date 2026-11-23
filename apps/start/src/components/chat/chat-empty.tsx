@@ -192,7 +192,7 @@ export function ChatNotConfigured() {
       </div>
       <a
         className="inline-flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
-        href="https://flarepanel.dev/docs/self-hosting/environment-variables#ai-features"
+        href="https://docs.flarepanel.dev/self-hosting/deploy"
         rel="noopener"
         target="_blank"
       >

@@ -36,7 +36,7 @@ export function OnboardingDashboards({
           the way:{' '}
           <Link
             href={withUtm(
-              'https://github.com/flarepanel-dev/flarepanel/tree/main/docs',
+              'https://docs.flarepanel.dev/getting-started/quickstart',
               'onboarding-dashboards'
             )}
           >

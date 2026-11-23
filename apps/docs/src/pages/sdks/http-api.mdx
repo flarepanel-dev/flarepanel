@@ -1,0 +1,43 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: HTTP API
+description: Send events with plain HTTP requests.
+---
+
+# HTTP API
+
+Every SDK sends to one endpoint: `POST https://api.flarepanel.dev/track`.
+
+```bash
+curl -X POST https://api.flarepanel.dev/track \
+  -H "Content-Type: application/json" \
+  -H "openpanel-client-id: YOUR_CLIENT_ID" \
+  -H "openpanel-client-secret: YOUR_CLIENT_SECRET" \
+  -d '{"type":"track","payload":{"name":"invoice_paid","properties":{"amount":49}}}'
+```
+
+## Authentication
+
+| Header | When |
+|---|---|
+| `openpanel-client-id` | Always |
+| `openpanel-client-secret` | Server-side requests. Browser requests are allowed without it when the request's `Origin` matches one of the project's domains. |
+
+## Request types
+
+The body is `{ "type": ..., "payload": ... }`:
+
+| `type` | `payload` |
+|---|---|
+| `track` | `name`, `properties`, optional `profileId` |
+| `identify` | `profileId`, `firstName`, `lastName`, `email`, `avatar`, `properties` |
+| `increment` / `decrement` | `profileId`, `property`, optional `value` (default 1) |
+
+Successful requests answer `200` with the visitor's `deviceId` and `sessionId`. A request repeated within one second is dropped as a duplicate.
+
+## Limits
+
+- 600 tracking requests per minute per IP address; above that, `429`.
+- Identical request bodies inside one second count once.

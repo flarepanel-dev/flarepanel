@@ -1,0 +1,31 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Self-hosting
+description: Run FlarePanel on your own Cloudflare account.
+---
+
+# Self-hosting
+
+FlarePanel is one codebase: the hosted service and a self-hosted install run the same code. Self-hosting puts everything in **your** Cloudflare account, so your events never leave it and you pay Cloudflare directly for what you use.
+
+## What you need
+
+- A Cloudflare account on the **Workers Paid** plan. The API bundle is about 4.6 MB compressed, above the free plan's 3 MB limit.
+- A domain on Cloudflare DNS for the API and dashboard, for example `api.example.com` and `analytics.example.com`.
+- [Bun](https://bun.sh) and the repository.
+
+## What gets created
+
+| Resource | Used for |
+|---|---|
+| Worker `flarepanel-api` | Tracking, the dashboard API, auth, jobs |
+| Worker `flarepanel-dashboard` | The dashboard |
+| D1 database | Accounts, organizations, projects, clients |
+| Durable Objects | One per project: events, sessions, rollups, live sockets; plus rate limits and locks |
+| R2 bucket | Raw event archive (optional; without it events are kept 30 days) |
+| Queues | Background jobs and their dead-letter queue |
+| Email Service binding | Account emails (optional) |
+
+A one-command setup is planned. Until then, follow [Deploy to Cloudflare](/self-hosting/deploy).

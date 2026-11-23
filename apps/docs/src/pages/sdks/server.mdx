@@ -1,0 +1,34 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Server and backend
+description: Track from Node.js, Bun, Deno or Cloudflare Workers.
+---
+
+# Server and backend
+
+Server-side tracking authenticates with your **client secret**, so it can send events on behalf of any user.
+
+```bash
+npm install @openpanel/sdk
+```
+
+```ts
+import { OpenPanel } from '@openpanel/sdk';
+
+const op = new OpenPanel({
+  clientId: process.env.FLAREPANEL_CLIENT_ID!,
+  clientSecret: process.env.FLAREPANEL_CLIENT_SECRET!,
+  apiUrl: 'https://api.flarepanel.dev',
+});
+
+await op.track('invoice_paid', { amount: 49, profileId: user.id });
+await op.identify({ profileId: user.id, email: user.email });
+```
+
+:::warning
+Keep the client secret on the server. Never ship it in browser or app code.
+:::
+
+The SDK uses `fetch`, so it runs on Node.js 18+, Bun, Deno and Cloudflare Workers. Server events have no browser: pass `profileId` (or a device id) so they are tied to the right person.

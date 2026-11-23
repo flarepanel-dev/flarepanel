@@ -8,8 +8,8 @@ import {
 } from './install-snippets';
 
 const DOCS_INDEX_URL = 'https://flarepanel.dev/llms.txt';
-const SDK_OVERVIEW_URL = 'https://flarepanel.dev/docs/sdks';
-const TRACK_API_URL = 'https://flarepanel.dev/docs/api/track';
+const SDK_OVERVIEW_URL = 'https://docs.flarepanel.dev/sdks/script-tag';
+const TRACK_API_URL = 'https://docs.flarepanel.dev/sdks/http-api';
 export const CURSOR_PROMPT_DEEPLINK =
   'cursor://anysphere.cursor-deeplink/prompt?text=';
 

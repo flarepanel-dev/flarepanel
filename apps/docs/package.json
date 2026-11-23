@@ -1,0 +1,24 @@
+{
+  "name": "@flarepanel/docs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vocs dev --port 3200",
+    "build": "vocs build",
+    "preview": "vocs preview",
+    "deploy": "vocs build && wrangler deploy"
+  },
+  "dependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "vite": "8.3.8",
+    "vocs": "2.14.1",
+    "waku": "1.0.0-rc.5"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "typescript": "catalog:",
+    "wrangler": "4.85.0"
+  }
+}

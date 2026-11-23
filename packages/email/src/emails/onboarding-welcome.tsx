@@ -48,7 +48,7 @@ export function OnboardingWelcome({
             items={[
               <Link
                 href={withUtm(
-                  'https://github.com/flarepanel-dev/flarepanel/tree/main/docs',
+                  'https://docs.flarepanel.dev/getting-started/quickstart',
                   'onboarding-welcome'
                 )}
                 key="install"
@@ -57,7 +57,7 @@ export function OnboardingWelcome({
               </Link>,
               <Link
                 href={withUtm(
-                  'https://flarepanel.dev/docs/get-started/track-events',
+                  'https://docs.flarepanel.dev/tracking/events',
                   'onboarding-welcome'
                 )}
                 key="track"

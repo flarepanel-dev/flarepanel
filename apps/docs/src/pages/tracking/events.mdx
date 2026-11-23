@@ -1,0 +1,49 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Events and properties
+description: Name events and attach properties.
+---
+
+# Events and properties
+
+An event is a name plus optional properties:
+
+```ts
+op.track('project_created', { template: 'blank', team_size: 4 });
+```
+
+## Naming
+
+Use short `snake_case` names in the past tense or as a noun: `sign_up`, `checkout_started`, `invite_sent`. Keep one name per action, and put variations in properties rather than in the name.
+
+## Automatic events
+
+| Event | Sent when |
+|---|---|
+| `screen_view` | A page or route loads (`trackScreenViews`) |
+| `link_out` | A visitor clicks a link to another site (`trackOutgoingLinks`) |
+| `session_start` / `session_end` | A visit starts, and 30 minutes after its last event |
+
+Each event also gets the visitor's country, region and city (from Cloudflare), device, browser and OS (from the user agent), and the page path, title and referrer.
+
+## Global properties
+
+Properties sent with every event:
+
+```ts
+op.setGlobalProperties({ app_version: '2.4.0', plan: 'team' });
+```
+
+## Filtering events
+
+Drop events in the browser before they are sent:
+
+```ts
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  filter: (payload) =>
+    !(payload.type === 'track' && payload.payload.name === 'debug_event'),
+});
+```

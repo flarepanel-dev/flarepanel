@@ -1,0 +1,71 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: JavaScript and React
+description: Install the web SDK from npm.
+---
+
+# JavaScript and React
+
+:::code-group
+
+```bash [npm]
+npm install @openpanel/web
+```
+
+```bash [pnpm]
+pnpm add @openpanel/web
+```
+
+```bash [bun]
+bun add @openpanel/web
+```
+
+:::
+
+:::info
+FlarePanel's own `@flarepanel/web` has the same API and will be published to npm. Until then, use `@openpanel/web` with FlarePanel's `apiUrl`.
+:::
+
+Create one shared instance:
+
+```ts
+// src/analytics.ts
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  apiUrl: 'https://api.flarepanel.dev',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+Then use it anywhere:
+
+```ts
+import { op } from './analytics';
+
+op.track('sign_up', { plan: 'team' });
+op.identify({ profileId: user.id, email: user.email });
+```
+
+## React
+
+Import the instance in components; no provider is needed.
+
+```tsx
+import { op } from './analytics';
+
+export function UpgradeButton() {
+  return (
+    <button onClick={() => op.track('upgrade_clicked', { plan: 'team' })}>
+      Upgrade
+    </button>
+  );
+}
+```
+
+In single-page apps, `trackScreenViews` records a screen view on every client-side route change.

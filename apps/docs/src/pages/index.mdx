@@ -1,0 +1,38 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Introduction
+description: Open-source web and product analytics that runs entirely on Cloudflare.
+---
+
+# FlarePanel
+
+FlarePanel is open-source web and product analytics that runs entirely on Cloudflare: Workers receive events at the edge, each project's events live in its own Durable Object, raw events are archived to R2, and accounts live in D1. There are no servers or databases to run.
+
+It is a fork of [OpenPanel](https://github.com/Openpanel-dev/openpanel) and speaks the same tracking protocol, so the OpenPanel SDKs you may already use work by pointing them at FlarePanel.
+
+:::info
+FlarePanel is in **early access**. Tracking, the event list, profiles and the overview's main numbers and top lists work today on the hosted service. Some reports are still being moved over. See [What works today](/getting-started/status).
+:::
+
+## Start here
+
+- [Quickstart](/getting-started/quickstart): create a project and send your first event in a few minutes.
+- [Coming from OpenPanel](/getting-started/openpanel): keep your SDK, change one URL.
+- [Install](/sdks/script-tag): script tag, JavaScript and React, Next.js, server SDKs and the HTTP API.
+- [Self-hosting](/self-hosting): run the same code on your own Cloudflare account.
+
+## How it works
+
+```
+your site or app ──► Worker at the nearest edge ──► project Durable Object ──► R2 archive
+   (SDK, op1.js)        (auth, bot check, geo)       (events, sessions,        (ndjson.gz
+                                                      daily rollups)            per hour)
+```
+
+Read more in [Architecture](/self-hosting/architecture).
+
+## License
+
+The platform is AGPL-3.0 and the SDKs are MIT. FlarePanel is an independent project and is not affiliated with or endorsed by OpenPanel or Cloudflare.

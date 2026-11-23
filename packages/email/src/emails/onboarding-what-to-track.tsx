@@ -55,7 +55,7 @@ export function OnboardingWhatToTrack({
             blocking the script. Both are quick to sort out:{' '}
             <Link
               href={withUtm(
-                'https://github.com/flarepanel-dev/flarepanel/tree/main/docs',
+                'https://docs.flarepanel.dev/getting-started/quickstart',
                 'onboarding-what-to-track'
               )}
             >

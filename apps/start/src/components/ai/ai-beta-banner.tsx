@@ -7,7 +7,7 @@ import { FeedbackButton } from '@/components/feedback-button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/utils/cn';
 
-export const AI_DOCS_URL = 'https://flarepanel.dev/docs/ai-observability';
+export const AI_DOCS_URL = 'https://docs.flarepanel.dev';
 
 const ACTION_CLASS =
   'row h-8 items-center gap-1.5 rounded-md border bg-background px-2.5 font-medium text-foreground text-xs transition-colors hover:bg-def-100';

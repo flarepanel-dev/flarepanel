@@ -23,8 +23,7 @@ export const Route = createFileRoute(
   component: GscSettings,
 });
 
-const GSC_SELF_HOSTING_DOCS_URL =
-  'https://flarepanel.dev/docs/self-hosting/google-search-console';
+const GSC_SELF_HOSTING_DOCS_URL = 'https://docs.flarepanel.dev/self-hosting';
 
 function GscSettings() {
   const { projectId } = useAppParams();

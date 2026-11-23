@@ -44,7 +44,7 @@ export function TrackingNoData({
         Framework-specific instructions are in the{' '}
         <Link
           href={withUtm(
-            'https://github.com/flarepanel-dev/flarepanel/tree/main/docs',
+            'https://docs.flarepanel.dev/getting-started/quickstart',
             'tracking-no-data'
           )}
         >

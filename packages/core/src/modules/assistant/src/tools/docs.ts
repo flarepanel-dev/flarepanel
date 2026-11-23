@@ -2,8 +2,9 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import type { ChatToolContext } from '../context';
 
-/** The public docs rendered for LLMs, one section per page. */
-const DOCS_URL = 'https://flarepanel.dev/llms-full.txt';
+/** The public docs site (Vocs) and its all-pages text for LLMs. */
+const DOCS_BASE_URL = 'https://docs.flarepanel.dev';
+const DOCS_URL = `${DOCS_BASE_URL}/llms-full.txt`;
 const DOCS_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const DOCS_FETCH_TIMEOUT_MS = 10_000;
 const MAX_RESULTS = 3;
@@ -12,11 +13,14 @@ const MIN_TERM_LENGTH = 3;
 const TITLE_WEIGHT = 6;
 const MAX_BODY_HITS = 12;
 const SECTION_SEPARATOR = /\n---\n/;
+/** Vocs marks each page with `<!-- Source: /path -->` before its `# Title`. */
+const VOCS_SOURCE_MARKER = /<!-- Source: (\S+) -->/;
+const PAGE_TITLE_LINE = /^# (.+)$/m;
 const TITLE_LINE = /^## (.+)$/m;
 const URL_LINE = /^URL: (\S+)$/m;
 const NON_WORD = /[^a-z0-9]+/;
 /** Pages that only make sense when you run FlarePanel yourself. */
-const SELF_HOSTING_DOCS = '/docs/self-hosting';
+const SELF_HOSTING_DOCS = '/self-hosting';
 
 interface DocSection {
   title: string;
@@ -28,7 +32,40 @@ interface DocSection {
 
 let cached: { fetchedAt: number; sections: DocSection[] } | null = null;
 
-function parseSections(text: string): DocSection[] {
+function toSection(title: string, url: string, body: string): DocSection {
+  return {
+    title,
+    url,
+    body,
+    lowerTitle: title.toLowerCase(),
+    lowerBody: body.toLowerCase(),
+  };
+}
+
+/** Vocs `llms-full.txt`: `<!-- Source: /path -->` then the page's markdown. */
+function parseVocsSections(text: string): DocSection[] {
+  const sections: DocSection[] = [];
+  const parts = text.split(VOCS_SOURCE_MARKER);
+  // [preamble, path, page, path, page, ...]
+  for (let i = 1; i < parts.length; i += 2) {
+    const path = parts[i] ?? '';
+    const page = parts[i + 1] ?? '';
+    const title = PAGE_TITLE_LINE.exec(page)?.[1]?.trim();
+    if (!title) {
+      continue;
+    }
+    const url = path === '/' ? DOCS_BASE_URL : `${DOCS_BASE_URL}${path}`;
+    sections.push(
+      toSection(title, url, page.replace(PAGE_TITLE_LINE, '').trim())
+    );
+  }
+  return sections;
+}
+
+export function parseSections(text: string): DocSection[] {
+  if (VOCS_SOURCE_MARKER.test(text)) {
+    return parseVocsSections(text);
+  }
   const sections: DocSection[] = [];
   for (const chunk of text.split(SECTION_SEPARATOR)) {
     const title = TITLE_LINE.exec(chunk)?.[1]?.trim();
@@ -37,13 +74,7 @@ function parseSections(text: string): DocSection[] {
       continue;
     }
     const body = chunk.replace(TITLE_LINE, '').replace(URL_LINE, '').trim();
-    sections.push({
-      title,
-      url,
-      body,
-      lowerTitle: title.toLowerCase(),
-      lowerBody: body.toLowerCase(),
-    });
+    sections.push(toSection(title, url, body));
   }
   return sections;
 }
@@ -129,7 +160,7 @@ export function docsTools(ctx: Pick<ChatToolContext, 'config'>) {
           };
         } catch (error) {
           return {
-            error: `Documentation is not reachable right now (${error instanceof Error ? error.message : 'unknown error'}). Answer from what you know and point to https://flarepanel.dev/docs.`,
+            error: `Documentation is not reachable right now (${error instanceof Error ? error.message : 'unknown error'}). Answer from what you know and point to ${DOCS_BASE_URL}.`,
           };
         }
       },

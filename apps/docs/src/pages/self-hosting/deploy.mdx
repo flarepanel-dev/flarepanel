@@ -1,0 +1,69 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Deploy to Cloudflare
+description: Deploy the API and dashboard to your own Cloudflare account.
+---
+
+# Deploy to Cloudflare
+
+:::warning
+This is the manual path the hosted service uses. It works, but expect rough edges while FlarePanel is in early access.
+:::
+
+::::steps
+
+### Get the code
+
+```bash
+git clone https://github.com/flarepanel-dev/flarepanel.git
+cd flarepanel
+bun install
+bunx wrangler login
+```
+
+### Create the resources
+
+```bash
+bunx wrangler d1 create flarepanel
+bunx wrangler queues create flarepanel-jobs
+bunx wrangler queues create flarepanel-jobs-dlq
+bunx wrangler r2 bucket create flarepanel-events
+```
+
+Put the D1 database id from the first command into `apps/worker/wrangler.jsonc` (`d1_databases[0].database_id`).
+
+### Point it at your domains
+
+In `apps/worker/wrangler.jsonc`, set the `routes` custom domain and the `API_URL`, `DASHBOARD_URL` and `CUSTOM_COOKIE_DOMAIN` vars. In `apps/start/wrangler.jsonc`, set the dashboard's custom domain and the same two URLs.
+
+### Add the secrets
+
+```bash
+cd apps/worker
+openssl rand -hex 32 | bunx wrangler secret put COOKIE_SECRET
+openssl rand -hex 32 | bunx wrangler secret put AUTH_SECRET
+```
+
+### Migrate and deploy
+
+```bash
+bunx wrangler d1 migrations apply flarepanel --remote
+bunx wrangler deploy
+cd ../start && bun run deploy
+```
+
+### Check it
+
+Open `https://api.example.com/healthcheck` (it answers `{"ready":true,...}`), then sign up on your dashboard domain and create a project.
+
+::::
+
+## Costs
+
+Idle projects cost nothing: no alarms run once their sessions have ended. Each tracking request is one Worker request and one Durable Object request; events are written in batches, so storage writes stay well below one row per event at steady traffic. Set per-Worker CPU limits and a billing alert in your Cloudflare account.
+
+## Email
+
+To send account emails, onboard your domain under **Compute → Email Service → Email Sending** (or `wrangler email sending enable your-domain.com`) and keep the `send_email` binding in `apps/worker/wrangler.jsonc`. Workers Paid includes 3,000 emails a month.

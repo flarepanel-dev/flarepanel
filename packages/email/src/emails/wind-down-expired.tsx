@@ -53,9 +53,7 @@ export function WindDownExpired({
   const mcpPitch = (
     <Text>
       A lot has shipped since your trial — including our{' '}
-      <Link
-        href={withUtm('https://flarepanel.dev/docs/mcp', 'wind-down-expired')}
-      >
+      <Link href={withUtm('https://docs.flarepanel.dev', 'wind-down-expired')}>
         MCP server
       </Link>
       : connect Claude, Cursor, or any MCP client and ask questions about this

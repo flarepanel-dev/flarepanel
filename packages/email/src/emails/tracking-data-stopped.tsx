@@ -50,7 +50,7 @@ export function TrackingDataStopped({
         The{' '}
         <Link
           href={withUtm(
-            'https://github.com/flarepanel-dev/flarepanel/tree/main/docs',
+            'https://docs.flarepanel.dev/getting-started/quickstart',
             'tracking-data-stopped'
           )}
         >

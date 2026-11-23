@@ -42,7 +42,7 @@ export function OnboardingTrialEnding({
           days to see if it's useful:{' '}
           <Link
             href={withUtm(
-              'https://github.com/flarepanel-dev/flarepanel/tree/main/docs',
+              'https://docs.flarepanel.dev/getting-started/quickstart',
               'onboarding-trial-ending'
             )}
           >

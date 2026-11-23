@@ -1,0 +1,27 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: What works today
+description: Which parts of FlarePanel run on Cloudflare today.
+---
+
+# What works today
+
+FlarePanel is in early access. This page is updated as parts move over from OpenPanel's ClickHouse-based stack to Cloudflare.
+
+| Area | Status |
+|---|---|
+| Accounts, organizations, projects, clients | Works |
+| Tracking: `track`, `identify`, `increment`, `decrement`, revenue | Works |
+| Script tag `op1.js`, web, Next.js and server SDKs | Works |
+| Onboarding "first event", event list, live event and visitor sockets | Works |
+| Overview numbers and chart (visitors, sessions, bounce rate, duration, page views, revenue) | Works, one point per UTC day |
+| Top pages, entry and exit pages, sources, UTM, countries, devices, browsers, map | Works; filters are not applied yet |
+| Profiles: list, search and profile page | Works |
+| Account emails (sign-up, invites, password reset) | Works |
+| Groups and session replay | Accepted, not stored yet |
+| Funnels, retention, insights, report builder, filters, notifications | Not yet |
+| Self-hosting on your own Cloudflare account | Manual deploy works; a one-command setup is planned |
+
+Follow progress on [GitHub](https://github.com/flarepanel-dev/flarepanel).

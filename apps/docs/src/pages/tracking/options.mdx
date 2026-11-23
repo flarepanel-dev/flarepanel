@@ -1,0 +1,35 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: SDK options
+description: Every option of the web and server SDKs.
+---
+
+# SDK options
+
+| Option | Type | Default | |
+|---|---|---|---|
+| `clientId` | `string` | required | Your project's client ID |
+| `clientSecret` | `string` | | Server only. Never ship it to browsers |
+| `apiUrl` | `string` | `https://api.flarepanel.dev` with `op1.js` | Set it to `https://api.flarepanel.dev` with the `@openpanel/*` packages, or to your own API when self-hosting |
+| `trackScreenViews` | `boolean` | `false` | A `screen_view` on load and on client-side route changes |
+| `trackOutgoingLinks` | `boolean` | `false` | A `link_out` event for clicks to other sites |
+| `trackAttributes` | `boolean` | `false` | Events from `data-track` attributes |
+| `trackHashChanges` | `boolean` | `false` | Treat `#hash` changes as route changes |
+| `filter` | `(payload) => boolean` | | Return `false` to drop an event |
+| `disabled` | `boolean` | `false` | Queue events until `op.ready()` is called, for example after cookie consent |
+| `debug` | `boolean` | `false` | Log every call to the console |
+
+## Methods
+
+| Method | |
+|---|---|
+| `track(name, properties?)` | Send an event |
+| `identify({ profileId, ...})` | Tie events to a user and update their profile |
+| `increment / decrement({ profileId, property, value? })` | Change a numeric profile property |
+| `revenue(amount, properties?)` | Send a revenue event |
+| `setGlobalProperties(properties)` | Add properties to every event |
+| `screenView(path?, properties?)` | Send a screen view manually |
+| `ready()` | Start sending queued events (with `disabled: true`) |
+| `clear()` | Forget the current profile and device |

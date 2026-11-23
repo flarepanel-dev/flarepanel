@@ -1,0 +1,56 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Next.js
+description: Add FlarePanel to a Next.js app.
+---
+
+# Next.js
+
+```bash
+npm install @openpanel/nextjs
+```
+
+Add the component to your root layout:
+
+```tsx
+// app/layout.tsx
+import { OpenPanelComponent } from '@openpanel/nextjs';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <OpenPanelComponent
+          clientId="YOUR_CLIENT_ID"
+          apiUrl="https://api.flarepanel.dev"
+          scriptUrl="https://flarepanel.dev/op1.js"
+          trackScreenViews={true}
+          trackOutgoingLinks={true}
+          trackAttributes={true}
+        />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+Track from client components with the hook:
+
+```tsx
+'use client';
+import { useOpenPanel } from '@openpanel/nextjs';
+
+export function SignUpButton() {
+  const op = useOpenPanel();
+  return <button onClick={() => op.track('sign_up_clicked')}>Sign up</button>;
+}
+```
+
+Pass `profileId` to the component when you know the signed-in user, so events are tied to them from the first page view.
+
+:::tip
+To track from server components, route handlers or server actions, use the [server SDK](/sdks/server) with your client secret.
+:::

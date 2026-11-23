@@ -1,0 +1,52 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Quickstart
+description: Create a project and send your first event.
+---
+
+# Quickstart
+
+::::steps
+
+### Create an account and a project
+
+Sign up at [dashboard.flarepanel.dev](https://dashboard.flarepanel.dev/onboarding), name your project and pick its type (website, app or backend). The dashboard shows your **client ID** and, once, a **client secret**.
+
+:::tip
+The client secret is only needed for server-side tracking. Browser and app tracking use the client ID alone.
+:::
+
+### Add the tracking snippet
+
+For a website, paste this before `</head>` on every page:
+
+```html
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:"call"===r||"apply"===r||"bind"===r?t[r]:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  });
+</script>
+<script src="https://flarepanel.dev/op1.js" defer async></script>
+```
+
+Using a framework instead? See [JavaScript and React](/sdks/web) or [Next.js](/sdks/nextjs).
+
+### See your first event
+
+Keep the onboarding page open and load your site. The dashboard confirms the first event within a couple of seconds, then the event list, live visitors and the overview fill in.
+
+### Track something that matters
+
+```js
+window.op('track', 'sign_up', { plan: 'team' });
+```
+
+Continue with [Events and properties](/tracking/events) and [Identify users](/tracking/identify).
+
+::::

@@ -92,7 +92,7 @@ export default function AddClient({ name, type }: AddClientProps = {}) {
           <div className="mt-4 flex gap-4">
             <a
               className={cn(buttonVariants({ variant: 'secondary' }), 'flex-1')}
-              href="https://flarepanel.dev/docs"
+              href="https://docs.flarepanel.dev"
               rel="noreferrer"
               target="_blank"
             >

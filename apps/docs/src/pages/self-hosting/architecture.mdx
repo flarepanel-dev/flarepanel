@@ -1,0 +1,50 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Architecture
+description: How FlarePanel uses Workers, Durable Objects, D1 and R2.
+---
+
+# Architecture
+
+```
+SDK ─► POST /track (Worker)
+         client auth, schema, bot check, geo from request.cf,
+         1 s duplicate check in the Cache API, per-IP rate limit
+       ─► ProjectEventsDurableObject (one per project, SQLite)
+         device and session ids, the event pipeline,
+         group commit (200 events or 500 ms), then answers
+       ◄─ { deviceId, sessionId }
+
+alarm: close idle sessions (session_end), checkpoint,
+       archive to R2 every 10 minutes, apply retention
+```
+
+## Per-project Durable Object
+
+Each project has one Durable Object holding:
+
+- **chunks**: events as gzip-compressed JSON, one row per group commit. These are the source of truth.
+- **daily** and **dims**: per-day totals (visitors as HyperLogLog, sessions, bounces, duration, page views, revenue) and per-day counts by page, source, place and device for the overview.
+- **sessions** and **identities**: live sessions checkpointed for restarts, and identified profiles.
+
+Rollups live in memory and are written at checkpoints. After a restart, everything newer than the last checkpoint is rebuilt from chunks, so nothing is counted twice or lost.
+
+## R2 archive
+
+Raw events are copied to R2 as newline-delimited JSON, one object per project and hour:
+
+```
+v1/events/project_id=<id>/date=YYYY-MM-DD/hour=HH/<firstChunk>-<lastChunk>.ndjson.gz
+```
+
+Recent events stay in the Durable Object for 90 days by default (`FLAREPANEL_EVENT_RETENTION_DAYS`); R2 keeps everything.
+
+## D1
+
+Accounts, organizations, members, projects, clients and settings live in D1 through Prisma's D1 adapter. D1 has no interactive transactions, so writes that must happen together are sent as one batch.
+
+## Live dashboard
+
+`/live/events/:projectId` and `/live/visitors/:projectId` WebSockets are checked for session and project access by the Worker, then held by the project's Durable Object with hibernation, so an open dashboard costs nothing while nothing happens.

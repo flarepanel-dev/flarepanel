@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { rankSections } from './docs';
+import { parseSections, rankSections } from './docs';
 
 const SELF_HOSTING_SECTION = {
   title: 'Environment variables',
@@ -58,5 +58,40 @@ describe('rankSections', () => {
       selfHosted: true,
     });
     expect(own[0]?.title).toBe('Environment variables');
+  });
+});
+
+describe('parseSections', () => {
+  test('reads Vocs llms-full.txt into one section per page', () => {
+    const text = [
+      '# FlarePanel',
+      '',
+      'Intro and sitemap.',
+      '',
+      '<!-- Source: / -->',
+      '',
+      '# FlarePanel',
+      '',
+      'Open-source analytics on Cloudflare.',
+      '',
+      '<!-- Source: /self-hosting/deploy -->',
+      '',
+      '# Deploy to Cloudflare',
+      '',
+      'Run wrangler deploy.',
+    ].join('\n');
+    const sections = parseSections(text);
+    expect(sections.map((section) => [section.title, section.url])).toEqual([
+      ['FlarePanel', 'https://docs.flarepanel.dev'],
+      [
+        'Deploy to Cloudflare',
+        'https://docs.flarepanel.dev/self-hosting/deploy',
+      ],
+    ]);
+    expect(sections[1]?.body).toBe('Run wrangler deploy.');
+    const cloud = rankSections(sections, 'deploy wrangler', {
+      selfHosted: false,
+    });
+    expect(cloud).toEqual([]);
   });
 });

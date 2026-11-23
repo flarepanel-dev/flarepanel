@@ -2,7 +2,7 @@ export const site = {
   name: 'FlarePanel',
   url: 'https://flarepanel.dev',
   github: 'https://github.com/flarepanel-dev/flarepanel',
-  docs: 'https://github.com/flarepanel-dev/flarepanel/tree/main/docs',
+  docs: 'https://docs.flarepanel.dev',
   issues: 'https://github.com/flarepanel-dev/flarepanel/issues',
   license: 'https://github.com/flarepanel-dev/flarepanel/blob/main/LICENSE.md',
   signUp: 'https://dashboard.flarepanel.dev/onboarding',

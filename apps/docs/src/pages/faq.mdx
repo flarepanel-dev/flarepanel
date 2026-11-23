@@ -1,0 +1,37 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: FAQ
+description: Common questions about FlarePanel.
+---
+
+# FAQ
+
+### Is FlarePanel ready to use?
+
+It is in early access. Sign-up, projects, tracking, the event list, profiles and the main overview numbers work on the hosted service. See [What works today](/getting-started/status).
+
+### How is it related to OpenPanel?
+
+FlarePanel is an independent, open-source fork of [OpenPanel](https://github.com/Openpanel-dev/openpanel), rebuilt to run on Cloudflare. It keeps the tracking protocol so OpenPanel's SDKs work. It is not affiliated with or endorsed by OpenPanel.
+
+### Is it made by Cloudflare?
+
+No. It runs on Cloudflare's developer platform but is not affiliated with or endorsed by Cloudflare.
+
+### Where is my data?
+
+On Cloudflare: account data in D1, events in a Durable Object per project, and the raw archive in R2. When you self-host, all of it is in your own Cloudflare account.
+
+### What does it cost?
+
+Self-hosting is free and open source; you pay Cloudflare for what you use on a Workers Paid plan. Hosted pricing is not final.
+
+### Does it use cookies?
+
+No tracking cookies. The SDK keeps ids in memory only; the server derives a visitor's device id from a hash of the IP address and user agent with a salt that rotates daily, so a visitor cannot be followed from one day to the next. The browser's session storage is used only to hold revenue you queue with `pendingRevenue`. The dashboard itself uses a session cookie for signed-in users.
+
+### What is the license?
+
+The platform is AGPL-3.0 and the SDKs are MIT.

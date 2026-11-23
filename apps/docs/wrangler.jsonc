@@ -1,0 +1,16 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  // Static-assets-only Worker: Vocs builds plain files (renderStrategy
+  // "full-static"), served without running Worker code.
+  "name": "flarepanel-docs",
+  "compatibility_date": "2026-03-10",
+  "assets": {
+    "directory": "./dist/public",
+    "html_handling": "drop-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "routes": [{ "pattern": "docs.flarepanel.dev", "custom_domain": true }],
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": false }
+}

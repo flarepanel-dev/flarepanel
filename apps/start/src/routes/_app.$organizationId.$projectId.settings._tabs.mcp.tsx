@@ -20,7 +20,7 @@ export const Route = createFileRoute(
 });
 
 const TOKEN_PLACEHOLDER = 'BASE64_TOKEN';
-const DOCS_URL = 'https://flarepanel.dev/docs/mcp';
+const DOCS_URL = 'https://docs.flarepanel.dev';
 
 type AiClient = {
   id: string;

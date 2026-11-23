@@ -1,0 +1,44 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Identify users
+description: Tie events to signed-in users and keep profile properties.
+---
+
+# Identify users
+
+When a visitor signs in, identify them so their events and sessions are tied to a profile:
+
+```ts
+op.identify({
+  profileId: user.id,
+  firstName: user.firstName,
+  lastName: user.lastName,
+  email: user.email,
+  properties: { plan: 'team', company: 'Acme' },
+});
+```
+
+- `profileId` is your own stable user id. Use the same id everywhere you track.
+- Later calls merge into the profile: new properties are added and existing ones updated.
+- Identifying again with nothing changed costs nothing, so calling it on every page load is fine.
+
+## Counters
+
+```ts
+op.increment({ profileId: user.id, property: 'logins' });
+op.decrement({ profileId: user.id, property: 'credits', value: 5 });
+```
+
+Incrementing a profile that does not exist answers `404 Profile not found`.
+
+## Signing out
+
+```ts
+op.clear();
+```
+
+`clear()` forgets the current profile, groups and ids in the SDK, so later events are no longer tied to the signed-out user.
+
+Profiles appear under **Profiles** in the dashboard, with their properties, location, device and events.
