@@ -2883,6 +2883,27 @@ export async function openProjectEventsEngine({
     return bytes;
   }
 
+  /**
+   * Imported events (already complete rows, sessions built): appended in the
+   * given order as their own chunks — live events are flushed first so they
+   * do not share a chunk — and resolved once stored. Rollups, event names and
+   * dimensions update as for live events.
+   */
+  async function importEvents(events: IClickhouseEvent[]): Promise<void> {
+    await flush();
+    for (const event of events) {
+      append(event, eventBytes(event));
+    }
+    await flush();
+  }
+
+  /** Ended sessions of an import, for the Sessions page. */
+  function logImportedSessions(list: IClickhouseSession[]): void {
+    for (const session of list) {
+      logSession(session);
+    }
+  }
+
   /** Stores `session_end` for a session that was closed or swept. */
   function endSession(input: EnqueueSessionEndInput): Promise<void> {
     const { event, snapshot } = sessionEndJobPayload(input);
@@ -3001,6 +3022,8 @@ export async function openProjectEventsEngine({
     activeVisitors,
     readChunks,
     lastChunkId,
+    importEvents,
+    logImportedSessions,
     pruneChunks,
   };
 }

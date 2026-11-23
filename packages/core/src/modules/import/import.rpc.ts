@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCBadRequestError, TRPCNotFoundError } from '../../rpc/errors';
 import { zCreateImport } from './import.constants';
+import { importPrefix } from './src/workers-import';
 import {
   requireMappedProjectsWriteAccess,
   toPublicImport,
@@ -37,13 +38,6 @@ export const importRouter = createTRPCRouter({
         projectId: input.projectId,
         level: 'write',
       });
-      // Workers: the import pipeline stages and rebuilds sessions in
-      // ClickHouse; started here it would store nothing.
-      if (ctx.eventStore) {
-        throw new TRPCBadRequestError(
-          'Imports are not available on the Cloudflare edition yet.'
-        );
-      }
       await requireMappedProjectsWriteAccess(
         ctx.services.auth,
         userId,
@@ -102,6 +96,18 @@ export const importRouter = createTRPCRouter({
 
       if (importRecord.jobId) {
         await ctx.queues.import.import.remove(importRecord.jobId);
+      }
+      // Workers: drop the import's staging rows and R2 copies too.
+      if (ctx.eventStore) {
+        await ctx.eventStore
+          .importOp(importRecord.projectId, {
+            kind: 'cleanup',
+            importId: importRecord.id,
+          })
+          .catch(() => undefined);
+        await ctx.eventStore.importFiles
+          ?.removePrefix(importPrefix(importRecord.projectId, importRecord.id))
+          .catch(() => undefined);
       }
 
       return toPublicImport(

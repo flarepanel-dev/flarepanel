@@ -5,6 +5,8 @@
 
 import type { AiQuery } from '../../ingest/cloudflare/ai-query';
 import type { GscQuery } from '../../ingest/cloudflare/gsc-store';
+import type { ImportFileStore } from '../../import/src/workers-import';
+import type { ImportQuery } from '../../ingest/cloudflare/import-store';
 import type { ToolQuery } from '../../ingest/cloudflare/tool-scans';
 import type {
   ChartRow,
@@ -122,6 +124,10 @@ export interface EventStore {
   tools(projectId: string, query: ToolQuery): Promise<string>;
   /** Search Console numbers (writes from the sync, reads for the SEO page), as JSON text. */
   gsc(projectId: string, query: GscQuery): Promise<string>;
+  /** Import staging, sessions and commit in the project's Durable Object; JSON text. */
+  importOp(projectId: string, query: ImportQuery): Promise<string>;
+  /** R2 copies of import sources (Workers). */
+  importFiles?: ImportFileStore;
   /** S3/GCS export: claim one export for a run (false while another holds it). */
   exportClaim(
     projectId: string,

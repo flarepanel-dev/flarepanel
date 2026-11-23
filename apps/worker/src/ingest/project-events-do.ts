@@ -37,6 +37,8 @@ import {
   type GroupQuery,
   type GroupStore,
   type GscQuery,
+  type ImportQuery,
+  type ImportStore,
   type GscStore,
   type JourneyScanQuery,
   type ListEventsQuery,
@@ -46,6 +48,7 @@ import {
   openCohortStore,
   openGroupStore,
   openGscStore,
+  openImportStore,
   openProfileStore,
   openProjectEventsEngine,
   type PageSeriesQuery,
@@ -159,6 +162,7 @@ interface State {
   cohorts: CohortStore;
   ai: AiStore;
   gsc: GscStore;
+  imports: ImportStore;
   sql: EngineSql;
   service: ProjectEventsService;
 }
@@ -257,6 +261,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     const cohorts = openCohortStore(sql, () => Date.now());
     const ai = openAiStore(sql, () => Date.now());
     const gsc = openGscStore(sql);
+    const imports = openImportStore(sql);
     const service = createProjectEventsService({
       engine,
       logger: this.logger,
@@ -299,7 +304,17 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       this.unstreamed =
         (await engine.readChunks(streamedThrough, 1)).length > 0;
     }
-    return { engine, service, profiles, groups, cohorts, ai, gsc, sql };
+    return {
+      engine,
+      service,
+      profiles,
+      groups,
+      cohorts,
+      ai,
+      gsc,
+      imports,
+      sql,
+    };
   }
 
   private async rememberProject(projectId: string) {
@@ -692,6 +707,70 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       lowest = lowest === null ? through : Math.min(lowest, through);
     }
     return lowest;
+  }
+
+  /**
+   * One import step (stage a slice, build sessions, commit, log sessions,
+   * state, clean up); JSON text with the import's state.
+   */
+  async importOp(query: ImportQuery): Promise<string> {
+    const { engine, imports, profiles } = await this.state;
+    const hooks = {
+      appendEvents: (events: Parameters<typeof engine.importEvents>[0]) =>
+        engine.importEvents(events),
+      logSessions: (
+        sessions: Parameters<typeof engine.logImportedSessions>[0]
+      ) => engine.logImportedSessions(sessions),
+    };
+    switch (query.kind) {
+      case 'stage': {
+        const current = imports.state(query.importId);
+        // Profiles first: an upsert merges, so a retried slice is harmless.
+        if (query.profilesJson && current.source === query.from) {
+          for (const profile of JSON.parse(
+            query.profilesJson
+          ) as IClickhouseProfile[]) {
+            profiles.upsert(profile);
+          }
+        }
+        return JSON.stringify(
+          imports.stage(
+            query.importId,
+            JSON.parse(query.eventsJson),
+            query.from,
+            query.to,
+            query.done
+          )
+        );
+      }
+      case 'sessions':
+        return JSON.stringify(
+          imports.buildSessions(
+            query.importId,
+            query.maxRows,
+            new Date().toISOString()
+          )
+        );
+      case 'commit': {
+        const state = await imports.commit(
+          query.importId,
+          query.maxRows,
+          hooks
+        );
+        // New chunks: the alarm archives them (old ones then leave hot storage).
+        this.afterStore();
+        return JSON.stringify(state);
+      }
+      case 'logSessions':
+        return JSON.stringify(
+          imports.logSessions(query.importId, query.maxRows, hooks)
+        );
+      case 'cleanup':
+        imports.cleanup(query.importId);
+        return 'null';
+      default:
+        return JSON.stringify(imports.state(query.importId));
+    }
   }
 
   /** Search Console writes and SEO page reads; JSON text. */

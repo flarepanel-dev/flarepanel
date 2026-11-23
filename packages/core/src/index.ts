@@ -183,6 +183,7 @@ export {
   transformSessionToEvent,
 } from './modules/event/event.service';
 export type { EventStore } from './modules/event/src/event-store';
+export type { ImportFileStore } from './modules/import/src/workers-import';
 export type { IServiceGroup } from './modules/group/group.service';
 export { getGscCannibalization } from './modules/gsc/gsc.service';
 export { setBooting, setShuttingDown } from './modules/health/src/shutdown';

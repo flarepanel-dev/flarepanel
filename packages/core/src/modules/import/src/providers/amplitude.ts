@@ -3,6 +3,7 @@ import { createInterface } from 'node:readline';
 import { Readable } from 'node:stream';
 import { createBrotliDecompress, createGunzip } from 'node:zlib';
 import { isSameDomain, parsePath, toDots } from '@flarepanel/shared';
+import { isWorkersRuntime } from '@flarepanel/shared/server';
 import unzipper from 'unzipper';
 import { z } from 'zod';
 import type { Logger } from '../../../../logger';
@@ -16,6 +17,7 @@ import type { IClickhouseEvent } from '../../../event/event.service';
 import type { IClickhouseProfile } from '../../../profile/profile.service';
 import type { IAmplitudeImportConfig } from '../../import.constants';
 import { BaseImportProvider } from '../base-provider';
+import { ndjsonRecords, readZip } from '../web-unzip';
 import { toCountryCode } from './country-codes';
 
 /**
@@ -127,6 +129,12 @@ export class AmplitudeProvider extends BaseImportProvider<AmplitudeRawEvent> {
     }
   }
 
+  /** One day's export archive (ZIP of gzipped NDJSON), or null when Amplitude has none. */
+  fetchDayExport(day: string): Promise<Response | null> {
+    const compact = day.replaceAll('-', '');
+    return this.fetchExportWithRetry(`${compact}T00`, `${compact}T23`);
+  }
+
   /**
    * Fetch a single export window with retries. Returns the response on success,
    * or null when Amplitude reports no data (404) for the window. Throws after
@@ -218,6 +226,10 @@ export class AmplitudeProvider extends BaseImportProvider<AmplitudeRawEvent> {
     response: Response,
     window: string
   ): AsyncGenerator<AmplitudeRawEvent, void, unknown> {
+    if (this.webZip) {
+      yield* this.readExportZipWeb(response, window);
+      return;
+    }
     const body = Readable.fromWeb(response.body as any);
     const zip = body.pipe(unzipper.Parse({ forceStream: true }));
 
@@ -231,6 +243,32 @@ export class AmplitudeProvider extends BaseImportProvider<AmplitudeRawEvent> {
       }
     }
 
+    this.logger?.info({ window }, 'Finished streaming Amplitude export window');
+  }
+
+  /**
+   * Cloudflare Workers: the Node zip and readline streams do not run there,
+   * so one window's archive is read whole and unpacked with Web APIs. An
+   * import job reads one day per step, which keeps the archive small.
+   */
+  protected webZip = isWorkersRuntime();
+
+  private async *readExportZipWeb(
+    response: Response,
+    window: string
+  ): AsyncGenerator<AmplitudeRawEvent, void, unknown> {
+    const archive = new Uint8Array(await response.arrayBuffer());
+    for (const entry of readZip(archive)) {
+      if (!/\.json(\.gz)?$/i.test(entry.name)) {
+        continue;
+      }
+      yield* ndjsonRecords<AmplitudeRawEvent>(await entry.read(), (line) =>
+        this.logger?.warn(
+          { line: line.substring(0, 100) },
+          'Failed to parse Amplitude event'
+        )
+      );
+    }
     this.logger?.info({ window }, 'Finished streaming Amplitude export window');
   }
 

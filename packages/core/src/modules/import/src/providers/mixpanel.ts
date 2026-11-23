@@ -28,7 +28,7 @@ export const zMixpanelRawProfile = z.object({
 });
 export type MixpanelRawProfile = z.infer<typeof zMixpanelRawProfile>;
 
-class MixpanelRateLimitError extends Error {
+export class MixpanelRateLimitError extends Error {
   readonly retryAfterMs?: number;
 
   constructor(message: string, retryAfterMs?: number) {
@@ -129,6 +129,43 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
    */
   shouldGenerateSessionIds(): boolean {
     return true;
+  }
+
+  /**
+   * One day's raw export (JSON lines), one request, no retry loop: the
+   * Cloudflare import job stores it and schedules its own retries. Throws
+   * MixpanelRateLimitError on 429 (with Retry-After when given).
+   */
+  async fetchDayExport(day: string): Promise<Response> {
+    const { serviceAccount, serviceSecret, projectId } = this.config;
+    const params = new URLSearchParams({
+      from_date: day,
+      to_date: day,
+      project_id: projectId,
+    });
+    const response = await fetch(
+      `${this.residencyUrls.dataBase}/api/2.0/export?${params}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Basic ${btoa(`${serviceAccount}:${serviceSecret}`)}`,
+          Accept: 'application/json',
+        },
+      }
+    );
+    if (response.status === 429) {
+      const retryAfter = response.headers.get('Retry-After');
+      throw new MixpanelRateLimitError(
+        'Mixpanel rate limit exceeded (429)',
+        retryAfter ? Number(retryAfter) * 1000 : undefined
+      );
+    }
+    if (!(response.ok && response.body)) {
+      throw new Error(
+        `Failed to fetch events from Mixpanel: ${response.status} ${response.statusText}`
+      );
+    }
+    return response;
   }
 
   async *parseSource(

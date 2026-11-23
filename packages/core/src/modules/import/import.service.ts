@@ -805,7 +805,7 @@ interface RunnableProvider {
 }
 
 /** Dynamic import keeps @flarepanel/db's clickhouse client off this file's eager path (see header). */
-async function createImportProvider(
+export async function createImportProvider(
   projectId: string,
   config: IImportConfig,
   jobLogger: Logger

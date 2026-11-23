@@ -25,6 +25,7 @@ import {
 import type { CacheStore } from '@flarepanel/platform';
 import { toDots } from '@flarepanel/shared';
 import type { Env } from '../index';
+import { createImportFileStore } from './import-files';
 
 /** Repeats of one request inside this window are dropped. */
 const DEDUPE_TTL_SECONDS = 1;
@@ -157,9 +158,12 @@ export function createCloudflareIngestBackend({
 
 /** Dashboard reads from each project's Durable Object. */
 export function createWorkerEventStore(
-  env: Pick<Env, 'PROJECT_EVENTS'>
+  env: Pick<Env, 'PROJECT_EVENTS' | 'EVENTS_ARCHIVE'>
 ): EventStore {
   return {
+    importFiles: env.EVENTS_ARCHIVE
+      ? createImportFileStore(env.EVENTS_ARCHIVE)
+      : undefined,
     listEvents: (projectId, query) =>
       projectEventsStub(env, projectId).listEvents(query),
     projectCard: (projectId) => projectEventsStub(env, projectId).projectCard(),
@@ -202,6 +206,8 @@ export function createWorkerEventStore(
       ),
     ai: (projectId, query) => projectEventsStub(env, projectId).ai(query),
     gsc: (projectId, query) => projectEventsStub(env, projectId).gsc(query),
+    importOp: (projectId, query) =>
+      projectEventsStub(env, projectId).importOp(query),
     exportClaim: (projectId, integrationId, token, ttlMs) =>
       projectEventsStub(env, projectId).exportClaim(
         integrationId,
