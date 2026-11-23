@@ -347,6 +347,7 @@ export {
 } from './modules/session/src/session-end';
 export { reapIdleSessions } from './modules/session/src/session-reaper';
 export { vacuumStaleSessions } from './modules/session/src/session-vacuum';
+export { updateEventsCount } from './modules/session/src/usage';
 export {
   zShareDashboard,
   zShareOverview,

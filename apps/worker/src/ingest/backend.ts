@@ -8,12 +8,14 @@
 import {
   type AppDeps,
   type Buffers,
+  createCtx,
   type DeviceRequest,
   type EventStore,
   getGeoFromCf,
   getProjectByIdCached,
   type IngestBackend,
   type TrackDraft,
+  updateEventsCount,
 } from '@flarepanel/core';
 import type { CacheStore } from '@flarepanel/platform';
 import type { Env } from '../index';
@@ -109,6 +111,19 @@ export function createCloudflareIngestBackend({
             )
           );
         }
+        // Usage counters (project sort order, billing period): cached for an
+        // hour per project, so this is a cache read on almost every request.
+        const appDeps = deps();
+        const scope = createCtx(appDeps, {
+          requestId: `usage:${projectId}`,
+          logger: appDeps.logger,
+        });
+        await updateEventsCount(scope, projectId).catch((error) =>
+          appDeps.logger.warn(
+            { err: error, projectId },
+            'Could not refresh usage counters'
+          )
+        );
         return { deviceId: result.deviceId, sessionId: result.sessionId };
       },
     },
@@ -127,6 +142,13 @@ export function createWorkerEventStore(
       projectEventsStub(env, projectId).activeVisitors(),
     overview: (projectId, from, to) =>
       projectEventsStub(env, projectId).overview(from, to),
+    countEvents: (projectId, from, to) =>
+      projectEventsStub(env, projectId).countEvents(from, to),
+    async deleteProjects(projectIds) {
+      for (const projectId of projectIds) {
+        await projectEventsStub(env, projectId).purge(projectId);
+      }
+    },
   };
 }
 

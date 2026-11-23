@@ -155,6 +155,9 @@ export const getProjectEventsCount = async (
   deps: ServiceDeps,
   projectId: string
 ) => {
+  if (deps.eventStore) {
+    return deps.eventStore.countEvents(projectId, new Date(0), new Date());
+  }
   const res = await chQuery<{ count: number }>(
     deps,
     sql`SELECT sum(event_count) as count FROM ${sql.id(TABLE_NAMES.event_names_mv)} WHERE project_id = ${sql.string(projectId)} AND name NOT IN ${sql.array('String', NON_TRACKING_EVENT_NAMES)}`

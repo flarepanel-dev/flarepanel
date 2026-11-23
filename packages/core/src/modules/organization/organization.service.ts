@@ -383,6 +383,16 @@ export async function getOrganizationBillingEventsCount(
     return 0;
   }
 
+  const store = deps.eventStore;
+  if (store) {
+    const counts = await Promise.all(
+      organization.projects.map((project) =>
+        store.countEvents(project.id, periodStart, periodEnd)
+      )
+    );
+    return counts.reduce((sum, count) => sum + count, 0);
+  }
+
   const statement = sql`
     SELECT COUNT(*) AS count
     FROM ${sql.id(TABLE_NAMES.events)} e
@@ -772,7 +782,12 @@ export async function runDeleteCron(
   ];
 
   if (projectIds.length > 0) {
-    await deleteFromClickhouse(deps, projectIds);
+    // Workers keep events in per-project Durable Objects and R2, not ClickHouse.
+    if (deps.eventStore) {
+      await deps.eventStore.deleteProjects(projectIds);
+    } else {
+      await deleteFromClickhouse(deps, projectIds);
+    }
     await deleteProjects(deps, projectIds);
   }
 

@@ -19,6 +19,10 @@ export interface EventStore {
   projectCard(projectId: string): Promise<ProjectCard>;
   activeVisitors(projectId: string): Promise<number>;
   /** UTC daily rollups for `from`..`to` and the range's distinct visitors. */
+  /** Billable events (everything but session_start/session_end) in `from`..`to`. */
+  countEvents(projectId: string, from: Date, to: Date): Promise<number>;
+  /** Removes every stored and archived event of these projects. */
+  deleteProjects(projectIds: string[]): Promise<void>;
   overview(
     projectId: string,
     from: Date,

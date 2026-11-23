@@ -12,6 +12,7 @@ import { gunzipSync, gzipSync } from 'node:zlib';
 import { DurableObject } from 'cloudflare:workers';
 import type { DeviceRequest } from '@flarepanel/core';
 import {
+  archivePrefix,
   buildArchiveObjects,
   createProjectEventsService,
   type EngineSql,
@@ -75,7 +76,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   private readonly logger = createConsoleLogger('info', {
     component: 'project-events',
   });
-  private readonly state: Promise<State>;
+  private state: Promise<State>;
   private projectId: string | null = null;
   private alarmAt: number | null = null;
   private unarchived = false;
@@ -171,6 +172,51 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   async dailyStats(from: Date, to: Date) {
     const { engine } = await this.state;
     return engine.dailyStats(from, to);
+  }
+
+  async countEvents(from: Date, to: Date) {
+    const { engine } = await this.state;
+    return engine
+      .dailyStats(from, to)
+      .reduce((sum, day) => sum + day.events, 0);
+  }
+
+  /**
+   * Deletes everything this project stored: its R2 archive, alarm, sockets
+   * and SQLite. The object then starts over empty if it is ever called again.
+   */
+  async purge(projectId: string) {
+    for (const ws of this.ctx.getWebSockets()) {
+      try {
+        ws.close(1000, 'project deleted');
+      } catch {
+        // Already closed.
+      }
+    }
+    const bucket = this.env.EVENTS_ARCHIVE;
+    let deleted = 0;
+    if (bucket) {
+      const prefix = archivePrefix(projectId);
+      let cursor: string | undefined;
+      do {
+        const page = await bucket.list({ prefix, cursor, limit: 1000 });
+        const keys = page.objects.map((object) => object.key);
+        if (keys.length > 0) {
+          await bucket.delete(keys);
+          deleted += keys.length;
+        }
+        cursor = page.truncated ? page.cursor : undefined;
+      } while (cursor);
+    }
+    await this.ctx.storage.deleteAlarm();
+    await this.ctx.storage.deleteAll();
+    this.alarmAt = null;
+    this.projectId = null;
+    this.unarchived = false;
+    this.pendingEvents = 0;
+    this.state = this.open();
+    await this.state;
+    return { archivedObjectsDeleted: deleted };
   }
 
   async overview(from: Date, to: Date) {
