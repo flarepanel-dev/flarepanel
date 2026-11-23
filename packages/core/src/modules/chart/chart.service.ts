@@ -308,10 +308,12 @@ export async function listChartEvents(
   projectId: string
 ): Promise<ChartEventOption[]> {
   const [events, meta] = await Promise.all([
-    runQuery<{ name: string; count: number }>(
-      deps,
-      eventNamesWithCountQuery(projectId)
-    ),
+    deps.eventStore
+      ? deps.eventStore.eventNames(projectId)
+      : runQuery<{ name: string; count: number }>(
+          deps,
+          eventNamesWithCountQuery(projectId)
+        ),
     getEventMetasCached(deps, projectId),
   ]);
 
@@ -344,10 +346,14 @@ export async function listChartProperties(
   const { projectId, event } = input;
   const [profileKeys, eventKeys] = await Promise.all([
     getProfilePropertyKeysCached(deps, projectId),
-    runQuery<{ property_key: string; created_at: string }>(
-      deps,
-      eventPropertyKeysQuery(projectId, event, EVENT_PROPERTY_KEY_LIMIT)
-    ),
+    deps.eventStore
+      ? deps.eventStore
+          .propertyKeys(projectId, event)
+          .then((keys) => keys.map((key) => ({ property_key: key })))
+      : runQuery<{ property_key: string; created_at: string }>(
+          deps,
+          eventPropertyKeysQuery(projectId, event, EVENT_PROPERTY_KEY_LIMIT)
+        ),
   ]);
 
   const properties = [
@@ -381,6 +387,29 @@ export async function getChartPropertyValues(
 
   if (property === 'has_profile') {
     return { values: ['true', 'false'] };
+  }
+
+  // Workers: values seen on the project's recent events. Profile, group and
+  // cohort values have no store to read from yet.
+  if (deps.eventStore) {
+    const isEventField =
+      property.startsWith('properties.') ||
+      isKnownEventField(normalizeEventField(property));
+    const isOther = ['profile.', 'group.', 'cohort'].some((prefix) =>
+      property.startsWith(prefix)
+    );
+    if (!isEventField || isOther) {
+      return { values: [] };
+    }
+    return {
+      values: await deps.eventStore.propertyValues(
+        projectId,
+        event,
+        property.startsWith('properties.')
+          ? property
+          : normalizeEventField(property)
+      ),
+    };
   }
 
   if (property.startsWith('properties.')) {

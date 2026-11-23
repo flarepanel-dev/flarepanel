@@ -14,9 +14,12 @@ import type { DeviceRequest, IClickhouseProfile } from '@flarepanel/core';
 import {
   archivePrefix,
   buildArchiveObjects,
+  type ChartScanQuery,
   createProjectEventsService,
   type Dimension,
   type EngineSql,
+  eventRow,
+  type FunnelScanQuery,
   type ListEventsQuery,
   type MetricsQuery,
   openProfileStore,
@@ -26,6 +29,7 @@ import {
   type ProjectEventsEngine,
   type ProjectEventsService,
   type ProjectEventsTrackInput,
+  type RetentionScanQuery,
   type RowFilter,
   type SessionListQuery,
   type SqlRow,
@@ -45,6 +49,12 @@ const LITE_RETENTION_DAYS = 30;
 const BROADCAST_MIN_INTERVAL_MS = 1000;
 /** An alarm already due this soon is not moved (each move is a write). */
 const ALARM_SLACK_MS = 1000;
+
+/** The report builder's pickers read this much recent data. */
+const PICKER_SCAN_CHUNKS = 100;
+const PICKER_SCAN_EVENTS = 20_000;
+const PICKER_MAX_VALUES = 500;
+const HIDDEN_PROPERTY_KEYS = new Set(['__duration_from', '__properties_from']);
 
 const KEY_PROJECT_ID = 'project_id';
 const KEY_ARCHIVED_THROUGH = 'archived_through';
@@ -265,6 +275,90 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   async metrics(query: MetricsQuery) {
     const { engine } = await this.state;
     return engine.metrics(query);
+  }
+
+  /** `profile.*` fields for report filters and breakdowns, cached per call. */
+  private profileLookup(profiles: ProfileStore) {
+    const cache = new Map<string, Record<string, unknown> | null>();
+    return (profileId: string) => {
+      if (!cache.has(profileId)) {
+        const profile = profiles.get(profileId);
+        cache.set(
+          profileId,
+          profile ? (profile as unknown as Record<string, unknown>) : null
+        );
+      }
+      return cache.get(profileId);
+    };
+  }
+
+  async chartRows(query: ChartScanQuery) {
+    const { engine, profiles } = await this.state;
+    return engine.chartRows(query, this.profileLookup(profiles));
+  }
+
+  async funnelRows(query: FunnelScanQuery) {
+    const { engine, profiles } = await this.state;
+    return engine.funnelRows(query, this.profileLookup(profiles));
+  }
+
+  async retentionRows(query: RetentionScanQuery) {
+    const { engine } = await this.state;
+    return engine.retentionRows(query);
+  }
+
+  /** Property keys seen on recent events (of one event name, or all). */
+  async propertyKeys(eventName?: string) {
+    const { engine } = await this.state;
+    const keys = new Set<string>();
+    let seen = 0;
+    await engine.recentEvents(PICKER_SCAN_CHUNKS, (event) => {
+      if (eventName && eventName !== '*' && event.name !== eventName) {
+        return;
+      }
+      for (const [key, value] of Object.entries(event.properties)) {
+        // Same exclusions as ClickHouse's event_property_values_mv.
+        const isHidden = HIDDEN_PROPERTY_KEYS.has(key);
+        if (
+          !isHidden &&
+          value !== '' &&
+          value !== null &&
+          value !== undefined
+        ) {
+          keys.add(key);
+        }
+      }
+      seen += 1;
+      return seen < PICKER_SCAN_EVENTS;
+    });
+    return [...keys].sort();
+  }
+
+  /** Distinct values of one field on recent events, most common first. */
+  async propertyValues(eventName: string, property: string) {
+    const { engine } = await this.state;
+    const counts = new Map<string, number>();
+    let seen = 0;
+    await engine.recentEvents(PICKER_SCAN_CHUNKS, (event) => {
+      if (eventName && eventName !== '*' && event.name !== eventName) {
+        return;
+      }
+      const row = eventRow(event);
+      const key = property.startsWith('properties.')
+        ? property.slice('properties.'.length)
+        : null;
+      const raw = key === null ? row[property] : event.properties[key];
+      const value = raw === null || raw === undefined ? '' : String(raw);
+      if (value) {
+        counts.set(value, (counts.get(value) ?? 0) + 1);
+      }
+      seen += 1;
+      return seen < PICKER_SCAN_EVENTS;
+    });
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, PICKER_MAX_VALUES)
+      .map(([value]) => value);
   }
 
   async liveData() {

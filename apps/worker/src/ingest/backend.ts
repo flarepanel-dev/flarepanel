@@ -152,6 +152,17 @@ export function createWorkerEventStore(
     metrics: (projectId, query) =>
       projectEventsStub(env, projectId).metrics(query),
     liveData: (projectId) => projectEventsStub(env, projectId).liveData(),
+    chartRows: (projectId, query) =>
+      projectEventsStub(env, projectId).chartRows(query),
+    funnelRows: (projectId, query) =>
+      projectEventsStub(env, projectId).funnelRows(query),
+    retentionRows: (projectId, query) =>
+      projectEventsStub(env, projectId).retentionRows(query),
+    eventNames: (projectId) => projectEventsStub(env, projectId).eventNames(),
+    propertyKeys: (projectId, eventName) =>
+      projectEventsStub(env, projectId).propertyKeys(eventName),
+    propertyValues: (projectId, eventName, property) =>
+      projectEventsStub(env, projectId).propertyValues(eventName, property),
     listSessions: (projectId, query) =>
       projectEventsStub(env, projectId).listSessions(query),
     countSessions: (projectId, query) =>

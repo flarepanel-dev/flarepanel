@@ -4,6 +4,10 @@
 // port when it is present. Bun leaves it unset and keeps its ClickHouse reads.
 
 import type {
+  ChartRow,
+  ChartScanQuery,
+} from '../../ingest/cloudflare/chart-scan';
+import type {
   DailyStats,
   Dimension,
   DimensionRow,
@@ -15,11 +19,19 @@ import type {
   SessionListQuery,
 } from '../../ingest/cloudflare/engine';
 import type { RowFilter } from '../../ingest/cloudflare/filter-eval';
+import type {
+  FunnelScanQuery,
+  FunnelScanResult,
+} from '../../ingest/cloudflare/funnel-scan';
 import type { LiveSnapshot } from '../../ingest/cloudflare/live-window';
 import type {
   ProfileListPage,
   ProfileListQuery,
 } from '../../ingest/cloudflare/profile-store';
+import type {
+  RetentionRow,
+  RetentionScanQuery,
+} from '../../ingest/cloudflare/retention-scan';
 import type { IClickhouseSession } from '../../session/session.service';
 
 export interface EventStore {
@@ -43,6 +55,33 @@ export interface EventStore {
   ): Promise<DimensionRow[]>;
   /** Overview totals and series in the project's timezone. */
   metrics(projectId: string, query: MetricsQuery): Promise<MetricsResult>;
+  /** Report builder series rows, the shape ClickHouse's chart query returns. */
+  chartRows(
+    projectId: string,
+    query: ChartScanQuery
+  ): Promise<{ rows: ChartRow[]; partial: boolean }>;
+  /** Funnel levels and time to convert, the shape of the funnel queries. */
+  funnelRows(
+    projectId: string,
+    query: FunnelScanQuery
+  ): Promise<FunnelScanResult & { partial: boolean }>;
+  /** Retention cohorts, the shape of the cohort query. */
+  retentionRows(
+    projectId: string,
+    query: RetentionScanQuery
+  ): Promise<{ rows: RetentionRow[]; partial: boolean }>;
+  /** Event names with counts, most used first. */
+  eventNames(
+    projectId: string
+  ): Promise<{ name: string; count: number; lastSeen: number }[]>;
+  /** Property keys on recent events. */
+  propertyKeys(projectId: string, eventName?: string): Promise<string[]>;
+  /** Distinct values of a field on recent events. */
+  propertyValues(
+    projectId: string,
+    eventName: string,
+    property: string
+  ): Promise<string[]>;
   /** The live card: the last 30 minutes by minute. */
   liveData(projectId: string): Promise<LiveSnapshot>;
   /** Sessions, newest first: open ones and the ended-session log. */

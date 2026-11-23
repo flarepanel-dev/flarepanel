@@ -43,6 +43,11 @@ export function wallClockToMs(value: string, timezone: string): number {
   return parsed.isValid ? parsed.toMillis() : Date.parse(value);
 }
 
+/** The wall-clock time of `ms` in `timezone` as `yyyy-MM-dd HH:mm:ss`. */
+export function wallClockText(ms: number, timezone: string): string {
+  return wallClockIso(ms, timezone).slice(0, 19).replace('T', ' ');
+}
+
 /** The wall-clock time of `ms` in `timezone`, written as a UTC ISO string. */
 export function wallClockIso(ms: number, timezone: string): string {
   const local = DateTime.fromMillis(ms, { zone: timezone || 'UTC' });
@@ -58,10 +63,14 @@ export function wallClockIso(ms: number, timezone: string): string {
   ).toISOString();
 }
 
+/** Overview weeks start on Sunday (ClickHouse mode 0), report weeks on Monday (mode 1). */
+export type WeekStart = 'sunday' | 'monday';
+
 function bucketStart(
   ms: number,
   interval: BucketInterval,
-  timezone: string
+  timezone: string,
+  weekStart: WeekStart = 'sunday'
 ): number {
   if (interval === 'minute') {
     return Math.floor(ms / MINUTE_MS) * MINUTE_MS;
@@ -72,11 +81,12 @@ function bucketStart(
       return local.startOf('hour').toMillis();
     case 'day':
       return local.startOf('day').toMillis();
-    // Weeks start on Sunday, like ClickHouse's default `toStartOfWeek`.
     case 'week':
       return local
         .startOf('day')
-        .minus({ days: local.weekday % 7 })
+        .minus({
+          days: weekStart === 'monday' ? local.weekday - 1 : local.weekday % 7,
+        })
         .toMillis();
     default:
       return local.startOf('month').toMillis();
@@ -110,10 +120,11 @@ export function buildBuckets(
   fromMs: number,
   toMs: number,
   interval: BucketInterval,
-  timezone: string
+  timezone: string,
+  weekStart: WeekStart = 'sunday'
 ): Bucket[] {
   const buckets: Bucket[] = [];
-  let start = bucketStart(fromMs, interval, timezone);
+  let start = bucketStart(fromMs, interval, timezone, weekStart);
   while (
     (start < toMs || buckets.length === 0) &&
     buckets.length < MAX_BUCKETS

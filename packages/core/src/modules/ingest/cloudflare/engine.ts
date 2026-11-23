@@ -28,9 +28,25 @@ import {
   sessionEndJobPayload,
   sessionEndPayloadFromSnapshot,
 } from '../../session/src/session-end-payload';
+import {
+  ChartAccumulator,
+  type ChartRow,
+  type ChartScanQuery,
+  type ProfileLookup,
+} from './chart-scan';
 import { matchesFilters, type RowFilter } from './filter-eval';
+import {
+  FunnelAccumulator,
+  type FunnelScanQuery,
+  type FunnelScanResult,
+} from './funnel-scan';
 import { HyperLogLog } from './hyperloglog';
 import { LIVE_WINDOW_MS, type LiveSnapshot, LiveWindow } from './live-window';
+import {
+  RetentionAccumulator,
+  type RetentionRow,
+  type RetentionScanQuery,
+} from './retention-scan';
 import {
   type BucketInterval,
   buildBuckets,
@@ -1993,6 +2009,81 @@ export async function openProjectEventsEngine({
       .slice(0, Math.max(1, limit));
   }
 
+  /** Report builder series rows (see chart-scan) from the stored events. */
+  async function chartRows(
+    query: ChartScanQuery,
+    lookupProfile?: ProfileLookup
+  ): Promise<{ rows: ChartRow[]; partial: boolean }> {
+    const accumulator = new ChartAccumulator(query, lookupProfile);
+    const complete = await scanRange(query.from, query.to, (event, at) =>
+      accumulator.add(event, at)
+    );
+    return {
+      rows: accumulator.rows(),
+      partial: !complete || accumulator.overflowed,
+    };
+  }
+
+  /** Funnel levels (and time to convert) from the stored events. */
+  async function funnelRows(
+    query: FunnelScanQuery,
+    lookupProfile?: ProfileLookup
+  ): Promise<FunnelScanResult & { partial: boolean }> {
+    const accumulator = new FunnelAccumulator(query, lookupProfile);
+    const complete = await scanRange(query.from, query.to, (event, at) =>
+      accumulator.add(event, at)
+    );
+    return { ...accumulator.result(), partial: !complete };
+  }
+
+  /** Retention cohorts from the stored events. */
+  async function retentionRows(
+    query: RetentionScanQuery
+  ): Promise<{ rows: RetentionRow[]; partial: boolean }> {
+    const accumulator = new RetentionAccumulator(query);
+    const periodDays = { day: 1, week: 7, month: 31 }[query.interval];
+    const complete = await scanRange(
+      query.start,
+      query.end + (query.diffInterval + 1) * periodDays * DAY_MS,
+      (event, at) => accumulator.add(event, at)
+    );
+    return { rows: accumulator.rows(), partial: !complete };
+  }
+
+  /** Newest events first, from memory and the newest `maxChunks` stored chunks. */
+  async function recentEvents(
+    maxChunks: number,
+    visit: (event: IClickhouseEvent) => boolean | undefined
+  ): Promise<void> {
+    const inMemory = memoryChunks();
+    const memoryIds = new Set(inMemory.map(([id]) => id));
+    for (const [, events] of inMemory) {
+      for (let index = events.length - 1; index >= 0; index--) {
+        const event = events[index];
+        if (event && visit(event) === false) {
+          return;
+        }
+      }
+    }
+    const rows = sql.exec(
+      'SELECT id, body FROM chunks ORDER BY id DESC LIMIT ?',
+      maxChunks
+    );
+    for (const row of rows) {
+      const id = toNumber(row.id);
+      if (memoryIds.has(id)) {
+        continue;
+      }
+      const events = await chunkEvents(id, row.body);
+      for (let index = events.length - 1; index >= 0; index--) {
+        const event = events[index];
+        if (event && visit(event) === false) {
+          return;
+        }
+      }
+    }
+  }
+
   /** Sessions, visitors and referrers per minute over the last 30 minutes. */
   async function liveData(): Promise<LiveSnapshot> {
     const now = clock.now();
@@ -2405,6 +2496,11 @@ export async function openProjectEventsEngine({
     nextAlarmAt,
     listEvents,
     metrics,
+    chartRows,
+    funnelRows,
+    retentionRows,
+    recentEvents,
+    scanRange,
     liveData,
     listSessions,
     countSessions,

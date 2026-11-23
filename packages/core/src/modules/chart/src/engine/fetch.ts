@@ -21,6 +21,7 @@ import {
   getDistributionRangeSql,
 } from '../statement';
 import type { NormalizedInput } from './normalize';
+import { storeAggregateRows, storeSeriesRows } from './store-rows';
 import type { ConcreteSeries, Plan, SeriesDefinition } from './types';
 
 type EventDefinition = IChartEventItem & { type: 'event' };
@@ -78,6 +79,11 @@ function breakdownValues(
 }
 
 const BREAKDOWN_LABEL_KEYS = ['label_1', 'label_2', 'label_3'] as const;
+
+/** Rows other than `WITH FILL` padding (which carries no event label). */
+function hasDataRows(rows: ISerieDataItem[]): boolean {
+  return rows.some((row) => Boolean(row.label_0));
+}
 
 /**
  * A `WITH FILL` row carries each label column's type default: `\0\0` for the
@@ -283,21 +289,16 @@ export async function fetch(
       const event = definition as EventDefinition;
       const queryInput = { ...seriesQueryInput(plan, event), binRange };
 
-      let rows = await runChartQuery(
-        deps,
-        await getChartSql(deps, queryInput),
-        plan.timezone
-      );
+      const seriesRows = async (input: typeof queryInput) =>
+        deps.eventStore
+          ? storeSeriesRows(deps.eventStore, input)
+          : runChartQuery(deps, await getChartSql(deps, input), plan.timezone);
+      let rows = await seriesRows(queryInput);
       // Nothing matched the breakdown: fall back to the plain series.
-      if (rows.length === 0 && plan.input.breakdowns.length > 0) {
-        rows = await runChartQuery(
-          deps,
-          await getChartSql(deps, {
-            ...queryInput,
-            breakdowns: [],
-          }),
-          plan.timezone
-        );
+      // (Durable Object rows always carry their fill rows, so look past them.)
+      const isEmpty = deps.eventStore ? !hasDataRows(rows) : rows.length === 0;
+      if (isEmpty && plan.input.breakdowns.length > 0) {
+        rows = await seriesRows({ ...queryInput, breakdowns: [] });
       }
 
       return expandGroupedRows({
@@ -346,17 +347,17 @@ export async function fetchAggregate(
         timezone,
       };
 
-      let rows = await runChartQuery(
-        deps,
-        await getAggregateChartSql(deps, queryInput),
-        timezone
-      );
+      const aggregateRows = async (input: typeof queryInput) =>
+        deps.eventStore
+          ? storeAggregateRows(deps.eventStore, input)
+          : runChartQuery(
+              deps,
+              await getAggregateChartSql(deps, input),
+              timezone
+            );
+      let rows = await aggregateRows(queryInput);
       if (rows.length === 0 && normalized.breakdowns.length > 0) {
-        rows = await runChartQuery(
-          deps,
-          await getAggregateChartSql(deps, { ...queryInput, breakdowns: [] }),
-          timezone
-        );
+        rows = await aggregateRows({ ...queryInput, breakdowns: [] });
       }
 
       return expandGroupedRows({

@@ -39,7 +39,8 @@ cookie is shared.
 | Groups, replays | accepted and not stored yet |
 | Overview numbers and chart, top pages, entry/exit pages, referrers/UTM, countries/regions/cities, devices/browsers/OS, map | works: hourly and daily rollups in the project's Durable Object (`hourly`, `daily`, `dims_h`, `dims`), in the project's timezone; minute series and filters are counted from the stored events (retention window) |
 | Live 30-min card, Sessions page (list, filters, search, session detail) | works: live sessions in memory, ended ones in `session_log` |
-| Funnels, retention, insights, report builder, notifications | not yet: Phase 4 (see `docs/adr/0002-query-layer.md`) |
+| Report builder charts (series, breakdowns, filters, formulas, bar/pie), funnels, retention, event/property pickers | works: counted from the stored events in the project's Durable Object (`chart-scan`, `funnel-scan`, `retention-scan`), retention window |
+| Conversion, Sankey, distribution, insights, notifications | not yet: Phase 4 (see `docs/adr/0002-query-layer.md`) |
 
 Checked end to end with `wrangler dev`: sign-up 264 ms, onboarding (project +
 two clients) 194 ms, sign-in 202 ms, then the dashboard in a browser.

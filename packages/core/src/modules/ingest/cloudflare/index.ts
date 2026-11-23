@@ -7,6 +7,13 @@ export {
   buildArchiveObjects,
 } from './archive';
 export {
+  type ChartRow,
+  type ChartScanEvent,
+  type ChartScanQuery,
+  eventRow,
+  type ProfileLookup,
+} from './chart-scan';
+export {
   type DailyStats,
   type Dimension,
   type DimensionRow,
@@ -28,6 +35,7 @@ export {
   type TickResult,
 } from './engine';
 export { type RowFilter, unsupportedFilters } from './filter-eval';
+export type { FunnelScanQuery, FunnelScanResult } from './funnel-scan';
 export type { LiveSnapshot } from './live-window';
 export {
   openProfileStore,
@@ -42,8 +50,16 @@ export {
   type ProjectEventsTrackInput,
   type ProjectEventsTrackResult,
 } from './project-events';
+export type {
+  RetentionInterval,
+  RetentionRow,
+  RetentionScanQuery,
+} from './retention-scan';
 export {
   type BucketInterval,
+  buildBuckets,
+  type WeekStart,
   wallClockIso,
+  wallClockText,
   wallClockToMs,
 } from './time-buckets';

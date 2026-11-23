@@ -3,6 +3,7 @@ import { last, reverse } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
 import { expandCustomEvents } from '../custom-event/custom-event.service';
+import { wallClockToMs } from '../ingest/cloudflare/time-buckets';
 import { getSettingsForProject } from '../organization/organization.service';
 import type {
   IChartBreakdown,
@@ -11,6 +12,7 @@ import type {
   ITimeToConvertAggregation,
 } from '../report/report.constants';
 import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
+import { toRowFilters } from './src/engine/store-rows';
 import { collectBreakdownCohortIds } from './src/field-resolution';
 import {
   EMPTY_BREAKDOWN_LABEL,
@@ -361,10 +363,19 @@ export async function getFunnel(
     withStepTimes: timeToConvertAggregation !== undefined,
   });
 
-  const [funnelData, timeToConvertBySerie] = await Promise.all([
-    runQuery<FunnelRow>(deps, funnelChartQuery(base), base.timezone),
-    getTimeToConvertBySerie(deps, base, timeToConvertAggregation),
-  ]);
+  const [funnelData, timeToConvertBySerie] = deps.eventStore
+    ? await funnelFromEventStore(deps.eventStore, {
+        projectId,
+        startDate,
+        endDate,
+        base,
+        funnelWindow: funnelOptions?.funnelWindow,
+        timeToConvert: timeToConvertAggregation,
+      })
+    : await Promise.all([
+        runQuery<FunnelRow>(deps, funnelChartQuery(base), base.timezone),
+        getTimeToConvertBySerie(deps, base, timeToConvertAggregation),
+      ]);
 
   return toSeries(funnelData, base.breakdowns, limit)
     .map((data) => {
@@ -393,6 +404,49 @@ export async function getFunnel(
       const bTotal = b.steps.reduce((acc, step) => acc + step.count, 0);
       return bTotal - aTotal;
     });
+}
+
+/** Workers: the funnel counted in the project's Durable Object. */
+async function funnelFromEventStore(
+  store: NonNullable<ServiceDeps['eventStore']>,
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    base: FunnelBase;
+    funnelWindow: number | undefined;
+    timeToConvert: ITimeToConvertAggregation | undefined;
+  }
+): Promise<[FunnelRow[], Map<string, SerieTimeToConvert>]> {
+  const { base } = input;
+  const result = await store.funnelRows(input.projectId, {
+    from: wallClockToMs(input.startDate, base.timezone),
+    to: wallClockToMs(input.endDate, base.timezone),
+    steps: base.eventSeries.map((event) => ({
+      name: event.name,
+      anyOf: event.anyOf?.map((item) => ({
+        name: item.name,
+        filters: toRowFilters(item.filters),
+      })),
+      filters: toRowFilters(event.filters),
+    })),
+    breakdowns: base.breakdowns.map((breakdown) => ({
+      name: breakdown.name,
+      ...(breakdown.step ? { step: breakdown.step } : {}),
+    })),
+    windowMs:
+      (input.funnelWindow ?? DEFAULT_FUNNEL_WINDOW_HOURS) *
+      MILLISECONDS_PER_HOUR,
+    group: base.group,
+    timeToConvert: input.timeToConvert,
+  });
+  return [
+    result.rows as FunnelRow[],
+    toTimeToConvertBySerie(
+      result.timeToConvert as TimeToConvertRow[],
+      base.breakdowns
+    ),
+  ];
 }
 
 async function getTimeToConvertBySerie(

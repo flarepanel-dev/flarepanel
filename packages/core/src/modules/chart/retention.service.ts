@@ -6,6 +6,7 @@ import { range } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
 import { TimeRangeError } from '../../shared/time-buckets';
 import type { IChartEventFilter } from '../report/report.constants';
+import { toRowFilters } from './src/engine/store-rows';
 import {
   type IRetentionCriteria,
   type IRetentionInterval,
@@ -218,6 +219,13 @@ const CLICKHOUSE_DATE_TIME_LENGTH = 'yyyy-MM-dd HH:mm:ss'.length;
 const ISO_DATE_LENGTH = 'yyyy-MM-dd'.length;
 
 // Normalize an ISO or `yyyy-MM-dd HH:mm:ss` string into ClickHouse date-time form.
+/** Minute and hour retention bucket by day, as the ClickHouse query does. */
+function storeRetentionInterval(
+  interval: IRetentionInterval
+): 'day' | 'week' | 'month' {
+  return interval === 'week' || interval === 'month' ? interval : 'day';
+}
+
 function utc(date: string) {
   return date.replace('T', ' ').slice(0, CLICKHOUSE_DATE_TIME_LENGTH);
 }
@@ -261,24 +269,37 @@ export async function getRetentionCohort(
     );
   }
 
-  const cohortData = await runQuery<{
-    cohort_interval: string;
-    total_first_event_count: number;
-    [key: string]: number | string;
-  }>(
-    deps,
-    retentionCohortQuery({
-      projectId,
-      firstEvent,
-      secondEvent,
-      criteria,
-      interval,
-      start: utc(startDate),
-      end: utc(endDate),
-      diffInterval,
-      filters,
-    })
-  );
+  const cohortData = deps.eventStore
+    ? (
+        await deps.eventStore.retentionRows(projectId, {
+          start: Date.parse(`${utc(startDate).replace(' ', 'T')}Z`),
+          end: Date.parse(`${utc(endDate).replace(' ', 'T')}Z`),
+          firstEvent: firstEvent ?? [],
+          secondEvent: secondEvent ?? [],
+          criteria,
+          interval: storeRetentionInterval(interval),
+          diffInterval,
+          filters: toRowFilters(filters),
+        })
+      ).rows
+    : await runQuery<{
+        cohort_interval: string;
+        total_first_event_count: number;
+        [key: string]: number | string;
+      }>(
+        deps,
+        retentionCohortQuery({
+          projectId,
+          firstEvent,
+          secondEvent,
+          criteria,
+          interval,
+          start: utc(startDate),
+          end: utc(endDate),
+          diffInterval,
+          filters,
+        })
+      );
 
   // Reference point for cohort maturity: we only have return data up to "now",
   // so periods that haven't elapsed yet are excluded from the weighted average.
