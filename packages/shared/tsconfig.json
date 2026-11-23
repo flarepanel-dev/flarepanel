@@ -2,7 +2,7 @@
   "extends": "@flarepanel/tsconfig/base.json",
   "compilerOptions": {
     "lib": ["ESNext", "DOM"],
-    "types": ["node"],
+    "types": ["node", "bun-types"],
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
   },
   "include": ["src"],
