@@ -190,3 +190,9 @@ function flushRevenue() {
 function clear() {
   window.op?.('clear');
 }
+
+/** FlarePanel names for the same component and hook (OpenPanel names stay). */
+export {
+  OpenPanelComponent as FlarePanelComponent,
+  useOpenPanel as useFlarePanel,
+};

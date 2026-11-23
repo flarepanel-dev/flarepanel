@@ -1,6 +1,6 @@
 {
   "name": "@flarepanel/astro",
-  "version": "1.4.4-local",
+  "version": "1.4.5-local",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -26,7 +26,7 @@
     "astro-component"
   ],
   "dependencies": {
-    "@flarepanel/web": "workspace:1.4.4-local"
+    "@flarepanel/web": "workspace:1.4.5-local"
   },
   "devDependencies": {
     "astro": "6.4.2"

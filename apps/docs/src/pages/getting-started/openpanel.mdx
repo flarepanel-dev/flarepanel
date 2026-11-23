@@ -55,4 +55,4 @@ The script tag version needs no `apiUrl`: FlarePanel's `op1.js` sends to `https:
 
 Existing OpenPanel data is not imported. See [What works today](/getting-started/status) for the reports that are still being moved over.
 
-FlarePanel's own `@flarepanel/*` packages have the same API and will be published to npm; until then the `@openpanel/*` packages are the way to install from npm.
+You can also switch to FlarePanel's own packages on npm (`@flarepanel/web`, `@flarepanel/nextjs`, `@flarepanel/sdk` and the rest). They have the same API, export both the `OpenPanel` and `FlarePanel` names, and send to `https://api.flarepanel.dev` without an `apiUrl`.

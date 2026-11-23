@@ -11,32 +11,31 @@ description: Install the web SDK from npm.
 :::code-group
 
 ```bash [npm]
-npm install @openpanel/web
+npm install @flarepanel/web
 ```
 
 ```bash [pnpm]
-pnpm add @openpanel/web
+pnpm add @flarepanel/web
 ```
 
 ```bash [bun]
-bun add @openpanel/web
+bun add @flarepanel/web
 ```
 
 :::
 
 :::info
-FlarePanel's own `@flarepanel/web` has the same API and will be published to npm. Until then, use `@openpanel/web` with FlarePanel's `apiUrl`.
+Events go to `https://api.flarepanel.dev` by default. Self-hosting? Set `apiUrl` to your own API. Coming from OpenPanel, `@openpanel/web` works too with `apiUrl: 'https://api.flarepanel.dev'`.
 :::
 
 Create one shared instance:
 
 ```ts
 // src/analytics.ts
-import { OpenPanel } from '@openpanel/web';
+import { FlarePanel } from '@flarepanel/web';
 
-export const op = new OpenPanel({
+export const op = new FlarePanel({
   clientId: 'YOUR_CLIENT_ID',
-  apiUrl: 'https://api.flarepanel.dev',
   trackScreenViews: true,
   trackOutgoingLinks: true,
   trackAttributes: true,

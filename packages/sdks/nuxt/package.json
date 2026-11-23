@@ -1,6 +1,6 @@
 {
   "name": "@flarepanel/nuxt",
-  "version": "0.4.4-local",
+  "version": "0.4.5-local",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -30,7 +30,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flarepanel/web": "workspace:1.4.4-local"
+    "@flarepanel/web": "workspace:1.4.5-local"
   },
   "peerDependencies": {
     "h3": "^1.0.0",

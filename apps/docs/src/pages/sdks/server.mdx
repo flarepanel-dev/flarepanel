@@ -11,16 +11,15 @@ description: Track from Node.js, Bun, Deno or Cloudflare Workers.
 Server-side tracking authenticates with your **client secret**, so it can send events on behalf of any user.
 
 ```bash
-npm install @openpanel/sdk
+npm install @flarepanel/sdk
 ```
 
 ```ts
-import { OpenPanel } from '@openpanel/sdk';
+import { FlarePanel } from '@flarepanel/sdk';
 
-const op = new OpenPanel({
+const op = new FlarePanel({
   clientId: process.env.FLAREPANEL_CLIENT_ID!,
   clientSecret: process.env.FLAREPANEL_CLIENT_SECRET!,
-  apiUrl: 'https://api.flarepanel.dev',
 });
 
 await op.track('invoice_paid', { amount: 49, profileId: user.id });

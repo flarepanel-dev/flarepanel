@@ -376,3 +376,6 @@ export class OpenPanel extends OpenPanelBase {
     }
   }
 }
+
+/** The same client under FlarePanel's name; `OpenPanel` stays for drop-in use. */
+export { OpenPanel as FlarePanel };

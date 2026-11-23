@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import arg from 'arg';
 import type { ReleaseType } from 'semver';
 import semver, { RELEASE_TYPES } from 'semver';
-import { generateReadme } from './generate-readme';
+import { writeReadmes } from './readme';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,7 +33,8 @@ export interface PackageInfo extends PackageJson {
 
 interface PublishConfig {
   registry: string;
-  clear: boolean;
+  /** `npm publish --dry-run`: pack and check, upload nothing. */
+  dryRun: boolean;
   // Stage for a maintainer's 2FA approval (`npm stage approve`) instead of
   // publishing outright; what CI does under a stage-only trusted publisher.
   stage: boolean;
@@ -238,7 +239,7 @@ const buildPackages = (
 ): void => {
   const versionEnvs = dependents.map((dep) => {
     const envName = dep
-      .replace(/@openpanel\//g, '')
+      .replace(/@flarepanel\//g, '')
       .toUpperCase()
       .replace(/[/-]/g, '_');
     return `--env.${envName}_VERSION=${packages[dep]!.nextVersion}`;
@@ -263,37 +264,34 @@ const publishPackages = (
   dependents: string[],
   config: PublishConfig
 ): void => {
-  if (config.clear) {
-    execSync('rm -rf ~/.local/share/verdaccio/storage/@openpanel');
-  }
-
   const publishCommand = config.stage ? 'npm stage publish' : 'npm publish';
+  const flags = [
+    '--access=public',
+    `--registry ${config.registry}`,
+    config.distTag ? `--tag ${config.distTag}` : '',
+    config.dryRun ? '--dry-run' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  // The landing site builds its own op1.js from this package's source
+  // (apps/landing/scripts/build-tracker.ts), so nothing is copied here.
   for (const dep of dependents) {
     console.log(
-      `🚀 ${config.stage ? 'Staging' : 'Publishing'} ${dep} to ${config.registry}`
+      `🚀 ${config.stage ? 'Staging' : 'Publishing'} ${dep} to ${config.registry}${config.dryRun ? ' (dry run)' : ''}`
     );
-    execSync(
-      `${publishCommand} --access=public --registry ${config.registry}`,
-      {
-        cwd: workspacePath(packages[dep]!.localPath),
-      }
-    );
-
-    if (dep === '@flarepanel/web') {
-      execSync(
-        `cp ${workspacePath('packages/sdks/web/dist/src/tracker.global.js')} ${workspacePath('./apps/public/public/op1.js')}`
-      );
-      execSync(
-        `cp ${workspacePath('packages/sdks/web/dist/src/replay.global.js')} ${workspacePath('./apps/public/public/op1-replay.js')}`
-      );
-    }
+    execSync(`${publishCommand} ${flags}`, {
+      cwd: workspacePath(packages[dep]!.localPath),
+      stdio: 'inherit',
+    });
   }
 };
 
 const restoreAndUpdateLocal = (
   packages: Record<string, PackageInfo>,
   dependents: string[],
-  generatedReadmes: string[]
+  generatedReadmes: string[],
+  /** A dry run puts everything back as it was, versions included. */
+  dryRun = false
 ): void => {
   const filesToRestore = dependents
     .map((dep) => join(workspacePath(packages[dep]!.localPath), 'package.json'))
@@ -307,6 +305,10 @@ const restoreAndUpdateLocal = (
       console.log(`🧹 Removing auto-generated README: ${readmePath}`);
       fs.unlinkSync(readmePath);
     }
+  }
+
+  if (dryRun) {
+    return;
   }
 
   for (const dep of dependents) {
@@ -353,7 +355,7 @@ function main() {
     '--npm': Boolean,
     '--skip-git': Boolean,
     '--type': String,
-    '--clear': Boolean,
+    '--dry-run': Boolean,
     '--stage': Boolean,
   });
 
@@ -392,14 +394,14 @@ function main() {
 
   buildPackages(packages, dependents);
 
-  const generatedReadmes = generateReadme(packages, dependents);
+  const generatedReadmes = writeReadmes(packages, dependents);
 
   if (args['--publish']) {
     const config: PublishConfig = {
       registry: args['--npm']
         ? 'https://registry.npmjs.org'
         : 'http://localhost:4873',
-      clear: args['--clear'] ?? false,
+      dryRun: args['--dry-run'] ?? false,
       stage: args['--stage'] ?? false,
       distTag: args['--type']!.startsWith('pre')
         ? PRERELEASE_DIST_TAG
@@ -407,7 +409,12 @@ function main() {
     };
 
     publishPackages(packages, dependents, config);
-    restoreAndUpdateLocal(originalPackages, dependents, generatedReadmes);
+    restoreAndUpdateLocal(
+      originalPackages,
+      dependents,
+      generatedReadmes,
+      config.dryRun
+    );
   }
 
   console.log('✅ All done!');

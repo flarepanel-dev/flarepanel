@@ -1,6 +1,6 @@
 {
   "name": "@flarepanel/ai",
-  "version": "0.1.3-local",
+  "version": "0.1.4-local",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@ai-sdk/provider": "4.0.30",
-    "@flarepanel/sdk": "workspace:1.3.4-local"
+    "@flarepanel/sdk": "workspace:1.3.5-local"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "1.3.0",

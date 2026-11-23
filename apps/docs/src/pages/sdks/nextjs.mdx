@@ -9,23 +9,21 @@ description: Add FlarePanel to a Next.js app.
 # Next.js
 
 ```bash
-npm install @openpanel/nextjs
+npm install @flarepanel/nextjs
 ```
 
 Add the component to your root layout:
 
 ```tsx
 // app/layout.tsx
-import { OpenPanelComponent } from '@openpanel/nextjs';
+import { FlarePanelComponent } from '@flarepanel/nextjs';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <OpenPanelComponent
+        <FlarePanelComponent
           clientId="YOUR_CLIENT_ID"
-          apiUrl="https://api.flarepanel.dev"
-          scriptUrl="https://flarepanel.dev/op1.js"
           trackScreenViews={true}
           trackOutgoingLinks={true}
           trackAttributes={true}
@@ -41,10 +39,10 @@ Track from client components with the hook:
 
 ```tsx
 'use client';
-import { useOpenPanel } from '@openpanel/nextjs';
+import { useFlarePanel } from '@flarepanel/nextjs';
 
 export function SignUpButton() {
-  const op = useOpenPanel();
+  const op = useFlarePanel();
   return <button onClick={() => op.track('sign_up_clicked')}>Sign up</button>;
 }
 ```

@@ -496,3 +496,6 @@ export class OpenPanel {
     }
   }
 }
+
+/** The same client under FlarePanel's name; `OpenPanel` stays for drop-in use. */
+export { OpenPanel as FlarePanel };

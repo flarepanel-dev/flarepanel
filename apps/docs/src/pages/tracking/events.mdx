@@ -41,7 +41,7 @@ op.setGlobalProperties({ app_version: '2.4.0', plan: 'team' });
 Drop events in the browser before they are sent:
 
 ```ts
-const op = new OpenPanel({
+const op = new FlarePanel({
   clientId: 'YOUR_CLIENT_ID',
   filter: (payload) =>
     !(payload.type === 'track' && payload.payload.name === 'debug_event'),
