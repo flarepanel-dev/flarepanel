@@ -1,0 +1,99 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Advanced analytics
+description: Optional long-history reports with Cloudflare Basin, with a monthly spending budget.
+---
+
+# Advanced analytics
+
+Every report works without this. Each project's Durable Object keeps the last 90 days of raw events and answers dashboards, filters, funnels and retention from them, inside the Workers Paid plan.
+
+Advanced analytics adds [Cloudflare Basin](https://developers.cloudflare.com/basin/): your events are also written to an Apache Iceberg table in your R2 bucket, and report charts that reach further back than 90 days, or that are too large for the Durable Object to scan, are answered by Basin SQL.
+
+**It is off by default.** Nothing is created or billed until you turn it on.
+
+## What it costs
+
+Basin is billed by Cloudflare to your account, outside the Workers Paid plan:
+
+| What | Price | Free each month |
+|---|---|---|
+| Pipelines: writing the table | $0.04/GB transform + $0.06/GB Parquet | 50 GB each |
+| Basin SQL: queries | $2.50 per TB scanned, at least 10 MB per query | 10 GB |
+| Basin Catalog | $9.00 per million operations | 1 million |
+| R2 storage | $0.015 per GB-month | 10 GB |
+
+One event is about 1 KB going in and about 200 bytes stored. A site with 1 million events a month stays inside the free amounts.
+
+## The budget
+
+FlarePanel counts every Basin SQL query the way Cloudflare bills it (bytes scanned, at least 10 MB) against a monthly budget, **10 GB by default: the free amount**.
+
+- At **80%** the organization admins get an email.
+- At **100%** Basin queries stop until the next month, and the admins get a second email. Reports keep answering from the last 90 days.
+
+Change it with `FLAREPANEL_ADVANCED_BUDGET_GB`. The free amounts are per Cloudflare account, so other projects on the same account count towards them too.
+
+## Turn it on
+
+::::steps
+
+### Create a token
+
+In the Cloudflare dashboard, go to **R2 → Manage API tokens** and create a token with **Admin Read & Write**, limited to your events bucket (`flarepanel-events`). The pipeline writes the table with it and the API queries it.
+
+### Turn on the catalog
+
+```bash
+bunx wrangler basin catalog enable flarepanel-events
+```
+
+### Create the stream, table and pipeline
+
+```bash
+cd apps/worker
+bunx wrangler basin pipelines streams create flarepanel_events \
+  --schema-file basin/events.schema.json --http-enabled false
+bunx wrangler basin pipelines sinks create flarepanel_events_sink \
+  --type r2-data-catalog --bucket flarepanel-events \
+  --namespace flarepanel --table events \
+  --catalog-token <TOKEN> --roll-interval 60
+bunx wrangler basin pipelines create flarepanel_events_pipeline \
+  --sql "INSERT INTO flarepanel_events_sink SELECT * FROM flarepanel_events"
+```
+
+Note the stream id the first command prints.
+
+### Configure the API Worker
+
+In `apps/worker/wrangler.jsonc`:
+
+```jsonc
+"pipelines": [{ "binding": "EVENTS_STREAM", "stream": "<STREAM_ID>" }],
+"vars": {
+  // ...
+  "FLAREPANEL_ADVANCED_ANALYTICS": "on",
+  "FLAREPANEL_ADVANCED_BUDGET_GB": "10",
+  "CLOUDFLARE_ACCOUNT_ID": "<ACCOUNT_ID>"
+}
+```
+
+Then store the token and deploy:
+
+```bash
+bunx wrangler secret put BASIN_SQL_TOKEN
+bunx wrangler deploy
+```
+
+::::
+
+Each project's Durable Object then sends its stored events to the stream (the last 90 days first), and new events about once a minute. They are queryable about a minute later.
+
+## Good to know
+
+- Charts and bar/pie reports use Basin for old ranges. Funnels, retention and the Sessions page cover the last 90 days.
+- Fields from profiles, groups and cohorts are not in the events table; reports that use them stay on the last 90 days.
+- Deleting a project removes its events from the Durable Object and the R2 archive, but not rows already in the Iceberg table. Queries never return them, since every query is scoped to one project.
+- To turn it off, remove `FLAREPANEL_ADVANCED_ANALYTICS` and delete the pipeline, sink and stream with `wrangler basin pipelines ... delete`.

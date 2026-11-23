@@ -1,0 +1,147 @@
+{
+  "fields": [
+    {
+      "name": "project_id",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "id",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "device_id",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "profile_id",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "session_id",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "path",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "origin",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "referrer",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "referrer_name",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "referrer_type",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "country",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "city",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "region",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "os",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "os_version",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "browser",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "browser_version",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "device",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "brand",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "model",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "sdk_name",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "sdk_version",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "required": true
+    },
+    {
+      "name": "duration",
+      "type": "int64",
+      "required": false
+    },
+    {
+      "name": "revenue",
+      "type": "int64",
+      "required": false
+    },
+    {
+      "name": "properties",
+      "type": "json",
+      "required": false
+    },
+    {
+      "name": "groups",
+      "type": "list",
+      "required": false,
+      "items": {
+        "type": "string"
+      }
+    }
+  ]
+}

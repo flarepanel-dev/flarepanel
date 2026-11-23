@@ -2,10 +2,21 @@
 // Kept off the main barrel so the Bun build never loads it.
 
 export {
+  type AdvancedAnalytics,
+  AdvancedAnalyticsBudgetError,
+  type AdvancedAnalyticsUsage,
+} from '../../event/src/advanced-analytics';
+export {
   type ArchiveObject,
   archivePrefix,
   buildArchiveObjects,
 } from './archive';
+export {
+  BASIN_EVENT_SCHEMA,
+  type BasinEventRow,
+  toBasinRow,
+} from './basin-row';
+export { assertTableName } from './basin-sql';
 export {
   type ChartRow,
   type ChartScanEvent,

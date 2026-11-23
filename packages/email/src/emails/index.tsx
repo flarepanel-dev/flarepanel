@@ -1,4 +1,7 @@
 import type { z } from 'zod';
+import AdvancedAnalyticsBudget, {
+  zAdvancedAnalyticsBudget,
+} from './advanced-analytics-budget';
 import { EmailInvite, zEmailInvite } from './email-invite';
 import EmailResetPassword, {
   zEmailResetPassword,
@@ -132,6 +135,15 @@ export const templates = {
       `You've used ${Math.round((data.eventsCount / data.eventsLimit) * 100)}% of your monthly events`,
     Component: UsageNearLimit,
     schema: zUsageNearLimit,
+    category: 'product_alerts' as const,
+  },
+  'advanced-analytics-budget': {
+    subject: (data: z.infer<typeof zAdvancedAnalyticsBudget>) =>
+      data.reached
+        ? 'Advanced analytics paused: monthly budget used'
+        : `Advanced analytics has used ${Math.round((data.usedGb / Math.max(data.budgetGb, 1)) * 100)}% of its monthly budget`,
+    Component: AdvancedAnalyticsBudget,
+    schema: zAdvancedAnalyticsBudget,
     category: 'product_alerts' as const,
   },
   'usage-limit-exceeded': {

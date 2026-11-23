@@ -22,7 +22,8 @@
       { "name": "COORDINATOR", "class_name": "CoordinatorDurableObject" },
       { "name": "PUBSUB_HUB", "class_name": "PubSubHubDurableObject" },
       // One per project: its events, sessions, rollups and live sockets.
-      { "name": "PROJECT_EVENTS", "class_name": "ProjectEventsDurableObject" }
+      { "name": "PROJECT_EVENTS", "class_name": "ProjectEventsDurableObject" },
+      { "name": "BASIN_USAGE", "class_name": "BasinUsageDurableObject" }
     ]
   },
   "migrations": [
@@ -33,7 +34,8 @@
         "PubSubHubDurableObject"
       ]
     },
-    { "tag": "v2", "new_sqlite_classes": ["ProjectEventsDurableObject"] }
+    { "tag": "v2", "new_sqlite_classes": ["ProjectEventsDurableObject"] },
+    { "tag": "v3", "new_sqlite_classes": ["BasinUsageDurableObject"] }
   ],
   // Raw event archive (ndjson.gz per project and hour). Without this binding
   // the Worker runs in lite mode: no archive, 30-day retention.

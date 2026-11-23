@@ -5,6 +5,7 @@ import type { QueueProducerHandle, QueueProducers } from './jobs.registry';
 import type { Logger } from './logger';
 import type { Auth } from './modules/auth/src/better-auth';
 import type { SessionValidationResult } from './modules/auth/src/login-session';
+import type { AdvancedAnalytics } from './modules/event/src/advanced-analytics';
 import type { EventStore } from './modules/event/src/event-store';
 import type { IngestBackend } from './modules/ingest/src/backend';
 import { createServices, type Services } from './services';
@@ -77,6 +78,8 @@ export interface AppDeps {
   ingest?: IngestBackend;
   /** Event reads on Workers (per-project Durable Objects); absent on Bun. */
   eventStore?: EventStore;
+  /** Basin SQL (opt-in advanced analytics); absent unless turned on. */
+  advancedAnalytics?: AdvancedAnalytics;
 }
 
 /** Work scope. One per HTTP request, RPC call, job run or Kafka batch. */
@@ -93,6 +96,7 @@ export interface Ctx {
   config: CoreConfig;
   auth: Auth | null;
   eventStore?: EventStore;
+  advancedAnalytics?: AdvancedAnalytics;
   services: Services;
   requestId: string;
 }
@@ -140,6 +144,7 @@ export function createCtx(deps: AppDeps, scope: ScopeMeta): Ctx {
     config: deps.config,
     auth: deps.auth,
     eventStore: deps.eventStore,
+    advancedAnalytics: deps.advancedAnalytics,
     requestId: scope.requestId,
     services: undefined as unknown as Services,
   };
@@ -179,6 +184,7 @@ function installLazyServices(ctx: Ctx): void {
         config: ctx.config,
         auth: ctx.auth,
         eventStore: ctx.eventStore,
+        advancedAnalytics: ctx.advancedAnalytics,
       });
       return built;
     },

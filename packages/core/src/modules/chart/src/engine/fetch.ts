@@ -80,6 +80,18 @@ function breakdownValues(
 
 const BREAKDOWN_LABEL_KEYS = ['label_1', 'label_2', 'label_3'] as const;
 
+/** What the Durable Object path needs; not a spread of `deps` (its services are lazy getters). */
+function storeDeps(
+  deps: ServiceDeps,
+  eventStore: NonNullable<ServiceDeps['eventStore']>
+) {
+  return {
+    eventStore,
+    advancedAnalytics: deps.advancedAnalytics,
+    logger: deps.logger,
+  };
+}
+
 /** Rows other than `WITH FILL` padding (which carries no event label). */
 function hasDataRows(rows: ISerieDataItem[]): boolean {
   return rows.some((row) => Boolean(row.label_0));
@@ -291,7 +303,7 @@ export async function fetch(
 
       const seriesRows = async (input: typeof queryInput) =>
         deps.eventStore
-          ? storeSeriesRows(deps.eventStore, input)
+          ? storeSeriesRows(storeDeps(deps, deps.eventStore), input)
           : runChartQuery(deps, await getChartSql(deps, input), plan.timezone);
       let rows = await seriesRows(queryInput);
       // Nothing matched the breakdown: fall back to the plain series.
@@ -349,7 +361,7 @@ export async function fetchAggregate(
 
       const aggregateRows = async (input: typeof queryInput) =>
         deps.eventStore
-          ? storeAggregateRows(deps.eventStore, input)
+          ? storeAggregateRows(storeDeps(deps, deps.eventStore), input)
           : runChartQuery(
               deps,
               await getAggregateChartSql(deps, input),

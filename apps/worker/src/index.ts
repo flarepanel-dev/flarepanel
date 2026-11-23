@@ -48,6 +48,9 @@ import {
 } from '@flarepanel/platform/cloudflare';
 import { Elysia } from 'elysia';
 import { loadConfig } from '../../api/src/config/env';
+import { createAdvancedAnalytics } from './advanced/analytics';
+import { readAdvancedConfig } from './advanced/config';
+import { BasinUsageDurableObject } from './advanced/usage-do';
 import {
   createCloudflareIngestBackend,
   createWorkerBuffers,
@@ -61,6 +64,7 @@ import { createConsoleLogger } from './logger';
 import { unavailableOnWorkers } from './unavailable-deps';
 
 export {
+  BasinUsageDurableObject,
   CoordinatorDurableObject,
   ProjectEventsDurableObject,
   PubSubHubDurableObject,
@@ -79,6 +83,21 @@ export interface Env {
   FLAREPANEL_EVENT_RETENTION_DAYS?: string;
   /** Cloudflare Email Service; account emails go out through it when bound. */
   EMAIL?: SendEmail;
+  /** Advanced analytics (opt-in, Basin): the install's monthly query budget. */
+  BASIN_USAGE: DurableObjectNamespace<BasinUsageDurableObject>;
+  /** `on` turns advanced analytics on; anything else (the default) is off. */
+  FLAREPANEL_ADVANCED_ANALYTICS?: string;
+  /** Monthly Basin SQL scan budget in GB (default 10, the free amount). */
+  FLAREPANEL_ADVANCED_BUDGET_GB?: string;
+  /** `namespace.table` of the Iceberg events table (default flarepanel.events). */
+  FLAREPANEL_BASIN_TABLE?: string;
+  /** Bucket with Basin Catalog on (default flarepanel-events). */
+  FLAREPANEL_BASIN_BUCKET?: string;
+  CLOUDFLARE_ACCOUNT_ID?: string;
+  /** Secret: R2 API token with Basin SQL, Catalog and storage read. */
+  BASIN_SQL_TOKEN?: string;
+  /** Basin Pipelines stream the project Durable Objects send events to. */
+  EVENTS_STREAM?: { send(records: Record<string, unknown>[]): Promise<void> };
 }
 
 const INGEST_PATHS = new Set(['/track', '/event']);
@@ -137,6 +156,10 @@ async function boot(env: Env): Promise<Booted> {
     }),
     eventStore: createWorkerEventStore(env),
   };
+  const advanced = readAdvancedConfig(env);
+  if (advanced) {
+    deps.advancedAnalytics = createAdvancedAnalytics(env, advanced, () => deps);
+  }
 
   const emailBinding = env.EMAIL;
   if (emailBinding) {

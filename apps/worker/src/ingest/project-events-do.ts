@@ -34,7 +34,9 @@ import {
   type SessionListQuery,
   type SqlRow,
   type SqlValue,
+  toBasinRow,
 } from '@flarepanel/core/ingest/cloudflare';
+import { isStreamingEnabled } from '../advanced/config';
 import type { Env } from '../index';
 import { createConsoleLogger } from '../logger';
 
@@ -58,6 +60,14 @@ const HIDDEN_PROPERTY_KEYS = new Set(['__duration_from', '__properties_from']);
 
 const KEY_PROJECT_ID = 'project_id';
 const KEY_ARCHIVED_THROUGH = 'archived_through';
+const KEY_STREAMED_THROUGH = 'streamed_through';
+const KEY_STREAMED_AT = 'streamed_at';
+/** Advanced analytics: events go to the Basin stream at most this often. */
+const STREAM_INTERVAL_MS = 60 * 1000;
+const STREAM_BATCH_CHUNKS = 100;
+const STREAM_MAX_BATCHES = 10;
+/** Rows per `send` call, well under the stream's request size limit. */
+const STREAM_SEND_ROWS = 500;
 const KEY_ARCHIVED_AT = 'archived_at';
 const KEY_RETENTION_AT = 'retention_at';
 
@@ -98,6 +108,8 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   private projectId: string | null = null;
   private alarmAt: number | null = null;
   private unarchived = false;
+  /** Advanced analytics: stored chunks not sent to the Basin stream yet. */
+  private unstreamed = false;
   private pendingEvents = 0;
   private lastBroadcastAt = 0;
   private broadcastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -142,6 +154,12 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     const archivedThrough =
       (await storage.get<number>(KEY_ARCHIVED_THROUGH)) ?? 0;
     this.unarchived = (await engine.readChunks(archivedThrough, 1)).length > 0;
+    if (isStreamingEnabled(this.env)) {
+      const streamedThrough =
+        (await storage.get<number>(KEY_STREAMED_THROUGH)) ?? 0;
+      this.unstreamed =
+        (await engine.readChunks(streamedThrough, 1)).length > 0;
+    }
     return { engine, service, profiles: openProfileStore(sql) };
   }
 
@@ -258,6 +276,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     this.alarmAt = null;
     this.projectId = null;
     this.unarchived = false;
+    this.unstreamed = false;
     this.pendingEvents = 0;
     this.state = this.open();
     await this.state;
@@ -396,6 +415,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
 
   private afterStore() {
     this.unarchived = true;
+    this.unstreamed = isStreamingEnabled(this.env);
     this.scheduleAlarm().catch((error) =>
       this.logger.error({ err: error }, 'Could not schedule the alarm')
     );
@@ -408,6 +428,11 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       const archivedAt =
         (await this.ctx.storage.get<number>(KEY_ARCHIVED_AT)) ?? 0;
       next = Math.min(next, archivedAt + ARCHIVE_INTERVAL_MS);
+    }
+    if (this.unstreamed) {
+      const streamedAt =
+        (await this.ctx.storage.get<number>(KEY_STREAMED_AT)) ?? 0;
+      next = Math.min(next, streamedAt + STREAM_INTERVAL_MS);
     }
     return Number.isFinite(next) ? next : null;
   }
@@ -430,11 +455,51 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     const { engine } = await this.state;
     const result = await engine.tick();
     await this.archive(engine);
+    await this.stream(engine).catch((error) =>
+      this.logger.error({ err: error }, 'Could not send events to Basin')
+    );
     await this.applyRetention(engine);
     if (result.endedSessions.length > 0) {
       this.scheduleBroadcast();
     }
     await this.scheduleAlarm();
+  }
+
+  /**
+   * Advanced analytics: sends stored chunks to the Basin Pipelines stream,
+   * oldest first, behind a cursor (at least once). Turning it on backfills
+   * everything the object still keeps.
+   */
+  private async stream(engine: ProjectEventsEngine) {
+    const stream = this.env.EVENTS_STREAM;
+    if (!(stream && this.unstreamed && isStreamingEnabled(this.env))) {
+      return;
+    }
+    const storage = this.ctx.storage;
+    const streamedAt = (await storage.get<number>(KEY_STREAMED_AT)) ?? 0;
+    if (Date.now() - streamedAt < STREAM_INTERVAL_MS) {
+      return;
+    }
+    await engine.flush();
+    let through = (await storage.get<number>(KEY_STREAMED_THROUGH)) ?? 0;
+    for (let batch = 0; batch < STREAM_MAX_BATCHES; batch++) {
+      const chunks = await engine.readChunks(through, STREAM_BATCH_CHUNKS);
+      const last = chunks.at(-1);
+      if (!last) {
+        break;
+      }
+      const rows = chunks.flatMap((chunk) => chunk.events.map(toBasinRow));
+      for (let index = 0; index < rows.length; index += STREAM_SEND_ROWS) {
+        await stream.send(rows.slice(index, index + STREAM_SEND_ROWS));
+      }
+      through = last.id;
+      await storage.put(KEY_STREAMED_THROUGH, through);
+      if (chunks.length < STREAM_BATCH_CHUNKS) {
+        break;
+      }
+    }
+    await storage.put(KEY_STREAMED_AT, Date.now());
+    this.unstreamed = (await engine.readChunks(through, 1)).length > 0;
   }
 
   private async archive(engine: ProjectEventsEngine) {
@@ -496,9 +561,13 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     const archivedThrough = hasArchive
       ? ((await storage.get<number>(KEY_ARCHIVED_THROUGH)) ?? 0)
       : Number.MAX_SAFE_INTEGER;
+    // Nothing is pruned before it reached the Basin stream either.
+    const streamedThrough = isStreamingEnabled(this.env)
+      ? ((await storage.get<number>(KEY_STREAMED_THROUGH)) ?? 0)
+      : Number.MAX_SAFE_INTEGER;
     engine.pruneChunks({
       beforeMs: Date.now() - days * DAY_MS,
-      maxId: archivedThrough,
+      maxId: Math.min(archivedThrough, streamedThrough),
     });
     engine.pruneSessionLog(Date.now() - days * DAY_MS);
     await storage.put(KEY_RETENTION_AT, Date.now());

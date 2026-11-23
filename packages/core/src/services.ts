@@ -53,6 +53,7 @@ export type ServiceDeps = Pick<
   | 'config'
   | 'auth'
   | 'eventStore'
+  | 'advancedAnalytics'
 >;
 
 // `Services` must stay an INTERFACE: a type alias over
