@@ -43,7 +43,7 @@ cookie is shared.
 | Advanced analytics (opt-in): report charts older than the retention window via Basin SQL, monthly budget with 80%/100% emails | `src/advanced/`, `basin/events.schema.json`; off unless `FLAREPANEL_ADVANCED_ANALYTICS=on` (docs: self-hosting/advanced-analytics) |
 | Conversion, user flow (Sankey), distribution | works: `conversion-scan`, `sankey-scan`, `DistributionAccumulator` over the same scans |
 | Notifications | works: the Worker checks event rules after each stored event (rules cached); the project Durable Object queues `checkSessionFunnel` for ended sessions when funnel rules exist; in-app ones go to its `notifications` sockets |
-| Insights | not yet (see `docs/adr/0002-query-layer.md`) |
+| Insights, referrer spikes | works: insight modules read the project Durable Object's daily dimension totals (`dimensionDays`); spikes use the chart counter |
 
 Checked end to end with `wrangler dev`: sign-up 264 ms, onboarding (project +
 two clients) 194 ms, sign-in 202 ms, then the dashboard in a browser.

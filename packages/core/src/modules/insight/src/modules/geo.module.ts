@@ -9,6 +9,7 @@ import type {
   RenderedCard,
 } from '../types';
 import {
+  aggregatesFromRollups,
   buildLookupMap,
   computeChangePct,
   computeDirection,
@@ -27,6 +28,14 @@ async function fetchGeoAggregates(ctx: ComputeContext): Promise<{
   totalCurrent: number;
   totalBaseline: number;
 }> {
+  if (ctx.rollups) {
+    return aggregatesFromRollups(
+      ctx,
+      'country',
+      'sessions',
+      (row) => row.name || 'unknown'
+    );
+  }
   const sessions = sql.id(TABLE_NAMES.sessions);
   const projectId = sql.string(ctx.projectId);
   const curStart = sql.dateTime64(formatClickhouseDate(ctx.window.start));

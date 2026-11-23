@@ -34,6 +34,7 @@ export type {
 export {
   type DailyStats,
   type Dimension,
+  type DimensionDayRow,
   type DimensionRow,
   type EngineClock,
   type EngineCodec,

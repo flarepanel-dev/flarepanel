@@ -6,7 +6,14 @@ import { chQuery } from '../../../ch-query';
 import type { ServiceDeps } from '../../../services';
 import { convertClickhouseDateToJs } from '../../../shared/ch-dates';
 import { TABLE_NAMES } from '../../../shared/ch-tables';
-import { getRawWhereClause } from '../../overview/overview.service';
+import {
+  buildBuckets,
+  wallClockToMs,
+} from '../../ingest/cloudflare/time-buckets';
+import {
+  getRawWhereClause,
+  toStoreFilters,
+} from '../../overview/overview.service';
 import type {
   IChartEventFilter,
   IInterval,
@@ -102,10 +109,15 @@ function andFilters(where: SqlFragment | null): SqlFragment {
   return where ? sql` AND ${where}` : sql.empty;
 }
 
-export async function getReferrerSpikes(
+interface SpikeData {
+  spikeRows: { date: string; referrer_name: string; sessions: number }[];
+  bucketTotalRows: { date: string; total: number }[];
+}
+
+async function spikeDataFromClickhouse(
   deps: ServiceDeps,
   input: GetReferrerSpikesInput
-): Promise<ReferrerSpikeCluster[]> {
+): Promise<SpikeData | null> {
   const { projectId, filters, startDate, endDate, interval, timezone } = input;
   const filtersWhere = andFilters(getRawWhereClause('sessions', filters));
   const window = sessionWindow(projectId, startDate, endDate);
@@ -126,7 +138,7 @@ export async function getReferrerSpikes(
   );
 
   if (topReferrers.length === 0) {
-    return [];
+    return null;
   }
 
   const referrerNames = topReferrers.map((r) => r.referrer_name);
@@ -157,6 +169,86 @@ export async function getReferrerSpikes(
 
   // Bail when the range doesn't have enough buckets to form a stable baseline.
   // Median over <5 points is meaningless and produces noisy spikes.
+  return { spikeRows, bucketTotalRows };
+}
+
+/**
+ * Workers: the same three reads from the project's Durable Object, as
+ * session starts per bucket (in the project's timezone) by referrer.
+ */
+async function spikeDataFromEventStore(
+  store: NonNullable<ServiceDeps['eventStore']>,
+  input: GetReferrerSpikesInput
+): Promise<SpikeData | null> {
+  const from = wallClockToMs(input.startDate, input.timezone);
+  const to = wallClockToMs(input.endDate, input.timezone);
+  const interval = input.interval;
+  const query = {
+    from,
+    to,
+    event: {
+      name: 'session_start',
+      filters: toStoreFilters(input.filters),
+      segment: 'event',
+    },
+    buckets: buildBuckets(from, to, interval, input.timezone),
+    timezone: input.timezone,
+  };
+  const [byReferrer, totals] = await Promise.all([
+    store.chartRows(input.projectId, {
+      ...query,
+      breakdowns: ['referrer_name'],
+    }),
+    store.chartRows(input.projectId, { ...query, breakdowns: [] }),
+  ]);
+  const sessionsByReferrer = new Map<string, number>();
+  for (const row of byReferrer.rows) {
+    if (row.label_0 && row.label_1) {
+      sessionsByReferrer.set(
+        row.label_1,
+        (sessionsByReferrer.get(row.label_1) ?? 0) + row.count
+      );
+    }
+  }
+  const top = new Set(
+    [...sessionsByReferrer.entries()]
+      .filter(([, total]) => total >= MIN_SESSIONS_FLOOR)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, MAX_REFERRERS)
+      .map(([name]) => name)
+  );
+  if (top.size === 0) {
+    return null;
+  }
+  const toIso = (date: string) => convertClickhouseDateToJs(date).toISOString();
+  return {
+    spikeRows: byReferrer.rows
+      .filter((row) => row.label_0 && row.label_1 && top.has(row.label_1))
+      .filter((row) => row.count > 0)
+      .map((row) => ({
+        date: toIso(row.date),
+        referrer_name: row.label_1 as string,
+        sessions: row.count,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date)),
+    bucketTotalRows: totals.rows
+      .filter((row) => row.label_0 && row.count > 0)
+      .map((row) => ({ date: toIso(row.date), total: row.count })),
+  };
+}
+
+export async function getReferrerSpikes(
+  deps: ServiceDeps,
+  input: GetReferrerSpikesInput
+): Promise<ReferrerSpikeCluster[]> {
+  const data = deps.eventStore
+    ? await spikeDataFromEventStore(deps.eventStore, input)
+    : await spikeDataFromClickhouse(deps, input);
+  if (!data) {
+    return [];
+  }
+  const { spikeRows, bucketTotalRows } = data;
+
   const bucketCount = new Set(bucketTotalRows.map((r) => r.date)).size;
   if (bucketCount < MIN_BUCKETS_FOR_BASELINE) {
     return [];

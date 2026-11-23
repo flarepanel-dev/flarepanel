@@ -194,6 +194,11 @@ const SESSION_SEARCH_FIELDS = [
   'city',
 ] as const;
 
+export interface DimensionDayRow extends DimensionRow {
+  /** `YYYY-MM-DD`, UTC. */
+  day: string;
+}
+
 export interface DimensionRow {
   /** The parent value (country, browser, os, or a page's origin). */
   prefix?: string;
@@ -1958,6 +1963,48 @@ export async function openProjectEventsEngine({
     return totals;
   }
 
+  /** One dimension's totals per UTC day (`YYYY-MM-DD`), stored and pending. */
+  function dimensionDays(
+    dim: Dimension,
+    fromDay: string,
+    toDay: string
+  ): DimensionDayRow[] {
+    const totals = new Map<string, DimensionDelta>();
+    for (const row of sql.exec(
+      'SELECT day, value, sessions, pageviews, revenue FROM dims WHERE dim = ? AND day >= ? AND day <= ?',
+      dim,
+      fromDay,
+      toDay
+    )) {
+      addDelta(
+        totals,
+        `${String(row.day)}${DIM_KEY_SEPARATOR}${String(row.value)}`,
+        {
+          sessions: toNumber(row.sessions),
+          pageviews: toNumber(row.pageviews),
+          revenue: toNumber(row.revenue),
+        }
+      );
+    }
+    for (const [key, delta] of dimDeltas) {
+      const [day = '', deltaDim, value = ''] = key.split(DIM_KEY_SEPARATOR);
+      if (deltaDim === dim && day >= fromDay && day <= toDay) {
+        addDelta(totals, `${day}${DIM_KEY_SEPARATOR}${value}`, delta);
+      }
+    }
+    return [...totals.entries()].map(([key, delta]) => {
+      const [day = '', value = ''] = key.split(DIM_KEY_SEPARATOR);
+      const split = value.indexOf(DIM_PREFIX_SEPARATOR);
+      return {
+        day,
+        ...(split >= 0
+          ? { prefix: value.slice(0, split), name: value.slice(split + 1) }
+          : { name: value }),
+        ...delta,
+      };
+    });
+  }
+
   /** Top values of one dimension over `from`..`to` (inclusive instants). */
   async function topDimension(
     dim: Dimension,
@@ -2572,6 +2619,7 @@ export async function openProjectEventsEngine({
     dailyStats,
     rangeVisitors,
     topDimension,
+    dimensionDays,
     eventNames,
     activeVisitors,
     readChunks,

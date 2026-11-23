@@ -1,3 +1,7 @@
+import type {
+  Dimension,
+  DimensionDayRow,
+} from '../../ingest/cloudflare/engine';
 import type { InsightPayload } from '../insight.constants';
 import type { StatementRunner } from './cached-query';
 
@@ -33,6 +37,17 @@ export interface ComputeContext {
    * this — it is the only handle they get.
    */
   runQuery: StatementRunner;
+  /**
+   * Workers: the project Durable Object's daily totals per dimension. When
+   * present, modules read these instead of ClickHouse.
+   */
+  rollups?: {
+    dimensionDays(
+      dim: Dimension,
+      fromDay: string,
+      toDay: string
+    ): Promise<DimensionDayRow[]>;
+  };
 }
 
 export interface ComputeResult {

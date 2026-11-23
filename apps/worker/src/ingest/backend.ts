@@ -174,6 +174,8 @@ export function createWorkerEventStore(
         limit,
         filters
       ),
+    dimensionDays: (projectId, dim, fromDay, toDay) =>
+      projectEventsStub(env, projectId).dimensionDays(dim, fromDay, toDay),
     metrics: (projectId, query) =>
       projectEventsStub(env, projectId).metrics(query),
     liveData: (projectId) => projectEventsStub(env, projectId).liveData(),

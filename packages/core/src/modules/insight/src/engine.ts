@@ -1,4 +1,5 @@
 import type { ChScope } from '../../../ch-query';
+import type { ServiceDeps } from '../../../services';
 import { createStatementCache } from './cached-query';
 import { materialDecision } from './material';
 import { defaultImpactScore, severityBand } from './scoring';
@@ -94,11 +95,12 @@ function chunk<T>(arr: T[], size: number): T[][] {
 export function createEngine(args: {
   store: InsightStore;
   modules: InsightModule[];
-  deps: ChScope;
+  deps: ChScope & Pick<ServiceDeps, 'eventStore'>;
   logger?: Pick<Console, 'info' | 'warn' | 'error'>;
   config: EngineConfig;
 }) {
   const { store, modules, deps, config } = args;
+  const eventStore = deps.eventStore;
   const logger = args.logger ?? console;
 
   function isProjectOldEnoughForWindow(
@@ -140,6 +142,14 @@ export function createEngine(args: {
             now,
             logger: projLogger,
             runQuery: createStatementCache(deps, cache),
+            ...(eventStore
+              ? {
+                  rollups: {
+                    dimensionDays: (dim, fromDay, toDay) =>
+                      eventStore.dimensionDays(projectId, dim, fromDay, toDay),
+                  },
+                }
+              : {}),
           };
         } catch (e) {
           projLogger.error('[insights] failed to create compute context', {

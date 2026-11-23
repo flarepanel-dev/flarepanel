@@ -275,6 +275,11 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     return engine.topDimension(dim, from, to, limit, filters);
   }
 
+  async dimensionDays(dim: Dimension, fromDay: string, toDay: string) {
+    const { engine } = await this.state;
+    return engine.dimensionDays(dim, fromDay, toDay);
+  }
+
   async countEvents(from: Date, to: Date) {
     const { engine } = await this.state;
     return engine

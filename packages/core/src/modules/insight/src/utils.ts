@@ -1,3 +1,9 @@
+import type {
+  Dimension,
+  DimensionDayRow,
+} from '../../ingest/cloudflare/engine';
+import type { ComputeContext } from './types';
+
 export function getWeekday(date: Date): number {
   return date.getUTCDay();
 }
@@ -139,4 +145,57 @@ export function selectTopDimensions(
     .map((x) => x.dim);
 
   return ranked;
+}
+
+/**
+ * The aggregates every dimension module computes, from the Durable Object's
+ * daily totals instead of ClickHouse: the current window summed, and the
+ * baseline as the same-weekday median (`yesterday`) or the window's sum.
+ * Days are UTC, as the ClickHouse queries' `toDate` are.
+ */
+export async function aggregatesFromRollups(
+  ctx: ComputeContext,
+  dim: Dimension,
+  metric: 'sessions' | 'pageviews',
+  keyOf: (row: DimensionDayRow) => string
+): Promise<{
+  currentMap: Map<string, number>;
+  baselineMap: Map<string, number>;
+  totalCurrent: number;
+  totalBaseline: number;
+}> {
+  const rollups = ctx.rollups;
+  if (!rollups) {
+    throw new Error('aggregatesFromRollups needs ctx.rollups');
+  }
+  const day = (date: Date) => date.toISOString().slice(0, 10);
+  const { window } = ctx;
+  const rows = await rollups.dimensionDays(
+    dim,
+    day(window.baselineStart),
+    day(window.end)
+  );
+  const inRange = (row: DimensionDayRow, from: Date, to: Date) =>
+    row.day >= day(from) && row.day <= day(to);
+  const current = rows.filter((row) => inRange(row, window.start, window.end));
+  const baseline = rows.filter((row) =>
+    inRange(row, window.baselineStart, window.baselineEnd)
+  );
+  const currentMap = buildLookupMap(current, keyOf, (row) => row[metric]);
+  const baselineMap =
+    window.kind === 'yesterday'
+      ? computeWeekdayMedians(
+          baseline.map((row) => ({ ...row, date: row.day, cnt: row[metric] })),
+          getWeekday(window.start),
+          keyOf
+        )
+      : buildLookupMap(baseline, keyOf, (row) => row[metric]);
+  const sum = (map: Map<string, number>) =>
+    [...map.values()].reduce((total, value) => total + value, 0);
+  return {
+    currentMap,
+    baselineMap,
+    totalCurrent: sum(currentMap),
+    totalBaseline: sum(baselineMap),
+  };
 }

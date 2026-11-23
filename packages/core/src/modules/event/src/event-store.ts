@@ -14,6 +14,7 @@ import type {
 import type {
   DailyStats,
   Dimension,
+  DimensionDayRow,
   DimensionRow,
   ListEventsPage,
   ListEventsQuery,
@@ -114,6 +115,13 @@ export interface EventStore {
     projectId: string,
     sessionId: string
   ): Promise<IClickhouseSession | null>;
+  /** One dimension's totals per UTC day, `fromDay`..`toDay` (`YYYY-MM-DD`). */
+  dimensionDays(
+    projectId: string,
+    dim: Dimension,
+    fromDay: string,
+    toDay: string
+  ): Promise<DimensionDayRow[]>;
   /** Identified profiles, newest activity first. */
   listProfiles(
     projectId: string,
