@@ -28,6 +28,7 @@ import {
   sessionEndJobPayload,
   sessionEndPayloadFromSnapshot,
 } from '../../session/src/session-end-payload';
+import type { ColdStore } from './archive';
 import {
   ChartAccumulator,
   type ChartRow,
@@ -287,6 +288,8 @@ export interface EngineDeps {
   clock: EngineClock;
   codec: EngineCodec;
   options?: EngineOptions;
+  /** Older events (the R2 archive) for scans that reach past the chunks. */
+  cold?: ColdStore;
 }
 
 // ---------------------------------------------------------------------------
@@ -741,6 +744,7 @@ export async function openProjectEventsEngine({
   clock,
   codec,
   options = {},
+  cold,
 }: EngineDeps) {
   const sessionTimeoutMs =
     options.sessionTimeoutMs ?? DEFAULT_SESSION_TIMEOUT_MS;
@@ -1825,11 +1829,29 @@ export async function openProjectEventsEngine({
    * `from`..`to`, newest chunks last. Stops after `maxChunks` stored chunks.
    */
   async function scanRange(
-    from: number,
+    rangeFrom: number,
     to: number,
     visit: (event: IClickhouseEvent, at: number) => void,
     maxChunks = SCAN_MAX_CHUNKS
   ): Promise<boolean> {
+    // Before the cold store's cutoff, events come from the archive only; the
+    // chunks still hold some of them, so they are skipped there.
+    let from = rangeFrom;
+    let coldComplete = true;
+    const cutoff = cold?.before();
+    if (cold && cutoff !== undefined && from < cutoff) {
+      const coldTo = Math.min(to, cutoff - 1);
+      coldComplete = await cold.scan(from, coldTo, (event) => {
+        const at = eventTimeMs(event.created_at);
+        if (at >= from && at <= coldTo) {
+          visit(event, at);
+        }
+      });
+      from = cutoff;
+      if (from > to) {
+        return coldComplete;
+      }
+    }
     const visitEvents = (events: IClickhouseEvent[]) => {
       for (const event of events) {
         const at = eventTimeMs(event.created_at);
@@ -1865,7 +1887,7 @@ export async function openProjectEventsEngine({
     for (const [, events] of inMemory.reverse()) {
       visitEvents(events);
     }
-    return scanned < maxChunks;
+    return coldComplete && scanned < maxChunks;
   }
 
   /** Top values of a dimension recounted from stored events matching `filters`. */

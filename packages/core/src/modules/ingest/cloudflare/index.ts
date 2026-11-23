@@ -7,9 +7,12 @@ export {
   type AdvancedAnalyticsUsage,
 } from '../../event/src/advanced-analytics';
 export {
+  type ArchiveBucket,
   type ArchiveObject,
   archivePrefix,
   buildArchiveObjects,
+  type ColdStore,
+  createArchiveColdStore,
 } from './archive';
 export {
   BASIN_EVENT_SCHEMA,

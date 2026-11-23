@@ -39,7 +39,7 @@ Raw events are copied to R2 as newline-delimited JSON, one object per project an
 v1/events/project_id=<id>/date=YYYY-MM-DD/hour=HH/<firstChunk>-<lastChunk>.ndjson.gz
 ```
 
-Recent events stay in the Durable Object for 90 days by default (`FLAREPANEL_EVENT_RETENTION_DAYS`); R2 keeps everything.
+Recent events stay in the Durable Object for 90 days by default (`FLAREPANEL_EVENT_RETENTION_DAYS`); R2 keeps everything. Reports that reach further back read the older hours from the R2 archive (at most 3,000 archive files per report, so very long ranges on very busy projects show what was read).
 
 ## D1
 

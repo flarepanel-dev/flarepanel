@@ -15,6 +15,7 @@ import {
   archivePrefix,
   buildArchiveObjects,
   type ChartScanQuery,
+  createArchiveColdStore,
   createProjectEventsService,
   type Dimension,
   type EngineSql,
@@ -52,6 +53,11 @@ const BROADCAST_MIN_INTERVAL_MS = 1000;
 /** An alarm already due this soon is not moved (each move is a write). */
 const ALARM_SLACK_MS = 1000;
 
+/**
+ * Archive files one deep-history report may read (one R2 read each; R2 gives
+ * 10 million reads a month free). Past it the report covers what was read.
+ */
+const COLD_MAX_OBJECTS = 3000;
 /** The report builder's pickers read this much recent data. */
 const PICKER_SCAN_CHUNKS = 100;
 const PICKER_SCAN_EVENTS = 20_000;
@@ -131,7 +137,18 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
           .toArray() as SqlRow[],
       transaction: (fn) => storage.transactionSync(fn),
     };
+    const bucket = this.env.EVENTS_ARCHIVE;
     const engine = await openProjectEventsEngine({
+      // Reports reaching past the hot window read the R2 archive.
+      cold: bucket
+        ? createArchiveColdStore({
+            bucket,
+            projectId: () => this.projectId,
+            before: () => Date.now() - this.retentionDays() * DAY_MS,
+            gunzip: (bytes) => new Uint8Array(gunzipSync(bytes)),
+            maxObjects: COLD_MAX_OBJECTS,
+          })
+        : undefined,
       sql,
       clock: {
         now: () => Date.now(),
@@ -544,6 +561,17 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     this.unarchived = (await engine.readChunks(through, 1)).length > 0;
   }
 
+  /** Days of raw events the object keeps (older ones live in the archive). */
+  private retentionDays(): number {
+    const configured = Number(this.env.FLAREPANEL_EVENT_RETENTION_DAYS);
+    if (Number.isFinite(configured) && configured > 0) {
+      return configured;
+    }
+    return this.env.EVENTS_ARCHIVE
+      ? DEFAULT_RETENTION_DAYS
+      : LITE_RETENTION_DAYS;
+  }
+
   private async applyRetention(engine: ProjectEventsEngine) {
     const storage = this.ctx.storage;
     const lastRun = (await storage.get<number>(KEY_RETENTION_AT)) ?? 0;
@@ -551,13 +579,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       return;
     }
     const hasArchive = Boolean(this.env.EVENTS_ARCHIVE);
-    const configured = Number(this.env.FLAREPANEL_EVENT_RETENTION_DAYS);
-    const days =
-      Number.isFinite(configured) && configured > 0
-        ? configured
-        : hasArchive
-          ? DEFAULT_RETENTION_DAYS
-          : LITE_RETENTION_DAYS;
+    const days = this.retentionDays();
     const archivedThrough = hasArchive
       ? ((await storage.get<number>(KEY_ARCHIVED_THROUGH)) ?? 0)
       : Number.MAX_SAFE_INTEGER;

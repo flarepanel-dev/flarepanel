@@ -8,9 +8,9 @@ description: Optional long-history reports with Cloudflare Basin, with a monthly
 
 # Advanced analytics
 
-Every report works without this. Each project's Durable Object keeps the last 90 days of raw events and answers dashboards, filters, funnels and retention from them, inside the Workers Paid plan.
+Every report works without this, over all history: each project's Durable Object keeps the last 90 days of raw events, and reports that reach further back read the older hours from the R2 archive. That stays inside the Workers Paid plan and R2's free reads, but it gets slow for long ranges on very busy projects.
 
-Advanced analytics adds [Cloudflare Basin](https://developers.cloudflare.com/basin/): your events are also written to an Apache Iceberg table in your R2 bucket, and report charts that reach further back than 90 days, or that are too large for the Durable Object to scan, are answered by Basin SQL.
+Advanced analytics adds [Cloudflare Basin](https://developers.cloudflare.com/basin/) for those installs: your events are also written to an Apache Iceberg table in your R2 bucket, and report charts that reach further back than 90 days, or that are too large for the Durable Object to scan, are answered by Basin SQL.
 
 **It is off by default.** Nothing is created or billed until you turn it on.
 
@@ -32,7 +32,7 @@ One event is about 1 KB going in and about 200 bytes stored. A site with 1 milli
 FlarePanel counts every Basin SQL query the way Cloudflare bills it (bytes scanned, at least 10 MB) against a monthly budget, **10 GB by default: the free amount**.
 
 - At **80%** the organization admins get an email.
-- At **100%** Basin queries stop until the next month, and the admins get a second email. Reports keep answering from the last 90 days.
+- At **100%** Basin queries stop until the next month, and the admins get a second email. Reports keep answering from the Durable Object and the R2 archive.
 
 Change it with `FLAREPANEL_ADVANCED_BUDGET_GB`. The free amounts are per Cloudflare account, so other projects on the same account count towards them too.
 
@@ -93,7 +93,7 @@ Each project's Durable Object then sends its stored events to the stream (the la
 
 ## Good to know
 
-- Charts and bar/pie reports use Basin for old ranges. Funnels, retention and the Sessions page cover the last 90 days.
-- Fields from profiles, groups and cohorts are not in the events table; reports that use them stay on the last 90 days.
+- Charts and bar/pie reports use Basin for old ranges. Funnels and retention read the R2 archive for old ranges; the Sessions page covers the last 90 days.
+- Fields from profiles, groups and cohorts are not in the events table; reports that use them are answered from the Durable Object and the R2 archive.
 - Deleting a project removes its events from the Durable Object and the R2 archive, but not rows already in the Iceberg table. Queries never return them, since every query is scoped to one project.
 - To turn it off, remove `FLAREPANEL_ADVANCED_ANALYTICS` and delete the pipeline, sink and stream with `wrangler basin pipelines ... delete`.
