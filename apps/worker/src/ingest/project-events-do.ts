@@ -43,7 +43,8 @@ const KEY_ARCHIVED_THROUGH = 'archived_through';
 const KEY_ARCHIVED_AT = 'archived_at';
 const KEY_RETENTION_AT = 'retention_at';
 
-type LiveKind = 'events' | 'visitors';
+/** `notifications` sockets stay open and quiet until Phase 4 sends on them. */
+type LiveKind = 'events' | 'visitors' | 'notifications';
 
 interface State {
   engine: ProjectEventsEngine;
@@ -310,11 +311,13 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') {
       return new Response('Expected a WebSocket upgrade', { status: 426 });
     }
-    const kind: LiveKind = new URL(request.url).pathname.includes(
-      '/live/visitors/'
-    )
-      ? 'visitors'
-      : 'events';
+    const path = new URL(request.url).pathname;
+    let kind: LiveKind = 'events';
+    if (path.includes('/live/visitors/')) {
+      kind = 'visitors';
+    } else if (path.includes('/live/notifications/')) {
+      kind = 'notifications';
+    }
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair) as [WebSocket, WebSocket];
     this.ctx.acceptWebSocket(server, [kind]);

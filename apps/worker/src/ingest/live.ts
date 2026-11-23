@@ -7,13 +7,13 @@
 import { type AppDeps, type HttpCtx, requestContext } from '@flarepanel/core';
 import { Elysia } from 'elysia';
 
-const LIVE_PATH = /^\/live\/(events|visitors)\/([^/]+)$/;
+const LIVE_PATH = /^\/live\/(events|visitors|notifications)\/([^/]+)$/;
 const ACCESS_PREFIX = '/__live-access';
 const UNAUTHORIZED = 401;
 const FORBIDDEN = 403;
 
 export interface LivePath {
-  kind: 'events' | 'visitors';
+  kind: 'events' | 'visitors' | 'notifications';
   projectId: string;
   /** The internal route that answers whether the caller may connect. */
   accessPath: string;
