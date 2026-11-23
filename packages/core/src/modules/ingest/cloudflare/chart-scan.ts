@@ -346,12 +346,20 @@ export class ChartAccumulator {
         });
       }
     }
-    rows.sort((a, b) => a.date.localeCompare(b.date) || b.count - a.count);
     if (!query.fixedDate) {
       for (const [index] of query.buckets.entries()) {
         rows.push({ label_0: '', date: this.dateOf(index), count: 0 });
       }
     }
+    // In date order with the padding interleaved, as ClickHouse's WITH FILL
+    // returns it: series take their points in row order, so a padding row
+    // after a real one would draw the line back to an earlier date.
+    rows.sort(
+      (a, b) =>
+        a.date.localeCompare(b.date) ||
+        Number(!a.label_0) - Number(!b.label_0) ||
+        b.count - a.count
+    );
     return rows;
   }
 }
