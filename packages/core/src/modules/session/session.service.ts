@@ -227,10 +227,15 @@ function emptyProfile(profileId: string, projectId: string): IServiceProfile {
   };
 }
 
+export interface SessionListPage {
+  items: (IServiceSession & { profile: IServiceProfile })[];
+  meta: { next: string | undefined };
+}
+
 export async function getSessionList(
   deps: ServiceDeps,
   options: GetSessionListOptions
-) {
+): Promise<SessionListPage> {
   const {
     cursor,
     take,
@@ -242,6 +247,17 @@ export async function getSessionList(
     search,
     dateIntervalInDays = DEFAULT_LOOKBACK_DAYS,
   } = options;
+
+  // Workers: open sessions and the ended-session log in the project's
+  // Durable Object, paged by start time.
+  if (deps.eventStore) {
+    const data = await deps.eventStore.listSessions(projectId, {
+      ...storeSessionQuery({ profileId, filters, startDate, endDate, search }),
+      before: cursor?.getTime(),
+      take,
+    });
+    return withProfiles(deps, data, projectId);
+  }
 
   // Deployment-tunable ceiling for the empty-result lookback
   // (SESSION_LIST_MAX_LOOKBACK_DAYS).
@@ -280,6 +296,44 @@ export async function getSessionList(
     });
   }
 
+  return withProfiles(deps, data, projectId);
+}
+
+/** Session filters for the Durable Object; cohort filters need the cohort engine. */
+function storeSessionQuery({
+  profileId,
+  filters,
+  startDate,
+  endDate,
+  search,
+}: Pick<
+  GetSessionListOptions,
+  'profileId' | 'filters' | 'startDate' | 'endDate' | 'search'
+>) {
+  return {
+    from: startDate?.getTime(),
+    to: endDate?.getTime(),
+    profileId,
+    search,
+    filters: (filters ?? [])
+      .filter(
+        (filter) =>
+          filter.operator !== 'inCohort' && filter.operator !== 'notInCohort'
+      )
+      .map((filter) => ({
+        name: filter.name,
+        operator: filter.operator,
+        value: filter.value,
+        ...(filter.type ? { type: filter.type } : {}),
+      })),
+  };
+}
+
+async function withProfiles(
+  deps: ServiceDeps,
+  data: IClickhouseSession[],
+  projectId: string
+): Promise<SessionListPage> {
   const { getProfilesCached } = await import('../profile/profile.service');
   const profileIds = data
     .filter((e) => e.device_id !== e.profile_id)
@@ -311,6 +365,12 @@ export async function getSessionsCount(
     search,
   }: Omit<GetSessionListOptions, 'take' | 'cursor'>
 ) {
+  if (deps.eventStore) {
+    return deps.eventStore.countSessions(
+      projectId,
+      storeSessionQuery({ profileId, filters, startDate, endDate, search })
+    );
+  }
   const result = await chQuery<{ count: number }>(
     deps,
     sessionsCountQuery({
@@ -399,6 +459,13 @@ export async function getSessionById(
   sessionId: string,
   projectId: string
 ) {
+  if (deps.eventStore) {
+    const session = await deps.eventStore.getSession(projectId, sessionId);
+    if (!session) {
+      throw new Error('Session not found');
+    }
+    return { ...transformSession(session), hasReplay: false };
+  }
   const [sessionRows, hasReplayRows] = await Promise.all([
     chQuery<IClickhouseSession>(
       deps,

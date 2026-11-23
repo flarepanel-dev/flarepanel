@@ -12,6 +12,8 @@ const INDEX_MASK = HLL_REGISTERS - 1;
 const RANK_BITS = 53 - PRECISION;
 const ALPHA = 0.7213 / (1 + 1.079 / HLL_REGISTERS);
 const SMALL_RANGE_FACTOR = 2.5;
+const SPARSE_MARKER = 0x01;
+const SPARSE_ENTRY_BYTES = 3;
 
 const HASH_SEED_A = 0xde_ad_be_ef;
 const HASH_SEED_B = 0x41_c6_ce_57;
@@ -74,6 +76,58 @@ export class HyperLogLog {
         this.registers[i] = theirs;
       }
     }
+  }
+
+  /**
+   * Storage form: the 4 KB registers, or, while few are set, a sparse list of
+   * (index, value) triples behind a marker byte. Hourly sketches of a small
+   * site are mostly empty, so this keeps a year of hours small. Dense input
+   * is exactly 4096 bytes, so rows written before the sparse form still load.
+   */
+  toBytes(): Uint8Array {
+    let used = 0;
+    for (const register of this.registers) {
+      if (register !== 0) {
+        used += 1;
+      }
+    }
+    if (used * SPARSE_ENTRY_BYTES + 1 >= HLL_REGISTERS) {
+      return this.registers;
+    }
+    const out = new Uint8Array(1 + used * SPARSE_ENTRY_BYTES);
+    out[0] = SPARSE_MARKER;
+    let offset = 1;
+    for (let index = 0; index < HLL_REGISTERS; index++) {
+      const register = this.registers[index] ?? 0;
+      if (register !== 0) {
+        out[offset] = index >> 8;
+        out[offset + 1] = index & 0xff;
+        out[offset + 2] = register;
+        offset += SPARSE_ENTRY_BYTES;
+      }
+    }
+    return out;
+  }
+
+  static fromBytes(bytes: Uint8Array): HyperLogLog {
+    if (bytes.length === HLL_REGISTERS) {
+      return new HyperLogLog(bytes.slice());
+    }
+    const sketch = new HyperLogLog();
+    if (bytes[0] !== SPARSE_MARKER) {
+      return sketch;
+    }
+    for (
+      let offset = 1;
+      offset + SPARSE_ENTRY_BYTES <= bytes.length;
+      offset += SPARSE_ENTRY_BYTES
+    ) {
+      const index = ((bytes[offset] ?? 0) << 8) | (bytes[offset + 1] ?? 0);
+      if (index < HLL_REGISTERS) {
+        sketch.registers[index] = bytes[offset + 2] ?? 0;
+      }
+    }
+    return sketch;
   }
 
   count(): number {

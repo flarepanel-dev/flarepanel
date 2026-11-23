@@ -141,8 +141,23 @@ export function createWorkerEventStore(
       projectEventsStub(env, projectId).activeVisitors(),
     overview: (projectId, from, to) =>
       projectEventsStub(env, projectId).overview(from, to),
-    topDimension: (projectId, dim, from, to, limit) =>
-      projectEventsStub(env, projectId).topDimension(dim, from, to, limit),
+    topDimension: (projectId, dim, from, to, limit, filters) =>
+      projectEventsStub(env, projectId).topDimension(
+        dim,
+        from,
+        to,
+        limit,
+        filters
+      ),
+    metrics: (projectId, query) =>
+      projectEventsStub(env, projectId).metrics(query),
+    liveData: (projectId) => projectEventsStub(env, projectId).liveData(),
+    listSessions: (projectId, query) =>
+      projectEventsStub(env, projectId).listSessions(query),
+    countSessions: (projectId, query) =>
+      projectEventsStub(env, projectId).countSessions(query),
+    getSession: (projectId, sessionId) =>
+      projectEventsStub(env, projectId).getSession(sessionId),
     listProfiles: (projectId, query) =>
       projectEventsStub(env, projectId).listProfiles(query),
     countEvents: (projectId, from, to) =>

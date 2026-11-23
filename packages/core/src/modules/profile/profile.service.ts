@@ -245,6 +245,18 @@ export async function getProfiles(
     return [];
   }
 
+  // Workers: profiles live in the project's Durable Object.
+  if (deps.eventStore) {
+    const found = await Promise.all(
+      filteredIds.map((id) =>
+        deps.buffers.profile.fetchFromCache(id, projectId)
+      )
+    );
+    return found
+      .filter((profile): profile is IClickhouseProfile => Boolean(profile))
+      .map(transformProfile);
+  }
+
   const data = await chQuery<IClickhouseProfile>(
     deps,
     profilesByIdsQuery({ projectId, ids: filteredIds })

@@ -28,9 +28,23 @@ import {
   sessionEndJobPayload,
   sessionEndPayloadFromSnapshot,
 } from '../../session/src/session-end-payload';
+import { matchesFilters, type RowFilter } from './filter-eval';
 import { HyperLogLog } from './hyperloglog';
+import { LIVE_WINDOW_MS, type LiveSnapshot, LiveWindow } from './live-window';
+import {
+  type BucketInterval,
+  buildBuckets,
+  coverWithHoursAndDays,
+  type HourDayCover,
+  hourNumber,
+  MINUTE_MS,
+} from './time-buckets';
 
-const SCHEMA_VERSION = 1;
+/**
+ * 2: hourly rollups (timezones, hour series) and the ended-session log. An
+ * upgrade rebuilds every rollup from the stored chunks.
+ */
+const SCHEMA_VERSION = 2;
 const DEFAULT_COMMIT_MAX_EVENTS = 200;
 const DEFAULT_COMMIT_MAX_DELAY_MS = 500;
 const DEFAULT_CHECKPOINT_INTERVAL_MS = 5 * 60 * 1000;
@@ -88,6 +102,14 @@ const SCHEMA = [
   // Per-day counts by page, source, place and device for the overview's top
   // lists. Written additively at each checkpoint, like event_names.
   'CREATE TABLE IF NOT EXISTS dims (day TEXT, dim TEXT, value TEXT, sessions INT, pageviews INT, revenue INT, PRIMARY KEY (day, dim, value)) WITHOUT ROWID',
+  // The same counts per UTC hour: the edges of a range in the project's
+  // timezone, and hour/day series in any timezone.
+  'CREATE TABLE IF NOT EXISTS hourly (hour INTEGER PRIMARY KEY, visitors BLOB, sessions INT, bounces INT, duration_ms INT, screen_views INT, events INT, revenue INT)',
+  'CREATE TABLE IF NOT EXISTS dims_h (dim TEXT, hour INT, value TEXT, sessions INT, pageviews INT, revenue INT, PRIMARY KEY (dim, hour, value)) WITHOUT ROWID',
+  // One row per ended session, for the Sessions page; live ones are in memory.
+  'CREATE TABLE IF NOT EXISTS session_log (id TEXT PRIMARY KEY, created_at INT, profile_id TEXT, body TEXT) WITHOUT ROWID',
+  'CREATE INDEX IF NOT EXISTS session_log_created ON session_log (created_at)',
+  'CREATE INDEX IF NOT EXISTS session_log_profile ON session_log (profile_id, created_at)',
 ];
 
 /** Session-level dimensions, counted once per session at session_start. */
@@ -125,6 +147,24 @@ const DIM_PREFIX: Partial<Record<SessionDimension, SessionDimension>> = {
   os_version: 'os',
 };
 const DEFAULT_TOP_LIMIT = 50;
+/** Minute series are counted from raw events, so only over short ranges. */
+const MAX_MINUTE_RANGE_MS = 24 * 60 * 60 * 1000;
+/** Stored chunks one range scan may decompress. */
+const SCAN_MAX_CHUNKS = 2000;
+const LIVE_REBUILD_MAX_CHUNKS = 4000;
+const SESSION_PAGE_ROWS = 200;
+/** Logged sessions one list or count call may read (filters run in JS). */
+const SESSION_SCAN_MAX = 100_000;
+const SESSION_LIST_MAX_TAKE = 1000;
+const SESSION_SEARCH_FIELDS = [
+  'id',
+  'profile_id',
+  'entry_path',
+  'exit_path',
+  'referrer_name',
+  'country',
+  'city',
+] as const;
 
 export interface DimensionRow {
   /** The parent value (country, browser, os, or a page's origin). */
@@ -139,6 +179,49 @@ interface DimensionDelta {
   sessions: number;
   pageviews: number;
   revenue: number;
+}
+
+export interface RangeStats {
+  visitors: number;
+  sessions: number;
+  bounces: number;
+  durationMs: number;
+  screenViews: number;
+  events: number;
+  revenue: number;
+}
+
+export interface MetricsQuery {
+  /** Inclusive epoch ms. */
+  from: number;
+  /** Inclusive epoch ms. */
+  to: number;
+  interval: BucketInterval;
+  /** IANA name; buckets start at local midnight, week (Sunday) or month. */
+  timezone: string;
+  /** Dashboard filters: counted from raw events (the retention window). */
+  filters?: RowFilter[];
+}
+
+export interface MetricsResult {
+  totals: RangeStats;
+  /** One point per bucket; `start` is the bucket's epoch ms. */
+  series: (RangeStats & { start: number })[];
+  /** A raw-event count stopped at its scan budget: the numbers are a lower bound. */
+  partial?: boolean;
+}
+
+export interface SessionListQuery {
+  /** Sessions that started at or after this (epoch ms). */
+  from?: number;
+  /** …and at or before this. */
+  to?: number;
+  /** Page cursor: sessions that started strictly before this. */
+  before?: number;
+  profileId?: string;
+  filters?: RowFilter[];
+  search?: string;
+  take?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -360,6 +443,169 @@ function createDeferred(): PendingBatch {
   return { events: [], bytes: 0, committed, resolve, reject };
 }
 
+function rollupFromRow(row: SqlRow): DailyRollup {
+  return {
+    visitors: HyperLogLog.fromBytes(toBytes(row.visitors)),
+    sessions: toNumber(row.sessions),
+    bounces: toNumber(row.bounces),
+    durationMs: toNumber(row.duration_ms),
+    screenViews: toNumber(row.screen_views),
+    events: toNumber(row.events),
+    revenue: toNumber(row.revenue),
+  };
+}
+
+function addDelta(
+  deltas: Map<string, DimensionDelta>,
+  key: string,
+  delta: DimensionDelta
+) {
+  const current = deltas.get(key) ?? { sessions: 0, pageviews: 0, revenue: 0 };
+  current.sessions += delta.sessions;
+  current.pageviews += delta.pageviews;
+  current.revenue += delta.revenue;
+  deltas.set(key, current);
+}
+
+/** Session starts count sessions, session ends bounces and time, the rest events. */
+function addToRollup(
+  rollup: DailyRollup,
+  event: IClickhouseEvent,
+  isSessionStart: boolean,
+  isSessionEnd: boolean
+) {
+  if (isSessionStart) {
+    rollup.sessions += 1;
+  } else if (isSessionEnd) {
+    rollup.bounces += isBounce(event) ? 1 : 0;
+    rollup.durationMs += Math.max(0, event.duration ?? 0);
+  } else {
+    rollup.events += 1;
+    rollup.revenue += event.revenue ?? 0;
+    if (event.name === 'screen_view') {
+      rollup.screenViews += 1;
+    }
+  }
+  if (event.profile_id && !isSessionEnd) {
+    rollup.visitors.add(event.profile_id);
+  }
+}
+
+interface RangeTotals {
+  sketch: HyperLogLog;
+  sessions: number;
+  bounces: number;
+  durationMs: number;
+  screenViews: number;
+  events: number;
+  revenue: number;
+}
+
+function emptyTotals(): RangeTotals {
+  return {
+    sketch: new HyperLogLog(),
+    sessions: 0,
+    bounces: 0,
+    durationMs: 0,
+    screenViews: 0,
+    events: 0,
+    revenue: 0,
+  };
+}
+
+function addTotals(totals: RangeTotals, rollup: DailyRollup) {
+  totals.sketch.merge(rollup.visitors);
+  totals.sessions += rollup.sessions;
+  totals.bounces += rollup.bounces;
+  totals.durationMs += rollup.durationMs;
+  totals.screenViews += rollup.screenViews;
+  totals.events += rollup.events;
+  totals.revenue += rollup.revenue;
+}
+
+function toStats(totals: RangeTotals): RangeStats {
+  return {
+    visitors: totals.sketch.count(),
+    sessions: totals.sessions,
+    bounces: totals.bounces,
+    durationMs: totals.durationMs,
+    screenViews: totals.screenViews,
+    events: totals.events,
+    revenue: totals.revenue,
+  };
+}
+
+/** `addToRollup` for raw-event counts, with exact visitors. */
+function countEvent(
+  target: RangeTotals & { people: Set<string> },
+  event: IClickhouseEvent
+) {
+  const isSessionEnd = event.name === 'session_end';
+  if (event.name === 'session_start') {
+    target.sessions += 1;
+  } else if (isSessionEnd) {
+    target.bounces += isBounce(event) ? 1 : 0;
+    target.durationMs += Math.max(0, event.duration ?? 0);
+  } else {
+    target.events += 1;
+    target.revenue += event.revenue ?? 0;
+    if (event.name === 'screen_view') {
+      target.screenViews += 1;
+    }
+  }
+  if (event.profile_id && !isSessionEnd) {
+    target.people.add(event.profile_id);
+  }
+}
+
+function findBucket<T extends { start: number; end: number }>(
+  buckets: T[],
+  at: number
+): T | undefined {
+  let low = 0;
+  let high = buckets.length - 1;
+  while (low <= high) {
+    const middle = Math.floor((low + high) / 2);
+    const bucket = buckets[middle] as T;
+    if (at < bucket.start) {
+      high = middle - 1;
+    } else if (at >= bucket.end) {
+      low = middle + 1;
+    } else {
+      return bucket;
+    }
+  }
+  return;
+}
+
+const UTM_FIELDS = [
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+] as const;
+
+/** Event rows keep UTM tags as `__query.*` properties; filters name them bare. */
+function eventFilterRow(event: IClickhouseEvent): Record<string, unknown> {
+  const row: Record<string, unknown> = { ...event };
+  for (const field of UTM_FIELDS) {
+    row[field] = event.properties[`${UTM_PREFIX}${field}`];
+  }
+  return row;
+}
+
+/** Session filters name pages like event filters do: `path` is the entry page. */
+function sessionFilterRow(
+  session: IClickhouseSession
+): Record<string, unknown> {
+  return {
+    ...session,
+    path: session.entry_path,
+    origin: session.entry_origin,
+  };
+}
+
 function emptyRollup(): DailyRollup {
   return {
     visitors: new HyperLogLog(),
@@ -500,6 +746,13 @@ export async function openProjectEventsEngine({
   const dirtyDays = new Set<string>();
   const nameDeltas = new Map<string, { count: number; lastSeen: number }>();
   const dimDeltas = new Map<string, DimensionDelta>();
+  const hours = new Map<number, DailyRollup>();
+  const dirtyHours = new Set<number>();
+  /** `hour \0 dim \0 value` → delta, written additively like `dimDeltas`. */
+  const dimHourDeltas = new Map<string, DimensionDelta>();
+  const live = new LiveWindow();
+  /** False after a restart until the live card is rebuilt from chunks. */
+  let liveReady = false;
   /** Pages each live session has viewed, so a page counts a session once. */
   const sessionPages = new Map<string, Set<string>>();
   const dirtyProfiles = new Map<string, ProfileSnapshot>();
@@ -620,7 +873,7 @@ export async function openProjectEventsEngine({
     const [row] = sql.exec('SELECT * FROM daily WHERE day = ?', day);
     const rollup = row
       ? {
-          visitors: new HyperLogLog(toBytes(row.visitors).slice()),
+          visitors: HyperLogLog.fromBytes(toBytes(row.visitors)),
           sessions: toNumber(row.sessions),
           bounces: toNumber(row.bounces),
           durationMs: toNumber(row.duration_ms),
@@ -633,22 +886,33 @@ export async function openProjectEventsEngine({
     return rollup;
   }
 
+  function loadHour(hour: number): DailyRollup {
+    const cached = hours.get(hour);
+    if (cached) {
+      return cached;
+    }
+    const [row] = sql.exec('SELECT * FROM hourly WHERE hour = ?', hour);
+    const rollup = row ? rollupFromRow(row) : emptyRollup();
+    hours.set(hour, rollup);
+    return rollup;
+  }
+
   function addDimension(
-    day: string,
+    at: number,
     dim: Dimension,
     value: string,
     delta: DimensionDelta
   ) {
-    const key = [day, dim, value].join(DIM_KEY_SEPARATOR);
-    const current = dimDeltas.get(key) ?? {
-      sessions: 0,
-      pageviews: 0,
-      revenue: 0,
-    };
-    current.sessions += delta.sessions;
-    current.pageviews += delta.pageviews;
-    current.revenue += delta.revenue;
-    dimDeltas.set(key, current);
+    addDelta(
+      dimDeltas,
+      [dayKey(at), dim, value].join(DIM_KEY_SEPARATOR),
+      delta
+    );
+    addDelta(
+      dimHourDeltas,
+      [hourNumber(at), dim, value].join(DIM_KEY_SEPARATOR),
+      delta
+    );
   }
 
   function sessionDimensionValue(
@@ -673,7 +937,7 @@ export async function openProjectEventsEngine({
 
   function recordDimensions(
     event: IClickhouseEvent,
-    day: string,
+    at: number,
     isSessionStart: boolean,
     isSessionEnd: boolean
   ) {
@@ -681,14 +945,14 @@ export async function openProjectEventsEngine({
     const revenue = isSessionStart || isSessionEnd ? 0 : (event.revenue ?? 0);
     if (isSessionStart) {
       for (const dim of SESSION_DIMENSIONS) {
-        addDimension(day, dim, sessionDimensionValue(event, dim), {
+        addDimension(at, dim, sessionDimensionValue(event, dim), {
           sessions: 1,
           pageviews: 0,
           revenue: 0,
         });
       }
       if (event.path) {
-        addDimension(day, 'entry', pageValue(event), {
+        addDimension(at, 'entry', pageValue(event), {
           sessions: 1,
           pageviews: 0,
           revenue: 0,
@@ -699,7 +963,7 @@ export async function openProjectEventsEngine({
     if (isSessionEnd) {
       sessionPages.delete(event.session_id);
       if (event.path) {
-        addDimension(day, 'exit', pageValue(event), {
+        addDimension(at, 'exit', pageValue(event), {
           sessions: 1,
           pageviews: 0,
           revenue: 0,
@@ -709,7 +973,7 @@ export async function openProjectEventsEngine({
     }
     if (isView || revenue) {
       for (const dim of SESSION_DIMENSIONS) {
-        addDimension(day, dim, sessionDimensionValue(event, dim), {
+        addDimension(at, dim, sessionDimensionValue(event, dim), {
           sessions: 0,
           pageviews: isView ? 1 : 0,
           revenue,
@@ -725,7 +989,7 @@ export async function openProjectEventsEngine({
         seen.add(page);
         sessionPages.set(event.session_id, seen);
       }
-      addDimension(day, 'path', page, {
+      addDimension(at, 'path', page, {
         sessions: firstInSession ? 1 : 0,
         pageviews: isView ? 1 : 0,
         revenue,
@@ -737,30 +1001,20 @@ export async function openProjectEventsEngine({
     const at = eventTimeMs(event.created_at);
     const day = loadDay(dayKey(at));
     dirtyDays.add(dayKey(at));
+    const hour = loadHour(hourNumber(at));
+    dirtyHours.add(hourNumber(at));
 
     const isSessionStart = event.name === 'session_start';
     const isSessionEnd = event.name === 'session_end';
-    if (isSessionStart) {
-      day.sessions += 1;
-    } else if (isSessionEnd) {
-      day.bounces += isBounce(event) ? 1 : 0;
-      day.durationMs += Math.max(0, event.duration ?? 0);
-    } else {
-      day.events += 1;
-      day.revenue += event.revenue ?? 0;
-      if (event.name === 'screen_view') {
-        day.screenViews += 1;
-      }
-    }
-    if (event.profile_id && !isSessionEnd) {
-      day.visitors.add(event.profile_id);
-    }
+    addToRollup(day, event, isSessionStart, isSessionEnd);
+    addToRollup(hour, event, isSessionStart, isSessionEnd);
+    live.add(event, clock.now());
 
     const name = nameDeltas.get(event.name) ?? { count: 0, lastSeen: 0 };
     name.count += 1;
     name.lastSeen = Math.max(name.lastSeen, at);
     nameDeltas.set(event.name, name);
-    recordDimensions(event, dayKey(at), isSessionStart, isSessionEnd);
+    recordDimensions(event, at, isSessionStart, isSessionEnd);
 
     const isIdentified =
       event.profile_id && event.profile_id !== event.device_id;
@@ -954,6 +1208,20 @@ export async function openProjectEventsEngine({
 
   function writeCheckpoint(now: number) {
     sessionFloor = writeSessions(now);
+    writeRollups();
+    sql.exec(
+      'INSERT INTO meta (k, v) VALUES (?, ?), (?, ?), (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v',
+      META_WATERMARK,
+      String(watermarkCandidate),
+      META_CHECKPOINT_AT,
+      String(now),
+      META_SESSION_FLOOR,
+      String(sessionFloor)
+    );
+  }
+
+  /** Rollups, event names, dimension counts and profiles touched since the last write. */
+  function writeRollups() {
     for (const day of dirtyDays) {
       const rollup = days.get(day);
       if (!rollup) {
@@ -962,7 +1230,7 @@ export async function openProjectEventsEngine({
       sql.exec(
         'INSERT INTO daily (day, visitors, sessions, bounces, duration_ms, screen_views, events, revenue) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (day) DO UPDATE SET visitors = excluded.visitors, sessions = excluded.sessions, bounces = excluded.bounces, duration_ms = excluded.duration_ms, screen_views = excluded.screen_views, events = excluded.events, revenue = excluded.revenue',
         day,
-        rollup.visitors.registers,
+        rollup.visitors.toBytes(),
         rollup.sessions,
         rollup.bounces,
         rollup.durationMs,
@@ -991,6 +1259,35 @@ export async function openProjectEventsEngine({
         delta.revenue
       );
     }
+    for (const hour of dirtyHours) {
+      const rollup = hours.get(hour);
+      if (!rollup) {
+        continue;
+      }
+      sql.exec(
+        'INSERT INTO hourly (hour, visitors, sessions, bounces, duration_ms, screen_views, events, revenue) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (hour) DO UPDATE SET visitors = excluded.visitors, sessions = excluded.sessions, bounces = excluded.bounces, duration_ms = excluded.duration_ms, screen_views = excluded.screen_views, events = excluded.events, revenue = excluded.revenue',
+        hour,
+        rollup.visitors.toBytes(),
+        rollup.sessions,
+        rollup.bounces,
+        rollup.durationMs,
+        rollup.screenViews,
+        rollup.events,
+        rollup.revenue
+      );
+    }
+    for (const [key, delta] of dimHourDeltas) {
+      const [hour, dim, value] = key.split(DIM_KEY_SEPARATOR);
+      sql.exec(
+        'INSERT INTO dims_h (dim, hour, value, sessions, pageviews, revenue) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (dim, hour, value) DO UPDATE SET sessions = sessions + excluded.sessions, pageviews = pageviews + excluded.pageviews, revenue = revenue + excluded.revenue',
+        dim ?? '',
+        Number(hour),
+        value ?? '',
+        delta.sessions,
+        delta.pageviews,
+        delta.revenue
+      );
+    }
     for (const [id, profile] of dirtyProfiles) {
       const onConflict = profile.insertOnly
         ? 'DO NOTHING'
@@ -1002,20 +1299,14 @@ export async function openProjectEventsEngine({
         profile.lastSeen
       );
     }
-    sql.exec(
-      'INSERT INTO meta (k, v) VALUES (?, ?), (?, ?), (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v',
-      META_WATERMARK,
-      String(watermarkCandidate),
-      META_CHECKPOINT_AT,
-      String(now),
-      META_SESSION_FLOOR,
-      String(sessionFloor)
-    );
   }
 
   function clearCheckpointedState() {
     dirtyDays.clear();
     days.clear();
+    dirtyHours.clear();
+    hours.clear();
+    dimHourDeltas.clear();
     nameDeltas.clear();
     dimDeltas.clear();
     dirtyProfiles.clear();
@@ -1066,22 +1357,59 @@ export async function openProjectEventsEngine({
     return parseChunkBody(textDecoder.decode(bytes));
   }
 
+  /**
+   * Recounts every rollup from the stored chunks up to `throughChunk` (the
+   * rest is replayed by `restore`). Rollups of days whose chunks retention
+   * already deleted are lost, so this runs only on a schema upgrade.
+   */
+  async function rebuildRollups(throughChunk: number) {
+    for (const table of ['daily', 'dims', 'event_names', 'hourly', 'dims_h']) {
+      sql.exec(`DELETE FROM ${table}`);
+    }
+    let after = 0;
+    for (;;) {
+      const rows = sql.exec(
+        'SELECT id, body FROM chunks WHERE id > ? AND id <= ? ORDER BY id LIMIT ?',
+        after,
+        throughChunk,
+        CHUNK_READ_BATCH
+      );
+      if (rows.length === 0) {
+        break;
+      }
+      for (const row of rows) {
+        const { events } = await decodeChunk(row.body);
+        for (const event of events) {
+          applyCommitted(event);
+        }
+        after = toNumber(row.id);
+      }
+      // Bounded memory: deltas are additive and rollups reload from their rows.
+      sql.transaction(() => writeRollups());
+      clearCheckpointedState();
+    }
+    sessionPages.clear();
+  }
+
   async function restore() {
     for (const statement of SCHEMA) {
       sql.exec(statement);
     }
     const version = readMeta(META_SCHEMA_VERSION);
-    if (version === undefined) {
+    watermark = Number(readMeta(META_WATERMARK) ?? 0);
+    watermarkCandidate = watermark;
+    lastCheckpointAt = Number(readMeta(META_CHECKPOINT_AT) ?? clock.now());
+
+    if (version !== undefined && Number(version) < SCHEMA_VERSION) {
+      await rebuildRollups(watermark);
+    }
+    if (version === undefined || Number(version) < SCHEMA_VERSION) {
       sql.exec(
-        'INSERT INTO meta (k, v) VALUES (?, ?)',
+        'INSERT INTO meta (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v',
         META_SCHEMA_VERSION,
         String(SCHEMA_VERSION)
       );
     }
-
-    watermark = Number(readMeta(META_WATERMARK) ?? 0);
-    watermarkCandidate = watermark;
-    lastCheckpointAt = Number(readMeta(META_CHECKPOINT_AT) ?? clock.now());
 
     for (const row of sql.exec('SELECT body FROM sessions')) {
       const live = JSON.parse(String(row.body)) as LiveSession;
@@ -1228,7 +1556,7 @@ export async function openProjectEventsEngine({
     )) {
       const day = String(row.day);
       rollups.set(day, {
-        visitors: new HyperLogLog(toBytes(row.visitors).slice()),
+        visitors: HyperLogLog.fromBytes(toBytes(row.visitors)),
         sessions: toNumber(row.sessions),
         bounces: toNumber(row.bounces),
         durationMs: toNumber(row.duration_ms),
@@ -1357,45 +1685,294 @@ export async function openProjectEventsEngine({
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   }
 
-  /** Top values of one dimension over the UTC days `from`..`to`. */
-  function topDimension(
+  // -- range reads ----------------------------------------------------------------
+  // Ranges are real instants (the service resolves the project's timezone);
+  // whole UTC days read daily rows and the edges read hourly rows.
+
+  function rangeCounts(cover: HourDayCover): RangeTotals {
+    const totals = emptyTotals();
+    if (cover.days) {
+      const [fromDay, toDay] = cover.days;
+      const seen = new Set<string>();
+      for (const row of sql.exec(
+        'SELECT * FROM daily WHERE day >= ? AND day <= ?',
+        fromDay,
+        toDay
+      )) {
+        const day = String(row.day);
+        seen.add(day);
+        addTotals(totals, days.get(day) ?? rollupFromRow(row));
+      }
+      for (const [day, rollup] of days) {
+        if (!seen.has(day) && day >= fromDay && day <= toDay) {
+          addTotals(totals, rollup);
+        }
+      }
+    }
+    for (const [fromHour, toHour] of cover.hours) {
+      const seen = new Set<number>();
+      for (const row of sql.exec(
+        'SELECT * FROM hourly WHERE hour >= ? AND hour < ?',
+        fromHour,
+        toHour
+      )) {
+        const hour = toNumber(row.hour);
+        seen.add(hour);
+        addTotals(totals, hours.get(hour) ?? rollupFromRow(row));
+      }
+      for (const [hour, rollup] of hours) {
+        if (!seen.has(hour) && hour >= fromHour && hour < toHour) {
+          addTotals(totals, rollup);
+        }
+      }
+    }
+    return totals;
+  }
+
+  /**
+   * Overview numbers for `from`..`to` (inclusive, epoch ms) and a series by
+   * `interval` in `timezone`. Minute series (ranges up to a day) are counted
+   * from the raw events; everything else from rollups.
+   */
+  async function metrics(query: MetricsQuery): Promise<MetricsResult> {
+    const end = query.to + 1;
+    const isMinute =
+      query.interval === 'minute' && end - query.from <= MAX_MINUTE_RANGE_MS;
+    const interval =
+      query.interval === 'minute' && !isMinute ? 'hour' : query.interval;
+    if (isMinute || query.filters?.length) {
+      return rawMetrics(
+        query.from,
+        query.to,
+        buildBuckets(query.from, query.to, interval, query.timezone),
+        query.filters
+      );
+    }
+    const series = buildBuckets(
+      query.from,
+      query.to,
+      interval,
+      query.timezone
+    ).map((bucket) => ({
+      start: bucket.start,
+      ...toStats(
+        rangeCounts(
+          coverWithHoursAndDays(
+            Math.max(bucket.start, query.from),
+            Math.min(bucket.end, end)
+          )
+        )
+      ),
+    }));
+    return {
+      totals: toStats(rangeCounts(coverWithHoursAndDays(query.from, end))),
+      series,
+    };
+  }
+
+  /** `metrics` counted from the stored events, for minute series and filters. */
+  async function rawMetrics(
+    from: number,
+    to: number,
+    buckets: { start: number; end: number }[],
+    filters: RowFilter[] | undefined
+  ): Promise<MetricsResult> {
+    const fresh = () => ({ ...emptyTotals(), people: new Set<string>() });
+    const points = buckets.map((bucket) => ({ ...bucket, value: fresh() }));
+    const total = fresh();
+    const complete = await scanRange(from, to, (event, at) => {
+      if (filters?.length && !matchesFilters(eventFilterRow(event), filters)) {
+        return;
+      }
+      countEvent(total, event);
+      const point = findBucket(points, at);
+      if (point) {
+        countEvent(point.value, event);
+      }
+    });
+    const stats = (value: ReturnType<typeof fresh>) => ({
+      ...toStats(value),
+      visitors: value.people.size,
+    });
+    return {
+      totals: stats(total),
+      series: points.map((point) => ({
+        start: point.start,
+        ...stats(point.value),
+      })),
+      ...(complete ? {} : { partial: true }),
+    };
+  }
+
+  /**
+   * Calls `visit` for every stored or pending event with `created_at` in
+   * `from`..`to`, newest chunks last. Stops after `maxChunks` stored chunks.
+   */
+  async function scanRange(
+    from: number,
+    to: number,
+    visit: (event: IClickhouseEvent, at: number) => void,
+    maxChunks = SCAN_MAX_CHUNKS
+  ): Promise<boolean> {
+    const visitEvents = (events: IClickhouseEvent[]) => {
+      for (const event of events) {
+        const at = eventTimeMs(event.created_at);
+        if (at >= from && at <= to) {
+          visit(event, at);
+        }
+      }
+    };
+    const inMemory = memoryChunks();
+    const memoryIds = new Set(inMemory.map(([id]) => id));
+    let after = 0;
+    let scanned = 0;
+    while (scanned < maxChunks) {
+      const rows = sql.exec(
+        'SELECT id, body FROM chunks WHERE id > ? AND ts_max >= ? AND ts_min <= ? ORDER BY id LIMIT ?',
+        after,
+        from,
+        to,
+        CHUNK_READ_BATCH
+      );
+      if (rows.length === 0) {
+        break;
+      }
+      for (const row of rows) {
+        const id = toNumber(row.id);
+        after = id;
+        scanned += 1;
+        if (!memoryIds.has(id)) {
+          visitEvents(await chunkEvents(id, row.body));
+        }
+      }
+    }
+    for (const [, events] of inMemory.reverse()) {
+      visitEvents(events);
+    }
+    return scanned < maxChunks;
+  }
+
+  /** Top values of a dimension recounted from stored events matching `filters`. */
+  async function rawTopDimension(
+    dim: Dimension,
+    from: number,
+    to: number,
+    filters: RowFilter[]
+  ): Promise<Map<string, DimensionDelta>> {
+    const totals = new Map<string, DimensionDelta>();
+    const pageSessions = new Map<string, Set<string>>();
+    const isSessionDim = (SESSION_DIMENSIONS as readonly string[]).includes(
+      dim
+    );
+    await scanRange(from, to, (event) => {
+      if (!matchesFilters(eventFilterRow(event), filters)) {
+        return;
+      }
+      const isView = event.name === 'screen_view';
+      const revenue = event.revenue ?? 0;
+      if (isSessionDim) {
+        const value = sessionDimensionValue(event, dim as SessionDimension);
+        if (event.name === 'session_start') {
+          addDelta(totals, value, { sessions: 1, pageviews: 0, revenue: 0 });
+        } else if (event.name !== 'session_end' && (isView || revenue)) {
+          addDelta(totals, value, {
+            sessions: 0,
+            pageviews: isView ? 1 : 0,
+            revenue,
+          });
+        }
+        return;
+      }
+      if (!event.path) {
+        return;
+      }
+      const page = pageValue(event);
+      const isEdge =
+        (dim === 'entry' && event.name === 'session_start') ||
+        (dim === 'exit' && event.name === 'session_end');
+      if (isEdge) {
+        addDelta(totals, page, { sessions: 1, pageviews: 0, revenue: 0 });
+      } else if (dim === 'path' && (isView || revenue)) {
+        const seen = pageSessions.get(page) ?? new Set<string>();
+        const firstInSession = event.session_id
+          ? !seen.has(event.session_id)
+          : false;
+        seen.add(event.session_id);
+        pageSessions.set(page, seen);
+        addDelta(totals, page, {
+          sessions: firstInSession ? 1 : 0,
+          pageviews: isView ? 1 : 0,
+          revenue: event.name === 'session_end' ? 0 : revenue,
+        });
+      }
+    });
+    return totals;
+  }
+
+  /** Top values of one dimension over `from`..`to` (inclusive instants). */
+  async function topDimension(
     dim: Dimension,
     from: Date,
     to: Date,
-    limit = DEFAULT_TOP_LIMIT
-  ): DimensionRow[] {
-    const fromDay = dayKey(from.getTime());
-    const toDay = dayKey(to.getTime());
-    const totals = new Map<string, DimensionDelta>();
-    const add = (value: string, delta: DimensionDelta) => {
-      const current = totals.get(value) ?? {
-        sessions: 0,
-        pageviews: 0,
-        revenue: 0,
-      };
-      current.sessions += delta.sessions;
-      current.pageviews += delta.pageviews;
-      current.revenue += delta.revenue;
-      totals.set(value, current);
-    };
-    for (const row of sql.exec(
-      'SELECT value, sum(sessions) AS sessions, sum(pageviews) AS pageviews, sum(revenue) AS revenue FROM dims WHERE dim = ? AND day >= ? AND day <= ? GROUP BY value',
-      dim,
-      fromDay,
-      toDay
-    )) {
-      add(String(row.value), {
-        sessions: toNumber(row.sessions),
-        pageviews: toNumber(row.pageviews),
-        revenue: toNumber(row.revenue),
-      });
+    limit = DEFAULT_TOP_LIMIT,
+    filters: RowFilter[] = []
+  ): Promise<DimensionRow[]> {
+    if (filters.length > 0) {
+      return rankDimension(
+        await rawTopDimension(dim, from.getTime(), to.getTime(), filters),
+        limit
+      );
     }
-    for (const [key, delta] of dimDeltas) {
-      const [day = '', deltaDim, value = ''] = key.split(DIM_KEY_SEPARATOR);
-      if (deltaDim === dim && day >= fromDay && day <= toDay) {
-        add(value, delta);
+    const cover = coverWithHoursAndDays(from.getTime(), to.getTime() + 1);
+    const totals = new Map<string, DimensionDelta>();
+    const add = (value: string, delta: DimensionDelta) =>
+      addDelta(totals, value, delta);
+    const rowDelta = (row: SqlRow): DimensionDelta => ({
+      sessions: toNumber(row.sessions),
+      pageviews: toNumber(row.pageviews),
+      revenue: toNumber(row.revenue),
+    });
+    if (cover.days) {
+      const [fromDay, toDay] = cover.days;
+      for (const row of sql.exec(
+        'SELECT value, sum(sessions) AS sessions, sum(pageviews) AS pageviews, sum(revenue) AS revenue FROM dims WHERE dim = ? AND day >= ? AND day <= ? GROUP BY value',
+        dim,
+        fromDay,
+        toDay
+      )) {
+        add(String(row.value), rowDelta(row));
+      }
+      for (const [key, delta] of dimDeltas) {
+        const [day = '', deltaDim, value = ''] = key.split(DIM_KEY_SEPARATOR);
+        if (deltaDim === dim && day >= fromDay && day <= toDay) {
+          add(value, delta);
+        }
       }
     }
+    for (const [fromHour, toHour] of cover.hours) {
+      for (const row of sql.exec(
+        'SELECT value, sum(sessions) AS sessions, sum(pageviews) AS pageviews, sum(revenue) AS revenue FROM dims_h WHERE dim = ? AND hour >= ? AND hour < ? GROUP BY value',
+        dim,
+        fromHour,
+        toHour
+      )) {
+        add(String(row.value), rowDelta(row));
+      }
+      for (const [key, delta] of dimHourDeltas) {
+        const [hour = '', deltaDim, value = ''] = key.split(DIM_KEY_SEPARATOR);
+        const at = Number(hour);
+        if (deltaDim === dim && at >= fromHour && at < toHour) {
+          add(value, delta);
+        }
+      }
+    }
+    return rankDimension(totals, limit);
+  }
+
+  function rankDimension(
+    totals: Map<string, DimensionDelta>,
+    limit: number
+  ): DimensionRow[] {
     return [...totals.entries()]
       .map(([value, delta]) => {
         const split = value.indexOf(DIM_PREFIX_SEPARATOR);
@@ -1414,6 +1991,177 @@ export async function openProjectEventsEngine({
           a.name.localeCompare(b.name)
       )
       .slice(0, Math.max(1, limit));
+  }
+
+  /** Sessions, visitors and referrers per minute over the last 30 minutes. */
+  async function liveData(): Promise<LiveSnapshot> {
+    const now = clock.now();
+    if (!liveReady) {
+      live.clear();
+      await scanRange(
+        now - LIVE_WINDOW_MS - MINUTE_MS,
+        now + MINUTE_MS,
+        (event) => live.add(event, now),
+        LIVE_REBUILD_MAX_CHUNKS
+      );
+      liveReady = true;
+    }
+    return live.snapshot(now);
+  }
+
+  // -- sessions page ----------------------------------------------------------------
+
+  function logSession(session: IClickhouseSession) {
+    sql.exec(
+      'INSERT INTO session_log (id, created_at, profile_id, body) VALUES (?, ?, ?, ?) ON CONFLICT (id) DO UPDATE SET created_at = excluded.created_at, profile_id = excluded.profile_id, body = excluded.body',
+      session.id,
+      eventTimeMs(session.created_at),
+      session.profile_id ?? '',
+      JSON.stringify(session)
+    );
+  }
+
+  function sessionAccepts(query: SessionListQuery) {
+    const search = query.search?.trim().toLowerCase();
+    return (session: IClickhouseSession): boolean => {
+      if (query.profileId && session.profile_id !== query.profileId) {
+        return false;
+      }
+      if (!matchesFilters(sessionFilterRow(session), query.filters)) {
+        return false;
+      }
+      if (!search) {
+        return true;
+      }
+      return SESSION_SEARCH_FIELDS.some((field) =>
+        String(session[field] ?? '')
+          .toLowerCase()
+          .includes(search)
+      );
+    };
+  }
+
+  function* loggedSessions(query: SessionListQuery, upper: number) {
+    const lower = query.from ?? Number.MIN_SAFE_INTEGER;
+    let before = upper;
+    let scanned = 0;
+    while (scanned < SESSION_SCAN_MAX) {
+      const rows = query.profileId
+        ? sql.exec(
+            'SELECT created_at, body FROM session_log WHERE profile_id = ? AND created_at < ? AND created_at >= ? ORDER BY created_at DESC LIMIT ?',
+            query.profileId,
+            before,
+            lower,
+            SESSION_PAGE_ROWS
+          )
+        : sql.exec(
+            'SELECT created_at, body FROM session_log WHERE created_at < ? AND created_at >= ? ORDER BY created_at DESC LIMIT ?',
+            before,
+            lower,
+            SESSION_PAGE_ROWS
+          );
+      if (rows.length === 0) {
+        return;
+      }
+      for (const row of rows) {
+        scanned += 1;
+        before = toNumber(row.created_at);
+        yield JSON.parse(String(row.body)) as IClickhouseSession;
+      }
+    }
+  }
+
+  function liveSessionsInRange(query: SessionListQuery, upper: number) {
+    const lower = query.from ?? Number.MIN_SAFE_INTEGER;
+    return [...sessions.values()]
+      .map((entry) => entry.session)
+      .filter((session) => {
+        const at = eventTimeMs(session.created_at);
+        return at >= lower && at < upper;
+      });
+  }
+
+  /** Newest first: open sessions from memory, ended ones from the log. */
+  function listSessions(query: SessionListQuery = {}): IClickhouseSession[] {
+    const take = Math.min(
+      Math.max(1, query.take ?? LIST_EVENTS_PAGE_SIZE),
+      SESSION_LIST_MAX_TAKE
+    );
+    const upper = Math.min(
+      query.before ?? Number.MAX_SAFE_INTEGER,
+      query.to === undefined ? Number.MAX_SAFE_INTEGER : query.to + 1
+    );
+    const accepts = sessionAccepts(query);
+    const found = liveSessionsInRange(query, upper).filter(accepts);
+    const seen = new Set(found.map((session) => session.id));
+    let logged = 0;
+    for (const session of loggedSessions(query, upper)) {
+      if (seen.has(session.id) || !accepts(session)) {
+        continue;
+      }
+      found.push(session);
+      logged += 1;
+      if (logged >= take) {
+        break;
+      }
+    }
+    return found
+      .sort((a, b) => eventTimeMs(b.created_at) - eventTimeMs(a.created_at))
+      .slice(0, take);
+  }
+
+  function countSessions(query: SessionListQuery = {}): number {
+    const upper =
+      query.to === undefined ? Number.MAX_SAFE_INTEGER : query.to + 1;
+    const accepts = sessionAccepts(query);
+    const open = liveSessionsInRange(query, upper).filter(accepts);
+    const seen = new Set(open.map((session) => session.id));
+    const isPlain = !(query.filters?.length || query.search?.trim());
+    if (isPlain) {
+      const lower = query.from ?? Number.MIN_SAFE_INTEGER;
+      const [row] = query.profileId
+        ? sql.exec(
+            'SELECT count(*) AS n FROM session_log WHERE profile_id = ? AND created_at < ? AND created_at >= ?',
+            query.profileId,
+            upper,
+            lower
+          )
+        : sql.exec(
+            'SELECT count(*) AS n FROM session_log WHERE created_at < ? AND created_at >= ?',
+            upper,
+            lower
+          );
+      return open.length + toNumber(row?.n);
+    }
+    let count = open.length;
+    for (const session of loggedSessions(query, upper)) {
+      if (!seen.has(session.id) && accepts(session)) {
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  function getSession(sessionId: string): IClickhouseSession | null {
+    for (const entry of sessions.values()) {
+      if (entry.session.id === sessionId) {
+        return entry.session;
+      }
+    }
+    const [row] = sql.exec(
+      'SELECT body FROM session_log WHERE id = ?',
+      sessionId
+    );
+    return row ? (JSON.parse(String(row.body)) as IClickhouseSession) : null;
+  }
+
+  function pruneSessionLog(beforeMs: number): number {
+    const [row] = sql.exec(
+      'SELECT count(*) AS n FROM session_log WHERE created_at < ?',
+      beforeMs
+    );
+    sql.exec('DELETE FROM session_log WHERE created_at < ?', beforeMs);
+    return toNumber(row?.n);
   }
 
   function activeVisitors(windowMs = DEFAULT_ACTIVE_WINDOW_MS): number {
@@ -1572,6 +2320,7 @@ export async function openProjectEventsEngine({
   /** Stores `session_end` for a session that was closed or swept. */
   function endSession(input: EnqueueSessionEndInput): Promise<void> {
     const { event, snapshot } = sessionEndJobPayload(input);
+    logSession(snapshot);
     const document = buildClickhouseEvent(
       buildSessionEndPayload(event, snapshot),
       new Date(clock.now())
@@ -1655,6 +2404,12 @@ export async function openProjectEventsEngine({
     tick,
     nextAlarmAt,
     listEvents,
+    metrics,
+    liveData,
+    listSessions,
+    countSessions,
+    getSession,
+    pruneSessionLog,
     projectCard,
     dailyStats,
     rangeVisitors,

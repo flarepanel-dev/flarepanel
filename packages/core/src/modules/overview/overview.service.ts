@@ -11,6 +11,8 @@ import {
   getEventFiltersWhereClause,
   joinFilterClauses,
 } from '../chart/src/filter-where';
+import type { RowFilter } from '../ingest/cloudflare/filter-eval';
+import { wallClockIso, wallClockToMs } from '../ingest/cloudflare/time-buckets';
 import { getSettingsForProject } from '../organization/organization.service';
 import type { IChartEventFilter, IInterval } from '../report/report.constants';
 import { chartColors, zTimeInterval } from '../report/report.constants';
@@ -391,6 +393,9 @@ export async function getMetrics(
       projectId,
       startDate,
       endDate,
+      interval,
+      timezone,
+      filters,
     });
   }
   return isPageFilter(filters)
@@ -412,7 +417,6 @@ export async function getMetrics(
       });
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const PERCENT = 100;
 const MS_PER_SECOND = 1000;
 
@@ -438,53 +442,66 @@ function metricRow(stats: {
   };
 }
 
+/** A wall-clock boundary in the project's timezone as a real instant. */
+function atInstant(value: string, timezone: string): Date {
+  return new Date(wallClockToMs(value, timezone));
+}
+
 /**
- * Overview numbers on Workers, from the project's daily rollups (UTC days, one
- * point per day). Filters and finer intervals need the Phase 4 query port.
+ * The overview's filters for the Durable Object: the same whitelist and
+ * names as the ClickHouse path. Cohort filters need the cohort engine.
+ */
+export function toStoreFilters(
+  filters: IChartEventFilter[] | undefined
+): RowFilter[] {
+  return (filters ?? []).flatMap((filter) => {
+    const name = toOverviewFilterName(filter.name);
+    const isCohort =
+      filter.operator === 'inCohort' || filter.operator === 'notInCohort';
+    if (isCohort || !WHITELISTED_FILTERS.includes(name)) {
+      return [];
+    }
+    return [
+      {
+        name,
+        operator: filter.operator,
+        value: filter.value,
+        ...(filter.type ? { type: filter.type } : {}),
+      },
+    ];
+  });
+}
+
+/**
+ * Overview numbers on Workers from the project's Durable Object: hourly and
+ * daily rollups in the project's timezone, or the stored events when
+ * filtered or by the minute.
  */
 async function getMetricsFromEventStore(
   store: NonNullable<ServiceDeps['eventStore']>,
-  input: { projectId: string; startDate: string; endDate: string }
-) {
-  const from = new Date(input.startDate);
-  const to = new Date(input.endDate);
-  const { visitors, days } = await store.overview(input.projectId, from, to);
-  const byDay = new Map(days.map((day) => [day.day, day]));
-  const totals = {
-    visitors,
-    sessions: 0,
-    bounces: 0,
-    durationMs: 0,
-    screenViews: 0,
-    revenue: 0,
-  };
-  const series: Array<ReturnType<typeof metricRow> & { date: string }> = [];
-  const first = Date.UTC(
-    from.getUTCFullYear(),
-    from.getUTCMonth(),
-    from.getUTCDate()
-  );
-  for (let at = first; at <= to.getTime(); at += DAY_MS) {
-    const key = new Date(at).toISOString().slice(0, 10);
-    const day = byDay.get(key);
-    totals.sessions += day?.sessions ?? 0;
-    totals.bounces += day?.bounces ?? 0;
-    totals.durationMs += day?.durationMs ?? 0;
-    totals.screenViews += day?.screenViews ?? 0;
-    totals.revenue += day?.revenue ?? 0;
-    series.push({
-      date: new Date(at).toISOString(),
-      ...metricRow({
-        visitors: day?.visitors ?? 0,
-        sessions: day?.sessions ?? 0,
-        bounces: day?.bounces ?? 0,
-        durationMs: day?.durationMs ?? 0,
-        screenViews: day?.screenViews ?? 0,
-        revenue: day?.revenue ?? 0,
-      }),
-    });
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    interval: IInterval;
+    timezone: string;
+    filters: IChartEventFilter[];
   }
-  return { metrics: metricRow(totals), series };
+) {
+  const result = await store.metrics(input.projectId, {
+    from: wallClockToMs(input.startDate, input.timezone),
+    to: wallClockToMs(input.endDate, input.timezone),
+    interval: input.interval,
+    timezone: input.timezone,
+    filters: toStoreFilters(input.filters),
+  });
+  return {
+    metrics: metricRow(result.totals),
+    series: result.series.map((point) => ({
+      date: wallClockIso(point.start, input.timezone),
+      ...metricRow(point),
+    })),
+  };
 }
 
 async function getMetricsFromSessions(
@@ -682,9 +699,10 @@ export async function getTopPages(
     const rows = await deps.eventStore.topDimension(
       projectId,
       'path',
-      new Date(startDate),
-      new Date(endDate),
-      Math.min(limit ?? MAX_RECORDS_LIMIT, MAX_RECORDS_LIMIT)
+      atInstant(startDate, timezone),
+      atInstant(endDate, timezone),
+      Math.min(limit ?? MAX_RECORDS_LIMIT, MAX_RECORDS_LIMIT),
+      toStoreFilters(filters)
     );
     return rows.map((row) => ({
       origin: row.prefix ?? '',
@@ -729,9 +747,10 @@ export async function getTopEntryExit(
     const rows = await deps.eventStore.topDimension(
       projectId,
       mode,
-      new Date(startDate),
-      new Date(endDate),
-      Math.min(limit ?? MAX_RECORDS_LIMIT, MAX_RECORDS_LIMIT)
+      atInstant(startDate, timezone),
+      atInstant(endDate, timezone),
+      Math.min(limit ?? MAX_RECORDS_LIMIT, MAX_RECORDS_LIMIT),
+      toStoreFilters(filters)
     );
     return rows.map((row) => ({
       origin: row.prefix ?? '',
@@ -784,13 +803,14 @@ export async function getTopGeneric(
   }
 
   if (deps.eventStore) {
-    // Workers: daily per-dimension rollups; filters need the Phase 4 port.
+    // Workers: per-dimension rollups, or the stored events when filtered.
     const rows = await deps.eventStore.topDimension(
       projectId,
       column,
-      new Date(startDate),
-      new Date(endDate),
-      MAX_RECORDS_LIMIT
+      atInstant(startDate, timezone),
+      atInstant(endDate, timezone),
+      MAX_RECORDS_LIMIT,
+      toStoreFilters(filters)
     );
     return rows.map((row) => ({
       ...(row.prefix === undefined ? {} : { prefix: row.prefix }),
@@ -1290,9 +1310,10 @@ export async function getMapData(
     const rows = await deps.eventStore.topDimension(
       projectId,
       'country',
-      new Date(startDate),
-      new Date(endDate),
-      MAX_RECORDS_LIMIT
+      atInstant(startDate, timezone),
+      atInstant(endDate, timezone),
+      MAX_RECORDS_LIMIT,
+      toStoreFilters(filters)
     );
     return rows
       .filter((row) => row.name)
@@ -1335,6 +1356,30 @@ export async function getLiveData(
   deps: ServiceDeps,
   projectId: string
 ): Promise<ILiveData> {
+  if (deps.eventStore) {
+    const live = await deps.eventStore.liveData(projectId);
+    return {
+      totalSessions: live.totalSessions,
+      minuteCounts: live.minutes.map((item) => ({
+        minute: item.minute,
+        sessionCount: item.sessions,
+        visitorCount: item.visitors,
+        timestamp: new Date(`${item.minute.replace(' ', 'T')}Z`).getTime(),
+        time: new Date(`${item.minute.replace(' ', 'T')}Z`).toLocaleTimeString(
+          [],
+          { hour: '2-digit', minute: '2-digit' }
+        ),
+        referrers: item.referrers.map((referrer) => ({
+          referrer: referrer.name,
+          count: referrer.count,
+        })),
+      })),
+      referrers: live.referrers.map((referrer) => ({
+        referrer: referrer.name,
+        count: referrer.count,
+      })),
+    };
+  }
   const [totalSessions, minuteCounts, minuteReferrers, referrers] =
     await Promise.all([
       runQuery<{ total_sessions: number }>(

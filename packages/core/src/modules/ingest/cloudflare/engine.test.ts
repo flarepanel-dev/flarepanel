@@ -31,6 +31,7 @@ import {
   type SqlRow,
 } from './engine';
 import { HyperLogLog } from './hyperloglog';
+import { wallClockToMs } from './time-buckets';
 
 const PROJECT_ID = 'project-engine';
 const START = Date.UTC(2026, 10, 20, 9, 0, 0);
@@ -904,4 +905,186 @@ async function simulateTraffic(
     eventsMeasured,
     perEvent: rowsWritten / eventsMeasured,
   };
+}
+
+describe('Phase 4 reads: hourly rollups, live card, sessions', () => {
+  const NEW_YORK = 'America/New_York';
+  const HOUR = 60 * MINUTE;
+
+  /** Visitor a at 09:00 UTC (04:00 New York), b at 01:00 UTC next day (20:00 New York). */
+  async function twoVisitors() {
+    const harness = await createHarness();
+    await track(harness, { visitor: 'a', path: '/a' });
+    await commit(harness);
+    await harness.clock.advance(16 * HOUR);
+    await track(harness, { visitor: 'b', path: '/b' });
+    await commit(harness);
+    return harness;
+  }
+
+  it('stores sparse visitor sketches and reads both forms back', () => {
+    const sparse = new HyperLogLog();
+    for (const id of ['x', 'y', 'z']) {
+      sparse.add(id);
+    }
+    const bytes = sparse.toBytes();
+    expect(bytes.length).toBeLessThan(20);
+    expect(HyperLogLog.fromBytes(bytes).count()).toBe(3);
+
+    const dense = new HyperLogLog();
+    for (let i = 0; i < 5000; i++) {
+      dense.add(`v-${i}`);
+    }
+    expect(dense.toBytes().length).toBe(4096);
+    expect(HyperLogLog.fromBytes(dense.toBytes()).count()).toBe(dense.count());
+  });
+
+  it('buckets days in the project timezone, before and after a restart', async () => {
+    const harness = await twoVisitors();
+    const range = (timezone: string) => ({
+      from: wallClockToMs('2026-11-20 00:00:00', timezone),
+      to: wallClockToMs('2026-11-21 23:59:59', timezone),
+      interval: 'day' as const,
+      timezone,
+    });
+    const sessionsByDay = async (timezone: string) =>
+      (await harness.engine.metrics(range(timezone))).series.map(
+        (point) => point.sessions
+      );
+
+    expect(await sessionsByDay('UTC')).toEqual([1, 1]);
+    expect(await sessionsByDay(NEW_YORK)).toEqual([2, 0]);
+
+    await harness.engine.checkpoint();
+    await crashAndReopen(harness);
+    expect(await sessionsByDay(NEW_YORK)).toEqual([2, 0]);
+    const { totals } = await harness.engine.metrics(range(NEW_YORK));
+    expect(totals).toMatchObject({ sessions: 2, visitors: 2, screenViews: 2 });
+  });
+
+  it('reads whole days from daily rows and edge hours from hourly rows', async () => {
+    const harness = await twoVisitors();
+    await harness.engine.checkpoint();
+    const day = async (date: string, timezone: string) =>
+      (
+        await harness.engine.topDimension(
+          'path',
+          new Date(wallClockToMs(`${date} 00:00:00`, timezone)),
+          new Date(wallClockToMs(`${date} 23:59:59`, timezone))
+        )
+      ).map((row) => row.name);
+    expect(await day('2026-11-20', 'UTC')).toEqual(['/a']);
+    expect((await day('2026-11-20', NEW_YORK)).sort()).toEqual(['/a', '/b']);
+    expect(await day('2026-11-21', NEW_YORK)).toEqual([]);
+  });
+
+  it('counts a minute series from raw events', async () => {
+    const harness = await createHarness();
+    // Off the minute boundary: session_start is stamped just before its event.
+    await harness.clock.advance(10 * SECOND);
+    await track(harness, { visitor: 'a' });
+    await harness.clock.advance(2 * MINUTE);
+    await track(harness, { visitor: 'b' });
+    await track(harness, { visitor: 'a', name: 'click' });
+    await commit(harness);
+    const { series, totals } = await harness.engine.metrics({
+      from: START,
+      to: START + 5 * MINUTE - 1,
+      interval: 'minute',
+      timezone: 'UTC',
+    });
+    expect(series).toHaveLength(5);
+    expect(series.map((point) => point.screenViews)).toEqual([1, 0, 1, 0, 0]);
+    expect(totals).toMatchObject({ visitors: 2, sessions: 2, events: 3 });
+  });
+
+  it('serves the live card from memory and rebuilds it after a restart', async () => {
+    const harness = await createHarness();
+    await harness.clock.advance(10 * SECOND);
+    await track(harness, { visitor: 'a' });
+    await harness.clock.advance(3 * MINUTE);
+    await track(harness, { visitor: 'b' });
+    await commit(harness);
+
+    const before = await harness.engine.liveData();
+    expect(before.totalSessions).toBe(2);
+    expect(before.minutes.length).toBeGreaterThanOrEqual(30);
+    expect(before.minutes.reduce((sum, m) => sum + m.visitors, 0)).toBe(2);
+
+    await crashAndReopen(harness);
+    const after = await harness.engine.liveData();
+    expect(after.totalSessions).toBe(2);
+
+    await harness.clock.advance(40 * MINUTE);
+    expect((await harness.engine.liveData()).totalSessions).toBe(0);
+  });
+
+  it('lists open and ended sessions newest first, with filters and paging', async () => {
+    const harness = await createHarness();
+    const first = await track(harness, { visitor: 'a', path: '/a' });
+    await commit(harness);
+    await harness.clock.advance(31 * MINUTE);
+    await harness.engine.tick();
+    const second = await track(harness, {
+      visitor: 'b',
+      path: '/b',
+      profileId: 'user-b',
+    });
+    await commit(harness);
+
+    const all = harness.engine.listSessions({});
+    expect(all.map((session) => session.id)).toEqual([
+      second.sessionId,
+      first.sessionId,
+    ]);
+    expect(harness.engine.countSessions({})).toBe(2);
+    expect(harness.engine.getSession(first.sessionId)?.entry_path).toBe('/a');
+
+    const byProfile = harness.engine.listSessions({ profileId: 'user-b' });
+    expect(byProfile.map((session) => session.id)).toEqual([second.sessionId]);
+    const byPath = harness.engine.listSessions({
+      filters: [{ name: 'path', operator: 'is', value: ['/a'] }],
+    });
+    expect(byPath.map((session) => session.id)).toEqual([first.sessionId]);
+    expect(
+      harness.engine.countSessions({
+        filters: [{ name: 'country', operator: 'is', value: ['SE'] }],
+      })
+    ).toBe(2);
+
+    const page = harness.engine.listSessions({
+      take: 1,
+      before: fromSessionTime(all[0]?.created_at),
+    });
+    expect(page.map((session) => session.id)).toEqual([first.sessionId]);
+
+    expect(harness.engine.pruneSessionLog(FAR_FUTURE)).toBe(1);
+    expect(harness.engine.getSession(first.sessionId)).toBeNull();
+  });
+
+  it('rebuilds rollups from chunks when it opens storage of schema 1', async () => {
+    const harness = await twoVisitors();
+    await harness.engine.checkpoint();
+    const query = {
+      from: wallClockToMs('2026-11-20 00:00:00', NEW_YORK),
+      to: wallClockToMs('2026-11-20 23:59:59', NEW_YORK),
+      interval: 'hour' as const,
+      timezone: NEW_YORK,
+    };
+    const expected = await harness.engine.metrics(query);
+
+    harness.db.run("UPDATE meta SET v = '1' WHERE k = 'schema_version'");
+    harness.db.run('DELETE FROM hourly');
+    harness.db.run('DELETE FROM dims_h');
+    harness.db.run('UPDATE daily SET sessions = 99');
+    await crashAndReopen(harness);
+
+    expect(await harness.engine.metrics(query)).toEqual(expected);
+    const [today] = harness.engine.dailyStats(new Date(START), new Date(START));
+    expect(today?.sessions).toBe(1);
+  });
+});
+
+function fromSessionTime(createdAt: string | undefined): number {
+  return Date.parse(`${(createdAt ?? '').replace(' ', 'T')}Z`);
 }

@@ -15,14 +15,20 @@ export {
   type EngineSql,
   type ListEventsPage,
   type ListEventsQuery,
+  type MetricsQuery,
+  type MetricsResult,
   openProjectEventsEngine,
   type ProjectCard,
   type ProjectEventsEngine,
+  type RangeStats,
+  type SessionListQuery,
   type SqlRow,
   type SqlValue,
   type StoredChunk,
   type TickResult,
 } from './engine';
+export { type RowFilter, unsupportedFilters } from './filter-eval';
+export type { LiveSnapshot } from './live-window';
 export {
   openProfileStore,
   type ProfileListPage,
@@ -36,3 +42,8 @@ export {
   type ProjectEventsTrackInput,
   type ProjectEventsTrackResult,
 } from './project-events';
+export {
+  type BucketInterval,
+  wallClockIso,
+  wallClockToMs,
+} from './time-buckets';

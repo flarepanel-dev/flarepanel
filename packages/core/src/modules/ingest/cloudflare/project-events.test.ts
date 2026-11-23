@@ -248,7 +248,7 @@ describe('project events service', () => {
 
     const from = new Date(Date.now() - 60 * 60 * 1000);
     const to = new Date();
-    const countries = engine.topDimension('country', from, to);
+    const countries = await engine.topDimension('country', from, to);
     // Equal sessions: more page views first.
     expect(countries.map((row) => [row.name, row.sessions])).toEqual([
       ['PT', 1],
@@ -256,33 +256,51 @@ describe('project events service', () => {
     ]);
     expect(countries.find((row) => row.name === 'PT')?.pageviews).toBe(3);
 
-    const pages = engine.topDimension('path', from, to);
+    const pages = await engine.topDimension('path', from, to);
     const pricing = pages.find((row) => row.name === '/pricing');
     expect(pricing).toMatchObject({
       prefix: 'https://example.com',
       sessions: 2,
       pageviews: 3,
     });
-    const entry = engine.topDimension('entry', from, to);
+    const entry = await engine.topDimension('entry', from, to);
     expect(entry.map((row) => [row.name, row.sessions])).toEqual([
       ['/', 1],
       ['/pricing', 1],
     ]);
-    const sources = engine.topDimension('referrer_name', from, to);
+    const sources = await engine.topDimension('referrer_name', from, to);
     expect(sources.reduce((sum, row) => sum + row.sessions, 0)).toBe(2);
-    const cities = engine.topDimension('city', from, to);
+    const cities = await engine.topDimension('city', from, to);
     expect(cities[0]?.prefix).toBeDefined();
 
     // Saved at the checkpoint and read back by a new engine on the same storage.
     await engine.checkpoint();
     const reopened = await createService(db);
     expect(
-      reopened.engine
-        .topDimension('country', from, to)
-        .map((row) => [row.name, row.sessions, row.pageviews])
+      (await reopened.engine.topDimension('country', from, to)).map((row) => [
+        row.name,
+        row.sessions,
+        row.pageviews,
+      ])
     ).toEqual([
       ['PT', 1, 3],
       ['DE', 1, 1],
     ]);
+
+    // With a filter the same lists are recounted from the stored events.
+    const inGermany = [{ name: 'country', operator: 'is', value: ['DE'] }];
+    expect(
+      (await reopened.engine.topDimension('path', from, to, 10, inGermany)).map(
+        (row) => [row.name, row.sessions, row.pageviews]
+      )
+    ).toEqual([['/pricing', 1, 1]]);
+    const filtered = await reopened.engine.metrics({
+      from: from.getTime(),
+      to: to.getTime(),
+      interval: 'hour',
+      timezone: 'UTC',
+      filters: [{ name: 'country', operator: 'is', value: ['PT'] }],
+    });
+    expect(filtered.totals).toMatchObject({ sessions: 1, screenViews: 3 });
   });
 });

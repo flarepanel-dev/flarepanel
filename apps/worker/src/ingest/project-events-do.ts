@@ -18,6 +18,7 @@ import {
   type Dimension,
   type EngineSql,
   type ListEventsQuery,
+  type MetricsQuery,
   openProfileStore,
   openProjectEventsEngine,
   type ProfileListQuery,
@@ -25,6 +26,8 @@ import {
   type ProjectEventsEngine,
   type ProjectEventsService,
   type ProjectEventsTrackInput,
+  type RowFilter,
+  type SessionListQuery,
   type SqlRow,
   type SqlValue,
 } from '@flarepanel/core/ingest/cloudflare';
@@ -195,9 +198,15 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     return profiles.list(query);
   }
 
-  async topDimension(dim: Dimension, from: Date, to: Date, limit?: number) {
+  async topDimension(
+    dim: Dimension,
+    from: Date,
+    to: Date,
+    limit?: number,
+    filters?: RowFilter[]
+  ) {
     const { engine } = await this.state;
-    return engine.topDimension(dim, from, to, limit);
+    return engine.topDimension(dim, from, to, limit, filters);
   }
 
   async countEvents(from: Date, to: Date) {
@@ -251,6 +260,31 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       visitors: engine.rangeVisitors(from, to),
       days: engine.dailyStats(from, to),
     };
+  }
+
+  async metrics(query: MetricsQuery) {
+    const { engine } = await this.state;
+    return engine.metrics(query);
+  }
+
+  async liveData() {
+    const { engine } = await this.state;
+    return engine.liveData();
+  }
+
+  async listSessions(query: SessionListQuery) {
+    const { engine } = await this.state;
+    return engine.listSessions(query);
+  }
+
+  async countSessions(query: SessionListQuery) {
+    const { engine } = await this.state;
+    return engine.countSessions(query);
+  }
+
+  async getSession(sessionId: string) {
+    const { engine } = await this.state;
+    return engine.getSession(sessionId);
   }
 
   async eventNames() {
@@ -372,6 +406,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       beforeMs: Date.now() - days * DAY_MS,
       maxId: archivedThrough,
     });
+    engine.pruneSessionLog(Date.now() - days * DAY_MS);
     await storage.put(KEY_RETENTION_AT, Date.now());
   }
 
