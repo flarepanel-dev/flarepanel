@@ -14,6 +14,7 @@ import { TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { getAccessChecks, googleGscClient } from '../auth/auth.service';
+import type { RowFilter } from '../ingest/cloudflare/filter-eval';
 
 const BACKFILL_MONTHS = 6;
 const CHUNK_DAYS = 14;
@@ -860,6 +861,96 @@ const AI_REFERRER_CANONICAL_NAME = `multiIf(${AI_REFERRERS.map(
   (engine) => `norm IN (${quoteList(engine.aliases)}), '${engine.canonical}'`
 ).join(', ')}, norm)`;
 
+const URL_SCHEME_AND_WWW = /^https?:\/\/(www[.])?/;
+
+/** The JS twin of NORMALIZED_REFERRER_NAME. */
+function normalizedReferrerName(name: string): string {
+  return name.replace(URL_SCHEME_AND_WWW, '').toLowerCase();
+}
+
+const AI_ENGINE_BY_ALIAS = new Map<string, string>(
+  AI_REFERRERS.flatMap((engine) =>
+    engine.aliases.map((alias) => [alias, engine.canonical] as const)
+  )
+);
+
+type ComparisonWindows = ReturnType<typeof getComparisonWindows>;
+type EventStorePort = NonNullable<ServiceDeps['eventStore']>;
+
+/** Most referrers one window reads; AI and search engines are a few of them. */
+const REFERRER_ROWS = 1000;
+const TOP_SEARCH_ENGINES = 10;
+
+function windowSessions(
+  store: EventStorePort,
+  projectId: string,
+  window: { start: string; end: string },
+  filters: RowFilter[] = []
+) {
+  const at = (value: string) => new Date(`${value.replace(' ', 'T')}Z`);
+  return store.topDimension(
+    projectId,
+    'referrer_name',
+    at(window.start),
+    at(window.end),
+    REFERRER_ROWS,
+    filters
+  );
+}
+
+/** `getGscAiEngines` from the project's referrer totals. */
+async function aiEnginesFromEventStore(
+  store: EventStorePort,
+  projectId: string,
+  windows: ComparisonWindows
+) {
+  const [current, previous] = await Promise.all([
+    windowSessions(store, projectId, windows.current),
+    windowSessions(store, projectId, windows.previous),
+  ]);
+  const byEngine = new Map<string, number>();
+  for (const row of current) {
+    const engine = AI_ENGINE_BY_ALIAS.get(normalizedReferrerName(row.name));
+    if (engine) {
+      byEngine.set(engine, (byEngine.get(engine) ?? 0) + row.sessions);
+    }
+  }
+  const engines = [...byEngine.entries()]
+    .map(([name, sessions]) => ({ name, sessions }))
+    .sort((a, b) => b.sessions - a.sessions);
+  return {
+    engines,
+    total: engines.reduce((sum, engine) => sum + engine.sessions, 0),
+    previousTotal: previous
+      .filter((row) => AI_ENGINE_BY_ALIAS.has(normalizedReferrerName(row.name)))
+      .reduce((sum, row) => sum + row.sessions, 0),
+  };
+}
+
+/** `getGscSearchEngines` from the project's referrer totals. */
+async function searchEnginesFromEventStore(
+  store: EventStorePort,
+  projectId: string,
+  windows: ComparisonWindows
+) {
+  const search: RowFilter[] = [
+    { name: 'referrer_type', operator: 'is', value: ['search'] },
+  ];
+  const [current, previous] = await Promise.all([
+    windowSessions(store, projectId, windows.current, search),
+    windowSessions(store, projectId, windows.previous, search),
+  ]);
+  const total = (rows: { sessions: number }[]) =>
+    rows.reduce((sum, row) => sum + row.sessions, 0);
+  return {
+    engines: current
+      .slice(0, TOP_SEARCH_ENGINES)
+      .map((row) => ({ name: row.name, sessions: row.sessions })),
+    total: total(current),
+    previousTotal: total(previous),
+  };
+}
+
 /**
  * Half-open windows so the last day of the range is included and the previous
  * window ends exactly where the current one starts (no gap, no overlap).
@@ -885,6 +976,9 @@ export async function getGscSearchEngines(
   endDate: string
 ) {
   const windows = getComparisonWindows(startDate, endDate);
+  if (deps.eventStore) {
+    return searchEnginesFromEventStore(deps.eventStore, projectId, windows);
+  }
   const ch = deps.ch;
 
   const WHERE = `project_id = {projectId: String}
@@ -946,6 +1040,9 @@ export async function getGscAiEngines(
   endDate: string
 ) {
   const windows = getComparisonWindows(startDate, endDate);
+  if (deps.eventStore) {
+    return aiEnginesFromEventStore(deps.eventStore, projectId, windows);
+  }
   const ch = deps.ch;
 
   // Matched by name — will switch to referrer_type = 'ai' once available.

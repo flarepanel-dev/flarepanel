@@ -20,17 +20,21 @@ import {
   createProjectEventsService,
   type Dimension,
   type EngineSql,
+  type EventCountQuery,
   eventRow,
   type FunnelScanQuery,
   type ListEventsQuery,
   type MetricsQuery,
   openProfileStore,
   openProjectEventsEngine,
+  type PageSeriesQuery,
+  type PagesScanQuery,
   type ProfileListQuery,
   type ProfileStore,
   type ProjectEventsEngine,
   type ProjectEventsService,
   type ProjectEventsTrackInput,
+  profileFromVisitor,
   type RealtimeQuery,
   type RetentionScanQuery,
   type RowFilter,
@@ -82,6 +86,28 @@ const STREAM_MAX_BATCHES = 10;
 const STREAM_SEND_ROWS = 500;
 const KEY_ARCHIVED_AT = 'archived_at';
 const KEY_RETENTION_AT = 'retention_at';
+/** Profiles of sessions stored before every session start wrote one. */
+const KEY_VISITOR_PROFILES = 'visitor_profiles_v2';
+
+/**
+ * One-time: adds a profile for each visitor whose session start is still
+ * in hot storage, open sessions included (the R2 archive is not read).
+ */
+async function backfillVisitorProfiles(
+  engine: ProjectEventsEngine,
+  profiles: ProfileStore,
+  from: number
+) {
+  await engine.scanRange(from, Date.now(), (event) => {
+    if (event.name !== 'session_start') {
+      return;
+    }
+    const profile = profileFromVisitor(event);
+    if (profile) {
+      profiles.seen(profile);
+    }
+  });
+}
 
 /** `notifications` sockets get in-app notifications (`publishNotification`). */
 type LiveKind = 'events' | 'visitors' | 'notifications';
@@ -167,6 +193,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       codec: { compress: gzip, decompress: gunzip },
       options: { sessionTimeoutMs: SESSION_TIMEOUT_MS },
     });
+    const profiles = openProfileStore(sql);
     const service = createProjectEventsService({
       engine,
       logger: this.logger,
@@ -177,7 +204,22 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
           this.logger.error({ err: error }, 'Could not queue funnel rules')
         );
       },
+      // Every visitor gets a profile, anonymous ones too, as on OpenPanel.
+      onSessionStarted: (event) => {
+        const profile = profileFromVisitor(event);
+        if (profile) {
+          profiles.seen(profile);
+        }
+      },
     });
+    if (!(await storage.get<boolean>(KEY_VISITOR_PROFILES))) {
+      await backfillVisitorProfiles(
+        engine,
+        profiles,
+        Date.now() - this.retentionDays() * DAY_MS
+      );
+      await storage.put(KEY_VISITOR_PROFILES, true);
+    }
     this.funnelRules = (await storage.get<boolean>(KEY_FUNNEL_RULES)) ?? false;
 
     this.projectId = (await storage.get<string>(KEY_PROJECT_ID)) ?? null;
@@ -191,7 +233,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       this.unstreamed =
         (await engine.readChunks(streamedThrough, 1)).length > 0;
     }
-    return { engine, service, profiles: openProfileStore(sql) };
+    return { engine, service, profiles };
   }
 
   private async rememberProject(projectId: string) {
@@ -363,6 +405,26 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   async conversionRows(query: ConversionScanQuery) {
     const { engine, profiles } = await this.state;
     return engine.conversionRows(query, this.profileLookup(profiles));
+  }
+
+  async pageRows(query: PagesScanQuery) {
+    const { engine } = await this.state;
+    return engine.pageRows(query);
+  }
+
+  async pageSeries(query: PageSeriesQuery) {
+    const { engine } = await this.state;
+    return engine.pageSeries(query);
+  }
+
+  async eventCounts(query: EventCountQuery) {
+    const { engine, profiles } = await this.state;
+    return engine.eventCounts(query, this.profileLookup(profiles));
+  }
+
+  async profilePropertyKeys() {
+    const { profiles } = await this.state;
+    return profiles.propertyKeys();
   }
 
   async sankeyRows(query: SankeyScanQuery) {

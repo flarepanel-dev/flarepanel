@@ -29,9 +29,36 @@ function emptyResultSet() {
 const done = () =>
   Promise.resolve({ query_id: 'workers-empty', response_headers: {} });
 
+const WHITESPACE = /\s+/g;
+const LOGGED_QUERY_CHARS = 160;
+const LOGGED_FRAMES = 6;
+
+/** Names the report that still asked ClickHouse, so `wrangler tail` lists what to move. */
+function logUnmovedQuery(params: unknown) {
+  const query =
+    typeof params === 'object' && params !== null && 'query' in params
+      ? String((params as { query: unknown }).query)
+      : '';
+  const frames = (new Error('clickhouse query on workers').stack ?? '')
+    .split('\n')
+    .slice(2, 2 + LOGGED_FRAMES)
+    .map((line) => line.trim())
+    .join(' | ');
+  console.warn(
+    JSON.stringify({
+      message: 'clickhouse query on workers',
+      query: query.replace(WHITESPACE, ' ').trim().slice(0, LOGGED_QUERY_CHARS),
+      frames,
+    })
+  );
+}
+
 export function createEmptyClickHouse(): AppDeps['ch'] {
   return {
-    query: () => Promise.resolve(emptyResultSet()),
+    query: (params: unknown) => {
+      logUnmovedQuery(params);
+      return Promise.resolve(emptyResultSet());
+    },
     insert: () =>
       Promise.resolve({
         executed: false,

@@ -53,14 +53,27 @@ export {
   type StoredChunk,
   type TickResult,
 } from './engine';
+export type {
+  EventCountQuery,
+  EventCountRow,
+} from './event-count-scan';
 export { type RowFilter, unsupportedFilters } from './filter-eval';
 export type { FunnelScanQuery, FunnelScanResult } from './funnel-scan';
 export type { LiveSnapshot } from './live-window';
+export type {
+  PageScanRow,
+  PageSeriesQuery,
+  PageSeriesRow,
+  PagesScanQuery,
+  PagesSortColumn,
+} from './pages-scan';
 export {
   openProfileStore,
   type ProfileListPage,
   type ProfileListQuery,
   type ProfileStore,
+  profileFromVisitor,
+  type SeenVisitor,
 } from './profile-store';
 export {
   createProjectEventsService,

@@ -2,7 +2,7 @@ import { Database, type SQLQueryBindings } from 'bun:sqlite';
 import { describe, expect, it } from 'bun:test';
 import type { IClickhouseProfile } from '../../profile/profile.service';
 import type { EngineSql, SqlRow } from './engine';
-import { openProfileStore } from './profile-store';
+import { openProfileStore, profileFromVisitor } from './profile-store';
 
 const WRITE = /^\s*(INSERT|UPDATE|DELETE|REPLACE)/i;
 
@@ -127,5 +127,75 @@ describe('profile store', () => {
     const second = store.list({ take: 2, cursor: 1 });
     expect(second.profiles.map((p) => p.id)).toEqual(['user-a']);
     expect(second.count).toBe(3);
+  });
+
+  it('lists anonymous visitors from their sessions without overwriting identify', () => {
+    const { store, counter } = createStore();
+    const visitor = (id: string, device: string, at: string) =>
+      profileFromVisitor({
+        profile_id: id,
+        device_id: device,
+        project_id: 'project-profiles',
+        created_at: at,
+        country: 'DE',
+        city: 'Berlin',
+        browser: 'Chrome',
+        path: '/',
+        longitude: 13.4,
+        referrer: '',
+      });
+    const anonymous = visitor(
+      'device-1',
+      'device-1',
+      '2026-11-23 08:00:00.000'
+    );
+    expect(anonymous?.is_external).toBe(false);
+    expect(anonymous?.properties).toEqual({
+      country: 'DE',
+      city: 'Berlin',
+      browser: 'Chrome',
+      path: '/',
+      longitude: '13.4',
+    });
+    store.seen(anonymous as IClickhouseProfile);
+    // A second session inside the hour writes nothing.
+    const writes = counter.writes;
+    store.seen(
+      visitor(
+        'device-1',
+        'device-1',
+        '2026-11-23 08:30:00.000'
+      ) as IClickhouseProfile
+    );
+    expect(counter.writes).toBe(writes);
+    // Two hours later only the last-seen time moves.
+    store.seen(
+      visitor(
+        'device-1',
+        'device-1',
+        '2026-11-23 10:00:00.000'
+      ) as IClickhouseProfile
+    );
+    expect(store.get('device-1')?.last_seen_at).toBe('2026-11-23 10:00:00.000');
+    expect(store.get('device-1')?.created_at).toBe('2026-11-23 08:00:00.000');
+
+    store.upsert(
+      profile('user-9', { first_name: 'Ana', properties: { plan: 'pro' } })
+    );
+    store.seen(
+      visitor(
+        'user-9',
+        'device-9',
+        '2026-11-23 12:00:00.000'
+      ) as IClickhouseProfile
+    );
+    expect(store.get('user-9')?.first_name).toBe('Ana');
+    expect(store.get('user-9')?.properties).toEqual({ plan: 'pro' });
+
+    expect(
+      store.list({ take: 10, isExternal: false }).profiles.map((p) => p.id)
+    ).toEqual(['device-1']);
+    expect(store.propertyKeys()).toEqual(['plan']);
+    expect(profileFromVisitor({ project_id: 'p', created_at: 'x' })).toBeNull();
   });
 });

@@ -513,6 +513,9 @@ export async function getProfilePropertyKeys(
   deps: ServiceDeps,
   projectId: string
 ): Promise<string[]> {
+  if (deps.eventStore) {
+    return deps.eventStore.profilePropertyKeys(projectId);
+  }
   const rows = await chQuery<{ key: string }>(
     deps,
     profilePropertyKeysQuery(projectId),

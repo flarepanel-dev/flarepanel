@@ -5,7 +5,10 @@
 // adapts storage, alarms, R2 and sockets around this.
 
 import type { Logger } from '../../../logger';
-import type { IServiceCreateEventPayload } from '../../event/event.service';
+import type {
+  IClickhouseEvent,
+  IServiceCreateEventPayload,
+} from '../../event/event.service';
 import type { IClickhouseSession } from '../../session/session.service';
 import type { DeviceRequest, TrackDraft } from '../src/backend';
 import { type DeviceIdResult, getDeviceId } from '../src/device-id';
@@ -46,6 +49,8 @@ export interface ProjectEventsServiceOptions {
   onStored?: () => void;
   /** Called when a visitor's return closes their previous session. */
   onSessionEnded?: (session: IClickhouseSession) => void;
+  /** Called with each stored session_start, e.g. to record its profile. */
+  onSessionStarted?: (event: IClickhouseEvent) => void;
 }
 
 export function createProjectEventsService({
@@ -54,6 +59,7 @@ export function createProjectEventsService({
   sessionTimeoutMs,
   onStored,
   onSessionEnded,
+  onSessionStarted,
 }: ProjectEventsServiceOptions) {
   const resolveDevice = (device: DeviceRequest): Promise<DeviceIdResult> =>
     getDeviceId({
@@ -80,7 +86,13 @@ export function createProjectEventsService({
     const deps: IncomingEventDeps = {
       logger,
       sessions: engine.sessions,
-      createEvent: engine.createEvent,
+      createEvent: async (payload) => {
+        const created = await engine.createEvent(payload);
+        if (payload.name === 'session_start') {
+          onSessionStarted?.(created.document);
+        }
+        return created;
+      },
       // Rules live in D1: the Worker checks them with the event handed back.
       checkNotificationRulesForEvent: (payload) => {
         stored = payload;

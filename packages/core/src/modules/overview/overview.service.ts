@@ -1240,6 +1240,16 @@ export async function getTopEvents(
     excludeEvents?: string[];
   }
 ): Promise<Array<{ name: string; count: number }>> {
+  if (deps.eventStore) {
+    const { rows } = await deps.eventStore.eventCounts(projectId, {
+      from: wallClockToMs(startDate, timezone),
+      to: wallClockToMs(endDate, timezone),
+      by: 'name',
+      excludeNames: excludeEvents,
+      filters: toStoreFilters(filters),
+    });
+    return rows.map((row) => ({ name: row.key, count: row.count }));
+  }
   return runQuery<{ name: string; count: number }>(
     deps,
     topEventsQuery({
@@ -1269,6 +1279,16 @@ export async function getTopLinkOut(
     timezone: string;
   }
 ): Promise<Array<{ href: string; count: number }>> {
+  if (deps.eventStore) {
+    const { rows } = await deps.eventStore.eventCounts(projectId, {
+      from: wallClockToMs(startDate, timezone),
+      to: wallClockToMs(endDate, timezone),
+      by: 'properties.href',
+      names: ['link_out'],
+      filters: toStoreFilters(filters),
+    });
+    return rows.map((row) => ({ href: row.key, count: row.count }));
+  }
   return runQuery<{ href: string; count: number }>(
     deps,
     topLinkOutQuery({

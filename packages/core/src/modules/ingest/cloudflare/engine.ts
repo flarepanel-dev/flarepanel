@@ -41,6 +41,11 @@ import {
   type ConversionRow,
   type ConversionScanQuery,
 } from './conversion-scan';
+import {
+  EventCountAccumulator,
+  type EventCountQuery,
+  type EventCountRow,
+} from './event-count-scan';
 import { matchesFilters, type RowFilter } from './filter-eval';
 import {
   FunnelAccumulator,
@@ -49,6 +54,14 @@ import {
 } from './funnel-scan';
 import { HyperLogLog } from './hyperloglog';
 import { LIVE_WINDOW_MS, type LiveSnapshot, LiveWindow } from './live-window';
+import {
+  type PageScanRow,
+  PageSeriesAccumulator,
+  type PageSeriesQuery,
+  type PageSeriesRow,
+  PagesAccumulator,
+  type PagesScanQuery,
+} from './pages-scan';
 import { type RealtimeQuery, realtimeFromEvents } from './realtime-scan';
 import {
   RetentionAccumulator,
@@ -2111,6 +2124,40 @@ export async function openProjectEventsEngine({
     };
   }
 
+  /** The Pages report's rows from the stored events. */
+  async function pageRows(
+    query: PagesScanQuery
+  ): Promise<{ rows: PageScanRow[]; partial: boolean }> {
+    const accumulator = new PagesAccumulator(query);
+    const complete = await scanRange(query.from, query.to, (event, at) =>
+      accumulator.add(event, at)
+    );
+    return { rows: accumulator.rows(), partial: !complete };
+  }
+
+  /** Page views and sessions per date bucket (the Pages trend column). */
+  async function pageSeries(
+    query: PageSeriesQuery
+  ): Promise<{ rows: PageSeriesRow[]; partial: boolean }> {
+    const accumulator = new PageSeriesAccumulator(query);
+    const complete = await scanRange(query.from, query.to, (event, at) =>
+      accumulator.add(event, at)
+    );
+    return { rows: accumulator.rows(), partial: !complete };
+  }
+
+  /** Event counts grouped by one field. */
+  async function eventCounts(
+    query: EventCountQuery,
+    lookupProfile?: ProfileLookup
+  ): Promise<{ rows: EventCountRow[]; partial: boolean }> {
+    const accumulator = new EventCountAccumulator(query, lookupProfile);
+    const complete = await scanRange(query.from, query.to, (event) =>
+      accumulator.add(event)
+    );
+    return { rows: accumulator.rows(), partial: !complete };
+  }
+
   /** Conversion rows (two-step funnel per day) from the stored events. */
   async function conversionRows(
     query: ConversionScanQuery,
@@ -2627,6 +2674,9 @@ export async function openProjectEventsEngine({
     listEvents,
     metrics,
     chartRows,
+    pageRows,
+    pageSeries,
+    eventCounts,
     conversionRows,
     sankeyRows,
     funnelRows,

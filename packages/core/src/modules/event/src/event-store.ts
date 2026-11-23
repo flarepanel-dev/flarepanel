@@ -23,12 +23,22 @@ import type {
   ProjectCard,
   SessionListQuery,
 } from '../../ingest/cloudflare/engine';
+import type {
+  EventCountQuery,
+  EventCountRow,
+} from '../../ingest/cloudflare/event-count-scan';
 import type { RowFilter } from '../../ingest/cloudflare/filter-eval';
 import type {
   FunnelScanQuery,
   FunnelScanResult,
 } from '../../ingest/cloudflare/funnel-scan';
 import type { LiveSnapshot } from '../../ingest/cloudflare/live-window';
+import type {
+  PageScanRow,
+  PageSeriesQuery,
+  PageSeriesRow,
+  PagesScanQuery,
+} from '../../ingest/cloudflare/pages-scan';
 import type {
   ProfileListPage,
   ProfileListQuery,
@@ -80,6 +90,23 @@ export interface EventStore {
     projectId: string,
     query: ConversionScanQuery
   ): Promise<{ rows: ConversionRow[]; partial: boolean }>;
+  /** The Pages report: one row per page, sorted and paged. */
+  pageRows(
+    projectId: string,
+    query: PagesScanQuery
+  ): Promise<{ rows: PageScanRow[]; partial: boolean }>;
+  /** Page views and sessions per date bucket. */
+  pageSeries(
+    projectId: string,
+    query: PageSeriesQuery
+  ): Promise<{ rows: PageSeriesRow[]; partial: boolean }>;
+  /** Event counts grouped by one field, most first. */
+  eventCounts(
+    projectId: string,
+    query: EventCountQuery
+  ): Promise<{ rows: EventCountRow[]; partial: boolean }>;
+  /** Property keys seen on the project's profiles. */
+  profilePropertyKeys(projectId: string): Promise<string[]>;
   /** User flow entries and transitions, the shape of the sankey queries. */
   sankeyRows(
     projectId: string,

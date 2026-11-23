@@ -3,6 +3,7 @@
 // `sessions` scoped by filters) with different inputs.
 
 import type { ServiceDeps, Services } from '../../services';
+import { wallClockToMs } from '../ingest/cloudflare/time-buckets';
 import { getSettingsForProject } from '../organization/organization.service';
 import type { IChartEventFilter, IInterval } from '../report/report.constants';
 import {
@@ -46,10 +47,23 @@ export interface ITopPage {
 
 type TopPageRow = ITopPage & { total_count: number };
 
-function queryTopPages(
+async function queryTopPages(
   deps: ServiceDeps,
   { timezone, ...query }: IGetPagesInput | IGetPagesPageInput
 ): Promise<TopPageRow[]> {
+  if (deps.eventStore) {
+    const { rows } = await deps.eventStore.pageRows(query.projectId, {
+      from: wallClockToMs(query.startDate, timezone),
+      to: wallClockToMs(query.endDate, timezone),
+      search: query.search,
+      pages: query.pages ? [...query.pages] : undefined,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+      limit: query.limit,
+      offset: 'offset' in query ? query.offset : undefined,
+    });
+    return rows;
+  }
   return runQuery<TopPageRow>(deps, topPagesQuery(query), timezone);
 }
 
@@ -80,7 +94,7 @@ export interface IGetPageTimeseriesInput extends IGetPagesInput {
   topPagesPerBucket?: number;
 }
 
-export function getPageTimeseries(
+export async function getPageTimeseries(
   deps: ServiceDeps,
   {
     projectId,
@@ -93,6 +107,18 @@ export function getPageTimeseries(
     topPagesPerBucket,
   }: IGetPageTimeseriesInput
 ): Promise<IPageTimeseriesRow[]> {
+  if (deps.eventStore) {
+    const { rows } = await deps.eventStore.pageSeries(projectId, {
+      from: wallClockToMs(startDate, timezone),
+      to: wallClockToMs(endDate, timezone),
+      interval,
+      timezone,
+      origin: filterOrigin,
+      path: filterPath,
+      topPerBucket: topPagesPerBucket,
+    });
+    return rows;
+  }
   return runQuery<IPageTimeseriesRow>(
     deps,
     pageTimeseriesQuery({
