@@ -70,6 +70,10 @@ export {
   type ProjectEventsTrackResult,
 } from './project-events';
 export type {
+  RealtimeLocationFilter,
+  RealtimeQuery,
+} from './realtime-scan';
+export type {
   RetentionInterval,
   RetentionRow,
   RetentionScanQuery,

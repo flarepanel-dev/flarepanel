@@ -33,6 +33,7 @@ import type {
   ProfileListPage,
   ProfileListQuery,
 } from '../../ingest/cloudflare/profile-store';
+import type { RealtimeQuery } from '../../ingest/cloudflare/realtime-scan';
 import type {
   RetentionRow,
   RetentionScanQuery,
@@ -103,6 +104,8 @@ export interface EventStore {
   ): Promise<string[]>;
   /** Sends an in-app notification to the project's open dashboards. */
   publishNotification(projectId: string, notification: unknown): Promise<void>;
+  /** One Realtime page read over the last 30 minutes, as JSON text. */
+  realtime(projectId: string, query: RealtimeQuery): Promise<string>;
   /** The live card: the last 30 minutes by minute. */
   liveData(projectId: string): Promise<LiveSnapshot>;
   /** Sessions, newest first: open ones and the ended-session log. */

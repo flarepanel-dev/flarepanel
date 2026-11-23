@@ -179,6 +179,8 @@ export function createWorkerEventStore(
     metrics: (projectId, query) =>
       projectEventsStub(env, projectId).metrics(query),
     liveData: (projectId) => projectEventsStub(env, projectId).liveData(),
+    realtime: (projectId, query) =>
+      projectEventsStub(env, projectId).realtime(query),
     publishNotification: (projectId, notification) =>
       projectEventsStub(env, projectId).publishNotification(notification),
     chartRows: (projectId, query) =>

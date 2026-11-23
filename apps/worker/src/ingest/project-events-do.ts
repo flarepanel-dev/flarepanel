@@ -31,6 +31,7 @@ import {
   type ProjectEventsEngine,
   type ProjectEventsService,
   type ProjectEventsTrackInput,
+  type RealtimeQuery,
   type RetentionScanQuery,
   type RowFilter,
   type SankeyScanQuery,
@@ -431,6 +432,12 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .slice(0, PICKER_MAX_VALUES)
       .map(([value]) => value);
+  }
+
+  /** Realtime page reads; JSON text, as the answers are open-ended rows. */
+  async realtime(query: RealtimeQuery) {
+    const { engine } = await this.state;
+    return JSON.stringify(await engine.realtime(query));
   }
 
   async liveData() {

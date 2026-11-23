@@ -49,6 +49,7 @@ import {
 } from './funnel-scan';
 import { HyperLogLog } from './hyperloglog';
 import { LIVE_WINDOW_MS, type LiveSnapshot, LiveWindow } from './live-window';
+import { type RealtimeQuery, realtimeFromEvents } from './realtime-scan';
 import {
   RetentionAccumulator,
   type RetentionRow,
@@ -180,6 +181,8 @@ const MAX_MINUTE_RANGE_MS = 24 * 60 * 60 * 1000;
 /** Stored chunks one range scan may decompress. */
 const SCAN_MAX_CHUNKS = 2000;
 const LIVE_REBUILD_MAX_CHUNKS = 4000;
+/** Events one Realtime read holds in memory (the last 30 minutes). */
+const REALTIME_MAX_EVENTS = 100_000;
 const SESSION_PAGE_ROWS = 200;
 /** Logged sessions one list or count call may read (filters run in JS). */
 const SESSION_SCAN_MAX = 100_000;
@@ -2191,6 +2194,26 @@ export async function openProjectEventsEngine({
     }
   }
 
+  /** The Realtime page's reads over the last 30 minutes (see realtime-scan). */
+  async function realtime(query: RealtimeQuery): Promise<unknown> {
+    const now = clock.now();
+    const events: IClickhouseEvent[] = [];
+    await scanRange(
+      now - LIVE_WINDOW_MS,
+      now + MINUTE_MS,
+      (event) => {
+        if (events.length < REALTIME_MAX_EVENTS) {
+          events.push(event);
+        }
+      },
+      LIVE_REBUILD_MAX_CHUNKS
+    );
+    events.sort(
+      (a, b) => eventTimeMs(a.created_at) - eventTimeMs(b.created_at)
+    );
+    return realtimeFromEvents(events, query, now);
+  }
+
   /** Sessions, visitors and referrers per minute over the last 30 minutes. */
   async function liveData(): Promise<LiveSnapshot> {
     const now = clock.now();
@@ -2611,6 +2634,7 @@ export async function openProjectEventsEngine({
     recentEvents,
     scanRange,
     liveData,
+    realtime,
     listSessions,
     countSessions,
     getSession,

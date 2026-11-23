@@ -15,6 +15,7 @@ import {
 } from '../../shared/ch-dates';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { type IClickhouseEvent, transformEvent } from '../event/event.service';
+import type { RealtimeQuery } from '../ingest/cloudflare/realtime-scan';
 import { getProfiles } from '../profile/profile.service';
 
 const REALTIME_WINDOW_MINUTES = 30;
@@ -213,10 +214,28 @@ function buildRealtimeBadgeDetailsFilter(input: {
   return buildRealtimeLocationFilter(input.locations);
 }
 
+/** Workers: one Realtime read from the project's Durable Object. */
+async function fromStore<T>(
+  deps: ServiceDeps,
+  projectId: string,
+  query: RealtimeQuery
+): Promise<T | null> {
+  if (!deps.eventStore) {
+    return null;
+  }
+  return JSON.parse(await deps.eventStore.realtime(projectId, query)) as T;
+}
+
 export async function getRealtimeCoordinates(
   deps: ServiceDeps,
   projectId: string
 ) {
+  const stored = await fromStore<CoordinatePoint[]>(deps, projectId, {
+    kind: 'coordinates',
+  });
+  if (stored) {
+    return adaptiveCluster(stored, COORDINATES_CLUSTER_TARGET);
+  }
   const res = await chQuery<CoordinatePoint>(
     deps,
     sql`SELECT
@@ -246,6 +265,43 @@ export async function getRealtimeMapBadgeDetails(
     locations: RealtimeLocation[];
   }
 ) {
+  const stored = await fromStore<{
+    totalSessions: number;
+    totalProfiles: number;
+    topReferrers: { referrer_name: string; count: number }[];
+    topPaths: { origin: string; path: string; count: number }[];
+    topEvents: { name: string; count: number }[];
+    recentSessions: {
+      profile_id: string;
+      session_id: string;
+      created_at: string;
+      path: string;
+      name: string;
+      country: string;
+      city: string;
+    }[];
+  }>(deps, input.projectId, {
+    kind: 'badge',
+    scope: input.detailScope,
+    locations: input.locations,
+    excludedEvents: [...EXCLUDED_BADGE_EVENT_NAMES],
+    top: MAP_BADGE_TOP_LIMIT,
+    recent: MAP_BADGE_RECENT_SESSIONS_LIMIT,
+  });
+  if (stored) {
+    return badgeDetails(deps, input, {
+      summary: [
+        {
+          total_sessions: stored.totalSessions,
+          total_profiles: stored.totalProfiles,
+        },
+      ],
+      topReferrers: stored.topReferrers,
+      topPaths: stored.topPaths,
+      topEvents: stored.topEvents,
+      recentSessions: stored.recentSessions,
+    });
+  }
   const sinceDate = formatClickhouseDate(since());
   const locationFilter = buildRealtimeBadgeDetailsFilter(input);
   const projectIdParam = sql.string(input.projectId);
@@ -320,6 +376,40 @@ export async function getRealtimeMapBadgeDetails(
       ),
     ]);
 
+  return badgeDetails(deps, input, {
+    summary,
+    topReferrers,
+    topPaths,
+    topEvents,
+    recentSessions,
+  });
+}
+
+async function badgeDetails(
+  deps: ServiceDeps,
+  input: { projectId: string; locations: RealtimeLocation[] },
+  {
+    summary,
+    topReferrers,
+    topPaths,
+    topEvents,
+    recentSessions,
+  }: {
+    summary: { total_sessions: number; total_profiles: number }[];
+    topReferrers: { referrer_name: string; count: number }[];
+    topPaths: { origin: string; path: string; count: number }[];
+    topEvents: { name: string; count: number }[];
+    recentSessions: {
+      profile_id: string;
+      session_id: string;
+      created_at: string;
+      path: string;
+      name: string;
+      country: string;
+      city: string;
+    }[];
+  }
+) {
   const profiles = await getProfiles(
     deps,
     recentSessions.map((item) => item.profile_id).filter(Boolean),
@@ -371,6 +461,13 @@ export async function getRealtimeActiveSessions(
   deps: ServiceDeps,
   projectId: string
 ) {
+  const stored = await fromStore<IClickhouseEvent[]>(deps, projectId, {
+    kind: 'activeSessions',
+    limit: ACTIVE_SESSIONS_LIMIT,
+  });
+  if (stored) {
+    return stored.map(transformEvent);
+  }
   const rows = await chQuery<IClickhouseEvent>(
     deps,
     sql`SELECT
@@ -391,6 +488,13 @@ export async function getRealtimeRecentSessions(
   deps: ServiceDeps,
   projectId: string
 ) {
+  const stored = await fromStore<IClickhouseEvent[]>(deps, projectId, {
+    kind: 'recentSessions',
+    limit: RECENT_SESSIONS_LIMIT,
+  });
+  if (stored) {
+    return stored.map(transformEvent);
+  }
   const rows = await chQuery<IClickhouseEvent>(
     deps,
     sql`SELECT
@@ -417,6 +521,13 @@ export async function getRealtimeTopSources(
   deps: ServiceDeps,
   projectId: string
 ): Promise<RealtimeTopSources> {
+  const stored = await fromStore<RealtimeTopSources>(deps, projectId, {
+    kind: 'topSources',
+    limit: TOP_SOURCES_LIMIT,
+  });
+  if (stored) {
+    return stored;
+  }
   const rows = await chQuery<{
     referrer_name: string;
     country: string;
@@ -464,6 +575,22 @@ export async function getRealtimeHistogram(
   projectId: string
 ): Promise<RealtimeHistogram> {
   const windowStart = since();
+  const stored = await fromStore<{
+    totalSessions: number;
+    minutes: { minute: number; sessions: number; visitors: number }[];
+  }>(deps, projectId, { kind: 'histogram' });
+  if (stored) {
+    return fillHistogram(
+      windowStart,
+      stored.totalSessions,
+      new Map(
+        stored.minutes.map((item) => [
+          item.minute,
+          { sessions: item.sessions, visitors: item.visitors },
+        ])
+      )
+    );
+  }
   const rows = await chQuery<{
     minute: string;
     sessions: number;
@@ -496,6 +623,14 @@ export async function getRealtimeHistogram(
     });
   }
 
+  return fillHistogram(windowStart, totalSessions, byMinute);
+}
+
+function fillHistogram(
+  windowStart: Date,
+  totalSessions: number,
+  byMinute: Map<number, { sessions: number; visitors: number }>
+): RealtimeHistogram {
   const minutes: RealtimeHistogram['minutes'] = [];
   const firstMinute =
     Math.floor(windowStart.getTime() / MS_PER_MINUTE) * MS_PER_MINUTE;
