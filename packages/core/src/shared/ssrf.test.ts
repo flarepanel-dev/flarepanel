@@ -102,8 +102,8 @@ describe('createPinnedAgent', () => {
   // Under Bun the bare `undici` specifier resolves to a built-in shim whose
   // Agent has no `close()` and ignores `dispatcher`, which silently dropped the
   // pinning.
-  it('returns a real undici Agent, not the runtime shim', () => {
-    const agent = createPinnedAgent('93.184.216.34');
+  it('returns a real undici Agent, not the runtime shim', async () => {
+    const agent = await createPinnedAgent('93.184.216.34');
     expect(typeof agent.close).toBe('function');
     expect(typeof agent.destroy).toBe('function');
   });

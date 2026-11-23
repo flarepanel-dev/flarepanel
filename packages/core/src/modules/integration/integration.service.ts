@@ -399,9 +399,11 @@ export async function completeSlackOAuthCallback(
     userId: string;
   }
 ): Promise<CompleteSlackOAuthCallbackResult> {
-  const verifiedState = await slackInstaller(
-    deps.config
-  ).stateStore?.verifyStateParam(new Date(), params.state);
+  const installer = await slackInstaller(deps.config);
+  const verifiedState = await installer.stateStore?.verifyStateParam(
+    new Date(),
+    params.state
+  );
   const parsedMetadata = slackOAuthMetadataSchema.safeParse(
     JSON.parse(verifiedState?.metadata ?? '{}')
   );

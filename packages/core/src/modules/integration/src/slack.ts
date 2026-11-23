@@ -1,7 +1,7 @@
 // Credit to (@c_alares):
 // https://github.com/christianalares/seventy-seven/blob/main/packages/integrations/src/slack/index.ts
 
-import * as Slack from '@slack/bolt';
+import type { InstallProvider } from '@slack/oauth';
 import {
   browserFetcher,
   postWebhook,
@@ -9,10 +9,6 @@ import {
   type WebhookResult,
 } from '../../../clients/integrations/fetcher';
 import type { CoreConfig } from '../../../config';
-
-const { LogLevel, App: SlackApp } = Slack;
-
-import { InstallProvider } from '@slack/oauth';
 
 const INSTALL_SCOPES = [
   'incoming-webhook',
@@ -26,7 +22,9 @@ const INSTALL_SCOPES = [
  * there is no install flow, and the stub keeps the two members the integration
  * module touches so an unconfigured deployment still boots.
  */
-export function slackInstaller(config: CoreConfig): InstallProvider {
+export async function slackInstaller(
+  config: CoreConfig
+): Promise<InstallProvider> {
   const { clientId, clientSecret, stateSecret } = config.slack;
   if (!clientId) {
     return {
@@ -34,7 +32,12 @@ export function slackInstaller(config: CoreConfig): InstallProvider {
       stateStore: {},
     } as unknown as InstallProvider;
   }
-  return new InstallProvider({
+  // Loaded on first use: the Slack SDK is large and most requests never
+  // touch it (it used to cost Worker startup time).
+  const { InstallProvider: SlackInstallProvider, LogLevel } = await import(
+    '@slack/oauth'
+  );
+  return new SlackInstallProvider({
     clientId,
     // An id without a secret is a misconfiguration Slack itself rejects.
     clientSecret: clientSecret ?? '',
@@ -63,16 +66,18 @@ export const getSlackInstallUrl = ({
   if (!config.slack.clientId) {
     return null;
   }
-  return slackInstaller(config).generateInstallUrl({
-    scopes: INSTALL_SCOPES,
-    redirectUri: config.slack.oauthRedirectUrl,
-    metadata: JSON.stringify({
-      integrationId,
-      organizationId,
-      projectId,
-      userId,
-    }),
-  });
+  return slackInstaller(config).then((installer) =>
+    installer.generateInstallUrl({
+      scopes: INSTALL_SCOPES,
+      redirectUri: config.slack.oauthRedirectUrl,
+      metadata: JSON.stringify({
+        integrationId,
+        organizationId,
+        projectId,
+        userId,
+      }),
+    })
+  );
 };
 
 export function sendSlackNotification({

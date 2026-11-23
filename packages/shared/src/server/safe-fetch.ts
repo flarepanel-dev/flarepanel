@@ -5,7 +5,46 @@ import ipaddr from 'ipaddr.js';
 // is an empty class (no `close()`, and the `dispatcher` option is not honoured).
 // The subpath bypasses the shim and loads the npm package, which is the one
 // whose connection pinning this guard relies on.
-import { Agent, fetch as undiciFetch } from 'undici/index.js';
+// Loaded on first use (Node only): it is large, and Workers never need it.
+import type { Agent, fetch as UndiciFetch } from 'undici/index.js';
+
+type UndiciModule = typeof import('undici/index.js');
+let undici: Promise<UndiciModule> | null = null;
+
+function loadUndici(): Promise<UndiciModule> {
+  undici ??= import('undici/index.js');
+  return undici;
+}
+
+/**
+ * Cloudflare Workers: outbound `fetch` leaves from Cloudflare's network, which
+ * cannot reach private ranges, loopback or a cloud metadata service, and there
+ * are no sockets to pin. The guard there is the scheme, literal-IP and
+ * internal-hostname check on every hop.
+ */
+export function isWorkersRuntime(): boolean {
+  return (
+    typeof navigator !== 'undefined' &&
+    navigator.userAgent === 'Cloudflare-Workers'
+  );
+}
+
+const INTERNAL_HOST_SUFFIXES = ['.localhost', '.local', '.internal'];
+
+function assertPublicUrlOnWorkers(url: URL): void {
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new BlockedUrlError('Only http/https URLs are allowed');
+  }
+  const host = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  const isInternalName =
+    host === 'localhost' ||
+    INTERNAL_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix));
+  if (isInternalName || (net.isIP(host) !== 0 && isBlockedIp(host))) {
+    throw new BlockedUrlError(
+      `Refusing to connect to ${host} (not a public address)`
+    );
+  }
+}
 
 /**
  * SSRF guard for the endpoints that fetch user-supplied URLs (the favicon/OG
@@ -180,8 +219,11 @@ export function createPinnedLookup(addresses: string | string[]) {
  * A dispatcher that only ever connects to one of `addresses`, so the socket
  * cannot end up somewhere other than an address we just validated.
  */
-export function createPinnedAgent(addresses: string | string[]): Agent {
-  return new Agent({
+export async function createPinnedAgent(
+  addresses: string | string[]
+): Promise<Agent> {
+  const { Agent: UndiciAgent } = await loadUndici();
+  return new UndiciAgent({
     connect: {
       // undici types this as net.LookupFunction; the shared implementation is
       // signature-compatible but typed loosely so node's Agent can use it too.
@@ -292,8 +334,9 @@ async function walkToFinalResponse(
   options: SafeFetchOptions,
   signal: AbortSignal
 ): Promise<{
-  response: Awaited<ReturnType<typeof undiciFetch>>;
-  agent: Agent;
+  response: Awaited<ReturnType<typeof UndiciFetch>> | Response;
+  /** Null on Workers, which pin nothing. */
+  agent: Agent | null;
   finalUrl: string;
   chain: { url: string; status: number }[];
 }> {
@@ -305,26 +348,41 @@ async function walkToFinalResponse(
 
   let current = input instanceof URL ? input : new URL(input);
 
+  const onWorkers = isWorkersRuntime();
   for (let hop = 0; ; hop++) {
-    const addresses = await assertPublicUrl(current);
-    const agent = createPinnedAgent(addresses);
-
-    let response: Awaited<ReturnType<typeof undiciFetch>>;
-    try {
-      response = await undiciFetch(current, {
+    let agent: Agent | null = null;
+    let response: Awaited<ReturnType<typeof UndiciFetch>> | Response;
+    if (onWorkers) {
+      assertPublicUrlOnWorkers(current);
+      response = await fetch(current, {
         method: options.method ?? 'GET',
         headers: options.headers,
         body: options.body,
         signal,
         // Handled below so every hop is re-validated.
         redirect: 'manual',
-        dispatcher: agent,
       });
-    } catch (error) {
-      await agent.close().catch(() => {
-        // best effort
-      });
-      throw error;
+    } else {
+      const addresses = await assertPublicUrl(current);
+      const pinned = await createPinnedAgent(addresses);
+      agent = pinned;
+      const { fetch: undiciFetch } = await loadUndici();
+      try {
+        response = await undiciFetch(current, {
+          method: options.method ?? 'GET',
+          headers: options.headers,
+          body: options.body,
+          signal,
+          // Handled below so every hop is re-validated.
+          redirect: 'manual',
+          dispatcher: pinned,
+        });
+      } catch (error) {
+        await pinned.close().catch(() => {
+          // best effort
+        });
+        throw error;
+      }
     }
 
     const status = response.status;
@@ -339,7 +397,7 @@ async function walkToFinalResponse(
     await response.body?.cancel().catch(() => {
       // best effort
     });
-    await agent.close().catch(() => {
+    await agent?.close().catch(() => {
       // best effort
     });
 
@@ -391,7 +449,7 @@ export async function safeFetch(
         chain,
       };
     } finally {
-      await agent.close().catch(() => {
+      await agent?.close().catch(() => {
         // best effort
       });
     }
@@ -441,7 +499,7 @@ export async function safeFetchStream(
         await response.body?.cancel().catch(() => {
           // best effort
         });
-        await agent.close().catch(() => {
+        await agent?.close().catch(() => {
           // best effort
         });
       },
