@@ -20,6 +20,7 @@ import type {
   ListEventsQuery,
   MetricsQuery,
   MetricsResult,
+  ProfileSessionStats,
   ProjectCard,
   SessionListQuery,
 } from '../../ingest/cloudflare/engine';
@@ -39,6 +40,7 @@ import type {
   PageSeriesRow,
   PagesScanQuery,
 } from '../../ingest/cloudflare/pages-scan';
+import type { ProfileSummary } from '../../ingest/cloudflare/profile-scan';
 import type {
   ProfileListPage,
   ProfileListQuery,
@@ -107,6 +109,19 @@ export interface EventStore {
   ): Promise<{ rows: EventCountRow[]; partial: boolean }>;
   /** Property keys seen on the project's profiles. */
   profilePropertyKeys(projectId: string): Promise<string[]>;
+  /** Distinct values of one profile field, for filter pickers. */
+  profilePropertyValues(projectId: string, property: string): Promise<string[]>;
+  /** One profile's page: activity, top events and pages, metrics. */
+  profileSummary(
+    projectId: string,
+    profileId: string
+  ): Promise<
+    ProfileSummary & {
+      sessions: ProfileSessionStats;
+      firstSeen: string | null;
+      lastSeen: string | null;
+    }
+  >;
   /** User flow entries and transitions, the shape of the sankey queries. */
   sankeyRows(
     projectId: string,

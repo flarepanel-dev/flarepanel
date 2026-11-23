@@ -3,6 +3,7 @@ import { assocPath, flatten, map, pathOr, pipe, prop, sort, uniq } from 'ramda';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
+import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
 import { buildFilterWhere } from '../chart/src/table-filter-where';
 import type { IClickhouseEvent } from '../event/event.service';
 import type { IChartEventFilter } from '../report/report.constants';
@@ -185,17 +186,66 @@ async function compileProfileFilters(
  * indistinguishable from a real but inactive user. A profile that exists and
  * simply has no events still returns metrics, with a `firstSeen`.
  */
+const BOUNCE_RATE_DECIMALS = 10_000;
+
+/** `profileMetricsQuery`'s row from the project's Durable Object. */
+async function profileMetricsFromEventStore(
+  store: NonNullable<ServiceDeps['eventStore']>,
+  projectId: string,
+  profileId: string
+): Promise<
+  Omit<IProfileMetrics, 'lastSeen' | 'firstSeen'> & {
+    lastSeen: string;
+    firstSeen: string;
+  }
+> {
+  const summary = await store.profileSummary(projectId, profileId);
+  const { sessions } = summary.sessions;
+  const firstSeen = summary.firstSeen ?? '';
+  const lastSeen = summary.lastSeen ?? '';
+  const spanSeconds =
+    firstSeen && lastSeen
+      ? (convertClickhouseDateToJs(lastSeen).getTime() -
+          convertClickhouseDateToJs(firstSeen).getTime()) /
+        1000
+      : 0;
+  return {
+    firstSeen,
+    lastSeen,
+    ...summary.stats,
+    sessions,
+    durationAvg: summary.sessions.durationAvg,
+    durationP90: summary.sessions.durationP90,
+    bounceRate:
+      Math.round(summary.sessions.bounceRate * BOUNCE_RATE_DECIMALS) /
+      BOUNCE_RATE_DECIMALS,
+    avgEventsPerSession: sessions
+      ? round(summary.stats.totalEvents / sessions, 2)
+      : 0,
+    avgTimeBetweenSessions:
+      sessions <= 1 ? 0 : round(spanSeconds / (sessions - 1), 1),
+  };
+}
+
 export async function getProfileMetrics(
   deps: ServiceDeps,
   profileId: string,
   projectId: string
 ): Promise<IProfileMetrics | null> {
-  const [data] = await chQuery<
-    Omit<IProfileMetrics, 'lastSeen' | 'firstSeen'> & {
-      lastSeen: string;
-      firstSeen: string;
-    }
-  >(deps, profileMetricsQuery({ profileId, projectId }));
+  const [data] = deps.eventStore
+    ? [
+        await profileMetricsFromEventStore(
+          deps.eventStore,
+          projectId,
+          profileId
+        ),
+      ]
+    : await chQuery<
+        Omit<IProfileMetrics, 'lastSeen' | 'firstSeen'> & {
+          lastSeen: string;
+          firstSeen: string;
+        }
+      >(deps, profileMetricsQuery({ profileId, projectId }));
 
   if (!data) {
     return null;
@@ -538,6 +588,10 @@ export async function getProfileActivity(
   profileId: string,
   projectId: string
 ) {
+  if (deps.eventStore) {
+    return (await deps.eventStore.profileSummary(projectId, profileId))
+      .activity;
+  }
   return chQuery<{ count: number; date: string }>(
     deps,
     profileActivityQuery({ projectId, profileId })
@@ -549,6 +603,10 @@ export async function getProfileMostEvents(
   profileId: string,
   projectId: string
 ) {
+  if (deps.eventStore) {
+    return (await deps.eventStore.profileSummary(projectId, profileId))
+      .mostEvents;
+  }
   return chQuery<{ count: number; name: string }>(
     deps,
     profileMostEventsQuery({ projectId, profileId })
@@ -560,6 +618,10 @@ export async function getProfilePopularRoutes(
   profileId: string,
   projectId: string
 ) {
+  if (deps.eventStore) {
+    return (await deps.eventStore.profileSummary(projectId, profileId))
+      .popularRoutes;
+  }
   return chQuery<{ count: number; path: string }>(
     deps,
     profilePopularRoutesQuery({ projectId, profileId })
@@ -618,6 +680,30 @@ export async function getProfileListPage(
   };
 }
 
+/** Instant of a ClickHouse range boundary (UTC), as `dateRangeWhere` reads it. */
+function boundaryMs(value: string, boundary: 'start' | 'end'): number {
+  return Date.parse(
+    `${toRangeBoundaryLiteral(value, boundary).replace(' ', 'T')}Z`
+  );
+}
+
+/** `powerUsersQuery` over the project's stored events. */
+async function powerUsersFromEventStore(
+  store: NonNullable<ServiceDeps['eventStore']>,
+  input: ProfileWindow & { projectId: string; cursor?: number; take: number }
+): Promise<{ profile_id: string; count: number }[]> {
+  const offset = input.cursor ? input.cursor * input.take : 0;
+  const { rows } = await store.eventCounts(input.projectId, {
+    from: boundaryMs(input.startDate, 'start'),
+    to: boundaryMs(input.endDate, 'end'),
+    by: 'profile_id',
+    limit: offset + input.take,
+  });
+  return rows
+    .slice(offset)
+    .map((row) => ({ profile_id: row.key, count: row.count }));
+}
+
 export async function getPowerUsers(
   deps: ServiceDeps,
   input: ProfileWindow & {
@@ -626,16 +712,18 @@ export async function getPowerUsers(
     take: number;
   }
 ) {
-  const rows = await chQuery<{ profile_id: string; count: number }>(
-    deps,
-    powerUsersQuery({
-      projectId: input.projectId,
-      take: input.take,
-      offset: input.cursor ? input.cursor * input.take : 0,
-      startDate: input.startDate,
-      endDate: input.endDate,
-    })
-  );
+  const rows = deps.eventStore
+    ? await powerUsersFromEventStore(deps.eventStore, input)
+    : await chQuery<{ profile_id: string; count: number }>(
+        deps,
+        powerUsersQuery({
+          projectId: input.projectId,
+          take: input.take,
+          offset: input.cursor ? input.cursor * input.take : 0,
+          startDate: input.startDate,
+          endDate: input.endDate,
+        })
+      );
   const profiles = await getProfiles(
     deps,
     rows.map((r) => r.profile_id),
@@ -664,6 +752,14 @@ export async function getProfileValues(
     property: string;
   }
 ): Promise<{ values: string[] }> {
+  if (deps.eventStore) {
+    return {
+      values: await deps.eventStore.profilePropertyValues(
+        input.projectId,
+        input.property
+      ),
+    };
+  }
   const rows = await chQuery<{ values: string[] }>(
     deps,
     profileValuesQuery(input)

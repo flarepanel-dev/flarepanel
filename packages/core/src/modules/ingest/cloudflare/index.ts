@@ -67,6 +67,7 @@ export type {
   PagesScanQuery,
   PagesSortColumn,
 } from './pages-scan';
+export type { ProfileSummary } from './profile-scan';
 export {
   openProfileStore,
   type ProfileListPage,

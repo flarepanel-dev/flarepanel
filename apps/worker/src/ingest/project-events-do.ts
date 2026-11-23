@@ -73,6 +73,9 @@ const PICKER_MAX_VALUES = 500;
 const HIDDEN_PROPERTY_KEYS = new Set(['__duration_from', '__properties_from']);
 
 const KEY_PROJECT_ID = 'project_id';
+/** A profile page's calls arrive together; one scan serves them. */
+const PROFILE_SUMMARY_TTL_MS = 10_000;
+const PROFILE_SUMMARY_CACHE_SIZE = 50;
 /** Whether the project has funnel notification rules (set by the Worker). */
 const KEY_FUNNEL_RULES = 'funnel_rules';
 const KEY_ARCHIVED_THROUGH = 'archived_through';
@@ -151,6 +154,16 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   /** Advanced analytics: stored chunks not sent to the Basin stream yet. */
   private unstreamed = false;
   private pendingEvents = 0;
+  private readonly profileSummaries = new Map<
+    string,
+    {
+      at: number;
+      value: Awaited<ReturnType<ProjectEventsEngine['profileSummary']>> & {
+        firstSeen: string | null;
+        lastSeen: string | null;
+      };
+    }
+  >();
   private lastBroadcastAt = 0;
   private broadcastTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -420,6 +433,38 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   async eventCounts(query: EventCountQuery) {
     const { engine, profiles } = await this.state;
     return engine.eventCounts(query, this.profileLookup(profiles));
+  }
+
+  /** One profile's page; its four calls share one scan for a few seconds. */
+  async profileSummary(profileId: string) {
+    const cached = this.profileSummaries.get(profileId);
+    if (cached && cached.at > Date.now() - PROFILE_SUMMARY_TTL_MS) {
+      return cached.value;
+    }
+    const { engine, profiles } = await this.state;
+    const summary = await engine.profileSummary(
+      profileId,
+      Date.now() - this.retentionDays() * DAY_MS
+    );
+    const profile = profiles.get(profileId);
+    const value = {
+      ...summary,
+      firstSeen: profile?.created_at ?? null,
+      lastSeen: profile?.last_seen_at ?? null,
+    };
+    this.profileSummaries.set(profileId, { at: Date.now(), value });
+    if (this.profileSummaries.size > PROFILE_SUMMARY_CACHE_SIZE) {
+      const oldest = this.profileSummaries.keys().next().value;
+      if (oldest !== undefined) {
+        this.profileSummaries.delete(oldest);
+      }
+    }
+    return value;
+  }
+
+  async profilePropertyValues(property: string) {
+    const { profiles } = await this.state;
+    return profiles.propertyValues(property);
   }
 
   async profilePropertyKeys() {

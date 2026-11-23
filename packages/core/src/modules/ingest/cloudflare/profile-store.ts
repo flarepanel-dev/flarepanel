@@ -14,6 +14,7 @@ const LAST_SEEN_REFRESH_MS = 60 * 60 * 1000;
 const MAX_TAKE = 200;
 /** Profiles the report builder's property picker reads keys from. */
 const PROPERTY_KEYS_SAMPLE = 5000;
+const PROPERTIES_PREFIX = 'properties.';
 const LIKE_SPECIAL = /[\\%_]/g;
 
 export interface ProfileListQuery {
@@ -221,7 +222,32 @@ export function openProfileStore(sql: EngineSql) {
     return [...keys].sort();
   }
 
-  return { get, upsert, seen, list, propertyKeys };
+  /**
+   * Distinct values of one profile field (`email`, `properties.plan`, ...)
+   * over the most recently seen profiles, for the filter value picker.
+   */
+  function propertyValues(property: string): string[] {
+    const values = new Set<string>();
+    const key = property.startsWith(PROPERTIES_PREFIX)
+      ? property.slice(PROPERTIES_PREFIX.length)
+      : null;
+    const rows = sql.exec(
+      'SELECT body FROM identities ORDER BY last_seen DESC LIMIT ?',
+      PROPERTY_KEYS_SAMPLE
+    );
+    for (const row of rows) {
+      const profile = JSON.parse(String(row.body)) as IClickhouseProfile;
+      const value = key
+        ? profile.properties?.[key]
+        : (profile as unknown as Record<string, unknown>)[property];
+      if (typeof value === 'string' && value.trim()) {
+        values.add(value.trim());
+      }
+    }
+    return [...values].sort();
+  }
+
+  return { get, upsert, seen, list, propertyKeys, propertyValues };
 }
 
 export type ProfileStore = ReturnType<typeof openProfileStore>;

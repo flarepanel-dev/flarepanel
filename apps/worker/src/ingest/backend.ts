@@ -197,6 +197,10 @@ export function createWorkerEventStore(
       projectEventsStub(env, projectId).eventCounts(query),
     profilePropertyKeys: (projectId) =>
       projectEventsStub(env, projectId).profilePropertyKeys(),
+    profilePropertyValues: (projectId, property) =>
+      projectEventsStub(env, projectId).profilePropertyValues(property),
+    profileSummary: (projectId, profileId) =>
+      projectEventsStub(env, projectId).profileSummary(profileId),
     funnelRows: (projectId, query) =>
       projectEventsStub(env, projectId).funnelRows(query),
     retentionRows: (projectId, query) =>

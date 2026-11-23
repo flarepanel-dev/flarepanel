@@ -47,24 +47,14 @@ export const formatCurrency =
     const short = options?.short ?? false;
     const currency = options?.currency ?? 'USD';
     if (short) {
-      // Use compact notation for short format (e.g., "73K $")
-      const formatter = new Intl.NumberFormat(locale, {
+      // Compact with the symbol where the locale puts it ("$73K", "73K €").
+      return new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency,
         notation: 'compact',
         minimumFractionDigits: 0,
         maximumFractionDigits: 1,
-      });
-      const formatted = formatter.format(amount);
-      // Get currency symbol
-      const currencyFormatter = new Intl.NumberFormat(locale, {
-        style: 'currency',
-        currency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      });
-      const parts = currencyFormatter.formatToParts(0);
-      const symbol =
-        parts.find((part) => part.type === 'currency')?.value || '$';
-      return `${formatted} ${symbol}`;
+      }).format(amount);
     }
     return new Intl.NumberFormat(locale, {
       style: 'currency',

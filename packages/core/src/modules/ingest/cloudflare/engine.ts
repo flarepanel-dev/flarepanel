@@ -62,6 +62,7 @@ import {
   PagesAccumulator,
   type PagesScanQuery,
 } from './pages-scan';
+import { type ProfileSummary, ProfileSummaryAccumulator } from './profile-scan';
 import { type RealtimeQuery, realtimeFromEvents } from './realtime-scan';
 import {
   RetentionAccumulator,
@@ -83,10 +84,11 @@ import {
 } from './time-buckets';
 
 /**
- * 2: hourly rollups (timezones, hour series) and the ended-session log. An
- * upgrade rebuilds every rollup from the stored chunks.
+ * 2: hourly rollups (timezones, hour series) and the ended-session log.
+ * 3: page sessions count page views only; entry and exit pages carry their
+ * sessions' page views; visitors are the people sessions belong to. An upgrade rebuilds every rollup from the stored chunks.
  */
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const DEFAULT_COMMIT_MAX_EVENTS = 200;
 const DEFAULT_COMMIT_MAX_DELAY_MS = 500;
 const DEFAULT_CHECKPOINT_INTERVAL_MS = 5 * 60 * 1000;
@@ -189,6 +191,9 @@ const DIM_PREFIX: Partial<Record<SessionDimension, SessionDimension>> = {
   os_version: 'os',
 };
 const DEFAULT_TOP_LIMIT = 50;
+const P90 = 0.9;
+const MS_PER_SECOND = 1000;
+const PERCENT = 100;
 /** Minute series are counted from raw events, so only over short ranges. */
 const MAX_MINUTE_RANGE_MS = 24 * 60 * 60 * 1000;
 /** Stored chunks one range scan may decompress. */
@@ -258,6 +263,16 @@ export interface MetricsResult {
   series: (RangeStats & { start: number })[];
   /** A raw-event count stopped at its scan budget: the numbers are a lower bound. */
   partial?: boolean;
+}
+
+/** The session half of a profile's metrics, as the ClickHouse query gives it. */
+export interface ProfileSessionStats {
+  sessions: number;
+  /** Seconds, over sessions with a duration. */
+  durationAvg: number;
+  durationP90: number;
+  /** Percent. */
+  bounceRate: number;
 }
 
 export interface SessionListQuery {
@@ -331,6 +346,9 @@ export interface ListEventsQuery {
   profileId?: string;
   sessionId?: string;
   names?: string[];
+  /** Event filters, as reports name them (`path`, `properties.plan`, ...). */
+  filters?: RowFilter[];
+  groupId?: string;
   startDate?: Date;
   endDate?: Date;
   /** From the previous page; absent for the newest page. */
@@ -537,7 +555,9 @@ function addToRollup(
       rollup.screenViews += 1;
     }
   }
-  if (event.profile_id && !isSessionEnd) {
+  // As OpenPanel's sessions table counts them: the people sessions belong to,
+  // so server-side and back-dated events add no visitors.
+  if (isSessionStart && event.profile_id) {
     rollup.visitors.add(event.profile_id);
   }
 }
@@ -574,6 +594,21 @@ function addTotals(totals: RangeTotals, rollup: DailyRollup) {
   totals.revenue += rollup.revenue;
 }
 
+/**
+ * A page in event time, newest first. Pages follow arrival order (cheap);
+ * an event sent later with a past timestamp still lands on the page it
+ * arrived with, but no longer heads it.
+ */
+function byTimeDesc(events: IClickhouseEvent[]): IClickhouseEvent[] {
+  return [...events].sort(
+    (a, b) => eventTimeMs(b.created_at) - eventTimeMs(a.created_at)
+  );
+}
+
+function round2(value: number): number {
+  return Math.round(value * PERCENT) / PERCENT;
+}
+
 function toStats(totals: RangeTotals): RangeStats {
   return {
     visitors: totals.sketch.count(),
@@ -584,29 +619,6 @@ function toStats(totals: RangeTotals): RangeStats {
     events: totals.events,
     revenue: totals.revenue,
   };
-}
-
-/** `addToRollup` for raw-event counts, with exact visitors. */
-function countEvent(
-  target: RangeTotals & { people: Set<string> },
-  event: IClickhouseEvent
-) {
-  const isSessionEnd = event.name === 'session_end';
-  if (event.name === 'session_start') {
-    target.sessions += 1;
-  } else if (isSessionEnd) {
-    target.bounces += isBounce(event) ? 1 : 0;
-    target.durationMs += Math.max(0, event.duration ?? 0);
-  } else {
-    target.events += 1;
-    target.revenue += event.revenue ?? 0;
-    if (event.name === 'screen_view') {
-      target.screenViews += 1;
-    }
-  }
-  if (event.profile_id && !isSessionEnd) {
-    target.people.add(event.profile_id);
-  }
 }
 
 function findBucket<T extends { start: number; end: number }>(
@@ -752,8 +764,17 @@ function matchesQuery(
   if (query.names?.length && !query.names.includes(event.name)) {
     return false;
   }
+  if (query.groupId && !(event.groups ?? []).includes(query.groupId)) {
+    return false;
+  }
   const at = eventTimeMs(event.created_at);
-  return at >= range.fromMs && at <= range.toMs;
+  if (at < range.fromMs || at > range.toMs) {
+    return false;
+  }
+  return (
+    !query.filters?.length ||
+    matchesFilters(eventFilterRow(event), query.filters)
+  );
 }
 
 function parseCursor(cursor: string | null | undefined) {
@@ -807,6 +828,11 @@ export async function openProjectEventsEngine({
   let liveReady = false;
   /** Pages each live session has viewed, so a page counts a session once. */
   const sessionPages = new Map<string, Set<string>>();
+  /** Each live session's entry page and page views, for entry and exit pages. */
+  const sessionViews = new Map<
+    string,
+    { entry: string | null; views: number }
+  >();
   const dirtyProfiles = new Map<string, ProfileSnapshot>();
   const recentRequests = new Map<string, number>();
   const chunkCache = new Map<number, IClickhouseEvent[]>();
@@ -1010,18 +1036,39 @@ export async function openProjectEventsEngine({
           revenue: 0,
         });
       }
+      if (event.session_id) {
+        sessionViews.set(event.session_id, {
+          entry: event.path ? pageValue(event) : null,
+          views: 0,
+        });
+      }
       return;
     }
     if (isSessionEnd) {
       sessionPages.delete(event.session_id);
+      const views = sessionViews.get(event.session_id)?.views ?? 0;
+      sessionViews.delete(event.session_id);
       if (event.path) {
         addDimension(at, 'exit', pageValue(event), {
           sessions: 1,
-          pageviews: 0,
+          pageviews: views,
           revenue: 0,
         });
       }
       return;
+    }
+    if (isView && event.session_id) {
+      const session = sessionViews.get(event.session_id);
+      if (session) {
+        session.views += 1;
+        if (session.entry) {
+          addDimension(at, 'entry', session.entry, {
+            sessions: 0,
+            pageviews: 1,
+            revenue: 0,
+          });
+        }
+      }
     }
     if (isView || revenue) {
       for (const dim of SESSION_DIMENSIONS) {
@@ -1035,9 +1082,11 @@ export async function openProjectEventsEngine({
     // Pages without a path (server-side events) are left out of page lists.
     if (event.path && (isView || revenue)) {
       const page = pageValue(event);
+      // Like ClickHouse's page list: sessions are those that viewed the page.
       const seen = sessionPages.get(event.session_id) ?? new Set<string>();
-      const firstInSession = event.session_id ? !seen.has(page) : false;
-      if (event.session_id) {
+      const firstInSession =
+        isView && event.session_id ? !seen.has(page) : false;
+      if (isView && event.session_id) {
         seen.add(page);
         sessionPages.set(event.session_id, seen);
       }
@@ -1441,6 +1490,7 @@ export async function openProjectEventsEngine({
       clearCheckpointedState();
     }
     sessionPages.clear();
+    sessionViews.clear();
   }
 
   async function restore() {
@@ -1569,7 +1619,7 @@ export async function openProjectEventsEngine({
       lowestMemoryId = Math.min(lowestMemoryId, id);
       const next = collect(id, events);
       if (next) {
-        return { events: page, cursor: next };
+        return { events: byTimeDesc(page), cursor: next };
       }
     }
 
@@ -1584,20 +1634,20 @@ export async function openProjectEventsEngine({
         CHUNK_READ_BATCH
       );
       if (rows.length === 0) {
-        return { events: page, cursor: null };
+        return { events: byTimeDesc(page), cursor: null };
       }
       for (const row of rows) {
         const id = toNumber(row.id);
         const next = collect(id, await chunkEvents(id, row.body));
         if (next) {
-          return { events: page, cursor: next };
+          return { events: byTimeDesc(page), cursor: next };
         }
         before = id;
         scanned += 1;
       }
     }
     // Scan budget spent: hand back what we have and resume below this chunk.
-    return { events: page, cursor: `${before}:0` };
+    return { events: byTimeDesc(page), cursor: `${before}:0` };
   }
 
   function rollupsSince(fromDay: string): Map<string, DailyRollup> {
@@ -1805,47 +1855,147 @@ export async function openProjectEventsEngine({
       query.to,
       interval,
       query.timezone
-    ).map((bucket) => ({
-      start: bucket.start,
-      ...toStats(
-        rangeCounts(
-          coverWithHoursAndDays(
-            Math.max(bucket.start, query.from),
-            Math.min(bucket.end, end)
-          )
-        )
-      ),
-    }));
+    ).map((bucket) => {
+      const from = Math.max(bucket.start, query.from);
+      const to = Math.min(bucket.end, end);
+      return {
+        start: bucket.start,
+        ...withOpenSessions(
+          toStats(rangeCounts(coverWithHoursAndDays(from, to))),
+          from,
+          to
+        ),
+      };
+    });
     return {
-      totals: toStats(rangeCounts(coverWithHoursAndDays(query.from, end))),
+      totals: withOpenSessions(
+        toStats(rangeCounts(coverWithHoursAndDays(query.from, end))),
+        query.from,
+        end
+      ),
       series,
     };
   }
 
-  /** `metrics` counted from the stored events, for minute series and filters. */
+  /**
+   * Bounces and time of sessions still open, which the rollups only get at
+   * session end: OpenPanel's sessions table shows them while they run.
+   */
+  function withOpenSessions(
+    stats: RangeStats,
+    from: number,
+    to: number
+  ): RangeStats {
+    let bounces = 0;
+    let durationMs = 0;
+    for (const { session } of sessions.values()) {
+      const at = eventTimeMs(session.created_at);
+      if (at < from || at >= to) {
+        continue;
+      }
+      bounces += session.is_bounce ? 1 : 0;
+      durationMs += Math.max(0, session.duration ?? 0);
+    }
+    return {
+      ...stats,
+      bounces: stats.bounces + bounces,
+      durationMs: stats.durationMs + durationMs,
+    };
+  }
+
+  /**
+   * `metrics` counted from the stored events, for minute series and filters,
+   * as ClickHouse's filtered overview counts them: visitors, sessions and
+   * views from the page views that match; revenue and events from matching
+   * events; bounce rate and duration from those sessions (open ones too).
+   */
   async function rawMetrics(
     from: number,
     to: number,
     buckets: { start: number; end: number }[],
     filters: RowFilter[] | undefined
   ): Promise<MetricsResult> {
-    const fresh = () => ({ ...emptyTotals(), people: new Set<string>() });
+    interface Point {
+      people: Set<string>;
+      sessions: Set<string>;
+      screenViews: number;
+      events: number;
+      revenue: number;
+    }
+    const fresh = (): Point => ({
+      people: new Set<string>(),
+      sessions: new Set<string>(),
+      screenViews: 0,
+      events: 0,
+      revenue: 0,
+    });
     const points = buckets.map((bucket) => ({ ...bucket, value: fresh() }));
     const total = fresh();
+    const seen = new Map<
+      string,
+      { first: number; last: number; views: number; bounce?: boolean }
+    >();
     const complete = await scanRange(from, to, (event, at) => {
+      if (event.session_id) {
+        const session = seen.get(event.session_id) ?? {
+          first: at,
+          last: at,
+          views: 0,
+        };
+        session.first = Math.min(session.first, at);
+        session.last = Math.max(session.last, at);
+        if (event.name === 'screen_view') {
+          session.views += 1;
+        }
+        if (event.name === 'session_end') {
+          session.bounce = isBounce(event);
+        }
+        seen.set(event.session_id, session);
+      }
       if (filters?.length && !matchesFilters(eventFilterRow(event), filters)) {
         return;
       }
-      countEvent(total, event);
-      const point = findBucket(points, at);
-      if (point) {
-        countEvent(point.value, event);
+      const point = findBucket(points, at)?.value;
+      for (const target of point ? [total, point] : [total]) {
+        if (event.name === 'screen_view') {
+          target.screenViews += 1;
+          target.events += 1;
+          if (event.profile_id) {
+            target.people.add(event.profile_id);
+          }
+          if (event.session_id) {
+            target.sessions.add(event.session_id);
+          }
+        } else if (
+          event.name !== 'session_start' &&
+          event.name !== 'session_end'
+        ) {
+          target.events += 1;
+          target.revenue += event.revenue ?? 0;
+        }
       }
     });
-    const stats = (value: ReturnType<typeof fresh>) => ({
-      ...toStats(value),
-      visitors: value.people.size,
-    });
+    const stats = (point: Point): RangeStats => {
+      let bounces = 0;
+      let durationMs = 0;
+      for (const id of point.sessions) {
+        const session = seen.get(id);
+        if (!session) {
+          continue;
+        }
+        bounces += (session.bounce ?? session.views <= 1) ? 1 : 0;
+        durationMs += session.last - session.first;
+      }
+      return {
+        visitors: point.people.size,
+        sessions: point.sessions.size,
+        bounces,
+        durationMs,
+        screenViews: point.screenViews,
+        events: point.events,
+        revenue: point.revenue,
+      };
+    };
     return {
       totals: stats(total),
       series: points.map((point) => ({
@@ -1929,53 +2079,85 @@ export async function openProjectEventsEngine({
     to: number,
     filters: RowFilter[]
   ): Promise<Map<string, DimensionDelta>> {
+    // As ClickHouse's filtered lists count them: the sessions are those with
+    // a matching page view (a page filter included), views are matching page
+    // views, revenue is matching events'; entry and exit pages are those
+    // sessions' first and last pages with all their page views.
     const totals = new Map<string, DimensionDelta>();
-    const pageSessions = new Map<string, Set<string>>();
+    const valueSessions = new Map<string, Set<string>>();
     const isSessionDim = (SESSION_DIMENSIONS as readonly string[]).includes(
       dim
     );
-    await scanRange(from, to, (event) => {
-      if (!matchesFilters(eventFilterRow(event), filters)) {
-        return;
-      }
-      const isView = event.name === 'screen_view';
-      const revenue = event.revenue ?? 0;
+    const isEdgeDim = dim === 'entry' || dim === 'exit';
+    const edges = new Map<
+      string,
+      { entry?: string; exit?: string; views: number; matched: boolean }
+    >();
+    const valueOf = (event: IClickhouseEvent): string | null => {
       if (isSessionDim) {
-        const value = sessionDimensionValue(event, dim as SessionDimension);
-        if (event.name === 'session_start') {
-          addDelta(totals, value, { sessions: 1, pageviews: 0, revenue: 0 });
-        } else if (event.name !== 'session_end' && (isView || revenue)) {
-          addDelta(totals, value, {
-            sessions: 0,
-            pageviews: isView ? 1 : 0,
-            revenue,
-          });
+        return sessionDimensionValue(event, dim as SessionDimension);
+      }
+      return event.path ? pageValue(event) : null;
+    };
+    await scanRange(from, to, (event) => {
+      const isView = event.name === 'screen_view';
+      const matches = matchesFilters(eventFilterRow(event), filters);
+      if (isEdgeDim && event.session_id) {
+        const session = edges.get(event.session_id) ?? {
+          views: 0,
+          matched: false,
+        };
+        const page = event.path ? pageValue(event) : undefined;
+        if (event.name === 'session_start' && page) {
+          session.entry = page;
+        } else if (event.name === 'session_end' && page) {
+          session.exit = page;
+        } else if (isView && page) {
+          session.entry ??= page;
+          session.exit = page;
+          session.views += 1;
+          session.matched ||= matches;
         }
+        edges.set(event.session_id, session);
         return;
       }
-      if (!event.path) {
+      if (!matches || event.name === 'session_start') {
         return;
       }
-      const page = pageValue(event);
-      const isEdge =
-        (dim === 'entry' && event.name === 'session_start') ||
-        (dim === 'exit' && event.name === 'session_end');
-      if (isEdge) {
-        addDelta(totals, page, { sessions: 1, pageviews: 0, revenue: 0 });
-      } else if (dim === 'path' && (isView || revenue)) {
-        const seen = pageSessions.get(page) ?? new Set<string>();
-        const firstInSession = event.session_id
-          ? !seen.has(event.session_id)
-          : false;
+      if (event.name === 'session_end') {
+        return;
+      }
+      const revenue = event.revenue ?? 0;
+      if (!(isView || revenue)) {
+        return;
+      }
+      const value = valueOf(event);
+      if (value === null) {
+        return;
+      }
+      let firstInSession = false;
+      if (isView && event.session_id) {
+        const seen = valueSessions.get(value) ?? new Set<string>();
+        firstInSession = !seen.has(event.session_id);
         seen.add(event.session_id);
-        pageSessions.set(page, seen);
+        valueSessions.set(value, seen);
+      }
+      addDelta(totals, value, {
+        sessions: firstInSession ? 1 : 0,
+        pageviews: isView ? 1 : 0,
+        revenue,
+      });
+    });
+    for (const session of edges.values()) {
+      const page = dim === 'entry' ? session.entry : session.exit;
+      if (session.matched && page) {
         addDelta(totals, page, {
-          sessions: firstInSession ? 1 : 0,
-          pageviews: isView ? 1 : 0,
-          revenue: event.name === 'session_end' ? 0 : revenue,
+          sessions: 1,
+          pageviews: session.views,
+          revenue: 0,
         });
       }
-    });
+    }
     return totals;
   }
 
@@ -2171,6 +2353,41 @@ export async function openProjectEventsEngine({
   }
 
   /** User flow (Sankey) entries and transitions from the stored events. */
+  /**
+   * One profile's page from its stored events since `from` (the Durable
+   * Object passes its hot-storage cutoff) and its sessions.
+   */
+  async function profileSummary(
+    profileId: string,
+    from: number
+  ): Promise<ProfileSummary & { sessions: ProfileSessionStats }> {
+    const accumulator = new ProfileSummaryAccumulator(profileId);
+    await scanRange(from, clock.now(), (event) => accumulator.add(event));
+    const ended = listSessions({ profileId, take: SESSION_LIST_MAX_TAKE });
+    const durations = ended
+      .map((session) => session.duration ?? 0)
+      .filter((duration) => duration !== 0)
+      .sort((a, b) => a - b);
+    const average = durations.length
+      ? durations.reduce((sum, value) => sum + value, 0) / durations.length
+      : 0;
+    // quantileExactInclusive(0.9): linear between the two nearest ranks.
+    const rank = (durations.length - 1) * P90;
+    const low = durations[Math.floor(rank)] ?? 0;
+    const high = durations[Math.ceil(rank)] ?? low;
+    const p90 = low + (high - low) * (rank - Math.floor(rank));
+    const bounces = ended.filter((session) => session.is_bounce).length;
+    return {
+      ...accumulator.result(),
+      sessions: {
+        sessions: ended.length,
+        durationAvg: round2(average / MS_PER_SECOND),
+        durationP90: round2(p90 / MS_PER_SECOND),
+        bounceRate: ended.length ? (bounces / ended.length) * PERCENT : 0,
+      },
+    };
+  }
+
   async function sankeyRows(
     query: SankeyScanQuery
   ): Promise<SankeyScanResult & { partial: boolean }> {
@@ -2674,6 +2891,7 @@ export async function openProjectEventsEngine({
     listEvents,
     metrics,
     chartRows,
+    profileSummary,
     pageRows,
     pageSeries,
     eventCounts,

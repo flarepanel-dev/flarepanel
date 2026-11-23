@@ -8,6 +8,7 @@ import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
 import { stripFixedStringPadding } from '../../shared/ch-fixed-string';
+import { toRowFilters } from '../chart/src/engine/store-rows';
 import { getEventFiltersWhereClause } from '../chart/src/filter-where';
 import { buildFilterWhere } from '../chart/src/table-filter-where';
 import {
@@ -1086,26 +1087,42 @@ function toEventListPage(items: IServiceEvent[]) {
   };
 }
 
+/** Store calls one list request may make while pages come back empty. */
+const EVENT_LIST_MAX_CALLS = 20;
+
 /**
- * The event list from the Workers event store. Filters, groups and cohorts
- * need the Phase 4 query port and are not applied yet.
+ * The event list from the Workers event store, with event filters and
+ * groups (cohort filters are not applied there). The store reads a bounded
+ * number of chunks per call, so a selective filter can give an empty page
+ * with a cursor: keep reading until there is something to show.
  */
 async function getStoredEventListPage(
   store: NonNullable<ServiceDeps['eventStore']>,
   input: Omit<EventListPageInput, 'columnVisibility'>
 ) {
-  const page = await store.listEvents(input.projectId, {
-    profileId: input.profileId ?? undefined,
-    sessionId: input.sessionId ?? undefined,
-    names: input.events ?? undefined,
-    startDate: input.startDate ?? undefined,
-    endDate: input.endDate ?? undefined,
-    cursor: input.cursor ?? null,
-    take: EVENT_LIST_PAGE_TAKE,
-  });
-  const items = page.events.map(transformEvent);
+  let cursor = input.cursor ?? null;
+  let events: Awaited<ReturnType<typeof store.listEvents>>['events'] = [];
+  for (let call = 0; call < EVENT_LIST_MAX_CALLS; call++) {
+    const page = await store.listEvents(input.projectId, {
+      profileId: input.profileId ?? undefined,
+      sessionId: input.sessionId ?? undefined,
+      names: input.events ?? undefined,
+      filters: toRowFilters(input.filters),
+      groupId: input.groupId ?? undefined,
+      startDate: input.startDate ?? undefined,
+      endDate: input.endDate ?? undefined,
+      cursor,
+      take: EVENT_LIST_PAGE_TAKE,
+    });
+    events = page.events;
+    cursor = page.cursor;
+    if (events.length > 0 || cursor === null) {
+      break;
+    }
+  }
+  const items = events.map(transformEvent);
   shareSessionProfiles(items);
-  return { data: items, meta: { next: page.cursor } };
+  return { data: items, meta: { next: cursor } };
 }
 
 export async function getEventListPage(
