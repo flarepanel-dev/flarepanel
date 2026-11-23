@@ -12,6 +12,12 @@ import { gunzipSync, gzipSync } from 'node:zlib';
 import { DurableObject } from 'cloudflare:workers';
 import type { DeviceRequest, IClickhouseProfile } from '@flarepanel/core';
 import {
+  AI_CONTENT_TTL_MS,
+  type AiContentArchive,
+  type AiQuery,
+  type AiStore,
+  aiContentPrefix,
+  answerAiQuery,
   archivePrefix,
   buildArchiveObjects,
   type ChartScanQuery,
@@ -26,11 +32,14 @@ import {
   evaluateCohort,
   eventRow,
   type FunnelScanQuery,
+  flushAiContent,
   type GroupQuery,
   type GroupStore,
   type JourneyScanQuery,
   type ListEventsQuery,
+  loadAiContent,
   type MetricsQuery,
+  openAiStore,
   openCohortStore,
   openGroupStore,
   openProfileStore,
@@ -100,6 +109,10 @@ const KEY_ARCHIVED_AT = 'archived_at';
 const KEY_RETENTION_AT = 'retention_at';
 /** Profiles of sessions stored before every session start wrote one. */
 const KEY_VISITOR_PROFILES = 'visitor_profiles_v2';
+/** A trace's prompt and response text goes to R2 once it is quiet this long… */
+const AI_FLUSH_QUIET_MS = 5 * 60 * 1000;
+/** …or once it has waited this long, for traces that never stop. */
+const AI_FLUSH_MAX_AGE_MS = 30 * 60 * 1000;
 
 /**
  * One-time: adds a profile for each visitor whose session start is still
@@ -129,6 +142,8 @@ interface State {
   profiles: ProfileStore;
   groups: GroupStore;
   cohorts: CohortStore;
+  ai: AiStore;
+  sql: EngineSql;
   service: ProjectEventsService;
 }
 
@@ -224,6 +239,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     const profiles = openProfileStore(sql);
     const groups = openGroupStore(sql, () => Date.now());
     const cohorts = openCohortStore(sql, () => Date.now());
+    const ai = openAiStore(sql, () => Date.now());
     const service = createProjectEventsService({
       engine,
       logger: this.logger,
@@ -240,6 +256,9 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
         if (profile) {
           profiles.seen(profile);
         }
+      },
+      onAiEvent: (row) => {
+        ai.add(row);
       },
     });
     if (!(await storage.get<boolean>(KEY_VISITOR_PROFILES))) {
@@ -263,7 +282,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       this.unstreamed =
         (await engine.readChunks(streamedThrough, 1)).length > 0;
     }
-    return { engine, service, profiles, groups, cohorts };
+    return { engine, service, profiles, groups, cohorts, ai, sql };
   }
 
   private async rememberProject(projectId: string) {
@@ -374,17 +393,19 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     }
     const bucket = this.env.EVENTS_ARCHIVE;
     let deleted = 0;
-    if (bucket) {
-      const prefix = archivePrefix(projectId);
+    // Archived events and each AI trace's text.
+    for (const prefix of bucket
+      ? [archivePrefix(projectId), aiContentPrefix(projectId)]
+      : []) {
       let cursor: string | undefined;
       do {
-        const page = await bucket.list({ prefix, cursor, limit: 1000 });
-        const keys = page.objects.map((object) => object.key);
+        const page = await bucket?.list({ prefix, cursor, limit: 1000 });
+        const keys = page?.objects.map((object) => object.key) ?? [];
         if (keys.length > 0) {
-          await bucket.delete(keys);
+          await bucket?.delete(keys);
           deleted += keys.length;
         }
-        cursor = page.truncated ? page.cursor : undefined;
+        cursor = page?.truncated ? page.cursor : undefined;
       } while (cursor);
     }
     await this.ctx.storage.deleteAlarm();
@@ -573,6 +594,48 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
         );
       }
     }
+  }
+
+  /** AI page reads; JSON text in the ClickHouse row shapes. */
+  async ai(query: AiQuery): Promise<string> {
+    const { ai, sql } = await this.state;
+    const projectId = this.projectId ?? '';
+    const archive = this.aiArchive();
+    return JSON.stringify(
+      await answerAiQuery(query, {
+        sql,
+        projectId,
+        now: Date.now(),
+        loadContent: (rows) =>
+          loadAiContent({ store: ai, archive, projectId, rows }),
+      })
+    );
+  }
+
+  /** The R2 files holding each flushed trace's text, or null without R2. */
+  private aiArchive(): AiContentArchive | null {
+    const bucket = this.env.EVENTS_ARCHIVE;
+    if (!bucket) {
+      return null;
+    }
+    return {
+      get: async (key) => {
+        const object = await bucket.get(key);
+        if (!object) {
+          return null;
+        }
+        const bytes = new Uint8Array(await object.arrayBuffer());
+        return new TextDecoder().decode(await gunzip(bytes));
+      },
+      put: async (key, body) => {
+        await bucket.put(key, await gzip(new TextEncoder().encode(body)), {
+          httpMetadata: {
+            contentType: 'application/json',
+            contentEncoding: 'gzip',
+          },
+        });
+      },
+    };
   }
 
   /** Group reads and writes; JSON text (group properties are open-ended). */
@@ -786,6 +849,13 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
         (await this.ctx.storage.get<number>(KEY_ARCHIVED_AT)) ?? 0;
       next = Math.min(next, archivedAt + ARCHIVE_INTERVAL_MS);
     }
+    if (this.env.EVENTS_ARCHIVE) {
+      const { ai } = await this.state;
+      const aiDue = ai.nextDueAt(AI_FLUSH_QUIET_MS, AI_FLUSH_MAX_AGE_MS);
+      if (aiDue !== null) {
+        next = Math.min(next, aiDue);
+      }
+    }
     if (this.unstreamed) {
       const streamedAt =
         (await this.ctx.storage.get<number>(KEY_STREAMED_AT)) ?? 0;
@@ -809,7 +879,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
 
   async alarm() {
     this.alarmAt = null;
-    const { engine } = await this.state;
+    const { engine, ai } = await this.state;
     const result = await engine.tick();
     await this.queueSessionFunnels(
       result.endedSessions.map((session) => session.id)
@@ -817,10 +887,13 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       this.logger.error({ err: error }, 'Could not queue funnel rules')
     );
     await this.archive(engine);
+    await this.flushAi(ai).catch((error) =>
+      this.logger.error({ err: error }, 'Could not save AI text to R2')
+    );
     await this.stream(engine).catch((error) =>
       this.logger.error({ err: error }, 'Could not send events to Basin')
     );
-    await this.applyRetention(engine);
+    await this.applyRetention(engine, ai);
     if (result.endedSessions.length > 0) {
       this.scheduleBroadcast();
     }
@@ -948,7 +1021,24 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       : LITE_RETENTION_DAYS;
   }
 
-  private async applyRetention(engine: ProjectEventsEngine) {
+  /** Each quiet trace's prompt and response text to its R2 file. */
+  private async flushAi(ai: AiStore) {
+    const archive = this.aiArchive();
+    const projectId = this.projectId;
+    if (!(archive && projectId)) {
+      return;
+    }
+    const now = Date.now();
+    await flushAiContent({
+      store: ai,
+      archive,
+      projectId,
+      quietBefore: now - AI_FLUSH_QUIET_MS,
+      oldestBefore: now - AI_FLUSH_MAX_AGE_MS,
+    });
+  }
+
+  private async applyRetention(engine: ProjectEventsEngine, ai: AiStore) {
     const storage = this.ctx.storage;
     const lastRun = (await storage.get<number>(KEY_RETENTION_AT)) ?? 0;
     if (Date.now() - lastRun < RETENTION_INTERVAL_MS) {
@@ -968,6 +1058,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       maxId: Math.min(archivedThrough, streamedThrough),
     });
     engine.pruneSessionLog(Date.now() - days * DAY_MS);
+    ai.expireContent(Date.now() - AI_CONTENT_TTL_MS);
     await storage.put(KEY_RETENTION_AT, Date.now());
   }
 

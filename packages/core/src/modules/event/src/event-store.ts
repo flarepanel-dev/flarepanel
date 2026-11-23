@@ -3,6 +3,7 @@
 // first dashboard screens use (event list, project card) read through this
 // port when it is present. Bun leaves it unset and keeps its ClickHouse reads.
 
+import type { AiQuery } from '../../ingest/cloudflare/ai-query';
 import type {
   ChartRow,
   ChartScanQuery,
@@ -113,6 +114,8 @@ export interface EventStore {
     projectId: string,
     query: EventCountQuery
   ): Promise<{ rows: EventCountRow[]; partial: boolean }>;
+  /** AI page reads, answered as JSON text in the ClickHouse row shapes. */
+  ai(projectId: string, query: AiQuery): Promise<string>;
   /** Cohort compute, members and member activity, answered as JSON text. */
   cohorts(projectId: string, query: CohortQuery): Promise<string>;
   /** Group reads and writes, answered as JSON text. */

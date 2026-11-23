@@ -5,6 +5,7 @@
 // adapts storage, alarms, R2 and sockets around this.
 
 import type { Logger } from '../../../logger';
+import type { IClickhouseAiEvent } from '../../ai/src/row';
 import type {
   IClickhouseEvent,
   IServiceCreateEventPayload,
@@ -51,6 +52,8 @@ export interface ProjectEventsServiceOptions {
   onSessionEnded?: (session: IClickhouseSession) => void;
   /** Called with each stored session_start, e.g. to record its profile. */
   onSessionStarted?: (event: IClickhouseEvent) => void;
+  /** Called with each AI call's row, to store it. */
+  onAiEvent?: (row: IClickhouseAiEvent) => void;
 }
 
 export function createProjectEventsService({
@@ -60,6 +63,7 @@ export function createProjectEventsService({
   onStored,
   onSessionEnded,
   onSessionStarted,
+  onAiEvent,
 }: ProjectEventsServiceOptions) {
   const resolveDevice = (device: DeviceRequest): Promise<DeviceIdResult> =>
     getDeviceId({
@@ -115,7 +119,12 @@ export function createProjectEventsService({
         sessionStarted: () => undefined,
         sessionEndEnqueued: () => undefined,
       },
-      aiEvents: { add: () => Promise.resolve() },
+      aiEvents: {
+        add: (row) => {
+          onAiEvent?.(row);
+          return Promise.resolve();
+        },
+      },
     };
 
     await incomingEvent({ ...draft.event, ...identity }, deps);

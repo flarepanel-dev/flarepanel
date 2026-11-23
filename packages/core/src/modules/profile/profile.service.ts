@@ -276,6 +276,10 @@ export async function getProfileById(
   if (cachedProfile) {
     return transformProfile(cachedProfile);
   }
+  // Workers: the Durable Object lookup above is the whole store.
+  if (deps.eventStore) {
+    return null;
+  }
 
   const [profile] = await chQuery<IClickhouseProfile>(
     deps,

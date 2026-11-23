@@ -6,6 +6,19 @@ export {
   AdvancedAnalyticsBudgetError,
   type AdvancedAnalyticsUsage,
 } from '../../event/src/advanced-analytics';
+export type { AiQuery, AiQueryRange } from './ai-query';
+export { aiRangeMs, answerAiQuery } from './ai-scan';
+export {
+  AI_CONTENT_TTL_MS,
+  type AiContent,
+  type AiContentArchive,
+  type AiStore,
+  aiContentKey,
+  aiContentPrefix,
+  flushAiContent,
+  loadAiContent,
+  openAiStore,
+} from './ai-store';
 export {
   type ArchiveBucket,
   type ArchiveObject,
