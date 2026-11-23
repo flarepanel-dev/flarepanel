@@ -8,6 +8,10 @@ import type {
   ChartScanQuery,
 } from '../../ingest/cloudflare/chart-scan';
 import type {
+  ConversionRow,
+  ConversionScanQuery,
+} from '../../ingest/cloudflare/conversion-scan';
+import type {
   DailyStats,
   Dimension,
   DimensionRow,
@@ -18,15 +22,7 @@ import type {
   ProjectCard,
   SessionListQuery,
 } from '../../ingest/cloudflare/engine';
-import type {
-  ConversionRow,
-  ConversionScanQuery,
-} from '../../ingest/cloudflare/conversion-scan';
 import type { RowFilter } from '../../ingest/cloudflare/filter-eval';
-import type {
-  SankeyScanQuery,
-  SankeyScanResult,
-} from '../../ingest/cloudflare/sankey-scan';
 import type {
   FunnelScanQuery,
   FunnelScanResult,
@@ -40,6 +36,10 @@ import type {
   RetentionRow,
   RetentionScanQuery,
 } from '../../ingest/cloudflare/retention-scan';
+import type {
+  SankeyScanQuery,
+  SankeyScanResult,
+} from '../../ingest/cloudflare/sankey-scan';
 import type { IClickhouseSession } from '../../session/session.service';
 
 export interface EventStore {
@@ -100,6 +100,8 @@ export interface EventStore {
     eventName: string,
     property: string
   ): Promise<string[]>;
+  /** Sends an in-app notification to the project's open dashboards. */
+  publishNotification(projectId: string, notification: unknown): Promise<void>;
   /** The live card: the last 30 minutes by minute. */
   liveData(projectId: string): Promise<LiveSnapshot>;
   /** Sessions, newest first: open ones and the ended-session log. */

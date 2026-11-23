@@ -257,6 +257,7 @@ export {
   createNotificationService,
   getFunnelRules,
   getHasFunnelRules,
+  getNotificationRulesByProjectId,
   isBaseIntegration,
   matchEvent,
   matchEventFilters,

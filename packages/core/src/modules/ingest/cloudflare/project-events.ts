@@ -5,6 +5,8 @@
 // adapts storage, alarms, R2 and sockets around this.
 
 import type { Logger } from '../../../logger';
+import type { IServiceCreateEventPayload } from '../../event/event.service';
+import type { IClickhouseSession } from '../../session/session.service';
 import type { DeviceRequest, TrackDraft } from '../src/backend';
 import { type DeviceIdResult, getDeviceId } from '../src/device-id';
 import {
@@ -32,6 +34,8 @@ export interface ProjectEventsTrackResult extends DeviceIdResult {
   /** The project had no first event and this request stored one. */
   firstEvent: boolean;
   duplicate: boolean;
+  /** The stored event, for the Worker's notification rules (absent if filtered out). */
+  event?: IServiceCreateEventPayload;
 }
 
 export interface ProjectEventsServiceOptions {
@@ -40,6 +44,8 @@ export interface ProjectEventsServiceOptions {
   sessionTimeoutMs: number;
   /** Called after each stored batch, e.g. to schedule the alarm. */
   onStored?: () => void;
+  /** Called when a visitor's return closes their previous session. */
+  onSessionEnded?: (session: IClickhouseSession) => void;
 }
 
 export function createProjectEventsService({
@@ -47,6 +53,7 @@ export function createProjectEventsService({
   logger,
   sessionTimeoutMs,
   onStored,
+  onSessionEnded,
 }: ProjectEventsServiceOptions) {
   const resolveDevice = (device: DeviceRequest): Promise<DeviceIdResult> =>
     getDeviceId({
@@ -69,12 +76,16 @@ export function createProjectEventsService({
     }
 
     let firstEvent = false;
+    let stored: IServiceCreateEventPayload | undefined;
     const deps: IncomingEventDeps = {
       logger,
       sessions: engine.sessions,
       createEvent: engine.createEvent,
-      // Notifications and AI rows arrive with Phase 3b / 4.
-      checkNotificationRulesForEvent: () => Promise.resolve(null),
+      // Rules live in D1: the Worker checks them with the event handed back.
+      checkNotificationRulesForEvent: (payload) => {
+        stored = payload;
+        return Promise.resolve(null);
+      },
       projects: {
         getCached: () => Promise.resolve(project),
         markFirstEvent: () => {
@@ -84,7 +95,10 @@ export function createProjectEventsService({
         getAiStoreContent: () =>
           Promise.resolve(project?.aiStoreContent ?? null),
       },
-      enqueueSessionEnd: engine.endSession,
+      enqueueSessionEnd: async (input) => {
+        await engine.endSession(input);
+        onSessionEnded?.(input.closedSession);
+      },
       metrics: {
         sessionStarted: () => undefined,
         sessionEndEnqueued: () => undefined,
@@ -96,7 +110,12 @@ export function createProjectEventsService({
     // The answer means "stored": wait for the group commit.
     await engine.sync();
     onStored?.();
-    return { ...identity, firstEvent, duplicate: false };
+    return {
+      ...identity,
+      firstEvent,
+      duplicate: false,
+      ...(stored ? { event: stored } : {}),
+    };
   }
 
   return {

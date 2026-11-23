@@ -92,8 +92,11 @@ function stubJobCtx(
   };
 }
 
-test('the notification queue declares exactly the sendNotification job', () => {
-  expect(Object.keys(notificationQueueJobs)).toEqual(['sendNotification']);
+test('the notification queue declares its two jobs', () => {
+  expect(Object.keys(notificationQueueJobs)).toEqual([
+    'checkSessionFunnel',
+    'sendNotification',
+  ]);
   expect(queues.notification.jobs.sendNotification).toMatchObject({
     queue: 'notification',
     name: 'sendNotification',

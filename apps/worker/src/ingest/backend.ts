@@ -8,13 +8,17 @@
 import {
   type AppDeps,
   type Buffers,
+  checkNotificationRulesForEvent,
   createCtx,
   type DeviceRequest,
   type EventStore,
+  getFunnelRules,
   getGeoFromCf,
+  getNotificationRulesByProjectId,
   getProjectByIdCached,
   type IClickhouseProfile,
   type IngestBackend,
+  type IServiceCreateEventPayload,
   type TrackDraft,
   updateEventsCount,
 } from '@flarepanel/core';
@@ -92,7 +96,13 @@ export function createCloudflareIngestBackend({
         const project = await getProjectByIdCached(deps(), projectId).catch(
           () => null
         );
+        // Cached per project (Cache API), so usually no D1 read.
+        const rules = await getNotificationRulesByProjectId(
+          deps(),
+          projectId
+        ).catch(() => []);
         const result = await projectEventsStub(env, projectId).track({
+          funnelRules: getFunnelRules(rules).length > 0,
           draft,
           project: project
             ? {
@@ -117,6 +127,21 @@ export function createCloudflareIngestBackend({
           requestId: `usage:${projectId}`,
           logger: appDeps.logger,
         });
+        const hasEventRules = rules.some(
+          (rule) => (rule.config as { type?: string }).type === 'events'
+        );
+        if (result.eventJson && hasEventRules) {
+          const stored = JSON.parse(
+            result.eventJson
+          ) as IServiceCreateEventPayload;
+          stored.createdAt = new Date(stored.createdAt);
+          await checkNotificationRulesForEvent(scope, stored).catch((error) =>
+            appDeps.logger.error(
+              { err: error, projectId },
+              'Could not check notification rules'
+            )
+          );
+        }
         await updateEventsCount(scope, projectId).catch((error) =>
           appDeps.logger.warn(
             { err: error, projectId },
@@ -152,6 +177,8 @@ export function createWorkerEventStore(
     metrics: (projectId, query) =>
       projectEventsStub(env, projectId).metrics(query),
     liveData: (projectId) => projectEventsStub(env, projectId).liveData(),
+    publishNotification: (projectId, notification) =>
+      projectEventsStub(env, projectId).publishNotification(notification),
     chartRows: (projectId, query) =>
       projectEventsStub(env, projectId).chartRows(query),
     conversionRows: (projectId, query) =>

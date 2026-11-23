@@ -251,6 +251,14 @@ export async function deliverNotification(
   // Lazy: a static @flarepanel/redis import would force every core test's redis
   // mock to provide `publishEvent`.
   if (notification.sendToApp) {
+    // Workers: the project's Durable Object holds the dashboard's sockets.
+    if (deps.eventStore) {
+      await deps.eventStore.publishNotification(
+        notification.projectId,
+        notification
+      );
+      return;
+    }
     const { publishEvent } = await import('@flarepanel/redis');
     publishEvent('notification', 'created', notification);
     return;
@@ -456,6 +464,7 @@ export async function createOrUpdateNotificationRule(
     template: input.template || null,
   };
 
+  await clearRulesCache(deps, input.projectId);
   if (input.id) {
     return db.notificationRule.update({
       where: { id: input.id },
@@ -482,8 +491,22 @@ export async function createOrUpdateNotificationRule(
   });
 }
 
+/**
+ * Ingest checks rules from a cache, so a change applies from the next event.
+ * Best effort: if the clear fails, the cached list expires within 24 minutes.
+ */
+async function clearRulesCache(deps: ServiceDeps, projectId: string) {
+  try {
+    await getNotificationRulesByProjectId.clear(deps, projectId);
+  } catch {
+    // The TTL takes over.
+  }
+}
+
 export async function deleteNotificationRule(deps: ServiceDeps, id: string) {
-  return await deps.db.notificationRule.delete({ where: { id } });
+  const deleted = await deps.db.notificationRule.delete({ where: { id } });
+  await clearRulesCache(deps, deleted.projectId);
+  return deleted;
 }
 
 // Only `dispatch` goes through ctx.services; everything else is called directly.

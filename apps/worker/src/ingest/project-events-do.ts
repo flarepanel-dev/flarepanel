@@ -39,6 +39,7 @@ import {
   type SqlValue,
   toBasinRow,
 } from '@flarepanel/core/ingest/cloudflare';
+import { setSuperJson } from '@flarepanel/shared';
 import { isStreamingEnabled } from '../advanced/config';
 import type { Env } from '../index';
 import { createConsoleLogger } from '../logger';
@@ -67,6 +68,8 @@ const PICKER_MAX_VALUES = 500;
 const HIDDEN_PROPERTY_KEYS = new Set(['__duration_from', '__properties_from']);
 
 const KEY_PROJECT_ID = 'project_id';
+/** Whether the project has funnel notification rules (set by the Worker). */
+const KEY_FUNNEL_RULES = 'funnel_rules';
 const KEY_ARCHIVED_THROUGH = 'archived_through';
 const KEY_STREAMED_THROUGH = 'streamed_through';
 const KEY_STREAMED_AT = 'streamed_at';
@@ -79,7 +82,7 @@ const STREAM_SEND_ROWS = 500;
 const KEY_ARCHIVED_AT = 'archived_at';
 const KEY_RETENTION_AT = 'retention_at';
 
-/** `notifications` sockets stay open and quiet until Phase 4 sends on them. */
+/** `notifications` sockets get in-app notifications (`publishNotification`). */
 type LiveKind = 'events' | 'visitors' | 'notifications';
 
 interface State {
@@ -114,6 +117,8 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   });
   private state: Promise<State>;
   private projectId: string | null = null;
+  /** Funnel rules exist: ended sessions are queued for them. */
+  private funnelRules = false;
   private alarmAt: number | null = null;
   private unarchived = false;
   /** Advanced analytics: stored chunks not sent to the Basin stream yet. */
@@ -166,7 +171,13 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       logger: this.logger,
       sessionTimeoutMs: SESSION_TIMEOUT_MS,
       onStored: () => this.afterStore(),
+      onSessionEnded: (session) => {
+        this.queueSessionFunnels([session.id]).catch((error) =>
+          this.logger.error({ err: error }, 'Could not queue funnel rules')
+        );
+      },
     });
+    this.funnelRules = (await storage.get<boolean>(KEY_FUNNEL_RULES)) ?? false;
 
     this.projectId = (await storage.get<string>(KEY_PROJECT_ID)) ?? null;
     this.alarmAt = await storage.getAlarm();
@@ -193,15 +204,23 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   // -------------------------------------------------------------------------
   // RPC (called by the Worker with the project's id as the object name)
 
-  async track(input: ProjectEventsTrackInput) {
+  async track(input: ProjectEventsTrackInput & { funnelRules?: boolean }) {
     const { service } = await this.state;
     await this.rememberProject(input.draft.event.projectId);
-    const result = await service.track(input);
+    if (
+      input.funnelRules !== undefined &&
+      input.funnelRules !== this.funnelRules
+    ) {
+      this.funnelRules = input.funnelRules;
+      await this.ctx.storage.put(KEY_FUNNEL_RULES, input.funnelRules);
+    }
+    const { event, ...result } = await service.track(input);
     if (!result.duplicate) {
       this.pendingEvents += 1;
       this.scheduleBroadcast();
     }
-    return result;
+    // As JSON text: the payload's open-ended properties are not RPC-typed.
+    return { ...result, eventJson: event ? JSON.stringify(event) : null };
   }
 
   async resolveDevice(device: DeviceRequest) {
@@ -483,6 +502,11 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     this.alarmAt = null;
     const { engine } = await this.state;
     const result = await engine.tick();
+    await this.queueSessionFunnels(
+      result.endedSessions.map((session) => session.id)
+    ).catch((error) =>
+      this.logger.error({ err: error }, 'Could not queue funnel rules')
+    );
     await this.archive(engine);
     await this.stream(engine).catch((error) =>
       this.logger.error({ err: error }, 'Could not send events to Basin')
@@ -529,6 +553,37 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     }
     await storage.put(KEY_STREAMED_AT, Date.now());
     this.unstreamed = (await engine.readChunks(through, 1)).length > 0;
+  }
+
+  /**
+   * Funnel notification rules need a session's events once it ends; only
+   * projects that have such rules pay for the queue message.
+   */
+  private async queueSessionFunnels(sessionIds: string[]) {
+    const projectId = this.projectId;
+    if (!(this.funnelRules && projectId) || sessionIds.length === 0) {
+      return;
+    }
+    await this.env.JOBS.sendBatch(
+      sessionIds.map((sessionId) => ({
+        body: {
+          v: 1,
+          queue: 'notification',
+          job: 'checkSessionFunnel',
+          jobId: crypto.randomUUID(),
+          data: { payload: { projectId, sessionId }, meta: {} },
+          attempts: 3,
+        },
+      }))
+    );
+  }
+
+  /** In-app notifications for the project's open dashboards. */
+  async publishNotification(notification: unknown) {
+    const message = setSuperJson(notification);
+    for (const ws of this.ctx.getWebSockets('notifications')) {
+      safeSend(ws, message);
+    }
   }
 
   private async archive(engine: ProjectEventsEngine) {
