@@ -7,6 +7,7 @@ import {
   assertTableName,
   basinChartSql,
   filterExpression,
+  sqlString,
   UnsupportedBasinQuery,
 } from './basin-sql';
 import type { ChartScanQuery } from './chart-scan';
@@ -147,5 +148,13 @@ describe('Basin chart SQL', () => {
     expect(assertTableName('flarepanel.events')).toBe('flarepanel.events');
     expect(() => assertTableName('events; DROP')).toThrow();
     expect(() => assertTableName('a.b.c')).toThrow();
+  });
+});
+
+describe('sqlString', () => {
+  it('doubles quotes and refuses what a dialect could read as an escape', () => {
+    expect(sqlString("it's")).toBe("'it''s'");
+    expect(() => sqlString("x\\' OR 1=1 --")).toThrow(UnsupportedBasinQuery);
+    expect(() => sqlString('line\nbreak')).toThrow(UnsupportedBasinQuery);
   });
 });

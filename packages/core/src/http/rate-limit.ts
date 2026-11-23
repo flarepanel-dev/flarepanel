@@ -229,6 +229,22 @@ export const HTTP_RATE_LIMITS: readonly (HttpRateLimit & {
     max: 100,
     windowMs: 10_000,
   },
+  // The public tools fetch other sites. Their own limiter is a per-process
+  // map, which on Workers only counts inside one isolate; this one is shared.
+  {
+    prefix: '/tools/site-checker',
+    scope: 'site-checker',
+    keyBy: 'ip',
+    max: 10,
+    windowMs: 60_000,
+  },
+  {
+    prefix: '/tools/ip-lookup',
+    scope: 'ip-lookup',
+    keyBy: 'ip',
+    max: 20,
+    windowMs: 60_000,
+  },
 ];
 
 export function limitFor(pathname: string): HttpRateLimit | undefined {

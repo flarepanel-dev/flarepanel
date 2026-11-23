@@ -1,11 +1,13 @@
-import type { Logger } from '@flarepanel/core';
+import { type Logger, redactSensitive } from '@flarepanel/core';
 
 const LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'] as const;
 type Level = (typeof LEVELS)[number];
 
 /**
  * JSON lines on the console: Workers Logs captures them. pino-style calls:
- * `logger.info({ field }, 'message')` or `logger.info('message')`.
+ * `logger.info({ field }, 'message')` or `logger.info('message')`. Fields go
+ * through the same redaction as the Bun logger: secrets, tokens, emails, IPs
+ * and credentials in URL queries never reach Workers Logs.
  */
 export function createConsoleLogger(
   level: string,
@@ -28,10 +30,10 @@ export function createConsoleLogger(
       const line = JSON.stringify({
         level: name,
         time: Date.now(),
-        ...bindings,
-        ...serialize(fields),
+        ...(redactSensitive(bindings) as Record<string, unknown>),
+        ...(redactSensitive(serialize(fields)) as Record<string, unknown>),
         msg: message,
-        ...(rest.length ? { args: rest } : {}),
+        ...(rest.length ? { args: redactSensitive(rest) } : {}),
       });
       (name === 'error' || name === 'fatal' ? console.error : console.log)(
         line

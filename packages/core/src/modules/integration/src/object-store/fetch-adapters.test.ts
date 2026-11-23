@@ -309,6 +309,8 @@ describe('fetch GCS adapter', () => {
         project_id: 'proj',
         client_email: 'export@proj.iam.gserviceaccount.com',
         private_key: pem,
+        // Tenant-supplied: never followed.
+        token_uri: 'http://169.254.169.254/token',
       }),
     } as IGCSExportConfig;
     const adapter = new FetchGcsAdapter(config, coreConfig, fake.fetch);
@@ -324,6 +326,7 @@ describe('fetch GCS adapter', () => {
       content: '{}',
       contentType: 'application/json',
     });
+    expect(fake.calls[0]?.url).toBe('https://oauth2.googleapis.com/token');
     expect(
       fake.calls.filter((call) => call.url.includes('oauth2'))
     ).toHaveLength(1);

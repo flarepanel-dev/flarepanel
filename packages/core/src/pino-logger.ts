@@ -2,11 +2,10 @@ import { createRequire } from 'node:module';
 import * as HyperDX from '@hyperdx/node-opentelemetry';
 import pino, { type Logger as PinoLogger } from 'pino';
 import type { CoreConfig } from './config';
-import {
-  isSensitiveKey,
-  REDACTED,
-  sanitizeUrlQuery,
-} from './shared/sanitize-url';
+import { redactSensitive } from './shared/sanitize-url';
+
+// Kept here for existing imports; the Worker logger uses the same function.
+export { redactSensitive } from './shared/sanitize-url';
 
 export type ILogger = PinoLogger;
 
@@ -14,46 +13,6 @@ export type ILogger = PinoLogger;
 // bypass capture (crash handlers mirroring fatals) is not re-ingested twice.
 export const rawStdoutWrite = process.stdout.write.bind(process.stdout);
 export const rawStderrWrite = process.stderr.write.bind(process.stderr);
-
-const MAX_REDACT_DEPTH = 5;
-
-export function redactSensitive(value: unknown, depth = 0): unknown {
-  if (value instanceof Error) {
-    return {
-      ...value,
-      message: value.message,
-      stack: value.stack,
-      name: value.name,
-    };
-  }
-  if (
-    depth >= MAX_REDACT_DEPTH ||
-    value === null ||
-    typeof value !== 'object'
-  ) {
-    return value;
-  }
-  if (value instanceof Date) {
-    return value;
-  }
-  if (Array.isArray(value)) {
-    return value.map((v) => redactSensitive(v, depth + 1));
-  }
-
-  const result: Record<string, unknown> = {};
-  for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
-    if (isSensitiveKey(key)) {
-      result[key] = REDACTED;
-    } else if (key.toLowerCase().includes('url') && typeof val === 'string') {
-      // Backstop for anything that logs a raw URL: the credentials sit in the
-      // query, not the key.
-      result[key] = sanitizeUrlQuery(val);
-    } else {
-      result[key] = redactSensitive(val, depth + 1);
-    }
-  }
-  return result;
-}
 
 // Shared by logs and traces so both signals land under one service name.
 export function getServiceName(config: CoreConfig, name: string): string {

@@ -54,8 +54,32 @@ const PERCENTILES: Record<string, number> = {
 
 export class UnsupportedBasinQuery extends Error {}
 
+// biome-ignore lint/suspicious/noControlCharactersInRegex: the point is to refuse them.
+const UNSAFE_LITERAL = /[\\\u0000-\u001f]/;
+
+/**
+ * A caller's value as text. A backslash or a control character is refused
+ * rather than trusted to the SQL dialect's string rules, so such a value falls
+ * back to the Durable Object scan instead of reaching R2 SQL.
+ */
+function checkedText(value: unknown): string {
+  const text = String(value ?? '');
+  if (UNSAFE_LITERAL.test(text)) {
+    throw new UnsupportedBasinQuery(
+      'Value with a backslash or control character'
+    );
+  }
+  return text;
+}
+
+/** Quotes doubled, as in standard SQL. Only for text built here. */
+function quoted(text: string): string {
+  return `'${text.replaceAll("'", "''")}'`;
+}
+
+/** A quoted literal of a caller's value. */
 export function sqlString(value: unknown): string {
-  return `'${String(value ?? '').replaceAll("'", "''")}'`;
+  return quoted(checkedText(value));
 }
 
 function at(ms: number): string {
@@ -103,7 +127,7 @@ export function filterExpression(filter: RowFilter): string {
   const field = `COALESCE(${fieldExpression(filter.name)}, '')`;
   const values = filter.value
     .filter((value) => value !== null && value !== undefined)
-    .map(String);
+    .map(checkedText);
   const list = values.map(sqlString).join(', ');
   const any = (make: (value: string) => string) =>
     values.length === 0 ? 'FALSE' : `(${values.map(make).join(' OR ')})`;
@@ -114,17 +138,17 @@ export function filterExpression(filter: RowFilter): string {
       return values.length === 0 ? 'TRUE' : `${field} NOT IN (${list})`;
     case 'contains':
       return any(
-        (value) => `${field} LIKE ${sqlString(`%${escapeLike(value)}%`)}`
+        (value) => `${field} LIKE ${quoted(`%${escapeLike(value)}%`)}`
       );
     case 'doesNotContain':
-      return `NOT ${any((value) => `${field} LIKE ${sqlString(`%${escapeLike(value)}%`)}`)}`;
+      return `NOT ${any((value) => `${field} LIKE ${quoted(`%${escapeLike(value)}%`)}`)}`;
     case 'startsWith':
       return any(
-        (value) => `${field} LIKE ${sqlString(`${escapeLike(value)}%`)}`
+        (value) => `${field} LIKE ${quoted(`${escapeLike(value)}%`)}`
       );
     case 'endsWith':
       return any(
-        (value) => `${field} LIKE ${sqlString(`%${escapeLike(value)}`)}`
+        (value) => `${field} LIKE ${quoted(`%${escapeLike(value)}`)}`
       );
     case 'regex':
       return any((value) => `regexp_like(${field}, ${sqlString(value)})`);

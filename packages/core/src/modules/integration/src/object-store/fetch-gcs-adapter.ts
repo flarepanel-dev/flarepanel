@@ -128,8 +128,9 @@ export class FetchGcsAdapter implements IObjectStoreAdapter {
       );
     }
     const { credentials } = parsed;
-    const tokenUri =
-      (credentials as { token_uri?: string }).token_uri || DEFAULT_TOKEN_URI;
+    // The key file's `token_uri` is tenant-supplied: always use Google's, as
+    // Google's own SDK does, so a key cannot point the server at another host.
+    const tokenUri = DEFAULT_TOKEN_URI;
     let assertion: string;
     try {
       assertion = await signServiceAccountJwt({

@@ -1159,7 +1159,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   /** In-app notifications for the project's open dashboards. */
   async publishNotification(notification: unknown) {
     const message = setSuperJson(notification);
-    for (const ws of this.ctx.getWebSockets('notifications')) {
+    for (const ws of this.liveSockets('notifications')) {
       safeSend(ws, message);
     }
   }
@@ -1279,6 +1279,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair) as [WebSocket, WebSocket];
     this.ctx.acceptWebSocket(server, [kind]);
+    server.serializeAttachment({ checkedAt: Date.now() } satisfies LiveAccess);
     if (kind === 'visitors') {
       const { engine } = await this.state;
       server.send(String(engine.activeVisitors()));
@@ -1296,6 +1297,31 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     } catch {
       // Already closed.
     }
+  }
+
+  /**
+   * Open sockets of one kind whose access was checked recently. The Worker
+   * checks session and project access only at connect, so an older socket is
+   * closed instead of sent to: the dashboard reconnects, and the reconnect is
+   * checked again. A removed member or a revoked share stops receiving within
+   * LIVE_ACCESS_TTL_MS, as the Bun routes re-check visitors every minute.
+   */
+  private liveSockets(kind: LiveKind): WebSocket[] {
+    const now = Date.now();
+    const fresh: WebSocket[] = [];
+    for (const ws of this.ctx.getWebSockets(kind)) {
+      const access = ws.deserializeAttachment() as LiveAccess | null;
+      if (access && now - access.checkedAt < LIVE_ACCESS_TTL_MS) {
+        fresh.push(ws);
+        continue;
+      }
+      try {
+        ws.close(LIVE_RECHECK_CLOSE_CODE, 'access re-check');
+      } catch {
+        // Already closed.
+      }
+    }
+    return fresh;
   }
 
   private scheduleBroadcast() {
@@ -1318,7 +1344,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     this.lastBroadcastAt = Date.now();
     const count = this.pendingEvents;
     this.pendingEvents = 0;
-    const eventSockets = this.ctx.getWebSockets('events');
+    const eventSockets = this.liveSockets('events');
     if (count > 0 && eventSockets.length > 0) {
       // superjson's wire shape, as the Bun routes send it.
       const message = JSON.stringify({ json: { count } });
@@ -1326,7 +1352,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
         safeSend(ws, message);
       }
     }
-    const visitorSockets = this.ctx.getWebSockets('visitors');
+    const visitorSockets = this.liveSockets('visitors');
     if (visitorSockets.length > 0) {
       const { engine } = await this.state;
       const message = String(engine.activeVisitors());
@@ -1335,6 +1361,15 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       }
     }
   }
+}
+
+/** How long a live socket's connect-time access check is trusted. */
+export const LIVE_ACCESS_TTL_MS = 60_000;
+/** Application close code (4000-4999): reconnect to be checked again. */
+const LIVE_RECHECK_CLOSE_CODE = 4001;
+
+interface LiveAccess {
+  checkedAt: number;
 }
 
 function safeSend(ws: WebSocket, message: string) {

@@ -362,6 +362,7 @@ export type { SiteCheckResult } from './modules/tools/src/site-checker';
 export { runSiteCheck } from './modules/tools/src/site-checker';
 export { createUserService } from './modules/user/user.service';
 export type { ILogger } from './pino-logger';
+export { redactSensitive } from './shared/sanitize-url';
 export {
   createLogger,
   getServiceName,

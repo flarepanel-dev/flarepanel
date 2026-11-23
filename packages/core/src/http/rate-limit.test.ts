@@ -26,6 +26,8 @@ const PUBLISHED_LIMITS = {
   '/insights/acme-web/overview': { max: 100, windowMs: 10_000 },
   '/mcp': { max: 60, windowMs: 60_000 },
   '/misc/favicon': { max: 100, windowMs: 10_000 },
+  '/tools/site-checker': { max: 10, windowMs: 60_000 },
+  '/tools/ip-lookup': { max: 20, windowMs: 60_000 },
 } as const;
 
 describe('HTTP rate limits', () => {

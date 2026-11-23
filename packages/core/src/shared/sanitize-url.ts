@@ -69,3 +69,44 @@ export function sanitizeUrlQuery(url: string): string {
 
   return `${url.slice(0, queryIndex)}?${sanitized}`;
 }
+
+/** Redacts sensitive keys and URL query values, as every logger does. */
+const MAX_REDACT_DEPTH = 5;
+
+export function redactSensitive(value: unknown, depth = 0): unknown {
+  if (value instanceof Error) {
+    return {
+      ...value,
+      message: value.message,
+      stack: value.stack,
+      name: value.name,
+    };
+  }
+  if (
+    depth >= MAX_REDACT_DEPTH ||
+    value === null ||
+    typeof value !== 'object'
+  ) {
+    return value;
+  }
+  if (value instanceof Date) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((v) => redactSensitive(v, depth + 1));
+  }
+
+  const result: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+    if (isSensitiveKey(key)) {
+      result[key] = REDACTED;
+    } else if (key.toLowerCase().includes('url') && typeof val === 'string') {
+      // Backstop for anything that logs a raw URL: the credentials sit in the
+      // query, not the key.
+      result[key] = sanitizeUrlQuery(val);
+    } else {
+      result[key] = redactSensitive(val, depth + 1);
+    }
+  }
+  return result;
+}
