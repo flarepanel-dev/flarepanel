@@ -17,7 +17,10 @@ import {
   publicProcedure,
 } from '../../rpc/base';
 import { TRPCNotFoundError } from '../../rpc/errors';
+import type { ServiceDeps } from '../../services';
 import { TABLE_NAMES } from '../../shared/ch-tables';
+import type { RealtimeQuery } from '../ingest/cloudflare/realtime-scan';
+import { wallClockText } from '../ingest/cloudflare/time-buckets';
 import { getSettingsForProject } from '../organization/organization.service';
 import {
   zCounterWidgetOptions,
@@ -29,6 +32,73 @@ import {
 const uid = new ShortUniqueId({ length: 6 });
 const BADGE_CACHE_TTL_SECONDS = 5 * 60; // queries 30 days of data
 const REALTIME_TOP_LIST_LIMIT = 10;
+const BADGE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const REALTIME_MINUTES = 30;
+const MINUTE_MS = 60_000;
+
+/** The realtime widget's numbers from the project's Durable Object. */
+async function realtimeWidgetFromEventStore(
+  store: NonNullable<ServiceDeps['eventStore']>,
+  projectId: string,
+  timezone: string,
+  options: { countries?: boolean; referrers?: boolean; paths?: boolean }
+) {
+  const read = async <T>(query: RealtimeQuery): Promise<T> =>
+    JSON.parse(await store.realtime(projectId, query)) as T;
+  const [histogram, sources, paths] = await Promise.all([
+    read<{
+      totalSessions: number;
+      minutes: { minute: number; sessions: number; visitors: number }[];
+      now: number;
+    }>({ kind: 'histogram' }),
+    options.countries || options.referrers
+      ? read<{
+          referrers: { name: string; sessions: number }[];
+          countries: { country: string; sessions: number }[];
+        }>({ kind: 'topSources', limit: REALTIME_TOP_LIST_LIMIT })
+      : Promise.resolve({ referrers: [], countries: [] }),
+    options.paths
+      ? read<{ path: string; count: number }[]>({
+          kind: 'topPaths',
+          limit: REALTIME_TOP_LIST_LIMIT,
+        })
+      : Promise.resolve([]),
+  ]);
+  const byMinute = new Map(histogram.minutes.map((row) => [row.minute, row]));
+  const last = Math.floor(histogram.now / MINUTE_MS) * MINUTE_MS;
+  const minutes = Array.from({ length: REALTIME_MINUTES + 1 }, (_, index) => {
+    const minute = last - (REALTIME_MINUTES - index) * MINUTE_MS;
+    const row = byMinute.get(minute);
+    return {
+      minute: wallClockText(minute, timezone),
+      sessionCount: row?.sessions ?? 0,
+      visitorCount: row?.visitors ?? 0,
+      timestamp: minute,
+      time: new Date(minute).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: timezone,
+      }),
+    };
+  });
+  return {
+    liveCount: histogram.totalSessions,
+    histogram: minutes,
+    countries: options.countries
+      ? sources.countries.map((row) => ({
+          country: row.country,
+          count: row.sessions,
+        }))
+      : [],
+    referrers: options.referrers
+      ? sources.referrers.map((row) => ({
+          referrer: row.name,
+          count: row.sessions,
+        }))
+      : [],
+    paths: paths.map((row) => ({ path: row.path, count: row.count })),
+  };
+}
 
 const EVENTS_TABLE = sql.id(TABLE_NAMES.events);
 const REALTIME_WINDOW = sql`created_at >= (now() - INTERVAL 30 MINUTE)`;
@@ -205,6 +275,16 @@ export const widgetRouter = createTRPCRouter({
         cacheKey,
         BADGE_CACHE_TTL_SECONDS,
         async () => {
+          if (ctx.eventStore) {
+            const now = Date.now();
+            const { totals } = await ctx.eventStore.metrics(projectId, {
+              from: now - BADGE_WINDOW_MS,
+              to: now,
+              interval: 'day',
+              timezone,
+            });
+            return totals.visitors;
+          }
           const result = await chQuery<{ count: number }>(
             ctx,
             sql`SELECT uniq(profile_id) as count FROM ${EVENTS_TABLE} WHERE project_id = ${sql.string(projectId)} AND created_at >= (now() - INTERVAL 30 DAY)`,
@@ -249,6 +329,19 @@ export const widgetRouter = createTRPCRouter({
       }
 
       const { timezone } = await getSettingsForProject(ctx, projectId);
+
+      if (ctx.eventStore) {
+        return {
+          projectId,
+          project: widget.project,
+          ...(await realtimeWidgetFromEventStore(
+            ctx.eventStore,
+            projectId,
+            timezone,
+            options
+          )),
+        };
+      }
 
       const settings = { session_timezone: timezone };
       const totalSessionsStatement = sql`SELECT uniq(session_id) as total_sessions FROM ${EVENTS_TABLE} WHERE project_id = ${sql.string(projectId)} AND ${REALTIME_WINDOW}`;

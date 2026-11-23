@@ -495,6 +495,60 @@ function listUtcDays(from: string, to: string): string[] {
   return days;
 }
 
+/**
+ * Billing usage on Workers: billable events per UTC day from each project's
+ * daily totals (every event but session start and end), and the top event
+ * names from its stored events. A mid-day `since` drops only whole days
+ * before it from the bars; the names honour it exactly.
+ */
+async function billingUsageFromEventStore(
+  store: NonNullable<ServiceDeps['eventStore']>,
+  usage: IOrganizationBillingUsage,
+  { projectIds, from, to, since }: IOrganizationBillingUsageInput
+): Promise<IOrganizationBillingUsage> {
+  const start = Date.parse(`${from}T00:00:00Z`);
+  const end = Date.parse(`${to}T23:59:59.999Z`);
+  const sinceMs = since ? Date.parse(`${since.replace(' ', 'T')}Z`) : start;
+  const sinceDay = new Date(sinceMs).toISOString().slice(0, 10);
+  const countsByDay = new Map(usage.days.map((row) => [row.day, row.counts]));
+  const allNames = new Map<string, number>();
+  await Promise.all(
+    projectIds.map(async (projectId) => {
+      const [days, names] = await Promise.all([
+        store.dailyStats(projectId, new Date(start), new Date(end)),
+        store.eventCounts(projectId, {
+          from: Math.max(start, sinceMs),
+          to: end,
+          by: 'name',
+          excludeNames: NON_BILLABLE_EVENT_NAMES,
+        }),
+      ]);
+      for (const day of days) {
+        if (day.day < sinceDay || day.events === 0) {
+          continue;
+        }
+        const counts = countsByDay.get(day.day);
+        if (counts) {
+          counts[projectId] = day.events;
+          usage.projectTotals[projectId] =
+            (usage.projectTotals[projectId] ?? 0) + day.events;
+        }
+      }
+      usage.eventNamesByProject[projectId] = names.rows
+        .slice(0, BILLING_USAGE_EVENT_NAMES_LIMIT)
+        .map((row) => ({ name: row.key, count: row.count }));
+      for (const row of names.rows) {
+        allNames.set(row.key, (allNames.get(row.key) ?? 0) + row.count);
+      }
+    })
+  );
+  usage.eventNames = [...allNames.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, BILLING_USAGE_EVENT_NAMES_LIMIT)
+    .map(([name, count]) => ({ name, count }));
+  return usage;
+}
+
 export async function getOrganizationBillingUsage(
   deps: ServiceDeps,
   { projectIds, from, to, since }: IOrganizationBillingUsageInput
@@ -509,6 +563,15 @@ export async function getOrganizationBillingUsage(
   };
   if (projectIds.length === 0) {
     return empty;
+  }
+
+  if (deps.eventStore) {
+    return billingUsageFromEventStore(deps.eventStore, empty, {
+      projectIds,
+      from,
+      to,
+      since,
+    });
   }
 
   // Both statements share the billable-event filter so the pie's "Other"

@@ -210,6 +210,28 @@ describe('funnels from stored events', () => {
     const stepTwo = timeToConvert.filter((row) => row.step === 2);
     expect(stepTwo.map((row) => row.from_previous_step)).toEqual([180]);
   });
+
+  it('lists the profiles that reached or stopped at a step', () => {
+    const profiles = (targetLevel: number, showDropoffs: boolean) =>
+      feed(
+        new FunnelAccumulator(
+          query({
+            profiles: {
+              targetLevel,
+              showDropoffs,
+              breakdownValues: [],
+              limit: 10,
+            },
+          })
+        ),
+        events
+      )
+        .result()
+        .profileIds?.sort();
+    expect(profiles(2, false)).toEqual(['user-a', 'user-c']);
+    expect(profiles(1, true)).toEqual(['user-b']);
+    expect(profiles(3, false)).toEqual(['user-a']);
+  });
 });
 
 describe('retention from stored events', () => {

@@ -25,6 +25,17 @@ export interface FunnelScanQuery {
   group: 'session_id' | 'profile_id' | 'group';
   /** Adds time-to-convert rows aggregated this way (avg, median, p90, ...). */
   timeToConvert?: string;
+  /**
+   * Also return the profiles at one level (1-based): those that reached it,
+   * or with `showDropoffs` those that stopped there; breakdown values narrow
+   * them like the funnel's rows.
+   */
+  profiles?: {
+    targetLevel: number;
+    showDropoffs: boolean;
+    breakdownValues: (string | undefined)[];
+    limit: number;
+  };
 }
 
 export interface FunnelScanResult {
@@ -32,6 +43,8 @@ export interface FunnelScanResult {
   rows: Record<string, string | number>[];
   /** One row per (step >= 2, breakdown values), in seconds. */
   timeToConvert: Record<string, string | number>[];
+  /** With `query.profiles`: the matching profile ids. */
+  profileIds?: string[];
 }
 
 const EMPTY_BREAKDOWN_LABEL = 'Not set';
@@ -150,6 +163,8 @@ export function replayFunnel(
 
 export class FunnelAccumulator {
   private readonly groups = new Map<string, Hit[]>();
+  /** Each funnel group's profile (the first seen), for step drill-downs. */
+  private readonly groupProfiles = new Map<string, string>();
   private order = 0;
 
   constructor(
@@ -198,6 +213,9 @@ export class FunnelAccumulator {
       const hits = this.groups.get(key) ?? [];
       hits.push({ at, order: this.order++, steps, values });
       this.groups.set(key, hits);
+      if (event.profile_id && !this.groupProfiles.has(key)) {
+        this.groupProfiles.set(key, event.profile_id);
+      }
     }
   }
 
@@ -211,7 +229,9 @@ export class FunnelAccumulator {
       string,
       { step: number; values: string[]; previous: number[]; first: number[] }
     >();
-    for (const hits of this.groups.values()) {
+    const wanted = this.query.profiles;
+    const profileIds = new Set<string>();
+    for (const [groupKey, hits] of this.groups) {
       hits.sort((a, b) => a.at - b.at || a.order - b.order);
       const { level, chain } = replayFunnel(hits, steps.length, windowMs);
       if (level === 0 || !chain) {
@@ -225,6 +245,18 @@ export class FunnelAccumulator {
         }
         return chain.values[step - 1]?.[index] ?? '';
       });
+      if (wanted && profileIds.size < wanted.limit) {
+        const atLevel = wanted.showDropoffs
+          ? level === wanted.targetLevel
+          : level >= wanted.targetLevel;
+        const inBreakdown = wanted.breakdownValues.every(
+          (value, index) => value === undefined || values[index] === value
+        );
+        const profileId = this.groupProfiles.get(groupKey);
+        if (atLevel && inBreakdown && profileId) {
+          profileIds.add(profileId);
+        }
+      }
       const key = `${level}\u0000${values.join('\u0001')}`;
       const entry = counts.get(key) ?? { level, values, count: 0 };
       entry.count += 1;
@@ -266,6 +298,7 @@ export class FunnelAccumulator {
         from_first_step:
           aggregateTimes(bucket.first, timeToConvert ?? 'avg') / MS_PER_SECOND,
       })),
+      ...(wanted ? { profileIds: [...profileIds] } : {}),
     };
   }
 }

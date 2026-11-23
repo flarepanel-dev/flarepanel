@@ -6,6 +6,7 @@ import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
 import { expandCustomEvents } from '../custom-event/custom-event.service';
 import { getEventMetasCached } from '../event/event.service';
+import { buildBuckets, wallClockToMs } from '../ingest/cloudflare/time-buckets';
 import { getSettingsForProject } from '../organization/organization.service';
 import {
   getProfilePropertyKeysCached,
@@ -42,6 +43,7 @@ import {
 import { mapWithConcurrency } from './src/concurrency';
 import { formatClickhouseDate } from './src/dates';
 import { executeAggregateChart, executeChart } from './src/engine/execute';
+import { toRowFilters } from './src/engine/store-rows';
 import {
   getGroupPropertySelect,
   getProfilePropertySelect,
@@ -688,6 +690,42 @@ export interface ChartBucketProfilesRequest {
   breakdowns?: Record<string, string>;
 }
 
+/** Profiles behind one chart point, counted in the project's Durable Object. */
+async function bucketProfilesFromEventStore(
+  deps: ServiceDeps,
+  store: NonNullable<ServiceDeps['eventStore']>,
+  input: ChartBucketProfilesRequest,
+  serie: {
+    name: string;
+    filters: IChartEventFilter[];
+    anyOf?: { name: string }[];
+  }
+): Promise<{ profile_id: string }[]> {
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
+  const start = wallClockToMs(
+    formatClickhouseDate(new Date(input.date)),
+    timezone
+  );
+  const [bucket] = buildBuckets(start, start + 1, input.interval, timezone);
+  const names = serie.anyOf?.length
+    ? serie.anyOf.map((item) => item.name)
+    : serie.name === '*'
+      ? undefined
+      : [serie.name];
+  const breakdownFilters = Object.entries(input.breakdowns ?? {}).map(
+    ([name, value]) => ({ name, operator: 'is', value: [value] })
+  );
+  const { rows } = await store.eventCounts(input.projectId, {
+    from: bucket?.start ?? start,
+    to: (bucket?.end ?? start + 1) - 1,
+    by: 'profile_id',
+    ...(names ? { names } : {}),
+    filters: [...toRowFilters(serie.filters), ...breakdownFilters],
+    limit: BUCKET_PROFILES_LIMIT,
+  });
+  return rows.map((row) => ({ profile_id: row.key }));
+}
+
 /** Profiles behind one data point of a time-series chart. */
 export async function getChartBucketProfiles(
   deps: ServiceDeps,
@@ -705,17 +743,19 @@ export async function getChartBucketProfiles(
     throw new Error('Series must be an event');
   }
 
-  const rows = await runQuery<{ profile_id: string }>(
-    deps,
-    chartBucketProfilesQuery({
-      projectId: input.projectId,
-      bucketDate: formatClickhouseDate(new Date(input.date)),
-      interval: input.interval,
-      event: serie,
-      breakdowns: input.breakdowns ?? {},
-      limit: BUCKET_PROFILES_LIMIT,
-    })
-  );
+  const rows = deps.eventStore
+    ? await bucketProfilesFromEventStore(deps, deps.eventStore, input, serie)
+    : await runQuery<{ profile_id: string }>(
+        deps,
+        chartBucketProfilesQuery({
+          projectId: input.projectId,
+          bucketDate: formatClickhouseDate(new Date(input.date)),
+          interval: input.interval,
+          event: serie,
+          breakdowns: input.breakdowns ?? {},
+          limit: BUCKET_PROFILES_LIMIT,
+        })
+      );
   const ids = rows.map((row) => row.profile_id).filter(Boolean);
   if (ids.length === 0) {
     return [];

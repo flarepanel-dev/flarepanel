@@ -33,6 +33,10 @@ import type {
   FunnelScanQuery,
   FunnelScanResult,
 } from '../../ingest/cloudflare/funnel-scan';
+import type {
+  JourneyScanQuery,
+  JourneyScanResult,
+} from '../../ingest/cloudflare/journey-scan';
 import type { LiveSnapshot } from '../../ingest/cloudflare/live-window';
 import type {
   PageScanRow,
@@ -107,8 +111,31 @@ export interface EventStore {
     projectId: string,
     query: EventCountQuery
   ): Promise<{ rows: EventCountRow[]; partial: boolean }>;
+  /** One stored event by id, as JSON text (`null` when not found). */
+  findEvent(
+    projectId: string,
+    id: string,
+    createdAt?: Date
+  ): Promise<string | null>;
+  /** One dimension's totals per bucket, for per-value trends. */
+  dimensionSeries(
+    projectId: string,
+    dim: Dimension,
+    buckets: { start: number; end: number }[],
+    filters?: RowFilter[]
+  ): Promise<{ start: number; rows: DimensionRow[] }[]>;
+  /** The overview's user journey (top entry pages and transitions). */
+  journeyRows(
+    projectId: string,
+    query: JourneyScanQuery
+  ): Promise<JourneyScanResult & { partial: boolean }>;
+  /** Per UTC day totals, stored and pending. */
+  dailyStats(projectId: string, from: Date, to: Date): Promise<DailyStats[]>;
   /** Property keys seen on the project's profiles. */
-  profilePropertyKeys(projectId: string): Promise<string[]>;
+  profilePropertyKeys(
+    projectId: string,
+    options?: { anonymous?: boolean }
+  ): Promise<string[]>;
   /** Distinct values of one profile field, for filter pickers. */
   profilePropertyValues(projectId: string, property: string): Promise<string[]>;
   /** One profile's page: activity, top events and pages, metrics. */

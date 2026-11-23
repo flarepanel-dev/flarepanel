@@ -23,6 +23,7 @@ import {
   type EventCountQuery,
   eventRow,
   type FunnelScanQuery,
+  type JourneyScanQuery,
   type ListEventsQuery,
   type MetricsQuery,
   openProfileStore,
@@ -462,14 +463,39 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     return value;
   }
 
+  /** As JSON text: the event's open-ended properties are not RPC-typed. */
+  async findEvent(id: string, around?: number) {
+    const { engine } = await this.state;
+    const event = await engine.findEvent(
+      id,
+      around,
+      Date.now() - this.retentionDays() * DAY_MS
+    );
+    return event ? JSON.stringify(event) : null;
+  }
+
+  async dimensionSeries(
+    dim: Dimension,
+    buckets: { start: number; end: number }[],
+    filters?: RowFilter[]
+  ) {
+    const { engine } = await this.state;
+    return engine.dimensionSeries(dim, buckets, filters);
+  }
+
+  async journeyRows(query: JourneyScanQuery) {
+    const { engine } = await this.state;
+    return engine.journeyRows(query);
+  }
+
   async profilePropertyValues(property: string) {
     const { profiles } = await this.state;
     return profiles.propertyValues(property);
   }
 
-  async profilePropertyKeys() {
+  async profilePropertyKeys(anonymous = false) {
     const { profiles } = await this.state;
-    return profiles.propertyKeys();
+    return profiles.propertyKeys(anonymous);
   }
 
   async sankeyRows(query: SankeyScanQuery) {

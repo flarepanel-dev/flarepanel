@@ -19,6 +19,7 @@ export type RealtimeQuery =
   | { kind: 'activeSessions'; limit: number }
   | { kind: 'recentSessions'; limit: number }
   | { kind: 'topSources'; limit: number }
+  | { kind: 'topPaths'; limit: number }
   | { kind: 'histogram' }
   | {
       kind: 'badge';
@@ -190,6 +191,15 @@ export function realtimeFromEvents(
         })),
       };
     }
+    case 'topPaths':
+      return ranked(
+        distinctCount(
+          events.filter((event) => event.path),
+          (event) => event.path,
+          (event) => event.session_id
+        ),
+        query.limit
+      ).map((row) => ({ path: row.key, count: row.count }));
     case 'histogram': {
       const sessions = new Set<string>();
       const minutes = new Map<

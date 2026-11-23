@@ -633,10 +633,18 @@ export async function getProfilePropertyNames(
   deps: ServiceDeps,
   projectId: string
 ): Promise<string[]> {
-  const rows = await chQuery<{ keys: string[] }>(
-    deps,
-    profilePropertyNamesQuery(projectId)
-  );
+  const rows = deps.eventStore
+    ? [
+        {
+          keys: await deps.eventStore.profilePropertyKeys(projectId, {
+            anonymous: true,
+          }),
+        },
+      ]
+    : await chQuery<{ keys: string[] }>(
+        deps,
+        profilePropertyNamesQuery(projectId)
+      );
 
   const properties = rows
     .flatMap((row) => row.keys)

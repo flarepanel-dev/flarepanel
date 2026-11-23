@@ -3,6 +3,7 @@ import { last, reverse } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
 import { expandCustomEvents } from '../custom-event/custom-event.service';
+import type { FunnelScanQuery } from '../ingest/cloudflare/funnel-scan';
 import { wallClockToMs } from '../ingest/cloudflare/time-buckets';
 import { getSettingsForProject } from '../organization/organization.service';
 import type {
@@ -406,20 +407,16 @@ export async function getFunnel(
     });
 }
 
-/** Workers: the funnel counted in the project's Durable Object. */
-async function funnelFromEventStore(
-  store: NonNullable<ServiceDeps['eventStore']>,
-  input: {
-    projectId: string;
-    startDate: string;
-    endDate: string;
-    base: FunnelBase;
-    funnelWindow: number | undefined;
-    timeToConvert: ITimeToConvertAggregation | undefined;
-  }
-): Promise<[FunnelRow[], Map<string, SerieTimeToConvert>]> {
+/** The Durable Object's funnel query for a built funnel base. */
+function funnelScanQuery(input: {
+  startDate: string;
+  endDate: string;
+  base: FunnelBase;
+  funnelWindow: number | undefined;
+  timeToConvert?: ITimeToConvertAggregation | undefined;
+}): FunnelScanQuery {
   const { base } = input;
-  const result = await store.funnelRows(input.projectId, {
+  return {
     from: wallClockToMs(input.startDate, base.timezone),
     to: wallClockToMs(input.endDate, base.timezone),
     steps: base.eventSeries.map((event) => ({
@@ -439,7 +436,26 @@ async function funnelFromEventStore(
       MILLISECONDS_PER_HOUR,
     group: base.group,
     timeToConvert: input.timeToConvert,
-  });
+  };
+}
+
+/** Workers: the funnel counted in the project's Durable Object. */
+async function funnelFromEventStore(
+  store: NonNullable<ServiceDeps['eventStore']>,
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    base: FunnelBase;
+    funnelWindow: number | undefined;
+    timeToConvert: ITimeToConvertAggregation | undefined;
+  }
+): Promise<[FunnelRow[], Map<string, SerieTimeToConvert>]> {
+  const { base } = input;
+  const result = await store.funnelRows(
+    input.projectId,
+    funnelScanQuery(input)
+  );
   return [
     result.rows as FunnelRow[],
     toTimeToConvertBySerie(
@@ -553,6 +569,23 @@ export async function getFunnelProfileIds(
     }
 ): Promise<string[]> {
   const base = await buildFunnelBase(deps, input);
+  if (deps.eventStore) {
+    const result = await deps.eventStore.funnelRows(input.projectId, {
+      ...funnelScanQuery({
+        startDate: input.startDate,
+        endDate: input.endDate,
+        base,
+        funnelWindow: input.funnelWindow,
+      }),
+      profiles: {
+        targetLevel: input.targetLevel,
+        showDropoffs: input.showDropoffs ?? false,
+        breakdownValues: input.breakdownValues,
+        limit: input.limit,
+      },
+    });
+    return result.profileIds ?? [];
+  }
   const rows = await runQuery<{ profile_id: string }>(
     deps,
     funnelProfilesQuery(base, {

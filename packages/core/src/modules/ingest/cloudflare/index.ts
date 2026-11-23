@@ -59,6 +59,10 @@ export type {
 } from './event-count-scan';
 export { type RowFilter, unsupportedFilters } from './filter-eval';
 export type { FunnelScanQuery, FunnelScanResult } from './funnel-scan';
+export type {
+  JourneyScanQuery,
+  JourneyScanResult,
+} from './journey-scan';
 export type { LiveSnapshot } from './live-window';
 export type {
   PageScanRow,

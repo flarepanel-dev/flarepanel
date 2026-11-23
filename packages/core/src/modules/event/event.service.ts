@@ -788,11 +788,15 @@ export async function getEventById(
   }
 ): Promise<IServiceEvent | null> {
   const [rows, metas] = await Promise.all([
-    chQuery<IClickhouseEvent>(
-      deps,
-      eventByIdQuery({ projectId, id, createdAt }),
-      CLIX_SESSION_TIMEZONE
-    ),
+    deps.eventStore
+      ? deps.eventStore
+          .findEvent(projectId, id, createdAt)
+          .then((json) => (json ? [JSON.parse(json) as IClickhouseEvent] : []))
+      : chQuery<IClickhouseEvent>(
+          deps,
+          eventByIdQuery({ projectId, id, createdAt }),
+          CLIX_SESSION_TIMEZONE
+        ),
     getEventMetasCached(deps, projectId),
   ]);
   const row = rows[0];
@@ -1093,15 +1097,16 @@ const EVENT_LIST_MAX_CALLS = 20;
 /**
  * The event list from the Workers event store, with event filters and
  * groups (cohort filters are not applied there). The store reads a bounded
- * number of chunks per call, so a selective filter can give an empty page
- * with a cursor: keep reading until there is something to show.
+ * number of chunks per call, so a selective filter gives short pages: keep
+ * reading (up to a bound) until the page is full or the events run out.
  */
 async function getStoredEventListPage(
+  deps: ServiceDeps,
   store: NonNullable<ServiceDeps['eventStore']>,
   input: Omit<EventListPageInput, 'columnVisibility'>
 ) {
   let cursor = input.cursor ?? null;
-  let events: Awaited<ReturnType<typeof store.listEvents>>['events'] = [];
+  const events: Awaited<ReturnType<typeof store.listEvents>>['events'] = [];
   for (let call = 0; call < EVENT_LIST_MAX_CALLS; call++) {
     const page = await store.listEvents(input.projectId, {
       profileId: input.profileId ?? undefined,
@@ -1112,15 +1117,32 @@ async function getStoredEventListPage(
       startDate: input.startDate ?? undefined,
       endDate: input.endDate ?? undefined,
       cursor,
-      take: EVENT_LIST_PAGE_TAKE,
+      take: EVENT_LIST_PAGE_TAKE - events.length,
     });
-    events = page.events;
+    events.push(...page.events);
     cursor = page.cursor;
-    if (events.length > 0 || cursor === null) {
+    if (events.length >= EVENT_LIST_PAGE_TAKE || cursor === null) {
       break;
     }
   }
   const items = events.map(transformEvent);
+  // The ClickHouse list joins each event's profile; here they come from the
+  // project's profile store, so identified people show by name.
+  const ids = [...new Set(items.map((item) => item.profileId).filter(Boolean))];
+  if (ids.length > 0) {
+    const profiles = new Map(
+      (await getProfilesCached(deps, ids, input.projectId)).map((profile) => [
+        profile.id,
+        profile,
+      ])
+    );
+    for (const item of items) {
+      const profile = profiles.get(item.profileId);
+      if (profile) {
+        item.profile = profile;
+      }
+    }
+  }
   shareSessionProfiles(items);
   return { data: items, meta: { next: cursor } };
 }
@@ -1130,7 +1152,7 @@ export async function getEventListPage(
   { columnVisibility, ...input }: EventListPageInput
 ) {
   if (deps.eventStore) {
-    return getStoredEventListPage(deps.eventStore, input);
+    return getStoredEventListPage(deps, deps.eventStore, input);
   }
   const items = await getEventList(deps, {
     projectId: input.projectId,
@@ -1175,6 +1197,15 @@ export async function getConversionListPage(
     return { data: [], meta: { next: null } };
   }
 
+  if (deps.eventStore) {
+    return getStoredEventListPage(deps, deps.eventStore, {
+      projectId: input.projectId,
+      startDate: input.startDate,
+      endDate: input.endDate,
+      events: filteredConversions.map((event) => event.name),
+      cursor: input.cursor,
+    });
+  }
   const items = await getEventList(deps, {
     projectId: input.projectId,
     startDate: input.startDate ?? undefined,
@@ -1217,11 +1248,42 @@ export async function getBotEventsPage(
   };
 }
 
-export async function getTopOrigins(deps: ServiceDeps, projectId: string) {
-  const res = await chQuery<{ origin: string; count: number }>(
-    deps,
-    topOriginsQuery(projectId)
+const ORIGINS_STORE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const ORIGINS_STORE_PAGES = 10_000;
+const ORIGINS_STORE_LIMIT = 50;
+
+/** Origins by page views over 30 days, from the project's page rollups. */
+async function topOriginsFromEventStore(
+  store: NonNullable<ServiceDeps['eventStore']>,
+  projectId: string
+): Promise<{ origin: string; count: number }[]> {
+  const now = Date.now();
+  const pages = await store.topDimension(
+    projectId,
+    'path',
+    new Date(now - ORIGINS_STORE_WINDOW_MS),
+    new Date(now),
+    ORIGINS_STORE_PAGES
   );
+  const counts = new Map<string, number>();
+  for (const page of pages) {
+    if (page.prefix) {
+      counts.set(page.prefix, (counts.get(page.prefix) ?? 0) + page.pageviews);
+    }
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, ORIGINS_STORE_LIMIT)
+    .map(([origin, count]) => ({ origin, count }));
+}
+
+export async function getTopOrigins(deps: ServiceDeps, projectId: string) {
+  const res = deps.eventStore
+    ? await topOriginsFromEventStore(deps.eventStore, projectId)
+    : await chQuery<{ origin: string; count: number }>(
+        deps,
+        topOriginsQuery(projectId)
+      );
   return res.filter(
     (item) => item.origin && !item.origin.includes(LOCALHOST_ORIGIN_MARKER)
   );

@@ -12,7 +12,11 @@ import {
   joinFilterClauses,
 } from '../chart/src/filter-where';
 import type { RowFilter } from '../ingest/cloudflare/filter-eval';
-import { wallClockIso, wallClockToMs } from '../ingest/cloudflare/time-buckets';
+import {
+  buildBuckets,
+  wallClockIso,
+  wallClockToMs,
+} from '../ingest/cloudflare/time-buckets';
 import { getSettingsForProject } from '../organization/organization.service';
 import type { IChartEventFilter, IInterval } from '../report/report.constants';
 import { chartColors, zTimeInterval } from '../report/report.constants';
@@ -851,6 +855,76 @@ export async function getTopGeneric(
   );
 }
 
+interface SeriesPoint {
+  date: string;
+  sessions: number;
+  pageviews: number;
+  revenue?: number;
+}
+
+interface SeriesItem {
+  name: string;
+  prefix?: string;
+  data: SeriesPoint[];
+  total: { sessions: number; pageviews: number; revenue?: number };
+}
+
+/** `getTopGenericSeries` from per-dimension rollups (or events when filtered). */
+async function topGenericSeriesFromEventStore(
+  store: NonNullable<ServiceDeps['eventStore']>,
+  input: IGetTopGenericSeriesInput & { limit: number }
+) {
+  if (!WHITELISTED_FILTERS.includes(input.column)) {
+    return { items: [] as SeriesItem[] };
+  }
+  const filters = toStoreFilters(input.filters);
+  const from = wallClockToMs(input.startDate, input.timezone);
+  const to = wallClockToMs(input.endDate, input.timezone);
+  const [top, series] = await Promise.all([
+    store.topDimension(
+      input.projectId,
+      input.column,
+      new Date(from),
+      new Date(to),
+      input.limit,
+      filters
+    ),
+    store.dimensionSeries(
+      input.projectId,
+      input.column,
+      buildBuckets(from, to, input.interval, input.timezone),
+      filters
+    ),
+  ]);
+  const key = (row: { prefix?: string; name: string }) =>
+    `${row.prefix ?? ''}:${row.name}`;
+  const items = new Map<string, SeriesItem>();
+  for (const row of top) {
+    items.set(key(row), {
+      name: row.name,
+      ...(row.prefix === undefined ? {} : { prefix: row.prefix }),
+      data: [],
+      total: {
+        sessions: row.sessions,
+        pageviews: row.pageviews,
+        revenue: row.revenue,
+      },
+    });
+  }
+  for (const bucket of series) {
+    const date = wallClockIso(bucket.start, input.timezone);
+    for (const row of bucket.rows) {
+      items.get(key(row))?.data.push({
+        date,
+        sessions: row.sessions,
+        pageviews: row.pageviews,
+        revenue: row.revenue,
+      });
+    }
+  }
+  return { items: [...items.values()] };
+}
+
 export async function getTopGenericSeries(
   deps: ServiceDeps,
   {
@@ -875,8 +949,20 @@ export async function getTopGenericSeries(
     total: { sessions: number; pageviews: number; revenue?: number };
   }>;
 }> {
-  const prefixColumn = COLUMN_PREFIX_MAP[column] ?? null;
   const TOP_LIMIT = 500;
+  if (deps.eventStore) {
+    return topGenericSeriesFromEventStore(deps.eventStore, {
+      projectId,
+      filters,
+      startDate,
+      endDate,
+      column,
+      interval,
+      timezone,
+      limit: TOP_LIMIT,
+    });
+  }
+  const prefixColumn = COLUMN_PREFIX_MAP[column] ?? null;
 
   const topItemsSessionsFilter = sessionsFilterMode({
     filters,
@@ -1022,11 +1108,26 @@ export async function getUserJourney(
   const rawFilterWhere = getRawWhereClause('events', filters);
   const orderedEventsInput = { projectId, startDate, endDate, rawFilterWhere };
 
-  const topEntries = await runQuery<{ entry_page: string; count: number }>(
-    deps,
-    topEntriesQuery({ ...orderedEventsInput, steps, topEntries: TOP_ENTRIES }),
-    timezone
-  );
+  const journey = deps.eventStore
+    ? await deps.eventStore.journeyRows(projectId, {
+        from: wallClockToMs(startDate, timezone),
+        to: wallClockToMs(endDate, timezone),
+        steps,
+        topEntries: TOP_ENTRIES,
+        filters: toStoreFilters(filters),
+      })
+    : null;
+  const topEntries =
+    journey?.topEntries ??
+    (await runQuery<{ entry_page: string; count: number }>(
+      deps,
+      topEntriesQuery({
+        ...orderedEventsInput,
+        steps,
+        topEntries: TOP_ENTRIES,
+      }),
+      timezone
+    ));
 
   if (topEntries.length === 0) {
     return { nodes: [], links: [] };
@@ -1035,16 +1136,18 @@ export async function getUserJourney(
   const topEntryPages = topEntries.map((e) => e.entry_page);
   const totalSessions = topEntries.reduce((total, e) => total + e.count, 0);
 
-  const transitions = await runQuery<{
-    source: string;
-    target: string;
-    step: number;
-    value: number;
-  }>(
-    deps,
-    transitionsQuery({ ...orderedEventsInput, steps, topEntryPages }),
-    timezone
-  );
+  const transitions =
+    journey?.transitions ??
+    (await runQuery<{
+      source: string;
+      target: string;
+      step: number;
+      value: number;
+    }>(
+      deps,
+      transitionsQuery({ ...orderedEventsInput, steps, topEntryPages }),
+      timezone
+    ));
 
   if (transitions.length === 0) {
     return { nodes: [], links: [] };

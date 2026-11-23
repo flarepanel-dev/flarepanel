@@ -195,8 +195,18 @@ export function createWorkerEventStore(
       projectEventsStub(env, projectId).pageSeries(query),
     eventCounts: (projectId, query) =>
       projectEventsStub(env, projectId).eventCounts(query),
-    profilePropertyKeys: (projectId) =>
-      projectEventsStub(env, projectId).profilePropertyKeys(),
+    profilePropertyKeys: (projectId, options) =>
+      projectEventsStub(env, projectId).profilePropertyKeys(
+        options?.anonymous ?? false
+      ),
+    findEvent: (projectId, id, createdAt) =>
+      projectEventsStub(env, projectId).findEvent(id, createdAt?.getTime()),
+    dimensionSeries: (projectId, dim, buckets, filters) =>
+      projectEventsStub(env, projectId).dimensionSeries(dim, buckets, filters),
+    journeyRows: (projectId, query) =>
+      projectEventsStub(env, projectId).journeyRows(query),
+    dailyStats: (projectId, from, to) =>
+      projectEventsStub(env, projectId).dailyStats(from, to),
     profilePropertyValues: (projectId, property) =>
       projectEventsStub(env, projectId).profilePropertyValues(property),
     profileSummary: (projectId, profileId) =>

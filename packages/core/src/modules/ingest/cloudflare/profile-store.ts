@@ -206,11 +206,14 @@ export function openProfileStore(sql: EngineSql) {
     };
   }
 
-  /** Property keys of the most recently seen identified profiles, sorted. */
-  function propertyKeys(): string[] {
+  /**
+   * Property keys of the most recently seen profiles, sorted: identified
+   * ones only (the report builder's picker), or all with `anonymous`.
+   */
+  function propertyKeys(anonymous = false): string[] {
     const keys = new Set<string>();
     const rows = sql.exec(
-      'SELECT body FROM identities WHERE is_external = 1 ORDER BY last_seen DESC LIMIT ?',
+      `SELECT body FROM identities ${anonymous ? '' : 'WHERE is_external = 1'} ORDER BY last_seen DESC LIMIT ?`,
       PROPERTY_KEYS_SAMPLE
     );
     for (const row of rows) {

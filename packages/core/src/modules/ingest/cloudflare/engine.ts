@@ -53,6 +53,11 @@ import {
   type FunnelScanResult,
 } from './funnel-scan';
 import { HyperLogLog } from './hyperloglog';
+import {
+  JourneyAccumulator,
+  type JourneyScanQuery,
+  type JourneyScanResult,
+} from './journey-scan';
 import { LIVE_WINDOW_MS, type LiveSnapshot, LiveWindow } from './live-window';
 import {
   type PageScanRow,
@@ -192,6 +197,10 @@ const DIM_PREFIX: Partial<Record<SessionDimension, SessionDimension>> = {
 };
 const DEFAULT_TOP_LIMIT = 50;
 const P90 = 0.9;
+/** The event drawer sends created_at; the stored time can differ slightly. */
+const FIND_EVENT_SLACK_MS = 5000;
+/** Values per bucket the overview's per-value trends read. */
+const DIMENSION_SERIES_LIMIT = 10_000;
 const MS_PER_SECOND = 1000;
 const PERCENT = 100;
 /** Minute series are counted from raw events, so only over short ranges. */
@@ -2354,6 +2363,62 @@ export async function openProjectEventsEngine({
 
   /** User flow (Sankey) entries and transitions from the stored events. */
   /**
+   * One event by id. `around` (its created_at, as the event drawer sends it)
+   * narrows the scan to a few seconds; without it the scan covers `from`
+   * (the caller's hot-storage cutoff) to now.
+   */
+  async function findEvent(
+    id: string,
+    around: number | undefined,
+    from: number
+  ): Promise<IClickhouseEvent | null> {
+    let found: IClickhouseEvent | null = null;
+    const [start, end] =
+      around === undefined
+        ? [from, clock.now()]
+        : [around - FIND_EVENT_SLACK_MS, around + FIND_EVENT_SLACK_MS];
+    await scanRange(start, end, (event) => {
+      if (!found && event.id === id) {
+        found = event;
+      }
+    });
+    return found;
+  }
+
+  /** One dimension's totals per bucket (the overview's per-value trends). */
+  async function dimensionSeries(
+    dim: Dimension,
+    buckets: { start: number; end: number }[],
+    filters: RowFilter[] = []
+  ): Promise<{ start: number; rows: DimensionRow[] }[]> {
+    const series: { start: number; rows: DimensionRow[] }[] = [];
+    for (const bucket of buckets) {
+      series.push({
+        start: bucket.start,
+        rows: await topDimension(
+          dim,
+          new Date(bucket.start),
+          new Date(bucket.end - 1),
+          DIMENSION_SERIES_LIMIT,
+          filters
+        ),
+      });
+    }
+    return series;
+  }
+
+  /** The overview's user journey from the stored page views. */
+  async function journeyRows(
+    query: JourneyScanQuery
+  ): Promise<JourneyScanResult & { partial: boolean }> {
+    const accumulator = new JourneyAccumulator(query, eventFilterRow);
+    const complete = await scanRange(query.from, query.to, (event, at) =>
+      accumulator.add(event, at)
+    );
+    return { ...accumulator.result(), partial: !complete };
+  }
+
+  /**
    * One profile's page from its stored events since `from` (the Durable
    * Object passes its hot-storage cutoff) and its sessions.
    */
@@ -2891,6 +2956,9 @@ export async function openProjectEventsEngine({
     listEvents,
     metrics,
     chartRows,
+    findEvent,
+    dimensionSeries,
+    journeyRows,
     profileSummary,
     pageRows,
     pageSeries,
