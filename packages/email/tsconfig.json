@@ -7,7 +7,10 @@
       "@/server/*": ["./src/server/*"]
     },
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    // Automatic runtime: bundlers (wrangler/esbuild) follow this, and the
+    // templates do not import React themselves.
+    "jsx": "react-jsx"
   },
   "include": ["."],
   "exclude": ["node_modules"]

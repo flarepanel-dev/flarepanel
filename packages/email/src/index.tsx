@@ -1,4 +1,6 @@
-import { db } from '@flarepanel/db';
+// The prisma-client path (not the package root) so Workers get the D1 client
+// through wrangler's alias.
+import { db } from '@flarepanel/db/src/prisma-client';
 import { render } from '@react-email/render';
 import { createTransport } from 'nodemailer';
 import { Resend } from 'resend';
@@ -18,6 +20,38 @@ function redactEmail(email: string): string {
 export * from './unsubscribe';
 
 const FROM = process.env.EMAIL_SENDER ?? 'hello@flarepanel.dev';
+const FROM_NAME = 'FlarePanel';
+
+/** A rendered email, ready for a transport. */
+export interface OutgoingEmail {
+  from: { email: string; name: string };
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  headers: Record<string, string>;
+}
+
+/**
+ * A runtime-provided transport, used before SMTP and Resend. On Cloudflare
+ * Workers this is the Email Service `send_email` binding.
+ */
+export type EmailSender = (email: OutgoingEmail) => Promise<unknown>;
+
+let customSender: EmailSender | null = null;
+
+export function setEmailSender(sender: EmailSender | null): void {
+  customSender = sender;
+}
+
+/** `Name <addr@x>` or `addr@x` from EMAIL_SENDER. */
+function parseSender(value: string): { email: string; name: string } {
+  const match = /^\s*(.*?)\s*<([^>]+)>\s*$/.exec(value);
+  if (match?.[2]) {
+    return { email: match[2].trim(), name: match[1]?.trim() || FROM_NAME };
+  }
+  return { email: value.trim(), name: FROM_NAME };
+}
 
 export type EmailData<T extends TemplateKey> = z.infer<Templates[T]['schema']>;
 export type EmailTemplate = keyof Templates;
@@ -86,6 +120,30 @@ export async function sendEmail<T extends TemplateKey>(
   }
 
   const subject = template.subject(props.data as any);
+
+  if (customSender) {
+    try {
+      const element = <template.Component {...(props.data as any)} />;
+      const [html, text] = await Promise.all([
+        render(element),
+        render(element, { plainText: true }),
+      ]);
+      return await customSender({
+        from: parseSender(FROM),
+        to,
+        subject,
+        html,
+        text,
+        headers,
+      });
+    } catch (error) {
+      console.error(
+        `Failed to send email (template=${templateKey} to=${redactEmail(to)})`,
+        error
+      );
+      return null;
+    }
+  }
 
   if (process.env.SMTP_HOST) {
     try {

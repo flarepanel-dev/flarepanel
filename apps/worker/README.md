@@ -62,6 +62,17 @@ two clients) 194 ms, sign-in 202 ms, then the dashboard in a browser.
 - The bundle is ~24 MB raw, ~4.6 MB gzipped: it needs the **Workers Paid**
   plan (limit 10 MB; Free is 3 MB).
 
+## Email (Cloudflare Email Service)
+
+Account emails (sign-up, invites, password reset, alerts) go through the
+`EMAIL` `send_email` binding: `@flarepanel/email` gets a sender at boot
+(`setEmailSender`) that is used before SMTP and Resend. Workers Paid includes
+3,000 emails a month, then $0.35 per 1,000. The sender domain
+(`hello@flarepanel.dev`, override with `EMAIL_SENDER`) must be onboarded once
+under Compute > Email Service > Email Sending; until then sends fail and are
+logged, and the request still succeeds. `wrangler dev` simulates the binding
+and writes each email to a local file.
+
 ## Event ingestion (Phase 3a)
 
 ```

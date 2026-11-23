@@ -41,7 +41,7 @@ export function OnboardingFeatureRequest({
           feelings, but I'd like to know what got in the way.
         </Text>
       )}
-      <Text>Carl</Text>
+      <Text>The FlarePanel team</Text>
     </Layout>
   );
 }

@@ -63,7 +63,7 @@ export function WindDownStoppingSoon({
         <Text>
           {recommendedPlan
             ? `Keeping it running costs ${recommendedPlan}.`
-            : 'Plans start at $2.50 a month.'}{' '}
+            : 'You can pick a plan in your billing settings.'}{' '}
           Nothing about your setup changes — no redeploy, no new keys.
         </Text>
         {cta}
@@ -71,7 +71,7 @@ export function WindDownStoppingSoon({
           Need longer, or want to talk through which plan fits? Reply and I'll
           sort it out.
         </Text>
-        <Text>Carl</Text>
+        <Text>The FlarePanel team</Text>
       </Layout>
     );
   }
@@ -91,7 +91,7 @@ export function WindDownStoppingSoon({
           exactly as it is.
         </Text>
         {cta}
-        <Text>Carl</Text>
+        <Text>The FlarePanel team</Text>
       </Layout>
     );
   }
@@ -108,7 +108,7 @@ export function WindDownStoppingSoon({
         can ignore this — I'll send one more note before anything goes.
       </Text>
       {cta}
-      <Text>Carl</Text>
+      <Text>The FlarePanel team</Text>
     </Layout>
   );
 }

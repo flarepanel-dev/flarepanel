@@ -40,6 +40,10 @@
   "r2_buckets": [
     { "binding": "EVENTS_ARCHIVE", "bucket_name": "flarepanel-events" }
   ],
+  // Cloudflare Email Service: account emails (sign-up, invites, password
+  // reset, alerts). 3,000/month are included in Workers Paid. The sender
+  // domain must be onboarded under Email Service > Email Sending.
+  "send_email": [{ "name": "EMAIL" }],
   // Per-IP cap on /track and /event, enforced before any Durable Object runs.
   "ratelimits": [
     {

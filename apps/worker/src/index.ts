@@ -77,6 +77,8 @@ export interface Env {
   /** Per-IP limit on ingest requests, checked before any Durable Object. */
   TRACK_LIMITER?: RateLimit;
   FLAREPANEL_EVENT_RETENTION_DAYS?: string;
+  /** Cloudflare Email Service; account emails go out through it when bound. */
+  EMAIL?: SendEmail;
 }
 
 const INGEST_PATHS = new Set(['/track', '/event']);
@@ -135,6 +137,22 @@ async function boot(env: Env): Promise<Booted> {
     }),
     eventStore: createWorkerEventStore(env),
   };
+
+  const emailBinding = env.EMAIL;
+  if (emailBinding) {
+    // Loaded here, not at the top: @flarepanel/email pulls in @flarepanel/db.
+    const { setEmailSender } = await import('@flarepanel/email');
+    setEmailSender((email) =>
+      emailBinding.send({
+        from: email.from,
+        to: email.to,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        headers: email.headers,
+      })
+    );
+  }
 
   // Device ids hash the visitor with the day's salt; the daily cron rotates
   // it, and the first two are created here, as apps/api does at boot.

@@ -36,7 +36,7 @@ export function OnboardingDashboards({
           the way:{' '}
           <Link
             href={withUtm(
-              'https://flarepanel.dev/docs/get-started/install-openpanel',
+              'https://github.com/flarepanel-dev/flarepanel/tree/main/docs',
               'onboarding-dashboards'
             )}
           >
@@ -48,7 +48,7 @@ export function OnboardingDashboards({
           If something about the product put you off, I'd like to know what. One
           line is enough.
         </Text>
-        <Text>Carl</Text>
+        <Text>The FlarePanel team</Text>
       </Layout>
     );
   }
@@ -83,18 +83,7 @@ export function OnboardingDashboards({
         Once it exists you'll actually open it. That's the difference between
         having analytics and using them.
       </Text>
-      <Text>Carl</Text>
-      <span style={{ margin: '0 -20px', display: 'block' }}>
-        <img
-          alt="Dashboard"
-          src="https://flarepanel.dev/_next/image?url=%2Fscreenshots%2Fdashboard-dark.webp&w=3840&q=75"
-          style={{
-            width: '100%',
-            height: 'auto',
-            borderRadius: '5px',
-          }}
-        />
-      </span>
+      <Text>The FlarePanel team</Text>
     </Layout>
   );
 }

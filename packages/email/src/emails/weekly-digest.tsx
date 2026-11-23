@@ -100,7 +100,7 @@ export function WeeklyDigest({
 
 WeeklyDigest.PreviewProps = {
   projectName: 'Public Web 2',
-  dashboardUrl: 'http://localhost:3000/openpanel-dev/public-web',
+  dashboardUrl: 'http://localhost:3000/flarepanel/public-web',
   dateRange: 'Jun 8 – Jun 15, 2026',
   narrative:
     "This week on Public Web 2, overall visitor numbers remained steady with a slight dip from 3,898 to 3,889, while sessions saw a modest increase to 4,777. Notably, visits originating from Twitter nearly tripled over the past month, boosting social media engagement considerably. Additionally, user interest in the IP lookup tool has more than doubled, and activity on the dashboard's settings page surged by over 200%, reflecting stronger interaction with site features. However, traffic from Ukraine fell sharply by over 80%, a drop that likely impacted overall traffic and may warrant further attention.",

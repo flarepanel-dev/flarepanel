@@ -21,7 +21,7 @@ export function OnboardingWelcome({
   return (
     <Layout unsubscribeUrl={unsubscribeUrl}>
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
-      <Text>Carl here. I build FlarePanel. Thanks for signing up.</Text>
+      <Text>Thanks for signing up for FlarePanel.</Text>
       <Text>
         Your trial runs for 30 days with everything included. No card needed
         until you decide to stay.
@@ -48,7 +48,7 @@ export function OnboardingWelcome({
             items={[
               <Link
                 href={withUtm(
-                  'https://flarepanel.dev/docs/get-started/install-openpanel',
+                  'https://github.com/flarepanel-dev/flarepanel/tree/main/docs',
                   'onboarding-welcome'
                 )}
                 key="install"
@@ -69,7 +69,7 @@ export function OnboardingWelcome({
           <Text>If you get stuck, just reply to this email.</Text>
         </>
       )}
-      <Text>Carl</Text>
+      <Text>The FlarePanel team</Text>
     </Layout>
   );
 }

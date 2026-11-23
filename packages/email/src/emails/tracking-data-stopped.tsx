@@ -50,7 +50,7 @@ export function TrackingDataStopped({
         The{' '}
         <Link
           href={withUtm(
-            'https://flarepanel.dev/docs/get-started/install-openpanel',
+            'https://github.com/flarepanel-dev/flarepanel/tree/main/docs',
             'tracking-data-stopped'
           )}
         >
@@ -60,7 +60,7 @@ export function TrackingDataStopped({
         action needed, and sorry for the noise. Otherwise, reply and I'll help
         you debug it.
       </Text>
-      <Text>Carl</Text>
+      <Text>The FlarePanel team</Text>
     </Layout>
   );
 }

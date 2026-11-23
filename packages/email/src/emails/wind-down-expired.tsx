@@ -95,7 +95,7 @@ export function WindDownExpired({
         <Text>
           {recommendedPlan
             ? `For what you're actually sending, that's ${recommendedPlan}.`
-            : 'Plans start at $2.50 a month.'}{' '}
+            : 'You can pick a plan in your billing settings.'}{' '}
           Subscribe before {blockDate} and nothing changes — same data, same
           setup, dashboard unlocked.
         </Text>
@@ -105,7 +105,7 @@ export function WindDownExpired({
           If the price is the blocker, or you only need part of what you're
           sending, reply and we'll work something out.
         </Text>
-        <Text>Carl</Text>
+        <Text>The FlarePanel team</Text>
       </Layout>
     );
   }
@@ -132,12 +132,12 @@ export function WindDownExpired({
           If you'd rather pick it back up,{' '}
           {recommendedPlan
             ? `a plan for your volume is ${recommendedPlan}`
-            : 'plans start at $2.50 a month'}{' '}
+            : 'you can pick a plan in your billing settings'}{' '}
           and everything resumes where it left off.
         </Text>
         {cta}
         {mcpPitch}
-        <Text>Carl</Text>
+        <Text>The FlarePanel team</Text>
       </Layout>
     );
   }
@@ -159,7 +159,7 @@ export function WindDownExpired({
         If something got in the way during setup, I'd genuinely like to know.
         One line is plenty.
       </Text>
-      <Text>Carl</Text>
+      <Text>The FlarePanel team</Text>
     </Layout>
   );
 }

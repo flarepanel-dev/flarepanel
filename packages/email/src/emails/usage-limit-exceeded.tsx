@@ -48,7 +48,7 @@ export function UsageLimitExceeded({
         If this month was an outlier, you can also just wait for the cycle to
         reset. And if you're stuck between plans, reply and I'll help.
       </Text>
-      <Text>Carl</Text>
+      <Text>The FlarePanel team</Text>
     </Layout>
   );
 }

@@ -59,7 +59,7 @@ export function WindDownFinalWarning({
           Keep my data
         </Button>
       </Text>
-      <Text>Carl</Text>
+      <Text>The FlarePanel team</Text>
     </Layout>
   );
 }

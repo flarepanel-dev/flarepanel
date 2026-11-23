@@ -284,6 +284,7 @@
         "@clickhouse/client-web": "1.18.5",
         "@flarepanel/core": "workspace:*",
         "@flarepanel/db": "workspace:*",
+        "@flarepanel/email": "workspace:*",
         "@flarepanel/platform": "workspace:*",
         "@flarepanel/redis": "workspace:*",
         "@flarepanel/shared": "workspace:*",

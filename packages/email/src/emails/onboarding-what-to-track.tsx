@@ -55,7 +55,7 @@ export function OnboardingWhatToTrack({
             blocking the script. Both are quick to sort out:{' '}
             <Link
               href={withUtm(
-                'https://flarepanel.dev/docs/get-started/install-openpanel',
+                'https://github.com/flarepanel-dev/flarepanel/tree/main/docs',
                 'onboarding-what-to-track'
               )}
             >
@@ -69,7 +69,7 @@ export function OnboardingWhatToTrack({
           </Text>
         </>
       )}
-      <Text>Carl</Text>
+      <Text>The FlarePanel team</Text>
     </Layout>
   );
 }

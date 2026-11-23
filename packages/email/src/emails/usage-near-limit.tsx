@@ -47,7 +47,7 @@ export function UsageNearLimit({
         Questions about which plan fits? Reply to this email and I'll help you
         pick.
       </Text>
-      <Text>Carl</Text>
+      <Text>The FlarePanel team</Text>
     </Layout>
   );
 }

@@ -13,11 +13,12 @@
     "@clickhouse/client-web": "1.18.5",
     "@flarepanel/core": "workspace:*",
     "@flarepanel/db": "workspace:*",
+    "@flarepanel/email": "workspace:*",
     "@flarepanel/platform": "workspace:*",
     "@flarepanel/redis": "workspace:*",
     "@flarepanel/shared": "workspace:*",
-    "elysia": "1.4.30",
-    "@noble/hashes": "2.4.0"
+    "@noble/hashes": "2.4.0",
+    "elysia": "1.4.30"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20261121.1",

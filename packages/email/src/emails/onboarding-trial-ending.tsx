@@ -42,7 +42,7 @@ export function OnboardingTrialEnding({
           days to see if it's useful:{' '}
           <Link
             href={withUtm(
-              'https://flarepanel.dev/docs/get-started/install-openpanel',
+              'https://github.com/flarepanel-dev/flarepanel/tree/main/docs',
               'onboarding-trial-ending'
             )}
           >
@@ -54,7 +54,7 @@ export function OnboardingTrialEnding({
           If you tried and something didn't work, reply and I'll help you sort
           it out before the trial runs out.
         </Text>
-        <Text>Carl</Text>
+        <Text>The FlarePanel team</Text>
       </Layout>
     );
   }
@@ -71,7 +71,7 @@ export function OnboardingTrialEnding({
       <Text>
         {recommendedPlan
           ? `At that volume, the plan that fits is ${recommendedPlan}.`
-          : 'Plans start at $2.50 a month.'}{' '}
+          : 'You can pick a plan in your billing settings.'}{' '}
         If you upgrade, nothing changes: same dashboards, same data. If you
         don't, your dashboard locks when the trial ends, and eventually the
         workspace is removed.
@@ -85,7 +85,7 @@ export function OnboardingTrialEnding({
         If something is holding you back, reply and tell me. I'd rather fix the
         reason than send you another reminder.
       </Text>
-      <Text>Carl</Text>
+      <Text>The FlarePanel team</Text>
     </Layout>
   );
 }

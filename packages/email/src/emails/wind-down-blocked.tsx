@@ -67,7 +67,7 @@ export function WindDownBlocked({
           If pricing is the problem, reply — I'd rather find something that
           works than lose the data.
         </Text>
-        <Text>Carl</Text>
+        <Text>The FlarePanel team</Text>
       </Layout>
     );
   }
@@ -89,7 +89,7 @@ export function WindDownBlocked({
           If the workspace is still inactive on {deleteDate}, it and its data
           get removed. I'll send one more email before that happens.
         </Text>
-        <Text>Carl</Text>
+        <Text>The FlarePanel team</Text>
       </Layout>
     );
   }
@@ -106,7 +106,7 @@ export function WindDownBlocked({
         comes straight back.
       </Text>
       {cta}
-      <Text>Carl</Text>
+      <Text>The FlarePanel team</Text>
     </Layout>
   );
 }

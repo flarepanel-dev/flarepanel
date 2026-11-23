@@ -44,7 +44,7 @@ export function TrackingNoData({
         Framework-specific instructions are in the{' '}
         <Link
           href={withUtm(
-            'https://flarepanel.dev/docs/get-started/install-openpanel',
+            'https://github.com/flarepanel-dev/flarepanel/tree/main/docs',
             'tracking-no-data'
           )}
         >
@@ -53,7 +53,7 @@ export function TrackingNoData({
         . And if you've tried and it still doesn't work, reply to this email —
         I'll personally help you get it running.
       </Text>
-      <Text>Carl</Text>
+      <Text>The FlarePanel team</Text>
     </Layout>
   );
 }
