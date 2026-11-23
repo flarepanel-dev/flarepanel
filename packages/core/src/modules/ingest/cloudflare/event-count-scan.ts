@@ -3,7 +3,7 @@
 // ran on ClickHouse, over a project's stored events.
 
 import type { IClickhouseEvent } from '../../event/event.service';
-import { eventRow, type ProfileLookup } from './chart-scan';
+import { eventRow, type ProfileLookup, readsLookup } from './chart-scan';
 import { matchesFilters, type RowFilter, readField } from './filter-eval';
 
 export interface EventCountQuery {
@@ -38,7 +38,7 @@ export class EventCountAccumulator {
     this.names = query.names?.length ? new Set(query.names) : null;
     this.excluded = new Set(query.excludeNames ?? []);
     this.needsProfile = (query.filters ?? []).some((filter) =>
-      filter.name.startsWith('profile.')
+      readsLookup(filter.name)
     );
   }
 

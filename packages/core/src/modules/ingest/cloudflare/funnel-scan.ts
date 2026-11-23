@@ -7,7 +7,7 @@
 // shape the funnel SQL returns, so the funnel service formats them as-is.
 
 import type { IClickhouseEvent } from '../../event/event.service';
-import { eventRow, type ProfileLookup } from './chart-scan';
+import { eventRow, type ProfileLookup, readsLookup } from './chart-scan';
 import { matchesFilters, type RowFilter, readField } from './filter-eval';
 
 export interface FunnelScanStep {
@@ -182,7 +182,7 @@ export class FunnelAccumulator {
       ]),
       ...this.query.breakdowns.map((breakdown) => breakdown.name),
     ];
-    return names.some((name) => name.startsWith('profile.'));
+    return names.some(readsLookup);
   }
 
   add(event: IClickhouseEvent, at: number): void {

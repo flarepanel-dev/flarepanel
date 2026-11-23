@@ -4,7 +4,7 @@
 // converted when it reached step two.
 
 import type { IClickhouseEvent } from '../../event/event.service';
-import { eventRow, type ProfileLookup } from './chart-scan';
+import { eventRow, type ProfileLookup, readsLookup } from './chart-scan';
 import { readField } from './filter-eval';
 import { type FunnelScanStep, matchesStep, replayFunnel } from './funnel-scan';
 import { type Bucket, wallClockText } from './time-buckets';
@@ -46,9 +46,7 @@ export class ConversionAccumulator {
     if (!key) {
       return;
     }
-    const needsProfile = query.breakdowns.some((name) =>
-      name.startsWith('profile.')
-    );
+    const needsProfile = query.breakdowns.some((name) => readsLookup(name));
     const row = eventRow(event, needsProfile ? this.lookupProfile : undefined);
     const steps = query.steps.flatMap((step, index) =>
       matchesStep(row, step) ? [index] : []

@@ -23,14 +23,18 @@ import {
   type EventCountQuery,
   eventRow,
   type FunnelScanQuery,
+  type GroupQuery,
+  type GroupStore,
   type JourneyScanQuery,
   type ListEventsQuery,
   type MetricsQuery,
+  openGroupStore,
   openProfileStore,
   openProjectEventsEngine,
   type PageSeriesQuery,
   type PagesScanQuery,
   type ProfileListQuery,
+  type ProfileLookup,
   type ProfileStore,
   type ProjectEventsEngine,
   type ProjectEventsService,
@@ -119,6 +123,7 @@ type LiveKind = 'events' | 'visitors' | 'notifications';
 interface State {
   engine: ProjectEventsEngine;
   profiles: ProfileStore;
+  groups: GroupStore;
   service: ProjectEventsService;
 }
 
@@ -155,6 +160,10 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   /** Advanced analytics: stored chunks not sent to the Basin stream yet. */
   private unstreamed = false;
   private pendingEvents = 0;
+  private readonly groupSummaries = new Map<
+    string,
+    { at: number; json: string }
+  >();
   private readonly profileSummaries = new Map<
     string,
     {
@@ -208,6 +217,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       options: { sessionTimeoutMs: SESSION_TIMEOUT_MS },
     });
     const profiles = openProfileStore(sql);
+    const groups = openGroupStore(sql, () => Date.now());
     const service = createProjectEventsService({
       engine,
       logger: this.logger,
@@ -247,7 +257,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       this.unstreamed =
         (await engine.readChunks(streamedThrough, 1)).length > 0;
     }
-    return { engine, service, profiles };
+    return { engine, service, profiles, groups };
   }
 
   private async rememberProject(projectId: string) {
@@ -397,9 +407,9 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   }
 
   /** `profile.*` fields for report filters and breakdowns, cached per call. */
-  private profileLookup(profiles: ProfileStore) {
+  private profileLookup(profiles: ProfileStore, groups?: GroupStore) {
     const cache = new Map<string, Record<string, unknown> | null>();
-    return (profileId: string) => {
+    const lookup: ProfileLookup = (profileId: string) => {
       if (!cache.has(profileId)) {
         const profile = profiles.get(profileId);
         cache.set(
@@ -409,16 +419,26 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       }
       return cache.get(profileId);
     };
+    if (groups) {
+      const groupCache = new Map<string, ReturnType<GroupStore['get']>>();
+      lookup.group = (groupId: string) => {
+        if (!groupCache.has(groupId)) {
+          groupCache.set(groupId, groups.get(groupId));
+        }
+        return groupCache.get(groupId) ?? null;
+      };
+    }
+    return lookup;
   }
 
   async chartRows(query: ChartScanQuery) {
-    const { engine, profiles } = await this.state;
-    return engine.chartRows(query, this.profileLookup(profiles));
+    const { engine, profiles, groups } = await this.state;
+    return engine.chartRows(query, this.profileLookup(profiles, groups));
   }
 
   async conversionRows(query: ConversionScanQuery) {
-    const { engine, profiles } = await this.state;
-    return engine.conversionRows(query, this.profileLookup(profiles));
+    const { engine, profiles, groups } = await this.state;
+    return engine.conversionRows(query, this.profileLookup(profiles, groups));
   }
 
   async pageRows(query: PagesScanQuery) {
@@ -432,8 +452,8 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   }
 
   async eventCounts(query: EventCountQuery) {
-    const { engine, profiles } = await this.state;
-    return engine.eventCounts(query, this.profileLookup(profiles));
+    const { engine, profiles, groups } = await this.state;
+    return engine.eventCounts(query, this.profileLookup(profiles, groups));
   }
 
   /** One profile's page; its four calls share one scan for a few seconds. */
@@ -461,6 +481,58 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       }
     }
     return value;
+  }
+
+  /** Group reads and writes; JSON text (group properties are open-ended). */
+  async groups(query: GroupQuery): Promise<string> {
+    const { engine, groups } = await this.state;
+    switch (query.kind) {
+      case 'get':
+        return JSON.stringify(groups.get(query.id));
+      case 'upsert':
+        this.groupSummaries.clear();
+        return JSON.stringify(groups.upsert(query.group));
+      case 'remove':
+        return JSON.stringify(groups.remove(query.id));
+      case 'list':
+        return JSON.stringify(groups.list(query.query));
+      case 'count':
+        return JSON.stringify(groups.count(query.query));
+      case 'types':
+        return JSON.stringify(groups.types());
+      case 'propertyKeys':
+        return JSON.stringify(groups.propertyKeys());
+      case 'propertyValues':
+        return JSON.stringify(groups.propertyValues(query.field));
+      case 'byIds':
+        return JSON.stringify(groups.byIds(query.ids));
+      case 'members':
+        return JSON.stringify(groups.members(query.query));
+      case 'stats':
+        return JSON.stringify(groups.stats(query.ids));
+      case 'memberGrowth':
+        return JSON.stringify(groups.memberGrowth(query.id, query.days));
+      default: {
+        const cached = this.groupSummaries.get(query.id);
+        if (cached && cached.at > Date.now() - PROFILE_SUMMARY_TTL_MS) {
+          return cached.json;
+        }
+        const json = JSON.stringify(
+          await engine.groupSummary(
+            query.id,
+            Date.now() - this.retentionDays() * DAY_MS
+          )
+        );
+        this.groupSummaries.set(query.id, { at: Date.now(), json });
+        if (this.groupSummaries.size > PROFILE_SUMMARY_CACHE_SIZE) {
+          const oldest = this.groupSummaries.keys().next().value;
+          if (oldest !== undefined) {
+            this.groupSummaries.delete(oldest);
+          }
+        }
+        return json;
+      }
+    }
   }
 
   /** As JSON text: the event's open-ended properties are not RPC-typed. */
@@ -504,8 +576,8 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   }
 
   async funnelRows(query: FunnelScanQuery) {
-    const { engine, profiles } = await this.state;
-    return engine.funnelRows(query, this.profileLookup(profiles));
+    const { engine, profiles, groups } = await this.state;
+    return engine.funnelRows(query, this.profileLookup(profiles, groups));
   }
 
   async retentionRows(query: RetentionScanQuery) {

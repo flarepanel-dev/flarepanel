@@ -52,6 +52,7 @@ import {
   type FunnelScanQuery,
   type FunnelScanResult,
 } from './funnel-scan';
+import { type GroupSummary, GroupSummaryAccumulator } from './group-scan';
 import { HyperLogLog } from './hyperloglog';
 import {
   JourneyAccumulator,
@@ -2407,6 +2408,16 @@ export async function openProjectEventsEngine({
     return series;
   }
 
+  /** One group's page from its stored events since `from`. */
+  async function groupSummary(
+    groupId: string,
+    from: number
+  ): Promise<GroupSummary> {
+    const accumulator = new GroupSummaryAccumulator(groupId);
+    await scanRange(from, clock.now(), (event) => accumulator.add(event));
+    return accumulator.result();
+  }
+
   /** The overview's user journey from the stored page views. */
   async function journeyRows(
     query: JourneyScanQuery
@@ -2957,6 +2968,7 @@ export async function openProjectEventsEngine({
     metrics,
     chartRows,
     findEvent,
+    groupSummary,
     dimensionSeries,
     journeyRows,
     profileSummary,

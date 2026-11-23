@@ -59,6 +59,13 @@ export type {
 } from './event-count-scan';
 export { type RowFilter, unsupportedFilters } from './filter-eval';
 export type { FunnelScanQuery, FunnelScanResult } from './funnel-scan';
+export type { GroupQuery } from './group-query';
+export type { GroupSummary } from './group-scan';
+export {
+  type GroupStore,
+  openGroupStore,
+  type StoredGroup,
+} from './group-store';
 export type {
   JourneyScanQuery,
   JourneyScanResult,

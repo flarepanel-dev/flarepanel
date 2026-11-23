@@ -23,6 +23,7 @@ import {
   updateEventsCount,
 } from '@flarepanel/core';
 import type { CacheStore } from '@flarepanel/platform';
+import { toDots } from '@flarepanel/shared';
 import type { Env } from '../index';
 
 /** Repeats of one request inside this window are dropped. */
@@ -199,6 +200,8 @@ export function createWorkerEventStore(
       projectEventsStub(env, projectId).profilePropertyKeys(
         options?.anonymous ?? false
       ),
+    groups: (projectId, query) =>
+      projectEventsStub(env, projectId).groups(query),
     findEvent: (projectId, id, createdAt) =>
       projectEventsStub(env, projectId).findEvent(id, createdAt?.getTime()),
     dimensionSeries: (projectId, dim, buckets, filters) =>
@@ -269,7 +272,25 @@ export function createWorkerBuffers(env: Pick<Env, 'PROJECT_EVENTS'>): Buffers {
       fetchFromCache: (profileId: string, projectId: string) =>
         projectEventsStub(env, projectId).getProfile(profileId),
     },
-    group: { add: noop },
+    // Group records go to the project's Durable Object group store.
+    group: {
+      add: (group: {
+        id: string;
+        projectId: string;
+        type: string;
+        name: string;
+        properties?: Record<string, unknown>;
+      }) =>
+        projectEventsStub(env, group.projectId).groups({
+          kind: 'upsert',
+          group: {
+            id: group.id,
+            type: group.type,
+            name: group.name,
+            properties: toDots(group.properties ?? {}),
+          },
+        }),
+    },
     replay: { add: noop },
     aiEvent: { add: noop },
     bot: { add: noop },

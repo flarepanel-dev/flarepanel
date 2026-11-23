@@ -5,6 +5,9 @@ import { toDots } from '@flarepanel/shared';
 import { chQuery } from '../../ch-query';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
+import type { GroupQuery } from '../ingest/cloudflare/group-query';
+import type { GroupSummary } from '../ingest/cloudflare/group-scan';
+import type { StoredGroup } from '../ingest/cloudflare/group-store';
 import { getProfiles, type IServiceProfile } from '../profile/profile.service';
 import { formatClickhouseDate, toNullIfDefaultMinDate } from './src/dates';
 import {
@@ -68,6 +71,30 @@ function transformGroup(row: IClickhouseGroup): IServiceGroup {
   };
 }
 
+/** Workers: one group call to the project's Durable Object (JSON answers). */
+async function storeGroups<T>(
+  deps: ServiceDeps,
+  projectId: string,
+  query: GroupQuery
+): Promise<T> {
+  const store = deps.eventStore as NonNullable<ServiceDeps['eventStore']>;
+  return JSON.parse(await store.groups(projectId, query)) as T;
+}
+
+function fromStored(group: StoredGroup, projectId: string): IServiceGroup {
+  return {
+    id: group.id,
+    projectId,
+    type: group.type,
+    name: group.name,
+    properties: group.properties,
+    createdAt: new Date(group.createdAt),
+    updatedAt: new Date(group.updatedAt),
+  };
+}
+
+const MEMBER_GROWTH_DAYS = 30;
+
 function pageOffset(cursor: number | undefined, take: number): number {
   return Math.max(0, (cursor ?? 0) * take);
 }
@@ -117,6 +144,18 @@ export async function upsertGroup(
   deps: ServiceDeps,
   input: IServiceUpsertGroup
 ) {
+  if (deps.eventStore) {
+    await storeGroups(deps, input.projectId, {
+      kind: 'upsert',
+      group: {
+        id: input.id,
+        type: input.type,
+        name: input.name,
+        properties: mergeGroupProperties({}, input.properties),
+      },
+    });
+    return;
+  }
   const existing = await getGroupById(deps, input.id, input.projectId);
   await writeGroupToCh(deps, {
     id: input.id,
@@ -133,6 +172,13 @@ export async function getGroupById(
   id: string,
   projectId: string
 ): Promise<IServiceGroup | null> {
+  if (deps.eventStore) {
+    const group = await storeGroups<StoredGroup | null>(deps, projectId, {
+      kind: 'get',
+      id,
+    });
+    return group ? fromStored(group, projectId) : null;
+  }
   const rows = await chQuery<IClickhouseGroup>(
     deps,
     groupByIdQuery({ id, projectId })
@@ -152,6 +198,13 @@ export async function getGroupList(
   deps: ServiceDeps,
   { projectId, cursor, take, search, type }: GetGroupListOptions
 ): Promise<IServiceGroup[]> {
+  if (deps.eventStore) {
+    const groups = await storeGroups<StoredGroup[]>(deps, projectId, {
+      kind: 'list',
+      query: { take, offset: pageOffset(cursor, take), search, type },
+    });
+    return groups.map((group) => fromStored(group, projectId));
+  }
   const rows = await chQuery<IClickhouseGroup>(
     deps,
     groupListQuery({
@@ -177,6 +230,12 @@ export async function getGroupListCount(
     search?: string;
   }
 ): Promise<number> {
+  if (deps.eventStore) {
+    return storeGroups<number>(deps, projectId, {
+      kind: 'count',
+      query: { type, search },
+    });
+  }
   const rows = await chQuery<{ count: number }>(
     deps,
     groupListCountQuery({ projectId, type, search })
@@ -188,6 +247,9 @@ export async function getGroupTypes(
   deps: ServiceDeps,
   projectId: string
 ): Promise<string[]> {
+  if (deps.eventStore) {
+    return storeGroups<string[]>(deps, projectId, { kind: 'types' });
+  }
   const rows = await chQuery<{ type: string }>(
     deps,
     groupTypesQuery(projectId)
@@ -228,7 +290,21 @@ export async function updateGroup(
     properties: mergeGroupProperties(existing.properties, data.properties),
     createdAt: existing.createdAt,
   };
-  await writeGroupToCh(deps, updated);
+  if (deps.eventStore) {
+    // The incoming properties were merged above; the store merges again,
+    // which is the same result.
+    await storeGroups(deps, projectId, {
+      kind: 'upsert',
+      group: {
+        id,
+        type: updated.type,
+        name: updated.name,
+        properties: updated.properties,
+      },
+    });
+  } else {
+    await writeGroupToCh(deps, updated);
+  }
   return { ...existing, ...updated };
 }
 
@@ -240,6 +316,10 @@ export async function deleteGroup(
   const existing = await getGroupById(deps, id, projectId);
   if (!existing) {
     throw new Error(`Group ${id} not found`);
+  }
+  if (deps.eventStore) {
+    await storeGroups(deps, projectId, { kind: 'remove', id });
+    return existing;
   }
   await writeGroupToCh(
     deps,
@@ -260,6 +340,9 @@ export async function getGroupPropertyKeys(
   deps: ServiceDeps,
   projectId: string
 ): Promise<string[]> {
+  if (deps.eventStore) {
+    return storeGroups<string[]>(deps, projectId, { kind: 'propertyKeys' });
+  }
   const rows = await chQuery<{ key: string }>(
     deps,
     groupPropertyKeysQuery(projectId)
@@ -280,6 +363,21 @@ export async function getGroupStats(
 ): Promise<Map<string, IServiceGroupStats>> {
   if (groupIds.length === 0) {
     return new Map();
+  }
+  if (deps.eventStore) {
+    const stats = await storeGroups<
+      { groupId: string; memberCount: number; lastActiveAt: number | null }[]
+    >(deps, projectId, { kind: 'stats', ids: groupIds });
+    return new Map(
+      stats.map((stat) => [
+        stat.groupId,
+        {
+          groupId: stat.groupId,
+          memberCount: stat.memberCount,
+          lastActiveAt: stat.lastActiveAt ? new Date(stat.lastActiveAt) : null,
+        },
+      ])
+    );
   }
 
   const rows = await chQuery<{
@@ -308,6 +406,13 @@ export async function getGroupsByIds(
   if (ids.length === 0) {
     return [];
   }
+  if (deps.eventStore) {
+    const groups = await storeGroups<StoredGroup[]>(deps, projectId, {
+      kind: 'byIds',
+      ids,
+    });
+    return groups.map((group) => fromStored(group, projectId));
+  }
 
   const rows = await chQuery<IClickhouseGroup>(
     deps,
@@ -331,19 +436,38 @@ export async function getGroupMemberProfiles(
   data: IServiceProfile[];
   count: number;
 }> {
-  const rows = await chQuery<{ id: string; total_count: number }>(
-    deps,
-    groupMemberProfilesQuery({
+  let count: number;
+  let profileIds: string[];
+  if (deps.eventStore) {
+    const page = await storeGroups<{ ids: string[]; count: number }>(
+      deps,
       projectId,
-      groupId,
-      take,
-      offset: pageOffset(cursor, take),
-      search: search?.trim() || undefined,
-    })
-  );
-
-  const count = rows[0]?.total_count ?? 0;
-  const profileIds = rows.map((r) => r.id);
+      {
+        kind: 'members',
+        query: {
+          groupId,
+          take,
+          offset: pageOffset(cursor, take),
+          search: search?.trim() || undefined,
+        },
+      }
+    );
+    count = page.count;
+    profileIds = page.ids;
+  } else {
+    const rows = await chQuery<{ id: string; total_count: number }>(
+      deps,
+      groupMemberProfilesQuery({
+        projectId,
+        groupId,
+        take,
+        offset: pageOffset(cursor, take),
+        search: search?.trim() || undefined,
+      })
+    );
+    count = rows[0]?.total_count ?? 0;
+    profileIds = rows.map((r) => r.id);
+  }
 
   if (profileIds.length === 0) {
     return { data: [], count };
@@ -386,6 +510,21 @@ export async function getGroupMetrics(
   id: string,
   projectId: string
 ) {
+  if (deps.eventStore) {
+    const [summary, stats] = await Promise.all([
+      storeGroups<GroupSummary>(deps, projectId, { kind: 'summary', id }),
+      storeGroups<{ memberCount: number }[]>(deps, projectId, {
+        kind: 'stats',
+        ids: [id],
+      }),
+    ]);
+    return {
+      totalEvents: summary.totalEvents,
+      uniqueProfiles: stats[0]?.memberCount ?? 0,
+      firstSeen: toNullIfDefaultMinDate(summary.firstSeen),
+      lastSeen: toNullIfDefaultMinDate(summary.lastSeen),
+    };
+  }
   const [eventData, profileData] = await Promise.all([
     chQuery<{ totalEvents: number; firstSeen: string; lastSeen: string }>(
       deps,
@@ -410,6 +549,11 @@ export async function getGroupActivity(
   id: string,
   projectId: string
 ) {
+  if (deps.eventStore) {
+    return (
+      await storeGroups<GroupSummary>(deps, projectId, { kind: 'summary', id })
+    ).activity;
+  }
   return chQuery<{ count: number; date: string }>(
     deps,
     groupActivityQuery({ projectId, groupId: id })
@@ -421,6 +565,13 @@ export async function getGroupMemberGrowth(
   id: string,
   projectId: string
 ) {
+  if (deps.eventStore) {
+    return storeGroups<{ date: string; count: number }[]>(deps, projectId, {
+      kind: 'memberGrowth',
+      id,
+      days: MEMBER_GROWTH_DAYS,
+    });
+  }
   return chQuery<{ date: string; count: number }>(
     deps,
     groupMemberGrowthQuery({ projectId, groupId: id })
@@ -432,6 +583,11 @@ export async function getGroupMostEvents(
   id: string,
   projectId: string
 ) {
+  if (deps.eventStore) {
+    return (
+      await storeGroups<GroupSummary>(deps, projectId, { kind: 'summary', id })
+    ).mostEvents;
+  }
   return chQuery<{ count: number; name: string }>(
     deps,
     groupMostEventsQuery({ projectId, groupId: id })
@@ -443,6 +599,11 @@ export async function getGroupPopularRoutes(
   id: string,
   projectId: string
 ) {
+  if (deps.eventStore) {
+    return (
+      await storeGroups<GroupSummary>(deps, projectId, { kind: 'summary', id })
+    ).popularRoutes;
+  }
   return chQuery<{ count: number; path: string }>(
     deps,
     groupPopularRoutesQuery({ projectId, groupId: id })

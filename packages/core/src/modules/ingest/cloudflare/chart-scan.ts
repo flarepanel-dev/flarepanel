@@ -47,10 +47,26 @@ export interface ChartRow {
   total_count?: number;
 }
 
-/** A project's profile as the store keeps it, for `profile.*` fields. */
-export type ProfileLookup = (
+/**
+ * A project's profile as the store keeps it, for `profile.*` fields; with
+ * `group`, also its groups for `group.*` fields.
+ */
+export type ProfileLookup = ((
   profileId: string
-) => Record<string, unknown> | null | undefined;
+) => Record<string, unknown> | null | undefined) & {
+  group?: (
+    groupId: string
+  ) => {
+    name: string;
+    type: string;
+    properties: Record<string, string>;
+  } | null;
+};
+
+/** Fields that need the profile or group lookup. */
+export function readsLookup(name: string): boolean {
+  return name.startsWith('profile.') || name.startsWith('group.');
+}
 
 const MAX_GROUPS = 20_000;
 const PERCENTILES: Record<string, number> = {
@@ -89,6 +105,22 @@ export function eventRow(
   row.has_profile = String(
     Boolean(event.profile_id && event.profile_id !== event.device_id)
   );
+  // `group.*` reads the event's first known group (ClickHouse joins each).
+  const lookupGroup = lookupProfile?.group;
+  if (lookupGroup && event.groups?.length) {
+    for (const groupId of event.groups) {
+      const group = lookupGroup(groupId);
+      if (group) {
+        row['group.id'] = groupId;
+        row['group.name'] = group.name;
+        row['group.type'] = group.type;
+        for (const [key, value] of Object.entries(group.properties)) {
+          row[`group.properties.${key}`] = value;
+        }
+        break;
+      }
+    }
+  }
   const profile = lookupProfile?.(event.profile_id);
   if (profile) {
     for (const [key, value] of Object.entries(profile)) {
@@ -113,7 +145,7 @@ export function needsProfile(query: ChartScanQuery): boolean {
     ...query.breakdowns,
     query.event.property ?? '',
   ];
-  return names.some((name) => name.startsWith(PROFILE_PREFIX));
+  return names.some(readsLookup);
 }
 
 function matchesEvent(row: Record<string, unknown>, event: ChartScanEvent) {

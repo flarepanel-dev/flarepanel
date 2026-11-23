@@ -391,8 +391,26 @@ export async function getChartPropertyValues(
     return { values: ['true', 'false'] };
   }
 
-  // Workers: values seen on the project's recent events. Profile, group and
-  // cohort values have no store to read from yet.
+  // Workers: values seen on the project's recent events, profiles or groups.
+  // Cohorts use their own picker.
+  if (deps.eventStore && property.startsWith('profile.')) {
+    return {
+      values: await deps.eventStore.profilePropertyValues(
+        projectId,
+        property.slice('profile.'.length)
+      ),
+    };
+  }
+  if (deps.eventStore && property.startsWith('group.')) {
+    return {
+      values: JSON.parse(
+        await deps.eventStore.groups(projectId, {
+          kind: 'propertyValues',
+          field: property.slice('group.'.length),
+        })
+      ) as string[],
+    };
+  }
   if (deps.eventStore) {
     const isEventField =
       property.startsWith('properties.') ||

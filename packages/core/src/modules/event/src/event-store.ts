@@ -33,6 +33,7 @@ import type {
   FunnelScanQuery,
   FunnelScanResult,
 } from '../../ingest/cloudflare/funnel-scan';
+import type { GroupQuery } from '../../ingest/cloudflare/group-query';
 import type {
   JourneyScanQuery,
   JourneyScanResult,
@@ -111,6 +112,8 @@ export interface EventStore {
     projectId: string,
     query: EventCountQuery
   ): Promise<{ rows: EventCountRow[]; partial: boolean }>;
+  /** Group reads and writes, answered as JSON text. */
+  groups(projectId: string, query: GroupQuery): Promise<string>;
   /** One stored event by id, as JSON text (`null` when not found). */
   findEvent(
     projectId: string,
