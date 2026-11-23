@@ -1,5 +1,6 @@
-// `isNumber` is mathjs's, not `typeof n === 'number'`: it is the filter predicate for every chart aggregate below.
-import { isNumber } from 'mathjs';
+// mathjs's `isNumber` is exactly `typeof n === 'number'` (NaN included); it is
+// inlined so these helpers do not load all of mathjs at Worker startup.
+const isNumber = (value: unknown): value is number => typeof value === 'number';
 
 export const round = (num: number, decimals = 2) => {
   const factor = 10 ** decimals;

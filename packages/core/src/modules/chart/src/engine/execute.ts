@@ -8,6 +8,7 @@ import type {
 import { compute } from './compute';
 import { fetch, fetchAggregate } from './fetch';
 import { format } from './format';
+import { loadFormulaEngine } from './formula';
 import { type NormalizedInput, normalize } from './normalize';
 import { plan } from './plan';
 import type { ConcreteSeries } from './types';
@@ -34,7 +35,10 @@ export async function executeChart(
   deps: ServiceDeps,
   input: IReportInput
 ): Promise<FinalChart> {
-  const normalized = await normalizeWithinSubscription(deps, input);
+  const [normalized] = await Promise.all([
+    normalizeWithinSubscription(deps, input),
+    loadFormulaEngine(),
+  ]);
   const executionPlan = plan(normalized);
   // Distribution buckets are not periods, and continuous bins differ between
   // the two ranges, so there is nothing to line the previous period up with.
@@ -78,7 +82,10 @@ export async function executeAggregateChart(
   deps: ServiceDeps,
   input: IReportInput
 ): Promise<FinalChart> {
-  const normalized = await normalizeWithinSubscription(deps, input);
+  const [normalized] = await Promise.all([
+    normalizeWithinSubscription(deps, input),
+    loadFormulaEngine(),
+  ]);
   const { timezone } = normalized;
   const currentPeriod = {
     startDate: normalized.startDate,

@@ -402,7 +402,7 @@ export async function portal(
 // `validatePolarEvent` verifies the signature over the RAW body bytes, so the route
 // must read `request.text()`, not parsed JSON.
 
-type PolarEvent = ReturnType<typeof validatePolarEvent>;
+type PolarEvent = Awaited<ReturnType<typeof validatePolarEvent>>;
 type PolarSubscriptionData = Extract<
   PolarEvent,
   { type: 'subscription.updated' }
@@ -692,7 +692,7 @@ export async function handlePolarWebhookEvent(
 
   let event: PolarEvent;
   try {
-    event = validatePolarEvent(
+    event = await validatePolarEvent(
       rawBody,
       headers,
       deps.config.polar.webhookSecret ?? ''

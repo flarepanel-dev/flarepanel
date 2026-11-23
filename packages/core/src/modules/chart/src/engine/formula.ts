@@ -1,4 +1,16 @@
-import * as mathjs from 'mathjs';
+import type * as MathJs from 'mathjs';
+
+/**
+ * mathjs is large; it is loaded on first use, not at Worker startup.
+ * `loadFormulaEngine()` must have resolved before formulas are evaluated
+ * (`executeChart` awaits it); until then every formula is rejected.
+ */
+let mathjs: typeof MathJs | null = null;
+
+export async function loadFormulaEngine(): Promise<void> {
+  mathjs ??= await import('mathjs');
+}
+
 import { alphabetIds } from '../../../report/report.constants';
 
 /**
@@ -54,10 +66,10 @@ export class InvalidFormulaError extends Error {
   }
 }
 
-function assertAllowedNode(node: mathjs.MathNode): void {
+function assertAllowedNode(node: MathJs.MathNode): void {
   switch (node.type) {
     case 'ConstantNode': {
-      const { value } = node as mathjs.ConstantNode;
+      const { value } = node as MathJs.ConstantNode;
       if (typeof value !== 'number' || !Number.isFinite(value)) {
         throw new InvalidFormulaError(
           'only finite numeric constants are allowed'
@@ -70,7 +82,7 @@ function assertAllowedNode(node: mathjs.MathNode): void {
       // A function call's callee is itself a SymbolNode, so allowed function
       // names have to pass here too. A bare `round` evaluates to a function
       // object, which `evaluateFormula` discards as non-numeric.
-      const { name } = node as mathjs.SymbolNode;
+      const { name } = node as MathJs.SymbolNode;
       if (!(ALLOWED_SYMBOLS.has(name) || ALLOWED_FUNCTIONS.has(name))) {
         throw new InvalidFormulaError(`unknown series reference "${name}"`);
       }
@@ -78,7 +90,7 @@ function assertAllowedNode(node: mathjs.MathNode): void {
     }
 
     case 'FunctionNode': {
-      const { fn } = node as mathjs.FunctionNode;
+      const { fn } = node as MathJs.FunctionNode;
       const name = typeof fn === 'string' ? fn : fn?.name;
       if (!(name && ALLOWED_FUNCTIONS.has(name))) {
         throw new InvalidFormulaError(`function "${name}" is not allowed`);
@@ -90,7 +102,7 @@ function assertAllowedNode(node: mathjs.MathNode): void {
       break;
 
     case 'OperatorNode': {
-      const { fn } = node as mathjs.OperatorNode;
+      const { fn } = node as MathJs.OperatorNode;
       if (!ALLOWED_OPERATOR_FUNCTIONS.has(fn)) {
         throw new InvalidFormulaError(`operator "${fn}" is not allowed`);
       }
@@ -106,12 +118,15 @@ function assertAllowedNode(node: mathjs.MathNode): void {
  * Parse and validate a formula, returning a compiled expression.
  * Throws {@link InvalidFormulaError} for anything outside plain arithmetic.
  */
-function compileFormula(formula: string): mathjs.EvalFunction {
+function compileFormula(formula: string): MathJs.EvalFunction {
   if (formula.length > MAX_FORMULA_LENGTH) {
     throw new InvalidFormulaError('formula is too long');
   }
 
-  let node: mathjs.MathNode;
+  if (!mathjs) {
+    throw new InvalidFormulaError('the formula engine is not loaded');
+  }
+  let node: MathJs.MathNode;
   try {
     node = mathjs.parse(formula);
   } catch {
@@ -130,9 +145,9 @@ function compileFormula(formula: string): mathjs.EvalFunction {
  * compiled over and over. Cache the validated, compiled form by source string.
  */
 const MAX_CACHE_ENTRIES = 500;
-const compiledCache = new Map<string, mathjs.EvalFunction>();
+const compiledCache = new Map<string, MathJs.EvalFunction>();
 
-function getCompiledFormula(formula: string): mathjs.EvalFunction {
+function getCompiledFormula(formula: string): MathJs.EvalFunction {
   const cached = compiledCache.get(formula);
   if (cached) {
     // Refresh recency so hot formulas survive eviction.

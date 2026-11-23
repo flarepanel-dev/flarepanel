@@ -1,5 +1,9 @@
-import { describe, expect, it } from 'bun:test';
+import { beforeAll, describe, expect, it } from 'bun:test';
 import { compute } from './compute';
+import { loadFormulaEngine } from './formula';
+
+beforeAll(loadFormulaEngine);
+
 import type { ConcreteSeries } from './types';
 
 const series = (dates: string[]): ConcreteSeries =>

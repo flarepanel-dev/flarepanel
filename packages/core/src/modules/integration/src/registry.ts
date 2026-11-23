@@ -20,11 +20,7 @@ import {
   type IIntegrationConfig,
   looksEncrypted,
 } from '../integration.constants';
-import {
-  createGCSAdapter,
-  createS3Adapter,
-  type IObjectStoreAdapter,
-} from './object-store';
+import type { IObjectStoreAdapter } from './object-store/types';
 import { safeWebhookFetcher } from './safe-fetcher';
 import { sendSlackNotification } from './slack';
 
@@ -242,6 +238,43 @@ const webhookServer: IServerIntegration<'webhook'> = {
     },
   },
 };
+
+/**
+ * An adapter whose SDK (AWS or Google) loads on its first call: the SDKs are
+ * large and most requests never export, so they stay out of Worker startup.
+ */
+function lazyAdapter(
+  load: () => Promise<IObjectStoreAdapter>
+): IObjectStoreAdapter {
+  let adapter: Promise<IObjectStoreAdapter> | null = null;
+  const get = () => {
+    adapter ??= load();
+    return adapter;
+  };
+  return {
+    upload: async (options) => (await get()).upload(options),
+    uploadMany: async (options) => (await get()).uploadMany(options),
+    testConnection: async () => (await get()).testConnection(),
+  };
+}
+
+const createS3Adapter = (
+  ...args: Parameters<
+    typeof import('./object-store/s3-adapter').createS3Adapter
+  >
+) =>
+  lazyAdapter(async () =>
+    (await import('./object-store/s3-adapter')).createS3Adapter(...args)
+  );
+
+const createGCSAdapter = (
+  ...args: Parameters<
+    typeof import('./object-store/gcs-adapter').createGCSAdapter
+  >
+) =>
+  lazyAdapter(async () =>
+    (await import('./object-store/gcs-adapter')).createGCSAdapter(...args)
+  );
 
 const s3Server: IServerIntegration<'s3_export'> = {
   type: 's3_export',

@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'bun:test';
-import { evaluateFormula, isValidFormula } from './formula';
+import { beforeAll, describe, expect, it } from 'bun:test';
+import { evaluateFormula, isValidFormula, loadFormulaEngine } from './formula';
+
+beforeAll(loadFormulaEngine);
 
 const scope = { A: 10, B: 4, C: 0 };
 
