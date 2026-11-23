@@ -1110,6 +1110,18 @@ export async function openProjectEventsEngine({
     return stats.sort((a, b) => a.day.localeCompare(b.day));
   }
 
+  /** Distinct visitors over the UTC days `from`..`to`: the daily sketches merged. */
+  function rangeVisitors(from: Date, to: Date): number {
+    const toDay = dayKey(to.getTime());
+    const merged = new HyperLogLog();
+    for (const [day, rollup] of rollupsSince(dayKey(from.getTime()))) {
+      if (day <= toDay) {
+        merged.merge(rollup.visitors);
+      }
+    }
+    return merged.count();
+  }
+
   /** Visitors and revenue as the dashboard's project card shows them, by UTC day. */
   function projectCard(): ProjectCard {
     const now = clock.now();
@@ -1415,6 +1427,7 @@ export async function openProjectEventsEngine({
     listEvents,
     projectCard,
     dailyStats,
+    rangeVisitors,
     eventNames,
     activeVisitors,
     readChunks,

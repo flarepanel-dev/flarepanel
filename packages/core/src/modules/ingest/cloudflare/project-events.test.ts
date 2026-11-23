@@ -180,6 +180,26 @@ describe('project events service', () => {
     expect(page.events).toHaveLength(1);
   });
 
+  it('counts distinct visitors over a range from the daily rollups', async () => {
+    const { engine, service } = await createService();
+    await service.track({ draft: draft('screen_view'), project: null });
+    await service.track({ draft: draft('screen_view', '/b'), project: null });
+    const other = draft('screen_view');
+    if (other.device) {
+      other.device = { ...other.device, ip: '198.51.100.20' };
+    }
+    await service.track({ draft: other, project: null });
+    await engine.flush();
+
+    const from = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const to = new Date();
+    expect(engine.rangeVisitors(from, to)).toBe(2);
+    const [today] = engine.dailyStats(new Date(), new Date());
+    expect(today?.visitors).toBe(2);
+    expect(today?.screenViews).toBe(3);
+    expect(today?.sessions).toBe(2);
+  });
+
   it('archives stored chunks as one ndjson object per event hour', async () => {
     const { engine, service } = await createService();
     await service.track({ draft: draft('screen_view'), project: null });

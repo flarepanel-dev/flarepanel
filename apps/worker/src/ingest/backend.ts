@@ -125,6 +125,8 @@ export function createWorkerEventStore(
     projectCard: (projectId) => projectEventsStub(env, projectId).projectCard(),
     activeVisitors: (projectId) =>
       projectEventsStub(env, projectId).activeVisitors(),
+    overview: (projectId, from, to) =>
+      projectEventsStub(env, projectId).overview(from, to),
   };
 }
 

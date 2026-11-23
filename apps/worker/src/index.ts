@@ -37,7 +37,6 @@ import {
   processCloudflareJobBatch,
   type QueueMessageLike,
 } from '@flarepanel/core/jobs/cloudflare';
-import { ch } from '@flarepanel/db/src/clickhouse/client';
 // Aliased to prisma-client.workerd.ts in wrangler.jsonc.
 import { db, Prisma } from '@flarepanel/db/src/prisma-client';
 import { bindD1Database } from '@flarepanel/db/src/prisma-client.workerd';
@@ -55,6 +54,7 @@ import {
   createWorkerEventStore,
   projectEventsStub,
 } from './ingest/backend';
+import { createEmptyClickHouse } from './ingest/empty-clickhouse';
 import { liveAccessRoute, matchLivePath } from './ingest/live';
 import { ProjectEventsDurableObject } from './ingest/project-events-do';
 import { createConsoleLogger } from './logger';
@@ -114,7 +114,7 @@ async function boot(env: Env): Promise<Booted> {
   const deps: AppDeps = {
     db,
     prisma: { DbNull: Prisma.DbNull, JsonNull: Prisma.JsonNull },
-    ch,
+    ch: createEmptyClickHouse(),
     redis: unavailableOnWorkers<AppDeps['redis']>('Redis'),
     stores,
     clients: createClients(),

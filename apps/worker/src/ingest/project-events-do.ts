@@ -172,6 +172,14 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     return engine.dailyStats(from, to);
   }
 
+  async overview(from: Date, to: Date) {
+    const { engine } = await this.state;
+    return {
+      visitors: engine.rangeVisitors(from, to),
+      days: engine.dailyStats(from, to),
+    };
+  }
+
   async eventNames() {
     const { engine } = await this.state;
     return engine.eventNames();

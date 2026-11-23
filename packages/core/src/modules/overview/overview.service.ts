@@ -386,6 +386,13 @@ export async function getMetrics(
     total_revenue: number;
   }[];
 }> {
+  if (deps.eventStore) {
+    return getMetricsFromEventStore(deps.eventStore, {
+      projectId,
+      startDate,
+      endDate,
+    });
+  }
   return isPageFilter(filters)
     ? getMetricsWithPageFilter(deps, {
         projectId,
@@ -403,6 +410,81 @@ export async function getMetrics(
         interval,
         timezone,
       });
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const PERCENT = 100;
+const MS_PER_SECOND = 1000;
+
+function metricRow(stats: {
+  visitors: number;
+  sessions: number;
+  bounces: number;
+  durationMs: number;
+  screenViews: number;
+  revenue: number;
+}) {
+  const perSession = (value: number) =>
+    stats.sessions > 0 ? value / stats.sessions : 0;
+  return {
+    unique_visitors: stats.visitors,
+    total_sessions: stats.sessions,
+    bounce_rate: Math.round(perSession(stats.bounces) * PERCENT * 100) / 100,
+    avg_session_duration:
+      Math.round((perSession(stats.durationMs) / MS_PER_SECOND) * 100) / 100,
+    total_screen_views: stats.screenViews,
+    views_per_session: Math.round(perSession(stats.screenViews) * 100) / 100,
+    total_revenue: stats.revenue,
+  };
+}
+
+/**
+ * Overview numbers on Workers, from the project's daily rollups (UTC days, one
+ * point per day). Filters and finer intervals need the Phase 4 query port.
+ */
+async function getMetricsFromEventStore(
+  store: NonNullable<ServiceDeps['eventStore']>,
+  input: { projectId: string; startDate: string; endDate: string }
+) {
+  const from = new Date(input.startDate);
+  const to = new Date(input.endDate);
+  const { visitors, days } = await store.overview(input.projectId, from, to);
+  const byDay = new Map(days.map((day) => [day.day, day]));
+  const totals = {
+    visitors,
+    sessions: 0,
+    bounces: 0,
+    durationMs: 0,
+    screenViews: 0,
+    revenue: 0,
+  };
+  const series: Array<ReturnType<typeof metricRow> & { date: string }> = [];
+  const first = Date.UTC(
+    from.getUTCFullYear(),
+    from.getUTCMonth(),
+    from.getUTCDate()
+  );
+  for (let at = first; at <= to.getTime(); at += DAY_MS) {
+    const key = new Date(at).toISOString().slice(0, 10);
+    const day = byDay.get(key);
+    totals.sessions += day?.sessions ?? 0;
+    totals.bounces += day?.bounces ?? 0;
+    totals.durationMs += day?.durationMs ?? 0;
+    totals.screenViews += day?.screenViews ?? 0;
+    totals.revenue += day?.revenue ?? 0;
+    series.push({
+      date: new Date(at).toISOString(),
+      ...metricRow({
+        visitors: day?.visitors ?? 0,
+        sessions: day?.sessions ?? 0,
+        bounces: day?.bounces ?? 0,
+        durationMs: day?.durationMs ?? 0,
+        screenViews: day?.screenViews ?? 0,
+        revenue: day?.revenue ?? 0,
+      }),
+    });
+  }
+  return { metrics: metricRow(totals), series };
 }
 
 async function getMetricsFromSessions(

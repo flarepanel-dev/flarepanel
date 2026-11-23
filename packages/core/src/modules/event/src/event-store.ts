@@ -4,6 +4,7 @@
 // port when it is present. Bun leaves it unset and keeps its ClickHouse reads.
 
 import type {
+  DailyStats,
   ListEventsPage,
   ListEventsQuery,
   ProjectCard,
@@ -17,4 +18,10 @@ export interface EventStore {
   ): Promise<ListEventsPage>;
   projectCard(projectId: string): Promise<ProjectCard>;
   activeVisitors(projectId: string): Promise<number>;
+  /** UTC daily rollups for `from`..`to` and the range's distinct visitors. */
+  overview(
+    projectId: string,
+    from: Date,
+    to: Date
+  ): Promise<{ visitors: number; days: DailyStats[] }>;
 }
