@@ -33,8 +33,14 @@ import {
   ChartAccumulator,
   type ChartRow,
   type ChartScanQuery,
+  DistributionAccumulator,
   type ProfileLookup,
 } from './chart-scan';
+import {
+  ConversionAccumulator,
+  type ConversionRow,
+  type ConversionScanQuery,
+} from './conversion-scan';
 import { matchesFilters, type RowFilter } from './filter-eval';
 import {
   FunnelAccumulator,
@@ -48,6 +54,11 @@ import {
   type RetentionRow,
   type RetentionScanQuery,
 } from './retention-scan';
+import {
+  SankeyAccumulator,
+  type SankeyScanQuery,
+  type SankeyScanResult,
+} from './sankey-scan';
 import {
   type BucketInterval,
   buildBuckets,
@@ -2036,14 +2047,41 @@ export async function openProjectEventsEngine({
     query: ChartScanQuery,
     lookupProfile?: ProfileLookup
   ): Promise<{ rows: ChartRow[]; partial: boolean }> {
-    const accumulator = new ChartAccumulator(query, lookupProfile);
+    const accumulator = query.perUser
+      ? new DistributionAccumulator(query, lookupProfile)
+      : new ChartAccumulator(query, lookupProfile);
     const complete = await scanRange(query.from, query.to, (event, at) =>
       accumulator.add(event, at)
     );
     return {
       rows: accumulator.rows(),
-      partial: !complete || accumulator.overflowed,
+      partial:
+        !complete ||
+        (accumulator instanceof ChartAccumulator && accumulator.overflowed),
     };
+  }
+
+  /** Conversion rows (two-step funnel per day) from the stored events. */
+  async function conversionRows(
+    query: ConversionScanQuery,
+    lookupProfile?: ProfileLookup
+  ): Promise<{ rows: ConversionRow[]; partial: boolean }> {
+    const accumulator = new ConversionAccumulator(query, lookupProfile);
+    const complete = await scanRange(query.from, query.to, (event, at) =>
+      accumulator.add(event, at)
+    );
+    return { rows: accumulator.rows(), partial: !complete };
+  }
+
+  /** User flow (Sankey) entries and transitions from the stored events. */
+  async function sankeyRows(
+    query: SankeyScanQuery
+  ): Promise<SankeyScanResult & { partial: boolean }> {
+    const accumulator = new SankeyAccumulator(query);
+    const complete = await scanRange(query.from, query.to, (event, at) =>
+      accumulator.add(event, at)
+    );
+    return { ...accumulator.result(), partial: !complete };
   }
 
   /** Funnel levels (and time to convert) from the stored events. */
@@ -2519,6 +2557,8 @@ export async function openProjectEventsEngine({
     listEvents,
     metrics,
     chartRows,
+    conversionRows,
+    sankeyRows,
     funnelRows,
     retentionRows,
     recentEvents,

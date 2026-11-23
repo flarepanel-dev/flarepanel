@@ -2,6 +2,7 @@ import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import { omit } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
 import { expandCustomEvents } from '../custom-event/custom-event.service';
+import { buildBuckets, wallClockToMs } from '../ingest/cloudflare/time-buckets';
 import type { IReportInput } from '../report/report.constants';
 import { NOT_SET_VALUE } from '../report/report.constants';
 import {
@@ -12,6 +13,7 @@ import {
 import { JOINABLE_PROFILE_COLUMNS } from './chart.constants';
 import { compiledText } from './src/compiled';
 import { type ConversionGroup, conversionQuery } from './src/conversion-sql';
+import { toRowFilters } from './src/engine/store-rows';
 import { eventMatchCondition, eventNamesOf } from './src/event-match';
 import {
   buildInlineCohortJoin,
@@ -187,32 +189,50 @@ export async function getConversion(
   const whereA = stepWhere(eventA, projectId, period);
   const whereB = stepWhere(eventB, projectId, period);
 
-  const results = await runQuery<ConversionRow>(
-    deps,
-    conversionQuery({
-      projectId,
-      startDate,
-      endDate,
-      interval,
-      group,
-      funnelWindowSeconds: funnelWindow * SECONDS_PER_HOUR,
-      firstEventMatch: eventMatchCondition(eventA, projectId, 'events'),
-      secondEventMatch: eventMatchCondition(eventB, projectId, 'events'),
-      eventNames: [...eventNamesOf(eventA), ...eventNamesOf(eventB)],
-      firstEventWhere: whereA,
-      secondEventWhere: whereB,
-      breakdownSelects,
-      breakdownExpressions,
-      profileJoinFields: profileJoinFields(
-        knownBreakdowns.filter((breakdown) =>
-          breakdown.name.startsWith('profile.')
-        )
-      ),
-      needsGroupArrayJoin: anyBreakdownOnGroup || anyFilterOnGroup,
-      cohortJoins,
-    }),
-    timezone
-  );
+  const results = deps.eventStore
+    ? ((
+        await deps.eventStore.conversionRows(projectId, {
+          from: wallClockToMs(startDate, timezone),
+          to: wallClockToMs(endDate, timezone),
+          steps: [scanStep(eventA), scanStep(eventB)],
+          breakdowns: knownBreakdowns.map((breakdown) => breakdown.name),
+          windowMs: funnelWindow * SECONDS_PER_HOUR * 1000,
+          group,
+          buckets: buildBuckets(
+            wallClockToMs(startDate, timezone),
+            wallClockToMs(endDate, timezone),
+            interval,
+            timezone
+          ),
+          timezone,
+        })
+      ).rows as ConversionRow[])
+    : await runQuery<ConversionRow>(
+        deps,
+        conversionQuery({
+          projectId,
+          startDate,
+          endDate,
+          interval,
+          group,
+          funnelWindowSeconds: funnelWindow * SECONDS_PER_HOUR,
+          firstEventMatch: eventMatchCondition(eventA, projectId, 'events'),
+          secondEventMatch: eventMatchCondition(eventB, projectId, 'events'),
+          eventNames: [...eventNamesOf(eventA), ...eventNamesOf(eventB)],
+          firstEventWhere: whereA,
+          secondEventWhere: whereB,
+          breakdownSelects,
+          breakdownExpressions,
+          profileJoinFields: profileJoinFields(
+            knownBreakdowns.filter((breakdown) =>
+              breakdown.name.startsWith('profile.')
+            )
+          ),
+          needsGroupArrayJoin: anyBreakdownOnGroup || anyFilterOnGroup,
+          cohortJoins,
+        }),
+        timezone
+      );
 
   return toSeries(results, knownBreakdowns, limit).map((serie, serieIndex) => ({
     ...serie,
@@ -224,6 +244,18 @@ export async function getConversion(
       serie: omit(['data'], serie),
     })),
   }));
+}
+
+/** A conversion step for the Durable Object's counter. */
+function scanStep(event: ReportEventItem) {
+  return {
+    name: event.name,
+    anyOf: event.anyOf?.map((item) => ({
+      name: item.name,
+      filters: toRowFilters(item.filters),
+    })),
+    filters: toRowFilters(event.filters),
+  };
 }
 
 function toPoint(row: ConversionRow): ConversionSeriePoint {

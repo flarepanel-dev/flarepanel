@@ -150,14 +150,32 @@ async function basinChartRows(
 /** One series' rows over time, bucketed in the project's timezone (weeks from Monday). */
 export async function storeSeriesRows(
   deps: StoreDeps,
-  input: IGetChartDataInput & { timezone: string }
-): Promise<ISerieDataItem[]> {
-  if (input.chartType === 'distribution') {
-    // Per-user distributions are not counted on Workers yet: empty state.
-    return [];
+  input: IGetChartDataInput & {
+    timezone: string;
+    binRange?: { lo: number; hi: number };
   }
+): Promise<ISerieDataItem[]> {
   const from = wallClockToMs(input.startDate, input.timezone);
   const to = wallClockToMs(input.endDate, input.timezone);
+  if (input.chartType === 'distribution') {
+    // Users bucketed by one value each: counted in the Durable Object only.
+    const { rows } = await deps.eventStore.chartRows(input.projectId, {
+      from,
+      to,
+      event: scanEvent(input.event),
+      breakdowns: breakdownNames(input.breakdowns),
+      buckets: [{ start: from, end: to + 1 }],
+      timezone: input.timezone,
+      perUser: {
+        aggregation: input.event.perUser?.aggregation ?? 'count',
+        ...(input.event.perUser?.property
+          ? { property: input.event.perUser.property }
+          : {}),
+      },
+      ...(input.binRange ? { binRange: input.binRange } : {}),
+    });
+    return rows;
+  }
   return chartRowsFor(deps, input.projectId, {
     from,
     to,

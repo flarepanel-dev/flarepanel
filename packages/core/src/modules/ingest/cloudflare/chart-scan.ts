@@ -31,6 +31,10 @@ export interface ChartScanQuery {
   timezone: string;
   /** Aggregate charts label every row with this date. */
   fixedDate?: string;
+  /** Distribution charts: users bucketed by one value per user. */
+  perUser?: { aggregation: string; property?: string };
+  /** Distribution charts: a value range shared with the other series. */
+  binRange?: { lo: number; hi: number };
 }
 
 export interface ChartRow {
@@ -217,7 +221,7 @@ export class ChartAccumulator {
   ) {}
 
   add(event: IClickhouseEvent, at: number): void {
-    const { query } = this;
+    const query = this.query;
     const bucket = findBucketIndex(query.buckets, at);
     if (bucket < 0) {
       return;
@@ -310,7 +314,7 @@ export class ChartAccumulator {
 
   /** Rows like ClickHouse's: data rows, then a fill row per bucket. */
   rows(): ChartRow[] {
-    const { query } = this;
+    const query = this.query;
     const rows: ChartRow[] = [];
     if (query.event.segment === 'one_event_per_user') {
       const counts = new Map<
@@ -346,6 +350,202 @@ export class ChartAccumulator {
     if (!query.fixedDate) {
       for (const [index] of query.buckets.entries()) {
         rows.push({ label_0: '', date: this.dateOf(index), count: 0 });
+      }
+    }
+    return rows;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Distribution charts: one value per user (count of events, or an aggregate
+// of a property), users counted per bucket, like `perUserDistributionQuery`.
+
+const DISCRETE_BUCKET_BOUNDS = [1, 2, 3, 5, 10];
+const DISCRETE_BUCKET_LABELS = ['1', '2', '3', '4-5', '6-10', '11+'];
+const CONTINUOUS_BUCKET_COUNT = 10;
+const MIN_BIN_LABEL_DIGITS = 2;
+const PER_USER_QUANTILES: Record<string, number> = {
+  median: 0.5,
+  p90: 0.9,
+  p95: 0.95,
+  p99: 0.99,
+};
+
+interface UserValues {
+  count: number;
+  values: number[];
+  distinct: Set<string>;
+}
+
+function roundTo(value: number, digits: number): string {
+  return String(Number(value.toFixed(Math.max(0, Math.min(digits, 20)))));
+}
+
+function userValue(user: UserValues, aggregation: string): number | null {
+  if (aggregation === 'count') {
+    return user.count;
+  }
+  if (aggregation === 'distinct_count') {
+    return user.distinct.size;
+  }
+  const { values } = user;
+  if (values.length === 0) {
+    return null;
+  }
+  switch (aggregation) {
+    case 'sum':
+      return values.reduce((sum, value) => sum + value, 0);
+    case 'avg':
+      return values.reduce((sum, value) => sum + value, 0) / values.length;
+    case 'min':
+      return Math.min(...values);
+    case 'max':
+      return Math.max(...values);
+    default:
+      return percentile(
+        [...values].sort((a, b) => a - b),
+        PER_USER_QUANTILES[aggregation] ?? 0.5
+      );
+  }
+}
+
+export class DistributionAccumulator {
+  /** breakdown labels → profile → that user's values */
+  private readonly groups = new Map<
+    string,
+    { labels: string[]; users: Map<string, UserValues> }
+  >();
+
+  constructor(
+    private readonly query: ChartScanQuery,
+    private readonly lookupProfile?: ProfileLookup
+  ) {}
+
+  add(event: IClickhouseEvent, _at?: number): void {
+    const query = this.query;
+    const row = eventRow(
+      event,
+      needsProfile(query) ? this.lookupProfile : undefined
+    );
+    if (
+      !(
+        matchesEvent(row, query.event) &&
+        matchesFilters(row, query.event.filters)
+      )
+    ) {
+      return;
+    }
+    const aggregation = query.perUser?.aggregation ?? 'count';
+    const property = query.perUser?.property;
+    let numeric: number | null = null;
+    let text = '';
+    if (aggregation !== 'count') {
+      if (!property) {
+        return;
+      }
+      const raw = readField(row, property);
+      text = asLabel(raw);
+      if (!text) {
+        return;
+      }
+      if (aggregation !== 'distinct_count') {
+        numeric = numericValue(raw);
+        if (numeric === null) {
+          return;
+        }
+      }
+    }
+    const labels = query.breakdowns.map((name) =>
+      asLabel(readField(row, name))
+    );
+    const key = labels.join('\u0001');
+    let group = this.groups.get(key);
+    if (!group) {
+      if (this.groups.size >= MAX_GROUPS) {
+        return;
+      }
+      group = { labels, users: new Map() };
+      this.groups.set(key, group);
+    }
+    let user = group.users.get(event.profile_id);
+    if (!user) {
+      user = { count: 0, values: [], distinct: new Set() };
+      group.users.set(event.profile_id, user);
+    }
+    user.count += 1;
+    if (numeric !== null) {
+      user.values.push(numeric);
+    }
+    if (aggregation === 'distinct_count') {
+      user.distinct.add(text);
+    }
+  }
+
+  rows(): ChartRow[] {
+    const query = this.query;
+    const aggregation = query.perUser?.aggregation ?? 'count';
+    const discrete =
+      aggregation === 'count' || aggregation === 'distinct_count';
+    const perGroup = [...this.groups.values()].map((group) => ({
+      labels: group.labels,
+      values: [...group.users.values()]
+        .map((user) => userValue(user, aggregation))
+        .filter(
+          (value): value is number => value !== null && Number.isFinite(value)
+        ),
+    }));
+    const all = perGroup.flatMap((group) => group.values);
+    if (all.length === 0) {
+      return [];
+    }
+    const lo = query.binRange?.lo ?? Math.min(...all);
+    const hi = query.binRange?.hi ?? Math.max(...all);
+    const width = (hi - lo) / CONTINUOUS_BUCKET_COUNT;
+    const bucketCount = discrete
+      ? DISCRETE_BUCKET_LABELS.length
+      : hi === lo
+        ? 1
+        : CONTINUOUS_BUCKET_COUNT;
+    const digits = Math.max(
+      MIN_BIN_LABEL_DIGITS,
+      width > 0 ? Math.ceil(-Math.log10(width)) + 1 : MIN_BIN_LABEL_DIGITS
+    );
+    const bucketOf = (value: number) => {
+      if (discrete) {
+        return DISCRETE_BUCKET_BOUNDS.filter((bound) => value > bound).length;
+      }
+      if (hi === lo) {
+        return 0;
+      }
+      return Math.min(
+        Math.max(Math.floor((value - lo) / width), 0),
+        CONTINUOUS_BUCKET_COUNT - 1
+      );
+    };
+    const labelOf = (bucket: number) => {
+      if (discrete) {
+        return DISCRETE_BUCKET_LABELS[bucket] ?? '';
+      }
+      if (hi === lo) {
+        return roundTo(lo, MIN_BIN_LABEL_DIGITS);
+      }
+      return `${roundTo(lo + bucket * width, digits)} - ${roundTo(lo + (bucket + 1) * width, digits)}`;
+    };
+    const rows: ChartRow[] = [];
+    for (let bucket = 0; bucket < bucketCount; bucket++) {
+      for (const group of perGroup) {
+        const columns: Pick<ChartRow, 'label_1' | 'label_2' | 'label_3'> = {};
+        group.labels.forEach((label, index) => {
+          columns[`label_${index + 1}` as 'label_1'] = label;
+        });
+        rows.push({
+          label_0: query.event.name,
+          ...columns,
+          date: labelOf(bucket),
+          count: group.values.filter((value) => bucketOf(value) === bucket)
+            .length,
+          total_count: group.values.length,
+        });
       }
     }
     return rows;

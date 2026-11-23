@@ -2,6 +2,7 @@ import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
+import { wallClockToMs } from '../ingest/cloudflare/time-buckets';
 import { getSettingsForProject } from '../organization/organization.service';
 import {
   chartColors,
@@ -14,6 +15,7 @@ import {
   MAX_SANKEY_WINDOW_DAYS,
 } from './chart.constants';
 import { convertClickhouseDateToJs } from './src/dates';
+import { toRowFilters } from './src/engine/store-rows';
 import {
   getEventFiltersWhereClause,
   joinFilterClauses,
@@ -186,6 +188,43 @@ export async function getSankey(
   const isBetween = mode === 'between' && !!startEvent && !!endEvent;
   const start = pathsInput.startEvent as SankeyEvent;
   const end = pathsInput.endEvent as SankeyEvent;
+
+  if (deps.eventStore) {
+    const result = await deps.eventStore.sankeyRows(projectId, {
+      from: wallClockToMs(startDate, timezone),
+      to: wallClockToMs(endDate, timezone),
+      steps,
+      mode,
+      ...(startEvent
+        ? {
+            startEvent: {
+              name: startEvent.name,
+              filters: toRowFilters(startEvent.filters),
+            },
+          }
+        : {}),
+      ...(endEvent
+        ? {
+            endEvent: {
+              name: endEvent.name,
+              filters: toRowFilters(endEvent.filters),
+            },
+          }
+        : {}),
+      ...(include ? { include } : {}),
+      exclude,
+    });
+    if (result.topEntries.length === 0) {
+      return { nodes: [], links: [] };
+    }
+    return buildSankeyFromTransitions(
+      result.transitions,
+      result.topEntries,
+      result.topEntries.reduce((sum, entry) => sum + entry.count, 0),
+      steps,
+      colors
+    );
+  }
 
   const topEntries = await runQuery<TopEntry>(
     deps,

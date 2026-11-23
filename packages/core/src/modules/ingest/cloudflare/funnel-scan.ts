@@ -59,7 +59,10 @@ interface Chain {
   values: string[][];
 }
 
-function matchesStep(row: Record<string, unknown>, step: FunnelScanStep) {
+export function matchesStep(
+  row: Record<string, unknown>,
+  step: FunnelScanStep
+): boolean {
   const name = String(row.name ?? '');
   if (step.anyOf?.length) {
     return step.anyOf.some(
@@ -107,7 +110,7 @@ function aggregateTimes(values: number[], aggregation: string): number {
 
 /** windowFunnel over one group's hits (sorted): its level and winning chain. */
 export function replayFunnel(
-  hits: Hit[],
+  hits: Pick<Hit, 'at' | 'steps' | 'values'>[],
   stepCount: number,
   windowMs: number
 ): { level: number; chain: Chain | null } {

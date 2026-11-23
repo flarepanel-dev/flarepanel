@@ -18,7 +18,15 @@ import type {
   ProjectCard,
   SessionListQuery,
 } from '../../ingest/cloudflare/engine';
+import type {
+  ConversionRow,
+  ConversionScanQuery,
+} from '../../ingest/cloudflare/conversion-scan';
 import type { RowFilter } from '../../ingest/cloudflare/filter-eval';
+import type {
+  SankeyScanQuery,
+  SankeyScanResult,
+} from '../../ingest/cloudflare/sankey-scan';
 import type {
   FunnelScanQuery,
   FunnelScanResult,
@@ -65,6 +73,16 @@ export interface EventStore {
     projectId: string,
     query: FunnelScanQuery
   ): Promise<FunnelScanResult & { partial: boolean }>;
+  /** Conversion chart rows, the shape of the conversion query. */
+  conversionRows(
+    projectId: string,
+    query: ConversionScanQuery
+  ): Promise<{ rows: ConversionRow[]; partial: boolean }>;
+  /** User flow entries and transitions, the shape of the sankey queries. */
+  sankeyRows(
+    projectId: string,
+    query: SankeyScanQuery
+  ): Promise<SankeyScanResult & { partial: boolean }>;
   /** Retention cohorts, the shape of the cohort query. */
   retentionRows(
     projectId: string,

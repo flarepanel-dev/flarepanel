@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'bun:test';
 import type { IClickhouseEvent } from '../../event/event.service';
-import { ChartAccumulator, type ChartScanQuery } from './chart-scan';
+import {
+  ChartAccumulator,
+  type ChartScanQuery,
+  DistributionAccumulator,
+} from './chart-scan';
+import { ConversionAccumulator } from './conversion-scan';
 import { FunnelAccumulator, type FunnelScanQuery } from './funnel-scan';
 import {
   RetentionAccumulator,
   type RetentionScanQuery,
 } from './retention-scan';
+import { SankeyAccumulator } from './sankey-scan';
 import { buildBuckets, eventTimeMs } from './time-buckets';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -260,5 +266,136 @@ describe('retention from stored events', () => {
       interval_2_user_count: 1,
       interval_3_user_count: 1,
     });
+  });
+});
+
+describe('distribution, conversion and user flow from stored events', () => {
+  const from = T0 - DAY;
+  const to = T0 + 3 * DAY;
+
+  it('buckets users by their event count and by a property range', () => {
+    const events = [
+      event('click', T0, 'a'),
+      event('click', T0 + MINUTE, 'a'),
+      event('click', T0, 'b'),
+      ...Array.from({ length: 7 }, (_, index) =>
+        event('click', T0 + index * MINUTE, 'c')
+      ),
+    ];
+    const counts = feed(
+      new DistributionAccumulator({
+        from,
+        to,
+        event: { name: 'click', filters: [], segment: 'event' },
+        breakdowns: [],
+        buckets: [{ start: from, end: to + 1 }],
+        timezone: 'UTC',
+        perUser: { aggregation: 'count' },
+      }),
+      events
+    ).rows();
+    expect(counts.map((row) => [row.date, row.count])).toEqual([
+      ['1', 1],
+      ['2', 1],
+      ['3', 0],
+      ['4-5', 0],
+      ['6-10', 1],
+      ['11+', 0],
+    ]);
+    expect(counts[0]?.total_count).toBe(3);
+
+    const prices = feed(
+      new DistributionAccumulator({
+        from,
+        to,
+        event: { name: 'purchase', filters: [], segment: 'event' },
+        breakdowns: [],
+        buckets: [{ start: from, end: to + 1 }],
+        timezone: 'UTC',
+        perUser: { aggregation: 'sum', property: 'properties.price' },
+      }),
+      [
+        event('purchase', T0, 'a', { properties: { price: '10' } }),
+        event('purchase', T0, 'b', { properties: { price: '110' } }),
+      ]
+    ).rows();
+    expect(prices).toHaveLength(10);
+    expect(prices[0]).toMatchObject({ date: '10 - 20', count: 1 });
+    expect(prices[9]).toMatchObject({ date: '100 - 110', count: 1 });
+  });
+
+  it('counts conversions per day the chain started', () => {
+    const rows = feed(
+      new ConversionAccumulator({
+        from,
+        to,
+        steps: [
+          { name: 'screen_view', filters: [] },
+          { name: 'signup', filters: [] },
+        ],
+        breakdowns: [],
+        windowMs: 60 * MINUTE,
+        group: 'session_id',
+        buckets: buildBuckets(from, to, 'day', 'UTC'),
+        timezone: 'UTC',
+      }),
+      [
+        event('screen_view', T0, 'a'),
+        event('signup', T0 + 5 * MINUTE, 'a'),
+        event('screen_view', T0, 'b'),
+        event('screen_view', T0 + DAY, 'c'),
+        event('signup', T0 + DAY + 3 * 60 * MINUTE, 'c'),
+      ]
+    ).rows();
+    expect(rows).toEqual([
+      {
+        event_day: '2026-11-16 00:00:00',
+        total_first: 2,
+        conversions: 1,
+        conversion_rate_percentage: 50,
+      },
+      {
+        event_day: '2026-11-17 00:00:00',
+        total_first: 1,
+        conversions: 0,
+        conversion_rate_percentage: 0,
+      },
+    ]);
+  });
+
+  it('builds user-flow paths, top entries and transitions', () => {
+    const flow = (names: string[], who: string) =>
+      names.map((name, index) => event(name, T0 + index * MINUTE, who));
+    const events = [
+      ...flow(['home', 'home', 'pricing', 'signup'], 'a'),
+      ...flow(['home', 'docs'], 'b'),
+      ...flow(['blog'], 'c'),
+    ];
+    const base = { from, to, steps: 5, exclude: [] as string[] };
+    const all = feed(
+      new SankeyAccumulator({ ...base, mode: 'after' }),
+      events
+    ).result();
+    expect(all.topEntries).toEqual([{ entry_event: 'home', count: 2 }]);
+    expect(all.transitions).toEqual([
+      { source: 'home', target: 'docs', step: 1, value: 1 },
+      { source: 'home', target: 'pricing', step: 1, value: 1 },
+      { source: 'pricing', target: 'signup', step: 2, value: 1 },
+    ]);
+
+    const between = feed(
+      new SankeyAccumulator({
+        ...base,
+        mode: 'between',
+        startEvent: { name: 'home', filters: [] },
+        endEvent: { name: 'signup', filters: [] },
+      }),
+      events
+    ).result();
+    expect(between.topEntries).toEqual([{ entry_event: 'home', count: 1 }]);
+    expect(between.transitions.map((item) => item.target)).toEqual([
+      'pricing',
+      'signup',
+    ]);
   });
 });

@@ -27,6 +27,10 @@ export {
   eventRow,
   type ProfileLookup,
 } from './chart-scan';
+export type {
+  ConversionRow,
+  ConversionScanQuery,
+} from './conversion-scan';
 export {
   type DailyStats,
   type Dimension,
@@ -69,6 +73,10 @@ export type {
   RetentionRow,
   RetentionScanQuery,
 } from './retention-scan';
+export type {
+  SankeyScanQuery,
+  SankeyScanResult,
+} from './sankey-scan';
 export {
   type BucketInterval,
   buildBuckets,

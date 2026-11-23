@@ -41,7 +41,8 @@ cookie is shared.
 | Live 30-min card, Sessions page (list, filters, search, session detail) | works: live sessions in memory, ended ones in `session_log` |
 | Report builder charts (series, breakdowns, filters, formulas, bar/pie), funnels, retention, event/property pickers | works: counted from the stored events in the project's Durable Object (`chart-scan`, `funnel-scan`, `retention-scan`); older hours are read from the R2 archive (`createArchiveColdStore`, at most 3,000 files per report) |
 | Advanced analytics (opt-in): report charts older than the retention window via Basin SQL, monthly budget with 80%/100% emails | `src/advanced/`, `basin/events.schema.json`; off unless `FLAREPANEL_ADVANCED_ANALYTICS=on` (docs: self-hosting/advanced-analytics) |
-| Conversion, Sankey, distribution, insights, notifications | not yet: Phase 4 (see `docs/adr/0002-query-layer.md`) |
+| Conversion, user flow (Sankey), distribution | works: `conversion-scan`, `sankey-scan`, `DistributionAccumulator` over the same scans |
+| Insights, notifications | not yet (see `docs/adr/0002-query-layer.md`) |
 
 Checked end to end with `wrangler dev`: sign-up 264 ms, onboarding (project +
 two clients) 194 ms, sign-in 202 ms, then the dashboard in a browser.

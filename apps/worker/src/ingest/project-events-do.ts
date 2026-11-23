@@ -15,6 +15,7 @@ import {
   archivePrefix,
   buildArchiveObjects,
   type ChartScanQuery,
+  type ConversionScanQuery,
   createArchiveColdStore,
   createProjectEventsService,
   type Dimension,
@@ -32,6 +33,7 @@ import {
   type ProjectEventsTrackInput,
   type RetentionScanQuery,
   type RowFilter,
+  type SankeyScanQuery,
   type SessionListQuery,
   type SqlRow,
   type SqlValue,
@@ -331,6 +333,16 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   async chartRows(query: ChartScanQuery) {
     const { engine, profiles } = await this.state;
     return engine.chartRows(query, this.profileLookup(profiles));
+  }
+
+  async conversionRows(query: ConversionScanQuery) {
+    const { engine, profiles } = await this.state;
+    return engine.conversionRows(query, this.profileLookup(profiles));
+  }
+
+  async sankeyRows(query: SankeyScanQuery) {
+    const { engine } = await this.state;
+    return engine.sankeyRows(query);
   }
 
   async funnelRows(query: FunnelScanQuery) {
