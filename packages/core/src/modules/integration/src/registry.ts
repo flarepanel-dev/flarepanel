@@ -1,6 +1,7 @@
 import {
   type EncryptionKey,
   encryptCredential,
+  isWorkersRuntime,
 } from '@flarepanel/shared/server';
 import {
   sendDiscordNotification,
@@ -258,13 +259,33 @@ function lazyAdapter(
   };
 }
 
+/** The server's own AWS identity (IAM-role exports assume from it). */
+function operatorAwsCredentials() {
+  const env =
+    (globalThis as { process?: { env?: Record<string, string | undefined> } })
+      .process?.env ?? {};
+  return {
+    accessKeyId: env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+    sessionToken: env.AWS_SESSION_TOKEN,
+  };
+}
+
+// Cloudflare Workers run the fetch-based adapters (SigV4 / JWT over fetch);
+// the Bun server keeps the SDK adapters with their pinned-DNS SSRF guard.
 const createS3Adapter = (
   ...args: Parameters<
     typeof import('./object-store/s3-adapter').createS3Adapter
   >
 ) =>
   lazyAdapter(async () =>
-    (await import('./object-store/s3-adapter')).createS3Adapter(...args)
+    isWorkersRuntime()
+      ? new (await import('./object-store/fetch-s3-adapter')).FetchS3Adapter(
+          args[0],
+          args[1],
+          operatorAwsCredentials()
+        )
+      : (await import('./object-store/s3-adapter')).createS3Adapter(...args)
   );
 
 const createGCSAdapter = (
@@ -273,7 +294,11 @@ const createGCSAdapter = (
   >
 ) =>
   lazyAdapter(async () =>
-    (await import('./object-store/gcs-adapter')).createGCSAdapter(...args)
+    isWorkersRuntime()
+      ? new (await import('./object-store/fetch-gcs-adapter')).FetchGcsAdapter(
+          ...args
+        )
+      : (await import('./object-store/gcs-adapter')).createGCSAdapter(...args)
   );
 
 const s3Server: IServerIntegration<'s3_export'> = {

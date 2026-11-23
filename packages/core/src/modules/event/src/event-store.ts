@@ -122,6 +122,29 @@ export interface EventStore {
   tools(projectId: string, query: ToolQuery): Promise<string>;
   /** Search Console numbers (writes from the sync, reads for the SEO page), as JSON text. */
   gsc(projectId: string, query: GscQuery): Promise<string>;
+  /** S3/GCS export: claim one export for a run (false while another holds it). */
+  exportClaim(
+    projectId: string,
+    integrationId: string,
+    token: string,
+    ttlMs: number
+  ): Promise<boolean>;
+  exportRelease(
+    projectId: string,
+    integrationId: string,
+    token: string
+  ): Promise<void>;
+  /** The next stored events after the export's cursor (JSON text) and the chunk id to acknowledge. */
+  exportRead(
+    projectId: string,
+    integrationId: string,
+    maxEvents: number
+  ): Promise<{ eventsJson: string; through: number }>;
+  exportAck(
+    projectId: string,
+    integrationId: string,
+    through: number
+  ): Promise<void>;
   /** Cohort compute, members and member activity, answered as JSON text. */
   cohorts(projectId: string, query: CohortQuery): Promise<string>;
   /** Group reads and writes, answered as JSON text. */

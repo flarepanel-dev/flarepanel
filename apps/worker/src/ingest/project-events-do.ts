@@ -114,6 +114,16 @@ const KEY_ARCHIVED_AT = 'archived_at';
 const KEY_RETENTION_AT = 'retention_at';
 /** Profiles of sessions stored before every session start wrote one. */
 const KEY_VISITOR_PROFILES = 'visitor_profiles_v2';
+/** Per S3/GCS export: the last chunk id it has uploaded. */
+const KEY_EXPORT_THROUGH = 'export_through:';
+/** Per export: when it last asked for events (a removed export stops asking). */
+const KEY_EXPORT_SEEN = 'export_seen:';
+/** Per export: the run holding it, so two runs never upload the same window. */
+const KEY_EXPORT_CLAIM = 'export_claim:';
+/** An export silent this long no longer holds back retention. */
+const EXPORT_STALE_MS = 7 * DAY_MS;
+/** Chunks one export read returns at most (each holds a flush's events). */
+const EXPORT_READ_CHUNKS = 200;
 /** A trace's prompt and response text goes to R2 once it is quiet this long… */
 const AI_FLUSH_QUIET_MS = 5 * 60 * 1000;
 /** …or once it has waited this long, for traces that never stop. */
@@ -603,6 +613,87 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     }
   }
 
+  // -------------------------------------------------------------------------
+  // S3/GCS exports: each export integration drains the stored chunks in order
+  // behind its own cursor; retention keeps chunks until every live export has
+  // passed them.
+
+  /** Claims one export for a run; false while another run holds it. */
+  async exportClaim(integrationId: string, token: string, ttlMs: number) {
+    const key = `${KEY_EXPORT_CLAIM}${integrationId}`;
+    const held = await this.ctx.storage.get<{ token: string; until: number }>(
+      key
+    );
+    if (held && held.until > Date.now() && held.token !== token) {
+      return false;
+    }
+    await this.ctx.storage.put(key, { token, until: Date.now() + ttlMs });
+    return true;
+  }
+
+  async exportRelease(integrationId: string, token: string) {
+    const key = `${KEY_EXPORT_CLAIM}${integrationId}`;
+    const held = await this.ctx.storage.get<{ token: string }>(key);
+    if (held?.token === token) {
+      await this.ctx.storage.delete(key);
+    }
+  }
+
+  /**
+   * The next events after this export's cursor, in insertion order, as JSON
+   * text, with the chunk id to acknowledge once they are uploaded. A new
+   * export starts from now: connecting one does not send the whole history.
+   */
+  async exportRead(integrationId: string, maxEvents: number) {
+    const { engine } = await this.state;
+    const storage = this.ctx.storage;
+    await storage.put(`${KEY_EXPORT_SEEN}${integrationId}`, Date.now());
+    await engine.flush();
+    const cursorKey = `${KEY_EXPORT_THROUGH}${integrationId}`;
+    const after = await storage.get<number>(cursorKey);
+    if (after === undefined) {
+      await storage.put(cursorKey, engine.lastChunkId());
+      return { eventsJson: '[]', through: engine.lastChunkId() };
+    }
+    const events: unknown[] = [];
+    let through = after;
+    for (const chunk of await engine.readChunks(after, EXPORT_READ_CHUNKS)) {
+      if (events.length > 0 && events.length + chunk.events.length > maxEvents) {
+        break;
+      }
+      events.push(...chunk.events);
+      through = chunk.id;
+    }
+    return { eventsJson: JSON.stringify(events), through };
+  }
+
+  /** Moves this export's cursor forward (never back). */
+  async exportAck(integrationId: string, through: number) {
+    const cursorKey = `${KEY_EXPORT_THROUGH}${integrationId}`;
+    const current = (await this.ctx.storage.get<number>(cursorKey)) ?? 0;
+    if (through > current) {
+      await this.ctx.storage.put(cursorKey, through);
+    }
+  }
+
+  /** The lowest cursor of the exports still running, or null with none. */
+  private async exportsThrough(): Promise<number | null> {
+    const storage = this.ctx.storage;
+    const seen = await storage.list<number>({ prefix: KEY_EXPORT_SEEN });
+    let lowest: number | null = null;
+    for (const [key, at] of seen) {
+      const integrationId = key.slice(KEY_EXPORT_SEEN.length);
+      if (Date.now() - at > EXPORT_STALE_MS) {
+        continue;
+      }
+      const through =
+        (await storage.get<number>(`${KEY_EXPORT_THROUGH}${integrationId}`)) ??
+        0;
+      lowest = lowest === null ? through : Math.min(lowest, through);
+    }
+    return lowest;
+  }
+
   /** Search Console writes and SEO page reads; JSON text. */
   async gsc(query: GscQuery): Promise<string> {
     const { gsc } = await this.state;
@@ -1079,9 +1170,12 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     const streamedThrough = isStreamingEnabled(this.env)
       ? ((await storage.get<number>(KEY_STREAMED_THROUGH)) ?? 0)
       : Number.MAX_SAFE_INTEGER;
+    // …nor before every running S3/GCS export has uploaded it.
+    const exportedThrough =
+      (await this.exportsThrough()) ?? Number.MAX_SAFE_INTEGER;
     engine.pruneChunks({
       beforeMs: Date.now() - days * DAY_MS,
-      maxId: Math.min(archivedThrough, streamedThrough),
+      maxId: Math.min(archivedThrough, streamedThrough, exportedThrough),
     });
     engine.pruneSessionLog(Date.now() - days * DAY_MS);
     ai.expireContent(Date.now() - AI_CONTENT_TTL_MS);

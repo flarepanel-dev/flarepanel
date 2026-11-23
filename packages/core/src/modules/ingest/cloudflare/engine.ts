@@ -2739,6 +2739,11 @@ export async function openProjectEventsEngine({
   // -- archive / retention ----------------------------------------------------------
 
   /** Stored chunks after `afterId`, oldest first, for the R2 archive. */
+  /** The newest chunk id handed out so far (0 when none): where a new export starts. */
+  function lastChunkId(): number {
+    return nextChunkId - 1;
+  }
+
   async function readChunks(afterId: number, limit: number) {
     const chunks: StoredChunk[] = [];
     for (const row of sql.exec(
@@ -2995,6 +3000,7 @@ export async function openProjectEventsEngine({
     eventNames,
     activeVisitors,
     readChunks,
+    lastChunkId,
     pruneChunks,
   };
 }

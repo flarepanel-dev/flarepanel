@@ -17,6 +17,7 @@ import {
   serializeManifest,
 } from './export';
 import {
+  createEventStoreExportSource,
   createRedisExportClaim,
   type ExportIntegrationRow,
   type ExportWatermarkRow,
@@ -383,4 +384,63 @@ describe.skipIf(!available)('flush-exports -> GCS end to end', () => {
     },
     EMULATOR_TEST_TIMEOUT_MS
   );
+});
+
+describe('runFlushExportsCron on Workers (Durable Object source)', () => {
+  function storeFake(windows: unknown[][], claimed = true) {
+    const acks: number[] = [];
+    const reads: number[] = [];
+    let through = 10;
+    const released: string[] = [];
+    const store = {
+      exportClaim: async () => claimed,
+      exportRelease: async (_p: string, _i: string, token: string) => {
+        released.push(token);
+      },
+      exportRead: async (_p: string, _i: string, maxEvents: number) => {
+        reads.push(maxEvents);
+        const rows = windows.shift() ?? [];
+        through += rows.length > 0 ? 1 : 0;
+        return { eventsJson: JSON.stringify(rows), through };
+      },
+      exportAck: async (_p: string, _i: string, value: number) => {
+        acks.push(value);
+      },
+    };
+    return { store, acks, reads, released };
+  }
+
+  it('uploads each window, acknowledges after upload and frees the claim', async () => {
+    const { deps, uploads, query, watermarkUpdates } = fakeDeps([]);
+    const fake = storeFake([[chEvent(1), chEvent(2)], [chEvent(3)]]);
+    Object.assign(deps, createEventStoreExportSource(fake.store));
+    deps.config = {
+      ...deps.config,
+      objectStoreExport: { ...deps.config.objectStoreExport, batchSize: 2 },
+    };
+
+    await runFlushExportsCron(deps);
+
+    // Two windows: a full one (2 rows) and a short one that ends the run.
+    expect(fake.acks).toEqual([11, 12]);
+    expect(fake.reads).toEqual([2, 2]);
+    expect(uploads.filter((u) => u.key.endsWith('manifest.json'))).toHaveLength(
+      2
+    );
+    // ClickHouse and the D1 watermark are untouched on Workers.
+    expect(query).not.toHaveBeenCalled();
+    expect(watermarkUpdates).toHaveLength(0);
+    expect(fake.released).toHaveLength(1);
+  });
+
+  it('skips an export another run holds', async () => {
+    const { deps, uploads } = fakeDeps([]);
+    const fake = storeFake([[chEvent(1)]], false);
+    Object.assign(deps, createEventStoreExportSource(fake.store));
+
+    await runFlushExportsCron(deps);
+
+    expect(fake.reads).toEqual([]);
+    expect(uploads).toHaveLength(0);
+  });
 });

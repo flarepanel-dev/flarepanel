@@ -202,6 +202,18 @@ export function createWorkerEventStore(
       ),
     ai: (projectId, query) => projectEventsStub(env, projectId).ai(query),
     gsc: (projectId, query) => projectEventsStub(env, projectId).gsc(query),
+    exportClaim: (projectId, integrationId, token, ttlMs) =>
+      projectEventsStub(env, projectId).exportClaim(
+        integrationId,
+        token,
+        ttlMs
+      ),
+    exportRelease: (projectId, integrationId, token) =>
+      projectEventsStub(env, projectId).exportRelease(integrationId, token),
+    exportRead: (projectId, integrationId, maxEvents) =>
+      projectEventsStub(env, projectId).exportRead(integrationId, maxEvents),
+    exportAck: (projectId, integrationId, through) =>
+      projectEventsStub(env, projectId).exportAck(integrationId, through),
     tools: (projectId, query) =>
       projectEventsStub(env, projectId).tools(query),
     cohorts: (projectId, query) =>

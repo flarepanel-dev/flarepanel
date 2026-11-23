@@ -122,6 +122,72 @@ export interface FlushExportsDeps {
     projectId: string,
     integrationId: string
   ): Promise<ReleaseClaim | null>;
+  /**
+   * Where events come from when not ClickHouse (Cloudflare Workers: the
+   * project's Durable Object). `ack` moves the export's cursor past the window.
+   */
+  window?: ExportWindowSource;
+}
+
+export interface ExportWindowSource {
+  next(
+    projectId: string,
+    integrationId: string,
+    limit: number
+  ): Promise<{ rows: IClickhouseEvent[]; ack(): Promise<void> }>;
+}
+
+/** Workers: events and the claim from the project's Durable Object. */
+export function createEventStoreExportSource(store: {
+  exportClaim(
+    projectId: string,
+    integrationId: string,
+    token: string,
+    ttlMs: number
+  ): Promise<boolean>;
+  exportRelease(
+    projectId: string,
+    integrationId: string,
+    token: string
+  ): Promise<void>;
+  exportRead(
+    projectId: string,
+    integrationId: string,
+    maxEvents: number
+  ): Promise<{ eventsJson: string; through: number }>;
+  exportAck(
+    projectId: string,
+    integrationId: string,
+    through: number
+  ): Promise<void>;
+}): Pick<FlushExportsDeps, 'claimExport' | 'window'> {
+  return {
+    claimExport: async (projectId, integrationId) => {
+      const token = generateSecureId('lock');
+      const claimed = await store.exportClaim(
+        projectId,
+        integrationId,
+        token,
+        EXPORT_CLAIM_TTL_MS
+      );
+      return claimed
+        ? () => store.exportRelease(projectId, integrationId, token)
+        : null;
+    },
+    window: {
+      async next(projectId, integrationId, limit) {
+        const { eventsJson, through } = await store.exportRead(
+          projectId,
+          integrationId,
+          limit
+        );
+        return {
+          rows: JSON.parse(eventsJson) as IClickhouseEvent[],
+          ack: () => store.exportAck(projectId, integrationId, through),
+        };
+      },
+    },
+  };
 }
 
 export type ReleaseClaim = () => Promise<void>;
@@ -273,7 +339,10 @@ async function exportWindows(
   config: ExportConfig,
   deps: FlushExportsDeps
 ): Promise<void> {
-  let cursor = await loadCursor(projectId, integrationId, deps);
+  const source = deps.window;
+  let cursor = source
+    ? null
+    : await loadCursor(projectId, integrationId, deps);
   const adapter = deps.createAdapter(config);
   if (!adapter) {
     throw new Error(`Integration ${config.type} has no export adapter`);
@@ -287,7 +356,12 @@ async function exportWindows(
   const batchSize =
     deps.config.objectStoreExport.batchSize ?? DEFAULT_BATCH_SIZE;
   for (let i = 0; i < maxBatches; i++) {
-    const rows = await queryWindow(projectId, cursor, deps);
+    const window = source
+      ? await source.next(projectId, integrationId, batchSize)
+      : null;
+    const rows =
+      window?.rows ??
+      (await queryWindow(projectId, cursor as Cursor, deps));
     if (rows.length === 0) {
       break;
     }
@@ -331,9 +405,13 @@ async function exportWindows(
     // Advance the watermark only after a successful upload. A crash mid-run
     // re-exports the un-acked batch next tick (at-least-once); the manifest is
     // the consumer's signal that a batch is complete.
-    const last = rows.at(-1)!;
-    cursor = { insertedAt: last.inserted_at!, eventId: last.id };
-    await saveCursor(projectId, integrationId, cursor, deps);
+    if (window) {
+      await window.ack();
+    } else {
+      const last = rows.at(-1)!;
+      cursor = { insertedAt: last.inserted_at!, eventId: last.id };
+      await saveCursor(projectId, integrationId, cursor, deps);
+    }
 
     deps.logger.info(
       {

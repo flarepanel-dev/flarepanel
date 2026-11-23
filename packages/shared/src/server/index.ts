@@ -27,6 +27,7 @@ export {
   createPinnedAgent,
   createPinnedLookup,
   isBlockedIp,
+  isWorkersRuntime,
   type SafeFetchOptions,
   type SafeFetchResult,
   type SafeFetchStreamResult,
