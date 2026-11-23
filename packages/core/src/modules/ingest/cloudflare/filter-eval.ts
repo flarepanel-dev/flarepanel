@@ -13,7 +13,32 @@ export interface RowFilter {
 }
 
 const PROPERTY_PREFIX = 'properties.';
-const UNSUPPORTED_OPERATORS = new Set(['inCohort', 'notInCohort']);
+const UNSUPPORTED_OPERATORS = new Set<string>();
+
+/**
+ * Cohort membership the project's Durable Object has stored, by cohort id
+ * (ids are unique across projects, so objects sharing an isolate do not
+ * collide). `inCohort` / `notInCohort` filters carry cohort ids as values
+ * and test the row's `profile_id`.
+ */
+const cohortMembership = new Map<string, (profileId: string) => boolean>();
+
+export function registerCohortMembership(
+  cohortId: string,
+  has: ((profileId: string) => boolean) | null
+): void {
+  if (has) {
+    cohortMembership.set(cohortId, has);
+  } else {
+    cohortMembership.delete(cohortId);
+  }
+}
+
+function inAnyCohort(profileId: string, cohortIds: string[]): boolean {
+  return cohortIds.some(
+    (cohortId) => cohortMembership.get(cohortId)?.(profileId) ?? false
+  );
+}
 const MAX_REGEX_LENGTH = 500;
 
 export function unsupportedFilters(filters: readonly RowFilter[]): RowFilter[] {
@@ -105,6 +130,10 @@ export function matchesFilter(
       return texts.some((value) => text.endsWith(value));
     case 'regex':
       return texts.some((value) => compileRegex(value)?.test(text) ?? false);
+    case 'inCohort':
+      return inAnyCohort(String(row.profile_id ?? ''), texts);
+    case 'notInCohort':
+      return !inAnyCohort(String(row.profile_id ?? ''), texts);
     case 'isNull':
       return text === '';
     case 'isNotNull':

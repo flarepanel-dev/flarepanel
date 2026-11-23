@@ -7,6 +7,7 @@ import type {
   ChartRow,
   ChartScanQuery,
 } from '../../ingest/cloudflare/chart-scan';
+import type { CohortQuery } from '../../ingest/cloudflare/cohort-query';
 import type {
   ConversionRow,
   ConversionScanQuery,
@@ -112,6 +113,8 @@ export interface EventStore {
     projectId: string,
     query: EventCountQuery
   ): Promise<{ rows: EventCountRow[]; partial: boolean }>;
+  /** Cohort compute, members and member activity, answered as JSON text. */
+  cohorts(projectId: string, query: CohortQuery): Promise<string>;
   /** Group reads and writes, answered as JSON text. */
   groups(projectId: string, query: GroupQuery): Promise<string>;
   /** One stored event by id, as JSON text (`null` when not found). */

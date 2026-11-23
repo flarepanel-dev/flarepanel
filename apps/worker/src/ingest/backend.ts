@@ -200,6 +200,8 @@ export function createWorkerEventStore(
       projectEventsStub(env, projectId).profilePropertyKeys(
         options?.anonymous ?? false
       ),
+    cohorts: (projectId, query) =>
+      projectEventsStub(env, projectId).cohorts(query),
     groups: (projectId, query) =>
       projectEventsStub(env, projectId).groups(query),
     findEvent: (projectId, id, createdAt) =>

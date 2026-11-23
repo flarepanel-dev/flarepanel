@@ -11,6 +11,7 @@ import {
   getEventFiltersWhereClause,
   joinFilterClauses,
 } from '../chart/src/filter-where';
+import { cohortFilter } from '../ingest/cloudflare/cohort-eval';
 import type { RowFilter } from '../ingest/cloudflare/filter-eval';
 import {
   buildBuckets,
@@ -453,16 +454,18 @@ function atInstant(value: string, timezone: string): Date {
 
 /**
  * The overview's filters for the Durable Object: the same whitelist and
- * names as the ClickHouse path. Cohort filters need the cohort engine.
+ * names as the ClickHouse path; cohort filters test stored membership.
  */
 export function toStoreFilters(
   filters: IChartEventFilter[] | undefined
 ): RowFilter[] {
   return (filters ?? []).flatMap((filter) => {
+    const cohort = cohortFilter(filter);
+    if (cohort) {
+      return [cohort];
+    }
     const name = toOverviewFilterName(filter.name);
-    const isCohort =
-      filter.operator === 'inCohort' || filter.operator === 'notInCohort';
-    if (isCohort || !WHITELISTED_FILTERS.includes(name)) {
+    if (!WHITELISTED_FILTERS.includes(name)) {
       return [];
     }
     return [

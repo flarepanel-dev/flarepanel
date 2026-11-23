@@ -17,6 +17,11 @@ import {
   getEventFiltersWhereClause,
   joinFilterClauses,
 } from '../chart/src/filter-where';
+import type {
+  CohortActivity,
+  CohortComputeResult,
+  CohortQuery,
+} from '../ingest/cloudflare/cohort-query';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
 import {
@@ -708,6 +713,18 @@ export async function getCohortMembers(
   if (!cohort) {
     throw new Error('Cohort not found');
   }
+  if (deps.eventStore) {
+    return storeCohorts<{ profileIds: string[]; total: number }>(
+      deps,
+      projectId,
+      {
+        kind: 'members',
+        cohortId,
+        limit: opts?.limit ?? MEMBER_PAGE_MAX,
+        offset: opts?.offset ?? 0,
+      }
+    );
+  }
 
   const query = sql`
     SELECT
@@ -732,6 +749,9 @@ export async function getCohortMembers(
 }
 
 const COHORT_COUNT_CACHE_MS = 15 * 60 * 1000;
+/** Members one Durable Object page returns at most. */
+const MEMBER_PAGE_MAX = 1000;
+const MEMBERS_IN_MEMORY_MAX = 100_000;
 
 export async function getCohortCount(
   deps: ServiceDeps,
@@ -752,6 +772,9 @@ export async function getCohortCount(
     }
   }
 
+  if (deps.eventStore) {
+    return storeCohorts<number>(deps, projectId, { kind: 'count', cohortId });
+  }
   const result = await chQuery<{ count: number }>(
     deps,
     sql`
@@ -764,12 +787,35 @@ export async function getCohortCount(
   return result[0]?.count || 0;
 }
 
+/** Workers: one cohort call to the project's Durable Object (JSON answers). */
+async function storeCohorts<T>(
+  deps: ServiceDeps,
+  projectId: string,
+  query: CohortQuery
+): Promise<T> {
+  const store = deps.eventStore as NonNullable<ServiceDeps['eventStore']>;
+  return JSON.parse(await store.cohorts(projectId, query)) as T;
+}
+
+/** `YYYY-MM-DD HH:mm:ss` (UTC, as the cohort windows are written) in ms. */
+function windowMs(value: string): number {
+  return Date.parse(`${formatClickhouseDate(value).replace(' ', 'T')}Z`);
+}
+
 export async function computeCohort(
   deps: ServiceDeps,
   projectId: string,
   definition: CohortDefinition,
   limit?: number
 ): Promise<string[]> {
+  if (deps.eventStore) {
+    const result = await storeCohorts<CohortComputeResult>(deps, projectId, {
+      kind: 'compute',
+      definition,
+      sample: limit ?? Number.MAX_SAFE_INTEGER,
+    });
+    return result.ids;
+  }
   if (definition.type === 'event') {
     return computeEventBasedCohort(deps, projectId, definition, limit);
   }
@@ -784,6 +830,14 @@ export async function countCohort(
   projectId: string,
   definition: CohortDefinition
 ): Promise<number> {
+  if (deps.eventStore) {
+    const result = await storeCohorts<CohortComputeResult>(deps, projectId, {
+      kind: 'compute',
+      definition,
+      sample: 0,
+    });
+    return result.count;
+  }
   if (definition.type === 'event') {
     return countEventBasedCohort(deps, projectId, definition);
   }
@@ -806,6 +860,20 @@ export async function updateCohortMembership(
   }
 
   const definition = cohort.definition as CohortDefinition;
+  if (deps.eventStore) {
+    // Computed and stored in the project's Durable Object (only the changed
+    // members are written).
+    const result = await storeCohorts<CohortComputeResult>(
+      deps,
+      cohort.projectId,
+      { kind: 'compute', definition, cohortId: cohort.id, sample: 0 }
+    );
+    await db.cohort.update({
+      where: { id: cohortId },
+      data: { profileCount: result.count, lastComputedAt: new Date() },
+    });
+    return;
+  }
   const profileIds = await computeCohort(
     deps,
     cohort.projectId,
@@ -847,6 +915,10 @@ export async function deleteCohortMembership(
   cohortId: string,
   projectId: string
 ): Promise<void> {
+  if (deps.eventStore) {
+    await storeCohorts(deps, projectId, { kind: 'remove', cohortId });
+    return;
+  }
   const ch = deps.ch;
   const where = sql`cohort_id = ${sql.string(cohortId)} AND project_id = ${sql.string(projectId)}`;
   for (const table of [TABLE.cohortMembers, TABLE.cohortMetadata]) {
@@ -864,6 +936,24 @@ export async function getProfilesInCohort(
   cohortId: string,
   projectId: string
 ): Promise<Set<string>> {
+  if (deps.eventStore) {
+    const ids = new Set<string>();
+    for (let offset = 0; ; offset += MEMBER_PAGE_MAX) {
+      const page = await getCohortMembers(deps, cohortId, projectId, {
+        limit: MEMBER_PAGE_MAX,
+        offset,
+      });
+      for (const id of page.profileIds) {
+        ids.add(id);
+      }
+      if (
+        page.profileIds.length < MEMBER_PAGE_MAX ||
+        ids.size >= MEMBERS_IN_MEMORY_MAX
+      ) {
+        return ids;
+      }
+    }
+  }
   const { profileIds } = await getCohortMembers(deps, cohortId, projectId, {
     limit: 100_000,
   });
@@ -881,6 +971,68 @@ export async function listRefreshableCohortIds(
   });
   return cohorts.map((c) => c.id);
 }
+
+/**
+ * Workers: a cohort's member profiles from the project's Durable Object,
+ * newest first by first seen, with the list's search and profile filters.
+ */
+async function listStoredCohortMembers(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    cohortId: string;
+    offset: number;
+    take: number;
+    search?: string;
+    filters?: IChartEventFilter[];
+  }
+): Promise<{ data: IServiceProfile[]; count: number }> {
+  const { getProfiles } = await import('../profile/profile.service');
+  const { cohortRowFilters } = await import('../ingest/cloudflare/cohort-eval');
+  const { matchesFilters } = await import('../ingest/cloudflare/filter-eval');
+  const ids = [
+    ...(await getProfilesInCohort(deps, input.cohortId, input.projectId)),
+  ];
+  const profiles = ids.length
+    ? await getProfiles(deps, ids, input.projectId)
+    : [];
+  const search = input.search?.trim().toLowerCase();
+  const filters = cohortRowFilters(input.filters).map((filter) => ({
+    ...filter,
+    name: filter.name.replace(PROFILE_FILTER_PREFIX, ''),
+  }));
+  const matching = profiles
+    .filter(
+      (profile) =>
+        !search ||
+        [profile.id, profile.email, profile.firstName, profile.lastName].some(
+          (value) => value?.toLowerCase().includes(search)
+        )
+    )
+    .filter(
+      (profile) =>
+        filters.length === 0 ||
+        matchesFilters(
+          {
+            ...profile,
+            first_name: profile.firstName,
+            last_name: profile.lastName,
+            profile_id: profile.id,
+          },
+          filters
+        )
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  return {
+    data: matching.slice(input.offset, input.offset + input.take),
+    count: matching.length,
+  };
+}
+
+const PROFILE_FILTER_PREFIX = /^profiles?\./;
 
 export async function listCohortMemberProfiles(
   deps: ServiceDeps,
@@ -905,6 +1057,16 @@ export async function listCohortMemberProfiles(
     await import('../profile/profile.service');
 
   const offset = Math.max(0, (cursor ?? 0) * take);
+  if (deps.eventStore) {
+    return listStoredCohortMembers(deps, {
+      projectId,
+      cohortId,
+      offset,
+      take,
+      search,
+      filters,
+    });
+  }
   // The raw-row conditions only narrow the id set (a superset: the surviving
   // version is one of the rows), never the rows the aggregate reads; the
   // HAVING clause decides on the newest version.
@@ -1025,6 +1187,15 @@ export function getCohortMemberEvents(
   window: CohortActivityWindow,
   limit = DEFAULT_COHORT_ACTIVITY_LIMIT
 ): Promise<{ name: string; count: number }[]> {
+  if (deps.eventStore) {
+    return storeCohorts<CohortActivity>(deps, projectId, {
+      kind: 'activity',
+      cohortId,
+      from: windowMs(window.startDate),
+      to: windowMs(window.endDate),
+      limit,
+    }).then((activity) => activity.events);
+  }
   return chQuery<{ name: string; count: number }>(
     deps,
     cohortMemberEventsQuery(projectId, cohortId, window, limit)
@@ -1037,6 +1208,13 @@ export async function getCohortEventsPerDay(
   cohortId: string,
   days = 30
 ): Promise<{ date: string; count: number }[]> {
+  if (deps.eventStore) {
+    return storeCohorts<{ date: string; count: number }[]>(deps, projectId, {
+      kind: 'perDay',
+      cohortId,
+      days,
+    });
+  }
   const lookbackDays = sql.uint64(days);
   const rows = await chQuery<{ date: string; count: number }>(
     deps,
@@ -1090,6 +1268,15 @@ export function getCohortMemberRoutes(
   window: CohortActivityWindow,
   limit = DEFAULT_COHORT_ACTIVITY_LIMIT
 ): Promise<{ path: string; count: number }[]> {
+  if (deps.eventStore) {
+    return storeCohorts<CohortActivity>(deps, projectId, {
+      kind: 'activity',
+      cohortId,
+      from: windowMs(window.startDate),
+      to: windowMs(window.endDate),
+      limit,
+    }).then((activity) => activity.routes);
+  }
   return chQuery<{ path: string; count: number }>(
     deps,
     cohortMemberRoutesQuery(projectId, cohortId, window, limit)

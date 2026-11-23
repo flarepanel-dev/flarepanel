@@ -250,7 +250,14 @@ export function openProfileStore(sql: EngineSql) {
     return [...values].sort();
   }
 
-  return { get, upsert, seen, list, propertyKeys, propertyValues };
+  /** Every stored profile (cohort evaluation). */
+  function all(): IClickhouseProfile[] {
+    return sql
+      .exec('SELECT body FROM identities')
+      .map((row) => JSON.parse(String(row.body)) as IClickhouseProfile);
+  }
+
+  return { get, upsert, seen, list, propertyKeys, propertyValues, all };
 }
 
 export type ProfileStore = ReturnType<typeof openProfileStore>;

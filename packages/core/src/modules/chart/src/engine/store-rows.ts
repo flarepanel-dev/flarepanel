@@ -13,6 +13,7 @@ import type {
   ChartRow,
   ChartScanQuery,
 } from '../../../ingest/cloudflare/chart-scan';
+import { cohortFilter } from '../../../ingest/cloudflare/cohort-eval';
 import type { RowFilter } from '../../../ingest/cloudflare/filter-eval';
 import {
   buildBuckets,
@@ -36,17 +37,15 @@ const MAX_BREAKDOWNS = 3;
 export function toRowFilters(
   filters: IChartEventFilter[] | undefined
 ): RowFilter[] {
-  return (filters ?? [])
-    .filter(
-      (filter) =>
-        filter.operator !== 'inCohort' && filter.operator !== 'notInCohort'
-    )
-    .map((filter) => ({
-      name: filter.name,
-      operator: filter.operator,
-      value: filter.value,
-      ...(filter.type ? { type: filter.type } : {}),
-    }));
+  return (filters ?? []).map(
+    (filter) =>
+      cohortFilter(filter) ?? {
+        name: filter.name,
+        operator: filter.operator,
+        value: filter.value,
+        ...(filter.type ? { type: filter.type } : {}),
+      }
+  );
 }
 
 function scanEvent(event: IGetChartDataInput['event']) {

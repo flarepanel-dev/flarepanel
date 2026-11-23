@@ -27,6 +27,16 @@ export {
   eventRow,
   type ProfileLookup,
 } from './chart-scan';
+export {
+  cohortRowFilters,
+  evaluateCohort,
+} from './cohort-eval';
+export type {
+  CohortActivity,
+  CohortComputeResult,
+  CohortQuery,
+} from './cohort-query';
+export { type CohortStore, openCohortStore } from './cohort-store';
 export type {
   ConversionRow,
   ConversionScanQuery,

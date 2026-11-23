@@ -15,12 +15,15 @@ import {
   archivePrefix,
   buildArchiveObjects,
   type ChartScanQuery,
+  type CohortQuery,
+  type CohortStore,
   type ConversionScanQuery,
   createArchiveColdStore,
   createProjectEventsService,
   type Dimension,
   type EngineSql,
   type EventCountQuery,
+  evaluateCohort,
   eventRow,
   type FunnelScanQuery,
   type GroupQuery,
@@ -28,6 +31,7 @@ import {
   type JourneyScanQuery,
   type ListEventsQuery,
   type MetricsQuery,
+  openCohortStore,
   openGroupStore,
   openProfileStore,
   openProjectEventsEngine,
@@ -124,6 +128,7 @@ interface State {
   engine: ProjectEventsEngine;
   profiles: ProfileStore;
   groups: GroupStore;
+  cohorts: CohortStore;
   service: ProjectEventsService;
 }
 
@@ -218,6 +223,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     });
     const profiles = openProfileStore(sql);
     const groups = openGroupStore(sql, () => Date.now());
+    const cohorts = openCohortStore(sql, () => Date.now());
     const service = createProjectEventsService({
       engine,
       logger: this.logger,
@@ -257,7 +263,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       this.unstreamed =
         (await engine.readChunks(streamedThrough, 1)).length > 0;
     }
-    return { engine, service, profiles, groups };
+    return { engine, service, profiles, groups, cohorts };
   }
 
   private async rememberProject(projectId: string) {
@@ -481,6 +487,92 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       }
     }
     return value;
+  }
+
+  /** Cohort compute, members and member activity; JSON text. */
+  async cohorts(query: CohortQuery): Promise<string> {
+    const { engine, profiles, groups, cohorts } = await this.state;
+    const hotFrom = Date.now() - this.retentionDays() * DAY_MS;
+    switch (query.kind) {
+      case 'compute': {
+        const result = await evaluateCohort(query.definition, {
+          now: Date.now(),
+          scan: (from, to, visit) => engine.scanRange(from, to, visit),
+          profiles: () => profiles.all(),
+          lookupProfile: this.profileLookup(profiles, groups),
+        });
+        if (query.cohortId) {
+          cohorts.replace(query.cohortId, result.ids);
+        }
+        return JSON.stringify({
+          ids: result.ids.slice(0, query.sample ?? 0),
+          count: result.ids.length,
+          complete: result.complete,
+        });
+      }
+      case 'members':
+        return JSON.stringify(
+          cohorts.members(query.cohortId, query.limit, query.offset)
+        );
+      case 'count':
+        return JSON.stringify(cohorts.count(query.cohortId));
+      case 'remove':
+        cohorts.remove(query.cohortId);
+        return 'null';
+      case 'activity': {
+        const members = cohorts.ids(query.cohortId);
+        const names = new Map<string, number>();
+        const paths = new Map<string, number>();
+        await engine.scanRange(
+          Math.max(query.from, hotFrom),
+          query.to,
+          (event) => {
+            if (!members.has(event.profile_id)) {
+              return;
+            }
+            if (event.name === 'screen_view') {
+              if (event.path) {
+                paths.set(event.path, (paths.get(event.path) ?? 0) + 1);
+              }
+            } else if (
+              event.name !== 'session_start' &&
+              event.name !== 'session_end'
+            ) {
+              names.set(event.name, (names.get(event.name) ?? 0) + 1);
+            }
+          }
+        );
+        const top = (counts: Map<string, number>) =>
+          [...counts.entries()]
+            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+            .slice(0, query.limit);
+        return JSON.stringify({
+          events: top(names).map(([name, count]) => ({ name, count })),
+          routes: top(paths).map(([path, count]) => ({ path, count })),
+        });
+      }
+      default: {
+        const members = cohorts.ids(query.cohortId);
+        const today = Math.floor(Date.now() / DAY_MS) * DAY_MS;
+        const from = today - query.days * DAY_MS;
+        const counts = new Map<string, number>();
+        for (let day = from; day <= today; day += DAY_MS) {
+          counts.set(new Date(day).toISOString().slice(0, 10), 0);
+        }
+        await engine.scanRange(Math.max(from, hotFrom), Date.now(), (event) => {
+          if (!members.has(event.profile_id)) {
+            return;
+          }
+          const day = event.created_at.slice(0, 10);
+          if (counts.has(day)) {
+            counts.set(day, (counts.get(day) ?? 0) + 1);
+          }
+        });
+        return JSON.stringify(
+          [...counts.entries()].map(([date, count]) => ({ date, count }))
+        );
+      }
+    }
   }
 
   /** Group reads and writes; JSON text (group properties are open-ended). */

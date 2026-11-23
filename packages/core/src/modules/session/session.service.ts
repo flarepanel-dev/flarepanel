@@ -8,6 +8,7 @@ import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
 import { stripFixedStringPadding } from '../../shared/ch-fixed-string';
 import { buildFilterWhere } from '../chart/src/table-filter-where';
+import { cohortFilter } from '../ingest/cloudflare/cohort-eval';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
 import { convertClickhouseDateToJs } from './src/dates';
@@ -315,17 +316,15 @@ function storeSessionQuery({
     to: endDate?.getTime(),
     profileId,
     search,
-    filters: (filters ?? [])
-      .filter(
-        (filter) =>
-          filter.operator !== 'inCohort' && filter.operator !== 'notInCohort'
-      )
-      .map((filter) => ({
-        name: filter.name,
-        operator: filter.operator,
-        value: filter.value,
-        ...(filter.type ? { type: filter.type } : {}),
-      })),
+    filters: (filters ?? []).map(
+      (filter) =>
+        cohortFilter(filter) ?? {
+          name: filter.name,
+          operator: filter.operator,
+          value: filter.value,
+          ...(filter.type ? { type: filter.type } : {}),
+        }
+    ),
   };
 }
 
