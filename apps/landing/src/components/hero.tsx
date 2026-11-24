@@ -1,4 +1,4 @@
-import { DashboardStage } from './dashboard-stage';
+import { HeroStage } from './product/hero-stage';
 import { Container, EarlyAccessButton, GitHubButton } from './ui';
 
 export function Hero() {
@@ -27,7 +27,7 @@ export function Hero() {
         </div>
       </Container>
       <Container className="relative mt-10 sm:mt-14 lg:mt-[60px]">
-        <DashboardStage />
+        <HeroStage />
       </Container>
     </section>
   );

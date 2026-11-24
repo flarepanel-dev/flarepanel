@@ -31,6 +31,17 @@
   --color-chart-sky: #4cb0e5;
   --color-chart-lime: #83c758;
 
+  /* The dashboard's own surfaces (apps/start, dark theme), used only inside
+     product previews so they read as the real app, not a mockup. */
+  --color-app-bg: #151515;
+  --color-app-card: #1a1a1a;
+  --color-app-line: #272727;
+  --color-app-field: #232323;
+  --color-app-hover: #202020;
+  --color-app-muted: #a6a6a6;
+  --color-app-nav: #d2d2d2;
+  --color-app-text: #fafafa;
+
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 

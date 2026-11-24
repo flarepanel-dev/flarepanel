@@ -18,7 +18,26 @@ colors:
   soft: "#d4d4d8"
   paper: "#f9fafe"
   paper-hover: "#e4e4e8"
+  app-bg: "#151515"
+  app-card: "#1a1a1a"
+  app-line: "#272727"
+  app-field: "#232323"
+  app-hover: "#202020"
+  app-muted: "#a6a6a6"
+  app-nav: "#d2d2d2"
+  app-text: "#fafafa"
 typography:
+  display-sm:
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "60px"
+    fontWeight: 700
+    lineHeight: 0.97
+    letterSpacing: "-0.045em"
+  lede:
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "17px"
+    fontWeight: 400
+    lineHeight: 1.6
   display:
     fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
     fontSize: "74px"
@@ -72,6 +91,54 @@ typography:
     fontSize: "10.5px"
     fontWeight: 400
     letterSpacing: "0.08em"
+  app-count:
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "44px"
+    fontWeight: 600
+    letterSpacing: "-0.03em"
+  app-value:
+    fontFamily: "Geist Mono, ui-monospace, SFMono-Regular, monospace"
+    fontSize: "19px"
+    fontWeight: 600
+    letterSpacing: "-0.5px"
+    fontFeature: "\"tnum\""
+  app-title:
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "17px"
+    fontWeight: 600
+    letterSpacing: "-0.01em"
+  app-value-sm:
+    fontFamily: "Geist Mono, ui-monospace, SFMono-Regular, monospace"
+    fontSize: "18px"
+    fontWeight: 600
+  app-ui:
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 400
+  app-nav:
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "12.5px"
+    fontWeight: 400
+  app-row:
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "12px"
+    fontWeight: 500
+  app-meta:
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "11.5px"
+    fontWeight: 400
+  replay-page:
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "9px"
+    fontWeight: 400
+  replay-page-sm:
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "8.5px"
+    fontWeight: 400
+  replay-page-xs:
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "8px"
+    fontWeight: 400
   code:
     fontFamily: "Geist Mono, ui-monospace, SFMono-Regular, monospace"
     fontSize: "14px"
@@ -283,8 +350,19 @@ Quiet, compact and solid, with a pressed nudge rather than a glow.
 - **Inline:** coral text with a coral underline at 40% opacity (1px, 0.22em offset) that goes to full coral on hover.
 - **Card call to action:** paper 15px text with a strong-hairline underline that turns coral on hover, plus an arrow that nudges right.
 
-### Live Dashboard Stage (signature)
-A faithful, labelled sample of the product inside an 18px panel-black frame with the stage drop: a 208px sidebar (hidden below md), mono filter chips, a four-cell KPI strip divided by hairlines, a fourteen-bar chart where only today is coral and the rest are banked ember, a top-pages list with raised proportional fills, and a live event feed whose newest row carries a coral border at 30% and a 6% coral wash. Every 1.9 seconds while in view, a new event enters from above (12px drop, 4px blur clearing over 0.6s on the expo-out curve), today's bar grows over 0.9s and the counts tick. It always carries the SAMPLE DATA tag.
+### Product previews: the app world (signature)
+Product imagery is the dashboard itself, rebuilt as components, never a drawn mockup. Inside a preview the page switches to the dashboard's own world (the `app-*` colours: #151515 ground, #1a1a1a sidebar and cards, #272727 lines, #a6a6a6 muted text) and its type ramp (10px uppercase labels at 0.5px tracking, 12 to 13px rows and controls, 19px mono values, 44px realtime count), set in Geist and Geist Mono. 6px corners inside, the 18px frame and the stage drop outside. Every preview carries the SAMPLE DATA tag (in the sidebar from md, top-right below md). Previews are decorative (`aria-hidden`); the tour's tabs are the keyboard path.
+
+- **App frame** (`components/product/app-frame.tsx`): the project sidebar of apps/start with its exact order and lucide icons; clicking an entry switches the view (in the hero it opens the tour at that view).
+- **Hero: Overview** (`overview-view.tsx`): toolbar (range, arrows, interval, filters, AI filter field, live count, Public), the eight KPI cards with 30 coral mini bars (the selected card keeps a 2px coral inset edge), the unique-visitors chart with the previous period in gray, the incomplete day dashed and the spike's referrer pinned on the peak, hover readout, then the referrer and pages tables with source icons, revenue rings and share fills. Every 2.4s while in view the live count moves and today's numbers tick up. Below sm only four KPI cards show so the chart stays visible.
+- **Tour** (`product-tour.tsx`): tabs Realtime, Sessions & replay, Funnels, Retention, Profiles, AI chat, with a two-line caption slot so the frame never shifts. One crossfade (0.35s, expo-out) between views.
+- **Realtime**: the Natural Earth 110m map in the dashboard's Mercator band (static `public/realtime-map.svg` from `scripts/build-map.ts`), cover-fitted with the city dots in the same box; a new event every 1.8s pings its city and enters the feed.
+- **Sessions & replay**: the sessions table and the replay sheet playing a recorded visit to a sample pricing page (cursor path, click ripple, timeline with event markers); below lg the sheet covers the table.
+- **Funnels / Retention**: the report builder (steps on the left), coral as the one focal series; drop-off in crimson with an arrow.
+- **Profiles**: metrics strip, properties, most viewed pages and the activity timeline in event colours.
+- **AI chat**: tool calls, a result chart in the event palette, the answer streaming once, and the model picker with "Your OpenAI key" (bring your own key).
+
+All motion stops under reduced motion: ticks halt, pings hide, the chat answer shows in full.
 
 ### Code Diff (signature)
 A 16px panel-black card with a tab bar and copy button above a mono code body at line-height 1.9 with gutter line numbers in strong hairline. Added lines get a 10% coral wash, paper text and a coral `+`; removed lines get a 7% crimson wash, muted struck-through text and a crimson minus; context lines are soft or faint.
