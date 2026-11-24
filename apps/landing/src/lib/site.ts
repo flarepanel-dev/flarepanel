@@ -14,8 +14,9 @@ export const site = {
 } as const;
 
 export const nav = [
-  { label: 'Product', href: '#product' },
-  { label: 'How it works', href: '#how-it-works' },
+  { label: 'Product', href: '/#product' },
+  { label: 'How it works', href: '/#how-it-works' },
+  { label: 'Pricing', href: '/pricing' },
   { label: 'Docs', href: site.docs },
-  { label: 'FAQ', href: '#faq' },
+  { label: 'FAQ', href: '/#faq' },
 ] as const;

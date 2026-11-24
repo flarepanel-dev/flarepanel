@@ -44,7 +44,7 @@ const QUESTIONS: Array<{ q: string; a: ReactNode }> = [
   },
   {
     q: 'What will it cost?',
-    a: 'Pricing is not final. Hosted plans will be priced per event. Self-hosting is free and open source; you pay Cloudflare directly for what you use, on a Workers Paid plan.',
+    a: 'Hosted plans are priced by events a month, from $1 for 5,000 events, with a 30-day free trial and every feature in every plan. See the pricing page. Self-hosting is free and open source; you pay Cloudflare directly for what you use, on a Workers Paid plan.',
   },
   {
     q: 'Is FlarePanel made by Cloudflare?',

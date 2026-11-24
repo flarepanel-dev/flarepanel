@@ -18,11 +18,14 @@ export type IPrice = {
 };
 
 // FlarePanel's plans (2026-11-24): OpenPanel's shape (monthly events, every
-// feature in every plan) at half its prices. Yearly plans cost 10 months
-// (scripts/create-products.ts). No 5K tier: payment fees would take a fifth.
+// feature in every plan) at about half its prices. Yearly plans cost 10 months
+// (scripts/create-products.ts). The 5K entry plan at $1 is the door in: Polar
+// keeps about $0.44 of each monthly payment, so it is meant to be outgrown.
+// apps/landing/src/lib/pricing.ts mirrors this list for the public page.
 export const PRICING: IPrice[] = [
+  { price: 1, events: 5_000 },
   { price: 3, events: 10_000 },
-  { price: 10, events: 100_000 },
+  { price: 10, events: 100_000, popular: true },
   { price: 15, events: 250_000 },
   { price: 25, events: 500_000 },
   { price: 45, events: 1_000_000 },

@@ -11,7 +11,7 @@ const OPTIONS = [
     points: [
       'Sign-up and projects work today',
       'Choose where your data lives: EU, US or unrestricted',
-      'Priced per event once pricing is final',
+      'Priced per event, from $1 a month',
     ],
     cta: { label: 'Get early access', href: site.signUp },
   },
@@ -86,7 +86,7 @@ export function RunOptions() {
               ],
               [
                 'How you pay',
-                'Per event, once pricing is final',
+                'Per event, from $1 a month',
                 'Cloudflare directly, per use',
               ],
               ['The code', 'Open source', 'The same open-source code'],

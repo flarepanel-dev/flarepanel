@@ -5,17 +5,18 @@ const COLUMNS = [
   {
     title: 'Product',
     links: [
-      { label: 'Features', href: '#product' },
-      { label: 'How it works', href: '#how-it-works' },
-      { label: 'Hosted or self-hosted', href: '#run' },
-      { label: 'FAQ', href: '#faq' },
+      { label: 'Features', href: '/#product' },
+      { label: 'How it works', href: '/#how-it-works' },
+      { label: 'Pricing', href: '/pricing' },
+      { label: 'Hosted or self-hosted', href: '/#run' },
+      { label: 'FAQ', href: '/#faq' },
     ],
   },
   {
     title: 'Developers',
     links: [
       { label: 'Docs', href: site.docs },
-      { label: 'Install the SDK', href: '#get-started' },
+      { label: 'Install the SDK', href: '/#get-started' },
       { label: 'Source code', href: site.github },
       { label: 'Report an issue', href: site.issues },
     ],
