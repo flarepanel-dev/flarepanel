@@ -43,7 +43,8 @@ interface ReportEditorProps {
 /** With an AI provider the empty editor asks for a description; without one it points at the event picker. */
 function EmptyReport({ projectId }: { projectId: string }) {
   const trpc = useTRPC();
-  const models = useQuery(trpc.chat.models.queryOptions());
+  const { organizationId } = useAppParams();
+  const models = useQuery(trpc.chat.models.queryOptions({ organizationId }));
   const report = useSelector((state) => state.report);
   if (models.isPending) {
     return <div className="card min-h-72" />;

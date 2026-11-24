@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { callProvider } from '../../../clients/provider-error';
 import type { CoreConfig } from '../../../config';
 import { withAiContext } from '../../ai/ai.service';
-import { resolveOpenAITaskModel } from '../../assistant/src/providers';
+import { requireTaskModel } from '../../assistant/src/providers';
 
 // Bump when the prompt or output shape changes — the worker re-enriches any
 // insight whose stored enrichVersion is below this.
@@ -88,7 +88,7 @@ export async function enrichInsights(
     () =>
       callProvider(ENRICH_PROVIDER, () =>
         generateText({
-          model: resolveOpenAITaskModel(config, 'small'),
+          model: requireTaskModel(config, 'small'),
           instructions: INSTRUCTION,
           prompt: input,
           reasoning: 'low',

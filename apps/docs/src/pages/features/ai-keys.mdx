@@ -1,0 +1,51 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: AI features and your own key
+description: FlarePanel's AI assistant runs on your own OpenAI or Anthropic key.
+---
+
+# AI features and your own key
+
+FlarePanel's AI features run on **your own OpenAI or Anthropic API key**. Your provider bills you directly for what you use. FlarePanel adds no AI charges and no monthly AI allowance to run out of.
+
+These features use the key:
+
+- **Chat**: the assistant that answers questions about your data.
+- **Report drafts**: describe a chart and get a report to edit.
+- **AI filters**: type a filter in plain language.
+- **Insight summaries**: short explanations of what changed, in insights and the weekly email.
+
+## Add a key
+
+1. Create an API key with [OpenAI](https://platform.openai.com/api-keys) or [Anthropic](https://console.anthropic.com/settings/keys).
+2. In the dashboard, open **Workspace settings → AI provider key**.
+3. Paste the key and press **Check and save**.
+
+FlarePanel checks the key with the provider before saving it, using a request that costs nothing. Only workspace admins can add, replace or remove a key. Every member's AI use in that workspace runs on it.
+
+You can add one key per provider. With both, Chat uses OpenAI by default and lets you pick any model from either provider.
+
+## What it costs
+
+Each chat message or AI action is a normal API call on your provider account, at their prices. A typical chat answer uses a few thousand to a few tens of thousands of tokens, depending on how much data the assistant looks up. To cap your spend, set a monthly limit in your provider's billing settings.
+
+FlarePanel only keeps a short burst limit (6 messages per minute per person), to protect the service.
+
+## How the key is stored
+
+- Encrypted with AES-256-GCM before it is saved, in a table separate from your workspace details.
+- Never shown again after saving: the dashboard only shows its last 4 characters.
+- Sent only to the provider's own API (`api.openai.com` or `api.anthropic.com`).
+- Removed when you press **Remove**, or when the workspace is deleted.
+
+## Self-hosting
+
+On your own deployment, you can also set one key for every workspace on the API service:
+
+```bash
+bunx wrangler secret put OPENAI_API_KEY     # or ANTHROPIC_API_KEY
+```
+
+A workspace's own key takes priority over the server key for that provider. See [Deploy to Cloudflare](/self-hosting/deploy#ai-chat-assistant).

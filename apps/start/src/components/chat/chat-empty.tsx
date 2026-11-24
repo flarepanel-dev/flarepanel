@@ -33,6 +33,7 @@ import {
   ZapIcon,
 } from 'lucide-react';
 import CopyInput from '@/components/forms/copy-input';
+import { LinkButton } from '@/components/ui/button';
 
 interface Suggestion {
   icon: LucideIcon;
@@ -173,30 +174,45 @@ export function ChatEmpty({
   );
 }
 
-export function ChatNotConfigured() {
+export function ChatNotConfigured({
+  organizationId,
+  selfHosted,
+}: {
+  organizationId: string;
+  selfHosted: boolean;
+}) {
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-5 px-6 py-10 text-center">
       <div className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <KeyRoundIcon className="size-5" />
       </div>
       <div>
-        <h1 className="font-semibold text-2xl">AI chat is not configured</h1>
+        <h1 className="font-semibold text-2xl">Add your AI key to start</h1>
         <p className="mt-2 text-muted-foreground">
-          Set <code>OPENAI_API_KEY</code> or <code>ANTHROPIC_API_KEY</code> on
-          the API service and restart it.
+          The assistant runs on your own OpenAI or Anthropic key, so your
+          provider bills you directly and FlarePanel adds no AI charges. A
+          workspace admin can add one in workspace settings.
         </p>
       </div>
-      <div className="flex w-full flex-col gap-2">
-        <CopyInput label="OpenAI" value="OPENAI_API_KEY=sk-..." />
-        <CopyInput label="Anthropic" value="ANTHROPIC_API_KEY=sk-ant-..." />
-      </div>
+      <LinkButton params={{ organizationId }} to="/$organizationId/settings">
+        Open workspace settings
+      </LinkButton>
+      {selfHosted && (
+        <div className="flex w-full flex-col gap-2">
+          <p className="text-muted-foreground text-sm">
+            Or set one key for every workspace on the API service:
+          </p>
+          <CopyInput label="OpenAI" value="OPENAI_API_KEY=sk-..." />
+          <CopyInput label="Anthropic" value="ANTHROPIC_API_KEY=sk-ant-..." />
+        </div>
+      )}
       <a
         className="inline-flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
-        href="https://docs.flarepanel.dev/self-hosting/deploy"
+        href="https://docs.flarepanel.dev/features/ai-keys"
         rel="noopener"
         target="_blank"
       >
-        View setup docs
+        How AI keys work
         <ExternalLinkIcon className="size-3.5" />
       </a>
     </div>

@@ -6,11 +6,8 @@ import {
 } from '../organization/organization.service';
 import { getProjectById } from '../project/project.service';
 import { zChatRequest } from './assistant.constants';
-import {
-  chatMonthlyBudgetMicros,
-  checkChatLimits,
-  resolveChatTier,
-} from './src/limits';
+import { chatLimitsFor, checkChatLimits } from './src/limits';
+import { resolveWorkspaceAi } from './src/workspace-keys';
 
 const TOO_MANY_REQUESTS = 429;
 
@@ -61,10 +58,10 @@ export const assistantRoutes = defineRoutes((app) =>
       const limited = await checkChatLimits(ctx, {
         organizationId: organization.id,
         userId,
-        tier: resolveChatTier(organization, ctx.config.selfHosted),
-        budgetMicros: chatMonthlyBudgetMicros(
-          resolveChatTier(organization, ctx.config.selfHosted),
-          organization.subscriptionPeriodEventsLimit
+        ...chatLimitsFor(
+          organization,
+          ctx.config.selfHosted,
+          (await resolveWorkspaceAi(ctx, organization.id)).ownKey
         ),
       });
       if (limited) {

@@ -34,6 +34,29 @@ export type ChatTierInput = SubscriptionStateInput & {
   subscriptionPeriodEventsLimit: number;
 };
 
+/**
+ * Tier and monthly budget for a chat turn. A workspace on its own AI key pays
+ * its provider directly, so our daily and monthly caps do not apply (the
+ * per-minute burst limit still does, and an unpaid workspace stays blocked).
+ */
+export function chatLimitsFor(
+  organization: ChatTierInput & { subscriptionPeriodEventsLimit: number },
+  selfHosted: boolean,
+  ownKey: boolean
+): { tier: ChatTier; budgetMicros: number | null } {
+  const tier = resolveChatTier(organization, selfHosted);
+  if (ownKey && tier !== 'blocked') {
+    return { tier: 'unlimited', budgetMicros: null };
+  }
+  return {
+    tier,
+    budgetMicros: chatMonthlyBudgetMicros(
+      tier,
+      organization.subscriptionPeriodEventsLimit
+    ),
+  };
+}
+
 export function resolveChatTier(
   organization: ChatTierInput,
   selfHosted: boolean

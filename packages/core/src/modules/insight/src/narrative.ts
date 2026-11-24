@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { callProvider } from '../../../clients/provider-error';
 import type { CoreConfig } from '../../../config';
 import { withAiContext } from '../../ai/ai.service';
-import { resolveOpenAITaskModel } from '../../assistant/src/providers';
+import { requireTaskModel } from '../../assistant/src/providers';
 
 const NARRATIVE_PROVIDER = 'openai';
 
@@ -40,7 +40,7 @@ export async function generateWeeklyNarrative(
   const result = await withAiContext({ name: 'weekly-narrative' }, () =>
     callProvider(NARRATIVE_PROVIDER, () =>
       generateText({
-        model: resolveOpenAITaskModel(config, 'small'),
+        model: requireTaskModel(config, 'small'),
         instructions: INSTRUCTION,
         prompt: JSON.stringify(input),
         reasoning: 'low',

@@ -111,7 +111,7 @@ The dashboard's **Chat** and the natural-language filters call a language model.
 bunx wrangler secret put OPENAI_API_KEY     # or ANTHROPIC_API_KEY
 ```
 
-Each message is billed by that provider to your account. Without a key, Chat and the natural-language filters stay unavailable.
+Each message is billed by that provider to your account. Workspaces can also add their own key under **Workspace settings → AI provider key**; it takes priority over the server key ([how keys work](/features/ai-keys)). Without any key, the AI features stay unavailable.
 
 ### S3 exports with an IAM role
 

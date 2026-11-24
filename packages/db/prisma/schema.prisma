@@ -101,6 +101,7 @@ model Organization {
   integrations    Integration[]
   invites         Invite[]
   conversations   Conversation[]
+  aiKeys          OrganizationAiKey[]
   timezone        String?
   onboarding      String?          @default("completed")
   // First touch on flarepanel.dev before sign-up (referrer, landing page, UTM),
@@ -894,6 +895,27 @@ model GscConnection {
   updatedAt            DateTime  @default(now()) @updatedAt
 
   @@map("gsc_connections")
+}
+
+// A workspace's own AI provider key (bring your own key). The assistant uses
+// it instead of a server key, so the workspace pays its provider directly.
+// Kept out of the organization row so the key never travels with it.
+model OrganizationAiKey {
+  id              String       @id @default(uuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  /// openai | anthropic
+  provider        String
+  // encryptCredential(ENCRYPTION_KEY, key): `enc:` + AES-256-GCM.
+  encryptedKey    String
+  // Last 4 characters, to tell keys apart without decrypting.
+  keyHint         String
+  createdByUserId String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @default(now()) @updatedAt
+
+  @@unique([organizationId, provider])
+  @@map("organization_ai_keys")
 }
 
 model EmailUnsubscribe {

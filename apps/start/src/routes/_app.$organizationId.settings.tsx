@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/empty-state';
 import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageHeader } from '@/components/page-header';
+import AiKeys from '@/components/settings/ai-keys';
 import DeleteOrganization from '@/components/settings/delete-organization';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
@@ -141,6 +142,10 @@ function Component() {
           </WidgetBody>
         </Widget>
       </form>
+
+      <div className="mt-8">
+        <AiKeys organizationId={organization.id} />
+      </div>
 
       <div className="mt-8">
         <DeleteOrganization organization={organization} />

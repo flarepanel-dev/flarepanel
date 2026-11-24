@@ -65,7 +65,7 @@ export function getSubscriptionStateMeta(
           description: endsAt
             ? `Your organization is on a free trial. It ends on ${endsAt}.`
             : 'Your organization is on a free trial.',
-          cta: 'Upgrade from $2.5/month',
+          cta: 'Upgrade from $3/month',
           tone: 'default',
         },
         statusLine: endsAt

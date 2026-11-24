@@ -144,6 +144,41 @@ export const OPENAI_TASK_MODELS = {
   standard: 'gpt-6.1-sol',
 } as const;
 
+/** Anthropic counterparts, for a workspace whose only key is Anthropic. */
+const ANTHROPIC_TASK_MODELS = {
+  small: 'claude-haiku-5-5',
+  standard: 'claude-sonnet-5-5',
+} as const satisfies Record<keyof typeof OPENAI_TASK_MODELS, string>;
+
+/**
+ * A model for the one-shot insight generators on whichever provider has a key
+ * (OpenAI first); null when none does, so the caller skips the AI step.
+ */
+export function resolveTaskModel(
+  config: CoreConfig,
+  size: keyof typeof OPENAI_TASK_MODELS
+): LanguageModel | null {
+  const providers = configuredProviders(config);
+  if (providers.openai) {
+    return modelFor(config, 'openai', OPENAI_TASK_MODELS[size]);
+  }
+  if (providers.anthropic) {
+    return modelFor(config, 'anthropic', ANTHROPIC_TASK_MODELS[size]);
+  }
+  return null;
+}
+
+export function requireTaskModel(
+  config: CoreConfig,
+  size: keyof typeof OPENAI_TASK_MODELS
+): LanguageModel {
+  const model = resolveTaskModel(config, size);
+  if (!model) {
+    throw new Error('No AI key: add one in workspace settings');
+  }
+  return model;
+}
+
 export function resolveOpenAITaskModel(
   config: CoreConfig,
   size: keyof typeof OPENAI_TASK_MODELS

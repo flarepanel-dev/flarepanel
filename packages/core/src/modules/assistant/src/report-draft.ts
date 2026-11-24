@@ -1,8 +1,10 @@
 // The report editor's "describe it" box: one request becomes a draft report
 // the editor loads, built from the event names this project really tracks.
+
 import { generateText, isStepCount, tool } from 'ai';
 import { z } from 'zod';
 import type { ServiceDeps } from '../../../services';
+import { BadRequestError } from '../../../shared/errors';
 import { withAiContext } from '../../ai/ai.service';
 import {
   type IChartRange,
@@ -16,6 +18,7 @@ import { recordChatSpend } from './limits';
 import { resolveDefaultChatModel } from './providers';
 import { buildReportConfig, zChartInput } from './tools/charts';
 import { discoveryTools } from './tools/discovery';
+import { noAiProviderMessage, resolveProjectAi } from './workspace-keys';
 
 /** describe_data, maybe a property lookup or two, propose_report, one retry. */
 const MAX_STEPS = 6;
@@ -229,11 +232,10 @@ export async function runReportDraft(
   deps: ServiceDeps,
   input: ReportDraftInput
 ): Promise<ReportDraftResult> {
-  const resolved = resolveDefaultChatModel(deps.config);
+  const { config } = await resolveProjectAi(deps, input.projectId);
+  const resolved = resolveDefaultChatModel(config);
   if (!resolved) {
-    throw new Error(
-      'No AI provider is configured: set OPENAI_API_KEY or ANTHROPIC_API_KEY.'
-    );
+    throw new BadRequestError(noAiProviderMessage(config));
   }
   let accepted: ReportDraftResult | null = null;
   const tools = {

@@ -1,10 +1,12 @@
 // The overview command bar: one natural-language request becomes one
 // structured filter change, checked against real referrer, country, device
 // and page values before it is applied.
+
 import { resolveDateRange as resolveDateRangeCore } from '@flarepanel/shared';
 import { generateText, isStepCount, Output, tool } from 'ai';
 import { z } from 'zod';
 import type { ServiceDeps } from '../../../services';
+import { BadRequestError } from '../../../shared/errors';
 import { withAiContext } from '../../ai/ai.service';
 import { listEventNamesCore } from '../../event/event.service';
 import { getTrafficBreakdownCore } from '../../overview/overview.service';
@@ -19,6 +21,7 @@ import {
 } from '../../report/report.constants';
 import { getDatesFromRange } from '../../report/src/chart-dates';
 import { resolveUtilityModel } from './providers';
+import { noAiProviderMessage, resolveProjectAi } from './workspace-keys';
 
 function enumKeys<K extends string>(record: Record<K, unknown>): [K, ...K[]] {
   const [first, ...rest] = Object.keys(record) as K[];
@@ -235,11 +238,10 @@ export async function runFilterCommand(
   deps: ServiceDeps,
   input: FilterCommandInput
 ): Promise<FilterCommandResult> {
-  const model = resolveUtilityModel(deps.config);
+  const { config } = await resolveProjectAi(deps, input.projectId);
+  const model = resolveUtilityModel(config);
   if (!model) {
-    throw new Error(
-      'No AI provider is configured: set OPENAI_API_KEY or ANTHROPIC_API_KEY.'
-    );
+    throw new BadRequestError(noAiProviderMessage(config));
   }
   const result = await withAiContext(
     {

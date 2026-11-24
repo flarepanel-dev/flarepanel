@@ -7,6 +7,12 @@ import { sendEmail } from '../../clients/email';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
 import { listProjectMemberEmails } from '../../shared/access-lookups';
+import { BadRequestError } from '../../shared/errors';
+import { resolveTaskModel } from '../assistant/src/providers';
+import {
+  noAiProviderMessage,
+  resolveProjectAi,
+} from '../assistant/src/workspace-keys';
 import { createEngine, type EngineConfig } from './src/engine';
 import {
   ENRICH_VERSION,
@@ -138,6 +144,11 @@ async function enrichProjectInsights(
   if (stale.length === 0) {
     return;
   }
+  // The workspace's own key; with none, insights stay un-enriched.
+  const ai = await resolveProjectAi(deps, projectId);
+  if (!resolveTaskModel(ai.config, 'small')) {
+    return;
+  }
 
   let enriched = 0;
   for (let i = 0; i < stale.length; i += ENRICH_BATCH_SIZE) {
@@ -158,7 +169,7 @@ async function enrichProjectInsights(
 
     let results: Awaited<ReturnType<typeof enrichInsights>>;
     try {
-      results = await enrichInsights(deps.config, input);
+      results = await enrichInsights(ai.config, input);
     } catch (err) {
       logger.error(
         { err, projectId, batchSize: batch.length },
@@ -428,7 +439,8 @@ async function buildDigestData(
 
   let narrative = '';
   try {
-    narrative = await generateWeeklyNarrative(deps.config, {
+    const ai = await resolveProjectAi(deps, project.id);
+    narrative = await generateWeeklyNarrative(ai.config, {
       projectName: project.name,
       dateRange,
       stats: [
@@ -616,14 +628,19 @@ export function listAllInsights(
 export async function explainInsight(
   deps: ServiceDeps,
   input: ExplainInsightInput,
-  cacheKey: string
+  cacheKey: string,
+  projectId: string
 ): Promise<InsightExplanation | null> {
   const cached = await deps.stores.cache.get(cacheKey);
   if (cached) {
     return JSON.parse(cached) as InsightExplanation;
   }
 
-  const explanation = await generateInsightExplanation(deps.config, input);
+  const ai = await resolveProjectAi(deps, projectId);
+  if (!resolveTaskModel(ai.config, 'standard')) {
+    throw new BadRequestError(noAiProviderMessage(ai.config));
+  }
+  const explanation = await generateInsightExplanation(ai.config, input);
 
   // Only cache a successful explanation — a null is a transient LLM failure
   // and should be retried on the next click.
@@ -692,9 +709,10 @@ export function createInsightService(
     }): ReturnType<typeof listAllInsights> => listAllInsights(deps, args),
     explainInsight: (
       input: ExplainInsightInput,
-      cacheKey: string
+      cacheKey: string,
+      projectId: string
     ): Promise<InsightExplanation | null> =>
-      explainInsight(deps, input, cacheKey),
+      explainInsight(deps, input, cacheKey, projectId),
     getReferrerSpikes: (
       input: GetReferrerSpikesInput
     ): Promise<ReferrerSpikeCluster[]> => getReferrerSpikes(deps, input),

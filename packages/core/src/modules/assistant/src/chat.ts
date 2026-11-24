@@ -31,6 +31,7 @@ import {
 } from './providers';
 import { generateConversationTitle } from './title';
 import { createChatToolApproval, createChatTools } from './tools';
+import { noAiProviderMessage, resolveWorkspaceAi } from './workspace-keys';
 
 /** Dashboard-building turns chain many tool calls; the ceiling stops runaway loops. */
 const MAX_STEPS = 30;
@@ -83,13 +84,19 @@ export async function runChat(
   input: RunChatInput
 ): Promise<Response> {
   const { request, httpCtx } = input;
-  const config = deps.config;
+  // The workspace's own key when it has one; hosted never uses a server key.
+  const { config, ownKey } = await resolveWorkspaceAi(
+    deps,
+    request.organizationId
+  );
   const providers = configuredProviders(config);
   const available = getAvailableChatModels(providers);
-  // Cloud runs the one vetted model; only a self-hosted install may pick another.
-  const requested = config.selfHosted
-    ? CHAT_MODELS.find((model) => model.id === request.modelId)
-    : undefined;
+  // Hosted runs the one vetted model on our side; whoever pays the provider
+  // (a self-hoster, or a workspace with its own key) may pick another.
+  const requested =
+    config.selfHosted || ownKey
+      ? CHAT_MODELS.find((model) => model.id === request.modelId)
+      : undefined;
   const entry =
     requested && available.some((model) => model.id === requested.id)
       ? requested
@@ -98,8 +105,8 @@ export async function runChat(
         );
   if (!entry) {
     return Response.json(
-      { message: 'No AI provider is configured on the API.' },
-      { status: 503 }
+      { message: noAiProviderMessage(config), reason: 'no-key' },
+      { status: 412 }
     );
   }
 

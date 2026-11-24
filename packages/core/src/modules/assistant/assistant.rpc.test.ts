@@ -55,6 +55,8 @@ test('models returns no models and a null default with no provider keys set', as
     models: [],
     defaultModelId: null,
     canChooseModel: false,
+    ownKey: false,
+    selfHosted: false,
   });
 });
 

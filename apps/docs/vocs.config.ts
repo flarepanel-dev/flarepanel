@@ -62,6 +62,10 @@ export default defineConfig({
       ],
     },
     {
+      text: 'Features',
+      items: [{ text: 'AI and your own key', link: '/features/ai-keys' }],
+    },
+    {
       text: 'Self-hosting',
       items: [
         { text: 'Overview', link: '/self-hosting' },

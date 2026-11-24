@@ -35,7 +35,9 @@ function Component() {
   const navigate = useNavigate();
   const trpc = useTRPC();
 
-  const modelsQuery = useQuery(trpc.chat.models.queryOptions());
+  const modelsQuery = useQuery(
+    trpc.chat.models.queryOptions({ organizationId })
+  );
   // A fresh id per new chat; it becomes the URL once the first message is sent.
   const [draftId, setDraftId] = useState(newConversationId);
   // The title streams in while the first answer is generated.
@@ -79,7 +81,10 @@ function Component() {
   if (!modelsQuery.data || modelsQuery.data.models.length === 0) {
     return (
       <ChatFrame>
-        <ChatNotConfigured />
+        <ChatNotConfigured
+          organizationId={organizationId}
+          selfHosted={modelsQuery.data?.selfHosted ?? false}
+        />
       </ChatFrame>
     );
   }

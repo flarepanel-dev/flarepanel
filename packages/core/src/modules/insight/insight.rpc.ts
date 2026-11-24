@@ -252,7 +252,8 @@ export const insightRouter = createTRPCRouter({
             date: r.date.toISOString().slice(0, 10),
           })),
         },
-        cacheKey
+        cacheKey,
+        insight.projectId
       );
     }),
 });

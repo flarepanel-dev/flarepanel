@@ -184,19 +184,40 @@ test('explainInsight is a cache-aside over the AI call, keyed by the caller-supp
     references: [],
   };
 
+  // The project's workspace has its own OpenAI key (bring your own key).
+  const base = testCoreConfig();
+  const withKey = {
+    ...deps,
+    db: {
+      ...deps.db,
+      project: { findUnique: async () => ({ organizationId: 'o1' }) },
+      organizationAiKey: {
+        findMany: async () => [
+          {
+            provider: 'openai',
+            encryptedKey: 'sk-test-plaintext-key-0000000000',
+          },
+        ],
+      },
+    },
+    config: base,
+  } as unknown as typeof deps;
+
   const first = await subject.explainInsight(
-    deps,
+    withKey,
     input,
-    'insight-explain:i1:100'
+    'insight-explain:i1:100',
+    'p1'
   );
   expect(generateInsightExplanation).toHaveBeenCalledTimes(1);
   expect(first?.summary).toBe('x');
 
   // Second call with the same key is served from the cache, not the LLM.
   const second = await subject.explainInsight(
-    deps,
+    withKey,
     input,
-    'insight-explain:i1:100'
+    'insight-explain:i1:100',
+    'p1'
   );
   expect(generateInsightExplanation).toHaveBeenCalledTimes(1);
   expect(second).toEqual(first);
