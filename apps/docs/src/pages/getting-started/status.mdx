@@ -25,6 +25,7 @@ FlarePanel is in early access. This page is updated as parts move over from Open
 | Groups: list, group pages, members, `group.*` filters and breakdowns | Works |
 | Cohorts: event and property cohorts, refreshed every 30 minutes, cohort filters in reports | Works (event cohorts read the last 90 days plus the R2 archive) |
 | AI analytics: cost, tokens, latency, errors, traces and calls, prompt and response text | Works (text kept 30 days) |
+| Location of server-side events that pass the visitor's IP (`__ip`) | Works, with IP geolocation by [DB-IP](https://db-ip.com) |
 | Bot traffic: kept out of analytics, recent bot hits listed through the API | Works (up to 5,000 a project a day, kept 30 days) |
 | Session replay (web SDK, `sessionReplay: { enabled: true }`) | Works, kept 30 days, with a monthly number of recorded sessions per organization ([details](/self-hosting#self-hosted-and-hosted)) |
 | Report builder: line, bar, area, pie and metric charts with breakdowns, filters and formulas | Works over all history (older than 90 days read from the R2 archive) |

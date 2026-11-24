@@ -56,6 +56,10 @@ Recent events stay in the Durable Object for 90 days by default (`FLAREPANEL_EVE
 
 Accounts, organizations, members, projects, clients and settings live in D1 through Prisma's D1 adapter. D1 has no interactive transactions, so writes that must happen together are sent as one batch.
 
+## IP geolocation
+
+A second D1 database, `flarepanel-geo`, holds DB-IP's City Lite ranges: `geo_ranges_<n>` (16-byte start and end keys, IPv4 as `::ffff:a.b.c.d`) and `geo_locations_<n>`. A lookup is one indexed query for the last range starting at or below the address, cached a day. Each monthly refresh loads the next `<n>` and then switches, so lookups never see half a load. IP geolocation by [DB-IP](https://db-ip.com).
+
 ## Background jobs
 
 Jobs run on Cloudflare Queues; a Cron Trigger every minute enqueues the ones that are due: Search Console sync (daily), cohort refresh (every 30 minutes), insights (daily), S3/GCS exports (every minute, behind a per-export position in each project's Durable Object), and account emails. Imports run as a chain of short queue steps, each well inside a Worker's CPU limit.

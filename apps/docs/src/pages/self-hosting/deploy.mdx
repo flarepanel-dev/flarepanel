@@ -51,6 +51,16 @@ openssl rand -hex 32 | bunx wrangler secret put ENCRYPTION_KEY
 
 `ENCRYPTION_KEY` encrypts the credentials FlarePanel stores for you: S3 and GCS export keys and Search Console tokens. Without it, saving an export fails. Keep it stable: if you replace it, stored credentials can no longer be read and have to be entered again.
 
+### IP geolocation (optional)
+
+Browsers are located by Cloudflare itself. Events a server sends with the visitor's address (`__ip`), and the IP lookup tool, need a table of IP ranges. Create its database and put its id in `apps/worker/wrangler.jsonc` (`d1_databases`, binding `GEO_DB`):
+
+```bash
+bunx wrangler d1 create flarepanel-geo
+```
+
+After the next deploy the API loads [DB-IP's free City Lite database](https://db-ip.com/db/download/ip-to-city-lite) (CC BY 4.0) by itself, in steps of about 4 MB, and refreshes it on the 2nd of each month, switching to the new copy only once it is complete. About 7.8 million ranges, roughly 0.5 GB of D1 and 8.3 million row writes a month, inside Workers Paid. Without the binding, these events get no location and the IP lookup tool only answers for the caller's own address.
+
 ### Expire AI text and session replays in R2
 
 Prompt and response text of [AI calls](#ai-analytics) and [session replays](#session-replay) are kept 30 days, like OpenPanel's. Add lifecycle rules so R2 removes them after that:

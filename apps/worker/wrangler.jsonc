@@ -15,6 +15,13 @@
       "database_name": "flarepanel",
       "database_id": "6c5754e3-81e9-40ce-9112-2608ee72a257",
       "migrations_dir": "../../packages/db/migrations"
+    },
+    // IP geolocation (DB-IP City Lite, CC BY 4.0), loaded and refreshed
+    // monthly by the API itself. Optional: remove to turn GeoIP off.
+    {
+      "binding": "GEO_DB",
+      "database_name": "flarepanel-geo",
+      "database_id": "5e7820f8-43e9-42bb-9842-0d1929dec17d"
     }
   ],
   "durable_objects": {

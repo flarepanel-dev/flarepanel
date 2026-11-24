@@ -42,6 +42,14 @@ export { registerBufferMetrics } from './buffers/buffer.metrics';
 export type { Buffers } from './buffers/create-buffers';
 export { createBuffers } from './buffers/create-buffers';
 export type { IClickhouseSessionReplayChunk } from './buffers/replay-buffer';
+export {
+  type GeoLocation,
+  type GeoLookup,
+  getGeoLocation,
+  hasGeoLookup,
+  setGeoLookup,
+} from './clients/geo';
+export * as geoipDbip from './modules/geo/geoip-dbip';
 export { createClients } from './clients/create-clients';
 export {
   type CfGeoProperties,

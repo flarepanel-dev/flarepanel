@@ -15,6 +15,8 @@ import {
   type EventStore,
   getFunnelRules,
   getGeoFromCf,
+  getGeoLocation,
+  hasGeoLookup,
   getNotificationRulesByProjectId,
   getProjectByIdCached,
   getProjectReplayAccess,
@@ -106,8 +108,17 @@ export function createCloudflareIngestBackend({
       });
     },
 
-    geo: ({ cf, ipOverridden }) =>
-      Promise.resolve(getGeoFromCf(cf, { ipOverridden })),
+    // request.cf locates the caller. A server passing the visitor's address
+    // (`__ip`) is located from the GeoIP tables instead, when they exist.
+    geo: async ({ ip, cf, ipOverridden }) => {
+      if (ipOverridden && hasGeoLookup()) {
+        return {
+          geo: await getGeoLocation(ip),
+          asnInfo: { asn: undefined, org: undefined, isHosting: false },
+        };
+      }
+      return getGeoFromCf(cf, { ipOverridden });
+    },
 
     sink: {
       resolveDevice: (device: DeviceRequest) =>

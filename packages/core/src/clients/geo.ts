@@ -83,6 +83,21 @@ const cache = new LRUCache<string, GeoLocation>({
   ttlAutopurge: true,
 });
 
+/**
+ * Where addresses are looked up when the MaxMind file is not available:
+ * Workers register the D1 GeoIP tables (DB-IP) here. Null means unknown.
+ */
+export type GeoLookup = (ip: string) => Promise<GeoLocation | null>;
+let externalLookup: GeoLookup | undefined;
+
+export function setGeoLookup(lookup: GeoLookup | undefined): void {
+  externalLookup = lookup;
+}
+
+export function hasGeoLookup(): boolean {
+  return externalLookup !== undefined;
+}
+
 export async function getGeoLocation(ip?: string): Promise<GeoLocation> {
   if (!ip || ignore.includes(ip)) {
     return DEFAULT_GEO;
@@ -91,6 +106,13 @@ export async function getGeoLocation(ip?: string): Promise<GeoLocation> {
   const cached = cache.get(ip);
   if (cached) {
     return cached;
+  }
+
+  if (externalLookup) {
+    const found = await externalLookup(ip).catch(() => null);
+    const res = found ?? DEFAULT_GEO;
+    cache.set(ip, res);
+    return res;
   }
 
   const reader = await getReader();

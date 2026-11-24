@@ -1,5 +1,6 @@
 import { isWorkersRuntime } from '@flarepanel/shared/server';
-import { getGeoLocation } from '../../../clients/geo';
+import { getGeoLocation, hasGeoLookup } from '../../../clients/geo';
+import { DBIP_ATTRIBUTION } from '../../geo/geoip-dbip';
 import { getGeoFromCf } from '../../../clients/geo-cf';
 import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';
@@ -23,6 +24,8 @@ export interface IpLookupResult {
   };
   isLocalhost: boolean;
   isPrivate: boolean;
+  /** Credit for the location data, when it comes from DB-IP. */
+  attribution?: string;
 }
 
 export type IpLookupOutcome =
@@ -93,9 +96,10 @@ export async function runIpLookup(
     return { status: 400, error: 'Invalid IP address format' };
   }
 
-  // Workers have no GeoIP database (it would not fit in a Worker's memory);
-  // Cloudflare locates the caller itself, so only that address can be looked up.
-  const onWorkers = isWorkersRuntime();
+  // Workers have no MaxMind file (it would not fit in a Worker's memory).
+  // With the D1 GeoIP tables any address is looked up; without them only the
+  // caller's own, which Cloudflare locates itself.
+  const onWorkers = isWorkersRuntime() && !hasGeoLookup();
   if (onWorkers && ipToLookup !== clientIp) {
     return {
       status: 501,
@@ -121,6 +125,8 @@ export async function runIpLookup(
         },
         isLocalhost: ipToLookup === '127.0.0.1' || ipToLookup === '::1',
         isPrivate: isPrivateIP(ipToLookup),
+        // CC BY 4.0: the DB-IP data must be credited where it is shown.
+        ...(hasGeoLookup() ? { attribution: DBIP_ATTRIBUTION } : {}),
       },
     };
   } catch (error) {

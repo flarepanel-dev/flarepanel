@@ -38,6 +38,7 @@ Limits exist so that nobody's bill grows by surprise: on Cloudflare every reques
 | Worker `flarepanel-api` | Tracking, the dashboard API, auth, jobs |
 | Worker `flarepanel-dashboard` | The dashboard |
 | D1 database | Accounts, organizations, projects, clients |
+| D1 database `flarepanel-geo` (optional) | IP ranges for locating server-side events and the IP lookup tool (DB-IP City Lite) |
 | Durable Objects | One per project: events, sessions, rollups, live sockets; plus rate limits and locks |
 | R2 bucket | Raw event archive, AI prompt text, import copies (optional; without it events are kept 30 days and imports are unavailable) |
 | Queues | Background jobs and their dead-letter queue |
