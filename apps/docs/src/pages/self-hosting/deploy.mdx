@@ -38,6 +38,8 @@ Put the D1 database id from the first command into `apps/worker/wrangler.jsonc` 
 
 In `apps/worker/wrangler.jsonc`, set the `routes` custom domain and the `API_URL`, `DASHBOARD_URL` and `CUSTOM_COOKIE_DOMAIN` vars. In `apps/start/wrangler.jsonc`, set the dashboard's custom domain and the same two URLs.
 
+Make sure both files' `vars` have `"SELF_HOSTED": "true"`. It is the switch between a self-hosted install and the hosted service: with it there are no plans, trials or billing pages, and limits are yours to set.
+
 ### Add the secrets
 
 ```bash
@@ -118,15 +120,13 @@ AI calls sent with `@flarepanel/ai` (or `op.ai`) are stored per call in the proj
 
 Turn it on in the web SDK with `sessionReplay: { enabled: true }` (and `sampleRate` to record a share of sessions). Inputs and text are masked by default. Each recorded chunk (about every 10 seconds of activity) is stored gzip-compressed as one R2 object under `replays/<project>/<session>/`, and the project's Durable Object marks the session so the Sessions pages show **Watch replay**. Chunks for sessions the project never saw are refused.
 
-On your own install, replay is on for every organization with no monthly limit. To make it a paid feature, as the hosted service does:
+Every organization records, up to **10,000 recorded sessions a month** each. That keeps a small install inside R2's free writes; past it, new sessions are not recorded until the 1st of next month (sessions already recording finish), and nothing breaks. To change it:
 
 ```bash
-echo true | bunx wrangler secret put FLAREPANEL_REPLAY_REQUIRES_PLAN
-# optional, default 5000 when the plan check is on; 0 means unlimited
-echo 5000 | bunx wrangler secret put FLAREPANEL_REPLAY_MONTHLY_SESSIONS
+echo 50000 | bunx wrangler secret put FLAREPANEL_REPLAY_MONTHLY_SESSIONS   # 0 = unlimited
 ```
 
-Then an organization records sessions when it has an active paid subscription, or when you switch it on by hand ([Operations](/self-hosting/operations#session-replay-access)), up to its monthly number of recorded sessions. Chunks from organizations without replay, or over their limit, are refused before anything is written, so they cost nothing. The Sessions page shows the plan message or the month's use.
+One organization can get its own limit, or be switched off ([Operations](/self-hosting/operations#session-replay-limits)). The Sessions page warns at 80% of the limit and when it is reached.
 
 Cost: one R2 write per chunk (the first million each month are free, then $4.50 per million) and the stored bytes for 30 days (10 GB free, then $0.015 per GB-month). Check current prices on Cloudflare's R2 pricing page. A 5-minute session is about 30 writes; watching it reads 40 chunks at a time.
 

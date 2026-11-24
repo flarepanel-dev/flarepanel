@@ -26,7 +26,7 @@ function gateFor(access: ProjectReplayAccess | null, p: ReplayProject) {
     {
       cache: new MemoryCacheStore(),
       coordination: new MemoryCoordinationStore(),
-      config: { requiresPlan: true, monthlySessions: 2 },
+      config: { hosted: true, selfHostedMonthlySessions: null },
       lookupAccess: () => {
         lookups++;
         return Promise.resolve(access);

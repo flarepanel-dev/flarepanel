@@ -293,11 +293,10 @@ export function createWorkerBuffers(
   /** Resolved lazily: the buffers are built before `AppDeps` exists. */
   deps: () => AppDeps
 ): Buffers {
-  const replayConfig = replayAccessConfig();
   const gateDeps = (): ReplayGateDeps => ({
     cache,
     coordination: deps().stores.coordination,
-    config: replayConfig,
+    config: replayAccessConfig(deps().config.selfHosted),
     lookupAccess: (projectId, config) =>
       getProjectReplayAccess(deps(), projectId, config),
     countRecordedSession,

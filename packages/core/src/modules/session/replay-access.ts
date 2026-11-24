@@ -1,22 +1,47 @@
-// Who may record session replays, and how many sessions a month.
+// Who may record session replays, and how many sessions a month. Framed like
+// OpenPanel: one switch (SELF_HOSTED) decides the deployment, and session
+// replay is part of every plan, not a premium tier. On Cloudflare every
+// recorded chunk is an R2 write someone pays for, so both sides get a monthly
+// limit of recorded sessions per organization:
 //
-// Self-hosted installs (the default) record without a plan check and without
-// a cap: the owner pays their own Cloudflare bill. The hosted service sets
-// FLAREPANEL_REPLAY_REQUIRES_PLAN=true: then an organization records when it
-// has an active paid subscription, or when `replayEnabled` switches it on by
-// hand, up to a monthly number of recorded sessions.
+// - Self-hosted (SELF_HOSTED set): every organization records, up to
+//   FLAREPANEL_REPLAY_MONTHLY_SESSIONS (10,000 by default, 0 = unlimited), so
+//   an install stays near R2's free tier unless its owner raises it.
+// - Hosted (SELF_HOSTED unset): organizations record while their trial or
+//   plan is running. Trials get 500 sessions a month; plans one recorded
+//   session per 100 events of their event limit, 1,000 to 100,000.
+//
+// `organizations.replayEnabled` switches replay on (hosted, without a plan) or
+// off; `organizations.replaySessionsLimit` sets an organization's own limit
+// (0 = unlimited).
 
+import {
+  getSubscriptionState,
+  type SubscriptionState,
+} from '@flarepanel/payments/subscription-state';
 import type { CoordinationStore } from '@flarepanel/platform';
 
-/** Hosted default for recorded sessions per organization and month. */
-export const HOSTED_REPLAY_MONTHLY_SESSIONS = 5000;
+export const SELF_HOSTED_REPLAY_MONTHLY_SESSIONS = 10_000;
+export const TRIAL_REPLAY_MONTHLY_SESSIONS = 500;
+const EVENTS_PER_REPLAY_SESSION = 100;
+const PLAN_REPLAY_MIN = 1000;
+const PLAN_REPLAY_MAX = 100_000;
 const MONTH_WINDOW_MS = 32 * 24 * 60 * 60 * 1000;
 
+/** Hosted states that keep recording: the plan or trial is still running. */
+const RECORDING_STATES = new Set<SubscriptionState>([
+  'trialing',
+  'active',
+  'canceling',
+  'pausing',
+  'past_due',
+]);
+
 export interface ReplayAccessConfig {
-  /** Hosted: replay needs a paid plan or a manual switch. */
-  requiresPlan: boolean;
-  /** Recorded sessions per organization and month; null is unlimited. */
-  monthlySessions: number | null;
+  /** Hosted service (SELF_HOSTED unset): replay follows the plan. */
+  hosted: boolean;
+  /** Self-hosted limit per organization and month; null is unlimited. */
+  selfHostedMonthlySessions: number | null;
 }
 
 export interface ReplayAccessOrganization {
@@ -24,56 +49,78 @@ export interface ReplayAccessOrganization {
   replayEnabled: boolean | null;
   replaySessionsLimit: number | null;
   subscriptionStatus: string | null;
-  subscriptionProductId: string | null;
+  subscriptionCanceledAt: Date | null;
+  subscriptionEndsAt: Date | null;
+  subscriptionPauseAtPeriodEnd: boolean;
+  subscriptionPeriodEventsLimit: number;
 }
 
 export type ReplayAccess =
   | { allowed: true; limit: number | null }
-  | { allowed: false; reason: 'plan' };
+  | { allowed: false; reason: 'plan' | 'off' };
 
-/** Reads FLAREPANEL_REPLAY_REQUIRES_PLAN and FLAREPANEL_REPLAY_MONTHLY_SESSIONS. */
+/** From the deployment switch and FLAREPANEL_REPLAY_MONTHLY_SESSIONS. */
 export function replayAccessConfig(
+  selfHosted: boolean,
   env: Record<string, string | undefined> = process.env
 ): ReplayAccessConfig {
-  const requiresPlan = env.FLAREPANEL_REPLAY_REQUIRES_PLAN === 'true';
   const raw = env.FLAREPANEL_REPLAY_MONTHLY_SESSIONS;
   const parsed = raw === undefined || raw === '' ? Number.NaN : Number(raw);
-  let monthlySessions: number | null;
+  let selfHostedMonthlySessions: number | null =
+    SELF_HOSTED_REPLAY_MONTHLY_SESSIONS;
   if (Number.isFinite(parsed)) {
-    monthlySessions = parsed > 0 ? Math.trunc(parsed) : null;
-  } else {
-    monthlySessions = requiresPlan ? HOSTED_REPLAY_MONTHLY_SESSIONS : null;
+    selfHostedMonthlySessions = parsed > 0 ? Math.trunc(parsed) : null;
   }
-  return { requiresPlan, monthlySessions };
+  return { hosted: !selfHosted, selfHostedMonthlySessions };
 }
 
-/** An active subscription to a product; trials and ended plans are not. */
-export function hasPaidPlan(organization: ReplayAccessOrganization): boolean {
-  return (
-    organization.subscriptionStatus === 'active' &&
-    Boolean(organization.subscriptionProductId)
+/** A plan's recorded sessions a month, from its event limit. */
+export function planReplayLimit(
+  organization: ReplayAccessOrganization,
+  state: SubscriptionState
+): number {
+  if (state === 'trialing') {
+    return TRIAL_REPLAY_MONTHLY_SESSIONS;
+  }
+  const fromEvents = Math.round(
+    organization.subscriptionPeriodEventsLimit / EVENTS_PER_REPLAY_SESSION
   );
+  return Math.min(PLAN_REPLAY_MAX, Math.max(PLAN_REPLAY_MIN, fromEvents));
 }
 
 export function replayAccessFor(
   organization: ReplayAccessOrganization,
   config: ReplayAccessConfig
 ): ReplayAccess {
+  if (organization.replayEnabled === false) {
+    return { allowed: false, reason: 'off' };
+  }
   // An organization's own limit wins; 0 or less means unlimited.
   const override = organization.replaySessionsLimit;
-  let limit = config.monthlySessions;
-  if (override !== null) {
-    limit = override > 0 ? override : null;
-  }
+  const ownLimit = override === null ? undefined : override > 0 ? override : null;
 
-  if (!config.requiresPlan) {
-    return organization.replayEnabled === false
-      ? { allowed: false, reason: 'plan' }
-      : { allowed: true, limit };
+  if (!config.hosted) {
+    return {
+      allowed: true,
+      limit:
+        ownLimit === undefined ? config.selfHostedMonthlySessions : ownLimit,
+    };
   }
-  const allowed =
-    organization.replayEnabled ?? hasPaidPlan(organization);
-  return allowed ? { allowed: true, limit } : { allowed: false, reason: 'plan' };
+  const state = getSubscriptionState(organization);
+  if (organization.replayEnabled === true) {
+    return {
+      allowed: true,
+      limit:
+        ownLimit === undefined ? planReplayLimit(organization, 'active') : ownLimit,
+    };
+  }
+  if (!RECORDING_STATES.has(state)) {
+    return { allowed: false, reason: 'plan' };
+  }
+  return {
+    allowed: true,
+    limit: ownLimit === undefined ? planReplayLimit(organization, state) : ownLimit,
+  };
 }
 
 function monthKey(organizationId: string, now: Date): string {
@@ -117,7 +164,10 @@ interface ReplayAccessDeps {
               replayEnabled: true;
               replaySessionsLimit: true;
               subscriptionStatus: true;
-              subscriptionProductId: true;
+              subscriptionCanceledAt: true;
+              subscriptionEndsAt: true;
+              subscriptionPauseAtPeriodEnd: true;
+              subscriptionPeriodEventsLimit: true;
             };
           };
         };
@@ -138,7 +188,7 @@ export interface ProjectReplayAccess {
 export async function getProjectReplayAccess(
   deps: ReplayAccessDeps,
   projectId: string,
-  config: ReplayAccessConfig = replayAccessConfig()
+  config: ReplayAccessConfig
 ): Promise<ProjectReplayAccess | null> {
   const project = await deps.db.project.findUnique({
     where: { id: projectId },
@@ -150,7 +200,10 @@ export async function getProjectReplayAccess(
           replayEnabled: true,
           replaySessionsLimit: true,
           subscriptionStatus: true,
-          subscriptionProductId: true,
+          subscriptionCanceledAt: true,
+          subscriptionEndsAt: true,
+          subscriptionPauseAtPeriodEnd: true,
+          subscriptionPeriodEventsLimit: true,
         },
       },
     },
@@ -166,21 +219,24 @@ export async function getProjectReplayAccess(
 
 export interface ReplayStatus {
   allowed: boolean;
-  /** Why not: the plan (hosted) or a switch that turned it off. */
-  reason: 'plan' | null;
+  /** Why not: no running plan or trial (hosted), or switched off. */
+  reason: 'plan' | 'off' | null;
   /** Recorded sessions allowed this month; null is unlimited. */
   limit: number | null;
   /** Recorded sessions this month (UTC). */
   used: number;
-  /** Hosted service: replay is a paid feature. */
-  requiresPlan: boolean;
+  /** Hosted service: replay follows the plan. */
+  hosted: boolean;
 }
 
 /** What the dashboard shows about a project's session replay. */
 export async function getReplayStatus(
-  deps: ReplayAccessDeps & { stores: { coordination: CoordinationStore } },
+  deps: ReplayAccessDeps & {
+    stores: { coordination: CoordinationStore };
+    config: { selfHosted: boolean };
+  },
   projectId: string,
-  config: ReplayAccessConfig = replayAccessConfig()
+  config: ReplayAccessConfig = replayAccessConfig(deps.config.selfHosted)
 ): Promise<ReplayStatus> {
   const found = await getProjectReplayAccess(deps, projectId, config);
   if (!found) {
@@ -189,7 +245,7 @@ export async function getReplayStatus(
       reason: 'plan',
       limit: null,
       used: 0,
-      requiresPlan: config.requiresPlan,
+      hosted: config.hosted,
     };
   }
   const used = await recordedSessionsThisMonth(
@@ -202,13 +258,13 @@ export async function getReplayStatus(
         reason: null,
         limit: found.access.limit,
         used,
-        requiresPlan: config.requiresPlan,
+        hosted: config.hosted,
       }
     : {
         allowed: false,
         reason: found.access.reason,
         limit: null,
         used,
-        requiresPlan: config.requiresPlan,
+        hosted: config.hosted,
       };
 }
