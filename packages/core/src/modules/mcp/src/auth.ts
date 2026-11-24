@@ -61,10 +61,8 @@ export async function authenticateToken(
   const clientId = decoded.slice(0, colonIndex);
   const clientSecret = decoded.slice(colonIndex + 1);
 
-  logger.info(
-    { clientId, secretPrefix: clientSecret.slice(0, 6) },
-    'MCP auth: decoded token'
-  );
+  // No part of the secret goes to the logs.
+  logger.info({ clientId }, 'MCP auth: decoded token');
 
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(

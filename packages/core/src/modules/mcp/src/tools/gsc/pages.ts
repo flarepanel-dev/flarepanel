@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getGscPageDetails, getGscPages } from '../../../../gsc/gsc.service';
 import {
+  gscNotConnected,
   MAX_SERIES_POINTS,
   type McpToolDeps,
   projectIdSchema,
@@ -38,6 +39,10 @@ export function registerGscPageTools(
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, limit }) =>
       withErrorHandling(deps, async () => {
         const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const notConnected = await gscNotConnected(deps, projectId);
+        if (notConnected) {
+          return notConnected;
+        }
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const take = limit ?? DEFAULT_GSC_LIMIT;
         // Fetch the full ranked set (capped) so the tail can be rolled up
@@ -82,6 +87,10 @@ export function registerGscPageTools(
     }) =>
       withErrorHandling(deps, async () => {
         const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const notConnected = await gscNotConnected(deps, projectId);
+        if (notConnected) {
+          return notConnected;
+        }
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const details = await getGscPageDetails(
           deps,

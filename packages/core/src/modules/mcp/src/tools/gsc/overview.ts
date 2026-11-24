@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getGscOverview } from '../../../../gsc/gsc.service';
 import {
+  gscNotConnected,
   MAX_SERIES_POINTS,
   type McpToolDeps,
   projectIdSchema,
@@ -44,6 +45,10 @@ export function registerGscOverviewTools(
     }) =>
       withErrorHandling(deps, async () => {
         const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const notConnected = await gscNotConnected(deps, projectId);
+        if (notConnected) {
+          return notConnected;
+        }
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const data = await getGscOverview(
           deps,

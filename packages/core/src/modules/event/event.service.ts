@@ -1005,10 +1005,16 @@ export async function getEventPropertyValuesCore(
   }
 ): Promise<{ event: string; property: string; values: string[] }> {
   if (deps.eventStore) {
-    // The ClickHouse view holds custom properties only.
-    const key = input.propertyKey.startsWith('properties.')
-      ? input.propertyKey
-      : `properties.${input.propertyKey}`;
+    // Top-level columns (`country`, `path`, …) are read from the event row;
+    // anything else is a custom property. Prefixing every key made the
+    // columns `list_event_properties` advertises always come back empty.
+    const isColumn = (EVENT_COLUMNS as readonly string[]).includes(
+      input.propertyKey
+    );
+    const key =
+      isColumn || input.propertyKey.startsWith('properties.')
+        ? input.propertyKey
+        : `properties.${input.propertyKey}`;
     return {
       event: input.eventName,
       property: input.propertyKey,

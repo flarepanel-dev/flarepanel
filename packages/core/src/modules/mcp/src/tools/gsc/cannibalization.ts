@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
+  gscNotConnected,
   type McpToolDeps,
   projectIdSchema,
   resolveDateRange,
@@ -50,6 +51,10 @@ export function registerGscCannibalizationTools(
     }) =>
       withErrorHandling(deps, async () => {
         const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const notConnected = await gscNotConnected(deps, projectId);
+        if (notConnected) {
+          return notConnected;
+        }
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const pageCap = pagesPerQuery ?? DEFAULT_PAGES_PER_QUERY;
         const rows = await services.gsc.getCannibalization(

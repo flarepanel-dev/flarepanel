@@ -55,7 +55,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
         JSON.stringify(
           {
             mcpServers: {
-              openpanel: {
+              flarepanel: {
                 type: 'streamable-http',
                 url,
                 headers,
@@ -78,7 +78,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       ),
       language: 'bash',
       snippet: () =>
-        `claude mcp add --transport http openpanel ${url} \\\n  --header "Authorization: Bearer ${TOKEN_PLACEHOLDER}"`,
+        `claude mcp add --transport http flarepanel ${url} \\\n  --header "Authorization: Bearer ${TOKEN_PLACEHOLDER}"`,
     },
     {
       id: 'cursor',
@@ -96,7 +96,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
         JSON.stringify(
           {
             mcpServers: {
-              openpanel: {
+              flarepanel: {
                 url,
                 transport: 'streamable-http',
                 headers,
@@ -122,7 +122,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
         JSON.stringify(
           {
             mcpServers: {
-              openpanel: {
+              flarepanel: {
                 serverUrl: url,
                 headers,
               },
@@ -147,7 +147,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
         JSON.stringify(
           {
             servers: {
-              openpanel: {
+              flarepanel: {
                 type: 'http',
                 url,
                 headers,
@@ -172,7 +172,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       snippet: () =>
         JSON.stringify(
           {
-            name: 'openpanel',
+            name: 'flarepanel',
             transport: 'streamable-http',
             url: urlWithToken,
           },

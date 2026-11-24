@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { GscQueryOpportunity } from '../../../../gsc/gsc.service';
 import { getGscQueries, getGscQueryDetails } from '../../../../gsc/gsc.service';
 import {
+  gscNotConnected,
   MAX_SERIES_POINTS,
   type McpToolDeps,
   projectIdSchema,
@@ -107,6 +108,10 @@ export function registerGscQueryTools(
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, limit }) =>
       withErrorHandling(deps, async () => {
         const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const notConnected = await gscNotConnected(deps, projectId);
+        if (notConnected) {
+          return notConnected;
+        }
         const { startDate, endDate } = resolveDateRange(sd, ed);
         // Fetch the full ranked set (capped) so the tail can be rolled up
         // rather than silently cut.
@@ -152,6 +157,10 @@ export function registerGscQueryTools(
     }) =>
       withErrorHandling(deps, async () => {
         const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const notConnected = await gscNotConnected(deps, projectId);
+        if (notConnected) {
+          return notConnected;
+        }
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const take = limit ?? DEFAULT_OPPORTUNITY_LIMIT;
         const queries = await getGscQueries(
@@ -210,6 +219,10 @@ export function registerGscQueryTools(
     }) =>
       withErrorHandling(deps, async () => {
         const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const notConnected = await gscNotConnected(deps, projectId);
+        if (notConnected) {
+          return notConnected;
+        }
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const details = await getGscQueryDetails(
           deps,

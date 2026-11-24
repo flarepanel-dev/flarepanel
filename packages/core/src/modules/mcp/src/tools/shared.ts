@@ -356,3 +356,26 @@ export async function withErrorHandling<T>(
     };
   }
 }
+
+/**
+ * Search Console tools read a connected property. Without one, the live-API
+ * tools failed with a bare "Not found" and the stored-data tools returned
+ * zeros a model could read as "no search traffic"; both now say why.
+ */
+export async function gscNotConnected(
+  deps: ServiceDeps,
+  projectId: string
+): Promise<{ connected: false; message: string } | null> {
+  const connection = await deps.db.gscConnection.findUnique({
+    where: { projectId },
+    select: { siteUrl: true },
+  });
+  if (connection?.siteUrl) {
+    return null;
+  }
+  return {
+    connected: false,
+    message:
+      'Google Search Console is not connected for this project, so there is no search data. Connect it in the dashboard under Project settings → Google Search.',
+  };
+}
