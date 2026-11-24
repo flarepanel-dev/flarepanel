@@ -1065,6 +1065,17 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       : null;
   }
 
+  /** Whether a session is unknown, already recorded, or new to replay. */
+  async replayState(sessionId: string) {
+    const { engine, replays } = await this.state;
+    if (!engine.getSession(sessionId)) {
+      return 'unknown' as const;
+    }
+    return replays.recorded([sessionId]).has(sessionId)
+      ? ('recorded' as const)
+      : ('new' as const);
+  }
+
   /**
    * Marks a session as recorded, the first time the Worker stores one of its
    * replay chunks. Chunks for a session this project never saw are refused.

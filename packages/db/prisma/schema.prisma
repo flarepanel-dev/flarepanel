@@ -123,6 +123,12 @@ model Organization {
   subscriptionPeriodEventsCount           Int       @default(0)
   subscriptionPeriodEventsCountExceededAt DateTime?
   subscriptionPeriodEventsLimit           Int       @default(0)
+  // Session replay on hosted FlarePanel (FLAREPANEL_REPLAY_REQUIRES_PLAN):
+  // null follows the plan (any active paid subscription), true/false
+  // overrides it. replaySessionsLimit overrides the default monthly cap of
+  // recorded sessions; null uses FLAREPANEL_REPLAY_MONTHLY_SESSIONS.
+  replayEnabled                           Boolean?
+  replaySessionsLimit                     Int?
   subscriptionInterval                    String?
   /// [IPrismaCancellationReason]
   subscriptionCancelReason                String?

@@ -36,15 +36,19 @@ function memoryBucket() {
   };
 }
 
+/** A gate that admits the known sessions, recording who asked. */
 function marker(known: string[]) {
   const calls: string[] = [];
-  return {
-    calls,
-    markReplay: (sessionId: string) => {
+  const gate = Object.assign(
+    (sessionId: string) => {
       calls.push(sessionId);
-      return Promise.resolve(known.includes(sessionId));
+      return Promise.resolve(
+        known.includes(sessionId) ? ('recorded' as const) : ('unknown' as const)
+      );
     },
-  };
+    { calls }
+  );
+  return gate;
 }
 
 const chunk = (index: number, startSecond: number, events: unknown[]) => ({

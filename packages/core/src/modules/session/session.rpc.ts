@@ -3,6 +3,7 @@
 // only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
 // from another id needs its own.
 
+import { getReplayStatus } from './replay-access';
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { zChartEventFilter } from '../report/report.constants';
@@ -58,6 +59,18 @@ export const sessionRouter = createTRPCRouter({
       });
 
       return getSessionById(ctx, input.sessionId, input.projectId);
+    }),
+
+  /** Whether the project may record replays, its monthly limit and use. */
+  replayStatus: protectedProcedure
+    .input(z.object({ projectId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
+      return getReplayStatus(ctx, input.projectId);
     }),
 
   replayChunksFrom: protectedProcedure

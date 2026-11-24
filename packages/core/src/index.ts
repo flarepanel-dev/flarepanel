@@ -42,6 +42,13 @@ export { registerBufferMetrics } from './buffers/buffer.metrics';
 export type { Buffers } from './buffers/create-buffers';
 export { createBuffers } from './buffers/create-buffers';
 export type { IClickhouseSessionReplayChunk } from './buffers/replay-buffer';
+export {
+  countRecordedSession,
+  getProjectReplayAccess,
+  type ProjectReplayAccess,
+  type ReplayAccessConfig,
+  replayAccessConfig,
+} from './modules/session/replay-access';
 export { createClients } from './clients/create-clients';
 export {
   type CfGeoProperties,

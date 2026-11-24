@@ -152,7 +152,7 @@ async function boot(env: Env): Promise<Booted> {
     redis: unavailableOnWorkers<AppDeps['redis']>('Redis'),
     stores,
     clients: createClients(),
-    buffers: createWorkerBuffers(env, stores.cache),
+    buffers: createWorkerBuffers(env, stores.cache, () => deps),
     producers,
     logger,
     config: config.core,

@@ -118,6 +118,16 @@ AI calls sent with `@flarepanel/ai` (or `op.ai`) are stored per call in the proj
 
 Turn it on in the web SDK with `sessionReplay: { enabled: true }` (and `sampleRate` to record a share of sessions). Inputs and text are masked by default. Each recorded chunk (about every 10 seconds of activity) is stored gzip-compressed as one R2 object under `replays/<project>/<session>/`, and the project's Durable Object marks the session so the Sessions pages show **Watch replay**. Chunks for sessions the project never saw are refused.
 
+On your own install, replay is on for every organization with no monthly limit. To make it a paid feature, as the hosted service does:
+
+```bash
+echo true | bunx wrangler secret put FLAREPANEL_REPLAY_REQUIRES_PLAN
+# optional, default 5000 when the plan check is on; 0 means unlimited
+echo 5000 | bunx wrangler secret put FLAREPANEL_REPLAY_MONTHLY_SESSIONS
+```
+
+Then an organization records sessions when it has an active paid subscription, or when you switch it on by hand ([Operations](/self-hosting/operations#session-replay-access)), up to its monthly number of recorded sessions. Chunks from organizations without replay, or over their limit, are refused before anything is written, so they cost nothing. The Sessions page shows the plan message or the month's use.
+
 Cost: one R2 write per chunk (the first million each month are free, then $4.50 per million) and the stored bytes for 30 days (10 GB free, then $0.015 per GB-month). Check current prices on Cloudflare's R2 pricing page. A 5-minute session is about 30 writes; watching it reads 40 chunks at a time.
 
 ## Imports and exports

@@ -9,6 +9,9 @@ import {
   type AppDeps,
   type Buffers,
   checkNotificationRulesForEvent,
+  countRecordedSession,
+  getProjectReplayAccess,
+  replayAccessConfig,
   createCtx,
   type DeviceRequest,
   type EventStore,
@@ -27,6 +30,7 @@ import type { CacheStore } from '@flarepanel/platform';
 import { toDots } from '@flarepanel/shared';
 import type { Env } from '../index';
 import { createImportFileStore } from './import-files';
+import { createReplayGate, type ReplayGateDeps } from './replay-gate';
 import { readReplayChunks, storeReplayChunk } from './replays';
 
 /** Repeats of one request inside this window are dropped. */
@@ -285,8 +289,19 @@ const noop = () => Promise.resolve();
  */
 export function createWorkerBuffers(
   env: Pick<Env, 'PROJECT_EVENTS' | 'EVENTS_ARCHIVE'>,
-  cache: CacheStore
+  cache: CacheStore,
+  /** Resolved lazily: the buffers are built before `AppDeps` exists. */
+  deps: () => AppDeps
 ): Buffers {
+  const replayConfig = replayAccessConfig();
+  const gateDeps = (): ReplayGateDeps => ({
+    cache,
+    coordination: deps().stores.coordination,
+    config: replayConfig,
+    lookupAccess: (projectId, config) =>
+      getProjectReplayAccess(deps(), projectId, config),
+    countRecordedSession,
+  });
   const standIns: Record<string, unknown> = {
     event: {
       getActiveVisitorCount: (projectId: string) =>
@@ -338,7 +353,11 @@ export function createWorkerBuffers(
         await storeReplayChunk(
           env.EVENTS_ARCHIVE,
           cache,
-          projectEventsStub(env, chunk.project_id),
+          createReplayGate(
+            gateDeps(),
+            chunk.project_id,
+            projectEventsStub(env, chunk.project_id)
+          ),
           {
             projectId: chunk.project_id,
             sessionId: chunk.session_id,

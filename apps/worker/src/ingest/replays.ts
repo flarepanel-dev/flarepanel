@@ -4,8 +4,9 @@
  * project's Durable Object marks the session as recorded.
  *
  * Costs: one R2 write per chunk (the SDK sends one about every 10 seconds of
- * activity); the Durable Object is asked once per session and data centre,
- * because the answer is cached. Playback lists the session's chunks and reads
+ * activity); the gate (plan, monthly limit, the project's Durable Object) is
+ * asked once per session and data centre, because the answer is cached, and
+ * refused sessions cost no write at all. Playback lists the session's chunks and reads
  * 40 at a time.
  */
 import {
@@ -16,8 +17,10 @@ import {
 import type { CacheStore } from '@flarepanel/platform';
 
 const MARK_TTL_SECONDS = 60 * 60;
-/** A refused session may still be on its way in; ask again soon. */
-const REFUSED_TTL_SECONDS = 60;
+/** A session the project has not seen yet may still be on its way in. */
+const UNKNOWN_TTL_SECONDS = 60;
+/** Refused by plan or monthly limit: asked again a few minutes later. */
+const REFUSED_TTL_SECONDS = 5 * 60;
 const LIST_PAGE = 1000;
 const CHUNK_NAME = /-(\d{5})\.json\.gz$/;
 
@@ -27,9 +30,16 @@ export interface ReplayChunkInput extends ReplayChunkRef {
   isFullSnapshot: boolean;
 }
 
-export interface ReplayMarker {
-  markReplay(sessionId: string, startedAtMs: number): Promise<boolean>;
-}
+/**
+ * Decides, once per session, whether it is recorded: `recorded` (store its
+ * chunks), `refused` (no plan, or over the monthly limit) or `unknown` (the
+ * project has no such session).
+ */
+export type ReplayAdmission = 'recorded' | 'refused' | 'unknown';
+export type ReplayGate = (
+  sessionId: string,
+  startedAtMs: number
+) => Promise<ReplayAdmission>;
 
 async function gzip(text: string): Promise<ArrayBuffer> {
   const stream = new Blob([text])
@@ -44,11 +54,11 @@ async function gunzip(body: ReadableStream): Promise<string> {
   ).text();
 }
 
-/** Stores one chunk; false when it is refused (bad ids, unknown session). */
+/** Stores one chunk; false when it is refused (bad ids, gate). */
 export async function storeReplayChunk(
   bucket: R2Bucket,
   cache: CacheStore,
-  marker: ReplayMarker,
+  gate: ReplayGate,
   chunk: ReplayChunkInput
 ): Promise<boolean> {
   const key = replayChunkKey(chunk);
@@ -61,16 +71,15 @@ export async function storeReplayChunk(
     return false;
   }
   if (known !== 'yes') {
-    const recorded = await marker.markReplay(
-      chunk.sessionId,
-      Date.parse(chunk.startedAt)
-    );
-    await cache.set(
-      markKey,
-      recorded ? 'yes' : 'no',
-      recorded ? MARK_TTL_SECONDS : REFUSED_TTL_SECONDS
-    );
-    if (!recorded) {
+    const admission = await gate(chunk.sessionId, Date.parse(chunk.startedAt));
+    if (admission === 'recorded') {
+      await cache.set(markKey, 'yes', MARK_TTL_SECONDS);
+    } else {
+      await cache.set(
+        markKey,
+        'no',
+        admission === 'unknown' ? UNKNOWN_TTL_SECONDS : REFUSED_TTL_SECONDS
+      );
       return false;
     }
   }

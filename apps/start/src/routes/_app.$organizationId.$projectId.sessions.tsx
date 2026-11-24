@@ -2,6 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
+import { ReplayStatus } from '@/components/sessions/replay-status';
 import { SessionsTable } from '@/components/sessions/table';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTableFilters } from '@/hooks/use-table-filters';
@@ -24,7 +25,7 @@ export const Route = createFileRoute(
 });
 
 function Component() {
-  const { projectId } = Route.useParams();
+  const { organizationId, projectId } = Route.useParams();
   const trpc = useTRPC();
   const { debouncedSearch } = useSearchQueryState();
   const [filters, setFilters] = useTableFilters('f');
@@ -50,6 +51,7 @@ function Component() {
         description="Access all your sessions here"
         title="Sessions"
       />
+      <ReplayStatus organizationId={organizationId} projectId={projectId} />
       <SessionsTable query={query} />
     </PageContainer>
   );

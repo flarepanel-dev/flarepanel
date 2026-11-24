@@ -100,6 +100,22 @@ Without `OPS_TOKEN` these routes answer 404. Events that were already copied to 
 
 The R2 archive (`v1/events/...`) keeps every raw event for good and is not affected by Durable Object retention. Turn on [R2 bucket versioning or object lock](https://developers.cloudflare.com/r2/buckets/) if you also want protection from deletes.
 
+## Session replay access
+
+With `FLAREPANEL_REPLAY_REQUIRES_PLAN=true`, session replay follows each organization's plan. Two columns on `organizations` override it:
+
+```bash
+# Switch an organization on (or off with 0); NULL follows the plan again
+bunx wrangler d1 execute flarepanel --remote \
+  --command "UPDATE organizations SET replayEnabled = 1 WHERE id = '<organizationId>'"
+
+# Its own monthly limit of recorded sessions (0 = unlimited, NULL = default)
+bunx wrangler d1 execute flarepanel --remote \
+  --command "UPDATE organizations SET replaySessionsLimit = 20000 WHERE id = '<organizationId>'"
+```
+
+Changes reach the API within 5 minutes. The count of recorded sessions resets on the 1st of each month (UTC); a session already being recorded finishes even after the limit is reached.
+
 ## Roll back a deploy
 
 ```bash
