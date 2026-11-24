@@ -161,3 +161,38 @@
     display: none;
   }
 }
+
+/* "How it works": the wires between Cloudflare services carry a moving dash. */
+@keyframes route-flow {
+  to {
+    background-position: 24px 0;
+  }
+}
+.route-wire {
+  height: 1px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-chart-indigo) 0 6px,
+    transparent 6px 12px
+  );
+  opacity: 0.8;
+  animation: route-flow 1.2s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-wire {
+    animation: none;
+  }
+}
+
+/* "What you no longer run": each Cloudflare service in its own data hue (--hue per row). */
+.compare-tile {
+  background: color-mix(in oklab, var(--hue) 18%, var(--color-raised));
+  border-color: color-mix(in oklab, var(--hue) 40%, var(--color-rule-strong));
+  color: color-mix(in oklab, var(--hue) 70%, var(--color-soft));
+}
+.compare-dot {
+  background: var(--hue);
+}
+.compare-row:hover {
+  background: color-mix(in oklab, var(--hue) 5%, var(--color-panel));
+}

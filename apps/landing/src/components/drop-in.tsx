@@ -105,7 +105,7 @@ export function DropIn() {
       id="get-started"
     >
       <Container>
-        <div className="grid gap-12 lg:grid-cols-[380px_minmax(0,1fr)] lg:items-center lg:gap-16 xl:grid-cols-[440px_minmax(0,1fr)]">
+        <div className="grid gap-12 lg:grid-cols-[380px_minmax(0,1fr)] lg:items-start lg:gap-16 xl:grid-cols-[440px_minmax(0,1fr)]">
           <div>
             <h2
               className="display text-[36px] sm:text-[48px] lg:text-[44px] xl:text-[50px]"
@@ -117,35 +117,70 @@ export function DropIn() {
             <p className="mt-5 max-w-[52ch] text-[16px] text-muted leading-[1.6]">
               FlarePanel speaks the OpenPanel tracking protocol, so the web,
               Next.js, React Native and server SDKs you already use keep
-              working. Point them at{' '}
-              <code className="text-soft">
-                {site.api.replace('https://', '')}
-              </code>{' '}
-              and your events land on Cloudflare.
+              working.
             </p>
-            <p className="mt-4 text-[14px] text-faint leading-[1.6]">
+            <ol className="mt-8 space-y-4">
+              {[
+                ['Keep your install', 'No new package and no new API.'],
+                [
+                  'Change apiUrl',
+                  `Point it at ${site.api.replace('https://', '')}.`,
+                ],
+                [
+                  'Watch events arrive',
+                  'They land on Cloudflare, at the edge closest to each visitor.',
+                ],
+              ].map(([title, body], i) => (
+                <li className="flex gap-4" key={title}>
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-[#6b79ea]/50 bg-[#6b79ea]/15 font-mono text-[#aab3f5] text-[12px]">
+                    {i + 1}
+                  </span>
+                  <div>
+                    <div className="font-medium text-[15px] text-paper">
+                      {title}
+                    </div>
+                    <div className="text-[14px] text-muted">{body}</div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-7 text-[14px] text-faint leading-[1.6]">
               Event ingestion is rolling out during early access.{' '}
               <TextLink href={site.docs}>Read the docs</TextLink>
             </p>
           </div>
 
           <div className="min-w-0 overflow-hidden rounded-2xl border border-rule bg-panel">
+            <div className="grid border-rule border-b sm:grid-cols-2">
+              <div className="flex items-center gap-3 border-rule px-5 py-4 max-sm:border-b sm:border-r">
+                <span className="font-mono text-[11px] text-faint uppercase tracking-[0.08em]">
+                  Before
+                </span>
+                <code className="font-mono text-[13.5px] text-muted line-through decoration-crimson/60">
+                  api.openpanel.dev
+                </code>
+              </div>
+              <div className="flex items-center gap-3 bg-coral/[0.06] px-5 py-4">
+                <span className="font-mono text-[11px] text-coral uppercase tracking-[0.08em]">
+                  After
+                </span>
+                <code className="font-mono text-[13.5px] text-paper">
+                  {site.api.replace('https://', '')}
+                </code>
+              </div>
+            </div>
             <div
               aria-label="Install options"
               className="flex items-center gap-1 border-rule border-b p-2"
               onKeyDown={onTabKey}
               role="tablist"
             >
-              <div className="flex min-w-0 gap-1 overflow-x-auto pr-6 [mask-image:linear-gradient(to_right,#000_82%,transparent)] [scrollbar-width:none] sm:pr-0 sm:[mask-image:none]">
+              <div className="flex min-w-0 gap-1 overflow-x-auto [scrollbar-width:none]">
                 {TABS.map((t) => (
                   <button
                     aria-controls={`panel-${t.id}`}
                     aria-selected={t.id === active}
-                    className={`h-9 shrink-0 whitespace-nowrap rounded-lg px-3 text-[14px] transition-colors sm:px-3.5 duration-200 ${
-                      t.id === active
-                        ? 'bg-raised text-paper'
-                        : 'text-muted hover:text-paper'
-                    }`}
+                    className="group flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-[14px] text-muted transition-colors duration-200 hover:text-paper aria-selected:bg-raised aria-selected:text-paper"
                     id={`tab-${t.id}`}
                     key={t.id}
                     onClick={() => {
@@ -156,16 +191,14 @@ export function DropIn() {
                     tabIndex={t.id === active ? 0 : -1}
                     type="button"
                   >
+                    <span className="size-1.5 rounded-full bg-rule-strong group-aria-selected:bg-chart-indigo" />
                     {t.label}
                   </button>
                 ))}
               </div>
-              <span className="ml-auto hidden px-3 font-mono text-[12px] text-faint xl:inline">
-                {tab.file} · {tab.note}
-              </span>
               <button
                 aria-label={copied ? 'Copied' : 'Copy highlighted line'}
-                className="ml-auto inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-rule bg-raised px-2 text-[13px] text-muted transition-colors hover:text-paper xl:ml-0 sm:px-2.5"
+                className="ml-auto inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-rule bg-raised px-2.5 text-[13px] text-muted transition-colors hover:text-paper"
                 onClick={copy}
                 type="button"
               >

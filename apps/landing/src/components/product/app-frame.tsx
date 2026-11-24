@@ -30,17 +30,30 @@ import type { ReactNode } from 'react';
 
 export type ViewId =
   | 'overview'
+  | 'dashboards'
+  | 'insights'
+  | 'ai'
+  | 'pages'
+  | 'seo'
   | 'realtime'
+  | 'events'
   | 'sessions'
+  | 'profiles'
+  | 'groups'
+  | 'cohorts'
   | 'funnel'
   | 'retention'
-  | 'profiles'
-  | 'chat';
+  | 'chat'
+  | 'settings'
+  | 'references'
+  | 'notifications'
+  | 'integrations'
+  | 'workspace';
 
 interface NavItem {
   label: string;
   icon: LucideIcon;
-  view?: ViewId;
+  view: ViewId;
 }
 
 // The project sidebar of apps/start (sidebar-project-menu.tsx), same order and icons.
@@ -50,36 +63,30 @@ const TOP: NavItem[] = [
 ];
 const ANALYTICS: NavItem[] = [
   { label: 'Overview', icon: Wallpaper, view: 'overview' },
-  { label: 'Dashboards', icon: LayoutPanelTop },
-  { label: 'Insights', icon: TrendingUpDown },
-  { label: 'AI', icon: Bot },
-  { label: 'Pages', icon: Layers },
-  { label: 'SEO', icon: Search },
+  { label: 'Dashboards', icon: LayoutPanelTop, view: 'dashboards' },
+  { label: 'Insights', icon: TrendingUpDown, view: 'insights' },
+  { label: 'AI', icon: Bot, view: 'ai' },
+  { label: 'Pages', icon: Layers, view: 'pages' },
+  { label: 'SEO', icon: Search, view: 'seo' },
   { label: 'Realtime', icon: Globe2, view: 'realtime' },
-  { label: 'Events', icon: ChartGantt },
+  { label: 'Events', icon: ChartGantt, view: 'events' },
   { label: 'Sessions', icon: Users, view: 'sessions' },
   { label: 'Profiles', icon: CircleUser, view: 'profiles' },
-  { label: 'Groups', icon: Building2 },
-  { label: 'Cohorts', icon: Target },
+  { label: 'Groups', icon: Building2, view: 'groups' },
+  { label: 'Cohorts', icon: Target, view: 'cohorts' },
 ];
 const MANAGE: NavItem[] = [
-  { label: 'Settings', icon: Cog },
-  { label: 'References', icon: Grid3x3 },
-  { label: 'Notifications', icon: Bell },
-  { label: 'Integrations', icon: Workflow },
-  { label: 'Back to workspace', icon: UndoDot },
+  { label: 'Settings', icon: Cog, view: 'settings' },
+  { label: 'References', icon: Grid3x3, view: 'references' },
+  { label: 'Notifications', icon: Bell, view: 'notifications' },
+  { label: 'Integrations', icon: Workflow, view: 'integrations' },
+  { label: 'Back to workspace', icon: UndoDot, view: 'workspace' },
 ];
 
-/** Which sidebar entry lights up for each view (funnels and retention are reports). */
-const ACTIVE_LABEL: Record<ViewId, string> = {
-  overview: 'Overview',
-  realtime: 'Realtime',
-  sessions: 'Sessions',
-  funnel: 'Report',
-  retention: 'Report',
-  profiles: 'Profiles',
-  chat: 'Chat',
-};
+/** Funnels and retention are both reports, so they light up "Report". */
+function isActive(item: NavItem, view: ViewId) {
+  return item.view === view || (item.view === 'funnel' && view === 'retention');
+}
 
 function Item({
   item,
@@ -91,7 +98,7 @@ function Item({
   onSelect?: (view: ViewId) => void;
 }) {
   const Icon = item.icon;
-  const clickable = Boolean(item.view && onSelect);
+  const clickable = Boolean(onSelect);
   // Mouse shortcut inside the decorative frame; keyboard users have the tour's tabs.
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: decorative, aria-hidden frame
@@ -103,7 +110,7 @@ function Item({
           ? 'bg-app-field font-medium text-app-text'
           : 'text-app-nav hover:bg-app-hover'
       } ${clickable ? 'cursor-pointer' : ''}`}
-      onClick={clickable ? () => onSelect?.(item.view as ViewId) : undefined}
+      onClick={clickable ? () => onSelect?.(item.view) : undefined}
     >
       <Icon className="size-[15px] shrink-0 opacity-90" strokeWidth={1.75} />
       <span className="truncate">{item.label}</span>
@@ -118,7 +125,6 @@ function Sidebar({
   view: ViewId;
   onSelect?: (view: ViewId) => void;
 }) {
-  const activeLabel = ACTIVE_LABEL[view];
   const group = (title: string, items: NavItem[]) => (
     <div className="mt-4">
       <div className="mb-1 px-2.5 font-medium text-[11px] text-app-muted">
@@ -126,7 +132,7 @@ function Sidebar({
       </div>
       {items.map((item) => (
         <Item
-          active={item.label === activeLabel}
+          active={isActive(item, view)}
           item={item}
           key={item.label}
           onSelect={onSelect}
@@ -156,7 +162,7 @@ function Sidebar({
       <div className="flex-1 overflow-hidden px-2.5 pt-1">
         {TOP.map((item) => (
           <Item
-            active={item.label === activeLabel}
+            active={isActive(item, view)}
             item={item}
             key={item.label}
             onSelect={onSelect}

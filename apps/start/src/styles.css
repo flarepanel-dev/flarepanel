@@ -50,19 +50,19 @@ body {
   --ring: #ff6b82; /* coral 400 focus ring */
 
   /* Chart colors converted to OKLCH for consistency */
-  --chart-0: #ff496b; /* coral */
-  --chart-1: #6b79ea; /* indigo */
-  --chart-2: #08b6af; /* teal */
-  --chart-3: #e9ab2b; /* amber */
-  --chart-4: #a064db; /* violet */
-  --chart-5: #4cb0e5; /* sky */
-  --chart-6: #83c758; /* lime */
-  --chart-7: #a1a1a5; /* slate */
-  --chart-8: oklch(65.8% 0.13 159); /* #3ba974 */
-  --chart-9: oklch(85.1% 0.08 27.5); /* #febbb2 */
-  --chart-10: oklch(71.1% 0.15 320); /* #cb80dc */
-  --chart-11: oklch(72.1% 0.09 188); /* #5cb7af */
-  --chart-12: oklch(58.7% 0.24 286); /* #7856ff */
+  --chart-0: #6b79ea; /* indigo */
+  --chart-1: #08b6af; /* teal */
+  --chart-2: #e9ab2b; /* amber */
+  --chart-3: #a064db; /* violet */
+  --chart-4: #4cb0e5; /* sky */
+  --chart-5: #83c758; /* lime */
+  --chart-6: #a1a1a5; /* slate */
+  --chart-7: #3ba974; /* green */
+  --chart-8: #ff496b; /* coral */
+  --chart-9: #cb80dc; /* orchid */
+  --chart-10: #5cb7af; /* sea */
+  --chart-11: #7856ff; /* purple */
+  --chart-12: #febbb2; /* blush */
 
   --radius: 0.5rem;
 

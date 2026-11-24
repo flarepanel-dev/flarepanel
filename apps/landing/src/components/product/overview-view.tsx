@@ -98,7 +98,7 @@ function MiniBars({ values, live }: { values: number[]; live: boolean }) {
     <div className="flex h-[34px] items-end gap-[2px]">
       {values.map((v, i) => (
         <span
-          className={`flex-1 rounded-t-[1px] bg-coral transition-[height] duration-700 ease-out-expo ${
+          className={`flex-1 rounded-t-[1px] bg-chart-indigo transition-[height] duration-700 ease-out-expo ${
             i === values.length - 1 && live ? 'opacity-100' : 'opacity-85'
           }`}
           // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length series
@@ -131,7 +131,7 @@ export function KpiGrid({
             className={`relative flex flex-col gap-0.5 border-app-line bg-app-bg px-3 pt-2.5 pb-0 ${
               i % 2 === 0 ? 'border-r' : 'lg:border-r'
             } ${i < 6 ? 'border-b lg:[&:nth-child(n+5)]:border-b-0' : ''} ${
-              i === 0 ? 'shadow-[inset_2px_0_0_#ff496b]' : ''
+              i === 0 ? 'shadow-[inset_2px_0_0_#6b79ea]' : ''
             } ${i >= 4 ? 'max-sm:hidden' : ''} ${i === 2 || i === 3 ? 'max-sm:border-b-0' : ''}`}
             key={kpi.label}
           >
@@ -215,7 +215,7 @@ export function VisitorsChart({ todayBump }: { todayBump: number }) {
         </span>
         <span className="flex items-center gap-3 text-[11px] text-app-muted">
           <span className="flex items-center gap-1.5">
-            <span className="h-[2px] w-3 rounded bg-coral" />
+            <span className="h-[2px] w-3 rounded bg-chart-indigo" />
             This period
           </span>
           <span className="flex items-center gap-1.5">
@@ -265,8 +265,8 @@ export function VisitorsChart({ todayBump }: { todayBump: number }) {
           >
             <defs>
               <linearGradient id="ov-area" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0" stopColor="#ff496b" stopOpacity="0.28" />
-                <stop offset="1" stopColor="#ff496b" stopOpacity="0" />
+                <stop offset="0" stopColor="#6b79ea" stopOpacity="0.3" />
+                <stop offset="1" stopColor="#6b79ea" stopOpacity="0" />
               </linearGradient>
             </defs>
             {ticks.map((t) => (
@@ -292,14 +292,14 @@ export function VisitorsChart({ todayBump }: { todayBump: number }) {
             <path
               d={solid}
               fill="none"
-              stroke="#ff496b"
+              stroke="#6b79ea"
               strokeWidth="2"
               vectorEffect="non-scaling-stroke"
             />
             <path
               d={tail}
               fill="none"
-              stroke="#ff496b"
+              stroke="#6b79ea"
               strokeDasharray="4 4"
               strokeWidth="2"
               vectorEffect="non-scaling-stroke"
@@ -337,7 +337,7 @@ export function VisitorsChart({ todayBump }: { todayBump: number }) {
               </div>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
-                  <span className="size-1.5 rounded-full bg-coral" />
+                  <span className="size-1.5 rounded-full bg-chart-indigo" />
                   Visitors
                 </span>
                 <span className="tabular font-mono font-semibold">

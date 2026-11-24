@@ -101,7 +101,7 @@ export function RealtimeView({ active = true }: { active?: boolean }) {
                 className={`relative block rounded-full transition-all duration-500 ${
                   hot
                     ? 'size-3 bg-coral shadow-[0_0_0_3px_rgba(255,73,107,0.25)]'
-                    : 'size-2 bg-coral/70'
+                    : 'size-2 bg-chart-indigo/80'
                 }`}
               />
             </span>
@@ -159,7 +159,9 @@ export function RealtimeView({ active = true }: { active?: boolean }) {
             {bars.map((v, i) => (
               <span
                 className={`flex-1 rounded-t-[1px] transition-[height] duration-700 ease-out-expo ${
-                  i === bars.length - 1 ? 'bg-coral' : 'bg-coral-past'
+                  i === bars.length - 1
+                    ? 'bg-chart-indigo'
+                    : 'bg-chart-indigo/35'
                 }`}
                 // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length series
                 key={i}

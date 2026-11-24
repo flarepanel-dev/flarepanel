@@ -168,7 +168,7 @@ export function FunnelView({ active = true }: { active?: boolean }) {
                 </div>
                 <div className="relative mt-3 flex-1 overflow-hidden rounded-[4px] bg-[repeating-linear-gradient(135deg,#1c1c1c_0_6px,#202020_6px_12px)]">
                   <motion.div
-                    className="absolute inset-x-0 bottom-0 rounded-[4px] bg-coral"
+                    className="absolute inset-x-0 bottom-0 rounded-[4px] bg-chart-indigo"
                     initial={reduce ? false : { height: 0 }}
                     style={{ height: `${share * 100}%` }}
                     transition={{
@@ -211,7 +211,7 @@ const COHORTS = [
   { week: 'Nov 23', users: 1688, values: [100, 55.2] },
 ];
 
-/** Weekly retention: the average curve above the cohort table. Coral carries the one focal series. */
+/** Weekly retention: the average curve above the cohort table, in the data colour (indigo). */
 export function RetentionView() {
   const avg = [100, 51.1, 41.5, 35.4, 31.2, 28.8];
   const W = 600;
@@ -267,8 +267,8 @@ export function RetentionView() {
         >
           <defs>
             <linearGradient id="ret-area" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stopColor="#ff496b" stopOpacity="0.25" />
-              <stop offset="1" stopColor="#ff496b" stopOpacity="0" />
+              <stop offset="0" stopColor="#6b79ea" stopOpacity="0.3" />
+              <stop offset="1" stopColor="#6b79ea" stopOpacity="0" />
             </linearGradient>
           </defs>
           {[0, 0.5, 1].map((f) => (
@@ -287,7 +287,7 @@ export function RetentionView() {
           <path
             d={line}
             fill="none"
-            stroke="#ff496b"
+            stroke="#6b79ea"
             strokeWidth="2"
             vectorEffect="non-scaling-stroke"
           />
@@ -321,7 +321,7 @@ export function RetentionView() {
                   className="tabular mx-0.5 rounded-[3px] py-1 text-center font-mono text-[11px]"
                   key={w}
                   style={{
-                    backgroundColor: `rgba(255,73,107,${(v / 100) * 0.55})`,
+                    backgroundColor: `rgba(107,121,234,${(v / 100) * 0.6})`,
                     color: v > 60 ? '#fff' : '#e5e5e5',
                   }}
                 >

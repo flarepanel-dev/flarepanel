@@ -89,6 +89,13 @@ export function Footer() {
       <Container className="flex flex-wrap justify-between gap-3 border-rule border-t py-6 text-[13px] text-faint">
         <span>© 2026 FlarePanel contributors · AGPL-3.0</span>
         <span>Served from Cloudflare Workers</span>
+        <p className="w-full text-[12px] text-faint/80">
+          Cloudflare, the Cloudflare logo, Cloudflare Workers, Durable Objects,
+          R2, D1 and Queues, and their product icons are trademarks and/or
+          registered trademarks of Cloudflare, Inc. in the United States and
+          other jurisdictions. FlarePanel is not affiliated with or endorsed by
+          Cloudflare.
+        </p>
       </Container>
     </footer>
   );

@@ -1,15 +1,10 @@
 'use client';
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { type KeyboardEvent, useRef, useState } from 'react';
 import { Container, SectionHeading } from '../ui';
 import { AppFrame, type ViewId } from './app-frame';
-import { ChatView } from './chat-view';
-import { OverviewView } from './overview-view';
-import { ProfileView } from './profile-view';
-import { RealtimeView } from './realtime-view';
-import { FunnelView, RetentionView } from './report-views';
-import { SessionsView } from './sessions-view';
+import { AppView } from './views';
 
 const TABS: { id: ViewId; label: string; caption: string }[] = [
   {
@@ -50,36 +45,10 @@ const TABS: { id: ViewId; label: string; caption: string }[] = [
   },
 ];
 
-function View({ id }: { id: ViewId }) {
-  switch (id) {
-    case 'overview':
-      return <OverviewView />;
-    case 'realtime':
-      return <RealtimeView />;
-    case 'sessions':
-      return <SessionsView />;
-    case 'funnel':
-      return <FunnelView />;
-    case 'retention':
-      return <RetentionView />;
-    case 'profiles':
-      return <ProfileView />;
-    default:
-      return <ChatView />;
-  }
-}
-
 export function ProductTour() {
   const [view, setView] = useState<ViewId>('realtime');
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const reduce = useReducedMotion();
-
-  // The hero's sidebar sends people here with the view they clicked.
-  useEffect(() => {
-    const onTour = (e: Event) => setView((e as CustomEvent<ViewId>).detail);
-    window.addEventListener('fp:tour', onTour);
-    return () => window.removeEventListener('fp:tour', onTour);
-  }, []);
 
   const index = TABS.findIndex((t) => t.id === view);
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -173,7 +142,7 @@ export function ProductTour() {
                 key={view}
                 transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               >
-                <View id={view} />
+                <AppView id={view} />
               </motion.div>
             </AnimatePresence>
           </AppFrame>

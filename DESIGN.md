@@ -240,7 +240,7 @@ A cold, near-monochrome obsidian ramp with a single hot coral signal and two dat
 ### Primary
 - **Hot Coral** (coral): the live signal. Today's bar in the chart, the Live now count and its dot, the chart legend swatch for the current day, text links and their underline, the global focus ring, text selection, the `+` marker and wash of an added diff line, and the leading edge of the event-route pulse.
 - **Coral Glow** (coral-soft): text of the newest row in the live event feed, where full coral on a coral-tinted row would vibrate.
-- **Banked Ember** (chart-rest): every bar in the chart that is not today. A coral so dimmed it reads as history, so the single live bar carries the color.
+- **Banked Ember** (chart-rest): retired from previews (data is indigo now); kept as a token only.
 
 ### Secondary
 - **Delta Crimson** (crimson): negative deltas (bounce rate down-arrow) and the removed line of a diff (marker, strike-through decoration and a faint wash).
@@ -262,7 +262,9 @@ A cold, near-monochrome obsidian ramp with a single hot coral signal and two dat
 ### Named Rules
 **The Data Palette Rule.** Inside product previews, categories take the brand chart palette (indigo #6b79ea, teal #08b6af, amber #e9ab2b, violet #a064db, sky #4cb0e5, lime #83c758) and one colour always means one thing: screen_view is sky, sign_up indigo, checkout_started amber, project_created teal. Fills sit at low opacity (about 16%) behind text and at full strength only for the mark itself (dot, line, bar). Chart colours never appear outside a preview: not on buttons, headings, borders or page backgrounds.
 
-**The Signal Lamp Rule.** Coral marks only what is live (current bar, live count, newest feed row, route pulse), links, focus, and the diff's added line. Inside a product preview it may also carry the one focal data series (the current-period line, the retention ramp, the winning answer bar), the way the dashboard itself charts data. If it is not happening now, you cannot click it, and it is not the focal series of a preview, it is not coral.
+**The Signal Lamp Rule.** Coral marks only what is live (current bar, live count, newest feed row, the city that just fired, route pulse), links, focus, and the diff's added line. If it is not happening now and you cannot click it, it is not coral.
+
+**The Data Is Indigo Rule.** Data series lead with indigo #6b79ea, in the dashboard (first colour of `chartColors` and `--chart-0`) and in every preview: KPI mini bars, the current-period line and its area, funnel bars, the retention curve and heatmap, map dots, replay progress. A chart full of coral reads as an alert; coral sits late in the data palette and red only ever means down.
 
 **The Crimson Down Rule.** A negative or removed value is crimson, never coral. Coral means "now", not "bad".
 
@@ -354,11 +356,11 @@ Quiet, compact and solid, with a pressed nudge rather than a glow.
 Product imagery is the dashboard itself, rebuilt as components, never a drawn mockup. Inside a preview the page switches to the dashboard's own world (the `app-*` colours: #151515 ground, #1a1a1a sidebar and cards, #272727 lines, #a6a6a6 muted text) and its type ramp (10px uppercase labels at 0.5px tracking, 12 to 13px rows and controls, 19px mono values, 44px realtime count), set in Geist and Geist Mono. 6px corners inside, the 18px frame and the stage drop outside. Every preview carries the SAMPLE DATA tag (in the sidebar from md, top-right below md). Previews are decorative (`aria-hidden`); the tour's tabs are the keyboard path.
 
 - **App frame** (`components/product/app-frame.tsx`): the project sidebar of apps/start with its exact order and lucide icons; clicking an entry switches the view (in the hero it opens the tour at that view).
-- **Hero: Overview** (`overview-view.tsx`): toolbar (range, arrows, interval, filters, AI filter field, live count, Public), the eight KPI cards with 30 coral mini bars (the selected card keeps a 2px coral inset edge), the unique-visitors chart with the previous period in gray, the incomplete day dashed and the spike's referrer pinned on the peak, hover readout, then the referrer and pages tables with source icons, revenue rings and share fills. Every 2.4s while in view the live count moves and today's numbers tick up. Below sm only four KPI cards show so the chart stays visible.
+- **Hero: Overview** (`overview-view.tsx`): toolbar (range, arrows, interval, filters, AI filter field, live count, Public), the eight KPI cards with 30 indigo mini bars (the selected card keeps a 2px indigo inset edge), the unique-visitors chart with the previous period in gray, the incomplete day dashed and the spike's referrer pinned on the peak, hover readout, then the referrer and pages tables with source icons, revenue rings and share fills. Every 2.4s while in view the live count moves and today's numbers tick up. Below sm only four KPI cards show so the chart stays visible.
 - **Tour** (`product-tour.tsx`): tabs Realtime, Sessions & replay, Funnels, Retention, Profiles, AI chat, with a two-line caption slot so the frame never shifts. One crossfade (0.35s, expo-out) between views.
 - **Realtime**: the Natural Earth 110m map in the dashboard's Mercator band (static `public/realtime-map.svg` from `scripts/build-map.ts`), cover-fitted with the city dots in the same box; a new event every 1.8s pings its city and enters the feed.
 - **Sessions & replay**: the sessions table and the replay sheet playing a recorded visit to a sample pricing page (cursor path, click ripple, timeline with event markers); below lg the sheet covers the table.
-- **Funnels / Retention**: the report builder (steps on the left), coral as the one focal series; drop-off in crimson with an arrow.
+- **Funnels / Retention**: the report builder (steps on the left), data in indigo; drop-off in crimson with an arrow.
 - **Profiles**: metrics strip, properties, most viewed pages and the activity timeline in event colours.
 - **AI chat**: tool calls, a result chart in the event palette, the answer streaming once, and the model picker with "Your OpenAI key" (bring your own key).
 

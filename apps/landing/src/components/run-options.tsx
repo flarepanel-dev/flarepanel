@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import { Container, SectionHeading } from './ui';
 import { site } from '@/lib/site';
 
@@ -46,65 +46,101 @@ export function RunOptions() {
             account later, and keep your SDK setup either way.
           </p>
         </SectionHeading>
-        <div className="mt-14 grid gap-4 md:grid-cols-2">
-          {OPTIONS.map((option) => (
-            <article
-              className={`flex flex-col rounded-2xl border p-7 sm:p-9 ${
-                option.live ? 'border-rule-strong bg-panel' : 'border-rule'
-              }`}
-              key={option.name}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="font-semibold text-[26px] tracking-[-0.02em]">
-                  {option.name}
-                </h3>
-                <span
-                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[13px] ${
-                    option.live
-                      ? 'border-rule-strong text-soft'
-                      : 'border-rule text-muted'
-                  }`}
-                >
+        <div className="mt-14 overflow-hidden rounded-2xl border border-rule">
+          <div className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)]">
+            <div className="border-rule border-b p-5 sm:p-7" />
+            {OPTIONS.map((option, i) => (
+              <div
+                className={`border-rule border-b border-l p-5 sm:p-7 ${i === 0 ? 'bg-[color-mix(in_oklab,#6b79ea_9%,#111114)]' : ''}`}
+                key={option.name}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-semibold text-[19px] tracking-[-0.015em] sm:text-[22px]">
+                    {option.name}
+                  </h3>
                   <span
-                    aria-hidden
-                    className={`size-1.5 rounded-full ${option.live ? 'bg-soft' : 'border border-faint'}`}
-                  />
-                  {option.status}
-                </span>
-              </div>
-              <p className="mt-4 max-w-[46ch] text-[16px] text-muted leading-[1.6]">
-                {option.body}
-              </p>
-              <ul className="mt-7 grid gap-3 border-rule border-t pt-6 text-[15px] text-soft">
-                {option.points.map((point) => (
-                  <li className="flex gap-3" key={point}>
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[12px] ${
+                      option.live
+                        ? 'border-up/30 bg-up/10 text-paper'
+                        : 'border-chart-amber/30 bg-chart-amber/10 text-soft'
+                    }`}
+                  >
                     <span
                       aria-hidden
-                      className="mt-[11px] h-px w-3 shrink-0 bg-rule-strong"
+                      className={`size-1.5 rounded-full ${option.live ? 'bg-up' : 'border border-chart-amber'}`}
                     />
-                    {point}
-                  </li>
-                ))}
-              </ul>
-              <a
-                className="group mt-9 inline-flex items-center gap-2 self-start font-medium text-[15px] text-paper"
-                href={option.cta.href}
-                rel={
-                  option.cta.href.startsWith(site.github)
-                    ? 'noopener'
-                    : undefined
-                }
+                    {option.status}
+                  </span>
+                </div>
+                <p className="mt-2 text-[14px] text-muted leading-[1.55]">
+                  {option.body}
+                </p>
+              </div>
+            ))}
+            {[
+              ['Who runs it', 'We do', 'You do, on your Cloudflare account'],
+              [
+                'Where data lives',
+                'EU, US or unrestricted, your choice',
+                'Never leaves your account',
+              ],
+              [
+                'How you pay',
+                'Per event, once pricing is final',
+                'Cloudflare directly, per use',
+              ],
+              ['The code', 'Open source', 'The same open-source code'],
+            ].map(([label, cloud, own]) => [
+              <div
+                className="border-rule border-b p-5 font-mono text-[12px] text-faint uppercase tracking-[0.06em] sm:px-7"
+                key={`${label}-l`}
               >
-                <span className="underline decoration-rule-strong underline-offset-[0.3em] transition-colors group-hover:decoration-coral">
-                  {option.cta.label}
-                </span>
-                <ArrowRight
+                {label}
+              </div>,
+              <div
+                className="flex items-start gap-2.5 border-rule border-b border-l bg-[color-mix(in_oklab,#6b79ea_9%,#111114)] p-5 text-[14.5px] text-paper sm:px-7"
+                key={`${label}-c`}
+              >
+                <Check
                   aria-hidden
-                  className="size-4 transition-transform duration-200 ease-out-expo group-hover:translate-x-0.5"
+                  className="mt-0.5 size-4 shrink-0 text-[#8c97f0]"
+                  strokeWidth={2.25}
                 />
+                {cloud}
+              </div>,
+              <div
+                className="flex items-start gap-2.5 border-rule border-b border-l p-5 text-[14.5px] text-soft sm:px-7"
+                key={`${label}-o`}
+              >
+                <Check
+                  aria-hidden
+                  className="mt-0.5 size-4 shrink-0 text-chart-teal"
+                  strokeWidth={2.25}
+                />
+                {own}
+              </div>,
+            ])}
+            <div className="p-5 sm:p-7" />
+            <div className="border-rule border-l bg-[color-mix(in_oklab,#6b79ea_9%,#111114)] p-5 sm:p-7">
+              <a
+                className="inline-flex h-11 items-center gap-2 rounded-[9px] bg-paper px-[18px] font-medium text-[15px] text-ink transition-colors hover:bg-paper-hover"
+                href={OPTIONS[0].cta.href}
+              >
+                {OPTIONS[0].cta.label}
+                <ArrowRight aria-hidden className="size-4" />
               </a>
-            </article>
-          ))}
+            </div>
+            <div className="border-rule border-l p-5 sm:p-7">
+              <a
+                className="inline-flex h-11 items-center gap-2 rounded-[9px] border border-rule-strong px-[18px] font-medium text-[15px] text-paper transition-colors hover:bg-raised"
+                href={OPTIONS[1].cta.href}
+                rel="noopener"
+              >
+                {OPTIONS[1].cta.label}
+                <ArrowRight aria-hidden className="size-4" />
+              </a>
+            </div>
+          </div>
         </div>
       </Container>
     </section>
