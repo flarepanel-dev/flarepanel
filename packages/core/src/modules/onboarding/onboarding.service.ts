@@ -33,9 +33,10 @@ import type {
 } from './onboarding.constants';
 
 const TRIAL_DURATION_IN_DAYS = 30;
-// Generous trial allowance so trialing orgs never get flagged as
-// "limit exceeded" (the limit defaults to 0, which trips on the first event).
-const TRIAL_EVENTS_LIMIT = 10_000_000;
+// The trial's allowance: enough to evaluate on a real site (the 1M plan's),
+// small enough that trial sign-ups cannot run up Cloudflare costs (OpenPanel
+// gives 10M). Set, as before, so a trial is never flagged at the default 0.
+const TRIAL_EVENTS_LIMIT = 1_000_000;
 
 export async function canSkipOnboarding(
   deps: ServiceDeps,

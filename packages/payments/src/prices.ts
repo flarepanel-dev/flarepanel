@@ -17,34 +17,37 @@ export type IPrice = {
   popular?: boolean;
 };
 
+// FlarePanel's plans (2026-11-24): OpenPanel's shape (monthly events, every
+// feature in every plan) at half its prices. Yearly plans cost 10 months
+// (scripts/create-products.ts). No 5K tier: payment fees would take a fifth.
 export const PRICING: IPrice[] = [
-  { price: 2.5, events: 5000 },
-  { price: 5, events: 10_000 },
-  { price: 20, events: 100_000 },
-  { price: 30, events: 250_000, popular: true },
-  { price: 50, events: 500_000 },
-  {
-    price: 90,
-    events: 1_000_000,
-    discount: {
-      code: '1MIL',
-      amount: 0.3,
-      id: '5113de97-76aa-4b16-a2ec-fb94edc47371',
-    },
-  },
-  { price: 180, events: 2_500_000 },
-  { price: 250, events: 5_000_000 },
-  { price: 350, events: 10_000_000 },
-  { price: 530, events: 20_000_000 },
-  { price: 680, events: 30_000_000 },
-  { price: 800, events: 40_000_000 },
-  { price: 900, events: 50_000_000 },
+  { price: 3, events: 10_000 },
+  { price: 10, events: 100_000 },
+  { price: 15, events: 250_000 },
+  { price: 25, events: 500_000 },
+  { price: 45, events: 1_000_000 },
+  { price: 90, events: 2_500_000 },
+  { price: 125, events: 5_000_000 },
+  { price: 175, events: 10_000_000 },
+  { price: 265, events: 20_000_000 },
+  { price: 340, events: 30_000_000 },
+  { price: 400, events: 40_000_000 },
+  { price: 450, events: 50_000_000 },
 ];
 
-export const FREE_PRODUCT_IDS = [
-  'a18b4bee-d3db-4404-be6f-fba2f042d9ed', // Prod
-  '036efa2a-b3b4-4c75-b24a-9cac6bb8893b', // Sandbox
-];
+/**
+ * Polar products of a free plan, whose organizations see the "free plan"
+ * prompt. FlarePanel has no free plan (a 30-day trial instead); OpenPanel's
+ * product ids were removed. Comma-separated ids in POLAR_FREE_PRODUCT_IDS
+ * add some back if a free plan ever exists.
+ */
+export const FREE_PRODUCT_IDS: string[] = (
+  (typeof process !== 'undefined' && process.env?.POLAR_FREE_PRODUCT_IDS) ||
+  ''
+)
+  .split(',')
+  .map((id) => id.trim())
+  .filter(Boolean);
 
 export function getRecommendedPlan<T>(
   monthlyEvents: number | undefined | null,

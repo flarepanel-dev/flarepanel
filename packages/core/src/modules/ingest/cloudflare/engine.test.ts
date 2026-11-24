@@ -1088,3 +1088,37 @@ describe('Phase 4 reads: hourly rollups, live card, sessions', () => {
 function fromSessionTime(createdAt: string | undefined): number {
   return Date.parse(`${(createdAt ?? '').replace(' ', 'T')}Z`);
 }
+
+describe('billable event counts', () => {
+  it('counts exactly between instants, without session bookkeeping', async () => {
+    const harness = await createHarness();
+    await track(harness, { visitor: 'v1', path: '/a' }); // 09:00 + session_start
+    await harness.clock.advance(10 * MINUTE);
+    await track(harness, { visitor: 'v1', name: 'click', path: '/a' }); // 09:10
+    await harness.clock.advance(55 * MINUTE);
+    await track(harness, { visitor: 'v1', name: 'click', path: '/b' }); // 10:05
+    await harness.clock.advance(2 * 60 * MINUTE);
+    await track(harness, { visitor: 'v2', name: 'click', path: '/c' }); // 12:05
+    await commit(harness);
+
+    const at = (hours: number, minutes = 0) =>
+      START + (hours - 9) * 60 * MINUTE + minutes * MINUTE;
+    const count = (from: number, to: number) =>
+      harness.engine.countBillableEvents(from, to);
+
+    // The whole morning: 4 billable events, 2 session starts not counted.
+    expect(await count(at(0), at(23, 59))).toBe(4);
+    // A period starting at 09:05 does not bill the 09:00 page view, although
+    // the day's rollup has it.
+    expect(await count(at(9, 5), at(23, 59))).toBe(3);
+    expect(
+      harness.engine.dailyStats(new Date(at(9, 5)), new Date(at(23, 59)))[0]
+        ?.events
+    ).toBe(4);
+    // Both ends inside hours.
+    expect(await count(at(9, 5), at(10, 4))).toBe(1);
+    expect(await count(at(10, 0), at(12, 4))).toBe(1);
+    expect(await count(at(12, 5), at(12, 5))).toBe(1);
+    expect(await count(at(13), at(12))).toBe(0);
+  });
+});

@@ -188,7 +188,7 @@ test('populates recommendedPlan and trial stats in the trial-ending email', asyn
       // Compact-number casing (100K vs 100k) is ICU-version dependent and
       // differs between macOS and Linux/CI, so match case-insensitively.
       recommendedPlan: expect.stringMatching(
-        /100k events per month for \$20\.00/i
+        /100k events per month for \$10\.00/i
       ),
     }),
   });

@@ -445,11 +445,10 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     return { restoredTo: bookmark, undoBookmark };
   }
 
+  /** Billable events (no session bookkeeping) in from..to, exactly. */
   async countEvents(from: Date, to: Date) {
     const { engine } = await this.state;
-    return engine
-      .dailyStats(from, to)
-      .reduce((sum, day) => sum + day.events, 0);
+    return engine.countBillableEvents(from.getTime(), to.getTime());
   }
 
   /**

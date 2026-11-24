@@ -84,6 +84,7 @@ import {
   type BucketInterval,
   buildBuckets,
   coverWithHoursAndDays,
+  HOUR_MS,
   type HourDayCover,
   hourNumber,
   MINUTE_MS,
@@ -1842,6 +1843,43 @@ export async function openProjectEventsEngine({
   }
 
   /**
+   * Billable events in `fromMs`..`toMs` (inclusive, epoch ms), exactly: every
+   * event except session_start/session_end, as OpenPanel bills. Whole hours
+   * come from the hourly and daily rollups; the partial hour at each end is
+   * counted from the raw events, so a billing period that starts at 14:07
+   * counts nothing from 14:00-14:06.
+   */
+  async function countBillableEvents(
+    fromMs: number,
+    toMs: number
+  ): Promise<number> {
+    if (toMs < fromMs) {
+      return 0;
+    }
+    let count = 0;
+    const countRaw = async (from: number, to: number) => {
+      if (to < from) {
+        return;
+      }
+      await scanRange(from, to, (event) => {
+        if (event.name !== 'session_start' && event.name !== 'session_end') {
+          count += 1;
+        }
+      });
+    };
+    const firstWhole = Math.ceil(fromMs / HOUR_MS) * HOUR_MS;
+    const lastWhole = Math.floor((toMs + 1) / HOUR_MS) * HOUR_MS;
+    if (firstWhole >= lastWhole) {
+      await countRaw(fromMs, toMs);
+      return count;
+    }
+    count += rangeCounts(coverWithHoursAndDays(firstWhole, lastWhole)).events;
+    await countRaw(fromMs, firstWhole - 1);
+    await countRaw(lastWhole, toMs);
+    return count;
+  }
+
+  /**
    * Overview numbers for `from`..`to` (inclusive, epoch ms) and a series by
    * `interval` in `timezone`. Minute series (ranges up to a day) are counted
    * from the raw events; everything else from rollups.
@@ -3037,6 +3075,7 @@ export async function openProjectEventsEngine({
     listSessions,
     countSessions,
     visitSessions,
+    countBillableEvents,
     getSession,
     pruneSessionLog,
     projectCard,

@@ -12,8 +12,15 @@ function polarClient(): Promise<Polar> {
     ({ Polar: PolarClient }) =>
       new PolarClient({
         accessToken: process.env.POLAR_ACCESS_TOKEN!,
+        // POLAR_SERVER=sandbox tests billing against Polar's sandbox from a
+        // production build; otherwise production follows NODE_ENV.
         server:
-          process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
+          process.env.POLAR_SERVER === 'sandbox' ||
+          process.env.POLAR_SERVER === 'production'
+            ? process.env.POLAR_SERVER
+            : process.env.NODE_ENV === 'production'
+              ? 'production'
+              : 'sandbox',
       })
   );
   return client;
