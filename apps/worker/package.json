@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "wrangler dev",
     "build": "wrangler deploy --dry-run --outdir dist",
+    "deploy": "bun ../../scripts/guard-template-deploy.ts && wrangler deploy",
+    "deploy:hosted": "wrangler deploy -c wrangler.hosted.jsonc",
+    "migrate:hosted": "wrangler d1 migrations apply flarepanel --remote -c wrangler.hosted.jsonc",
     "db:migrate:local": "wrangler d1 migrations apply flarepanel --local",
     "typecheck": "tsc --noEmit"
   },

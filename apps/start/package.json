@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "bun run with-env vite dev --port ${WEB_PORT:-3000}",
     "preview": "vite preview",
-    "deploy": "bun run build && bunx wrangler deploy",
+    "deploy": "bun ../../scripts/guard-template-deploy.ts && bun run build && bunx wrangler deploy",
+    "deploy:hosted": "WRANGLER_CONFIG=wrangler.hosted.jsonc bun run build && bunx wrangler deploy",
     "cf-typegen": "wrangler types",
     "build": "bun run with-env vite build",
     "serve": "vite preview",

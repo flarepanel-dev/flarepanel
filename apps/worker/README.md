@@ -133,3 +133,16 @@ cd apps/start && bun run deploy
 ```
 
 Limits and expected usage: `docs/cloudflare-runtime.md`.
+
+## Configs: self-hosting template and flarepanel.dev
+
+- `wrangler.jsonc` is the self-hosting template (example domains, placeholder
+  ids, `SELF_HOSTED=true`). Self-hosters deploy it with `bunx wrangler deploy`.
+- `wrangler.hosted.jsonc` is flarepanel.dev (same Workers, our account,
+  domains and ids). Deploy with `bun run deploy:hosted`, apply D1 migrations
+  with `bun run migrate:hosted`; the dashboard (`apps/start`) has the same
+  `deploy:hosted` script.
+- `bun run deploy` refuses to deploy the template to the flarepanel.dev
+  account (`scripts/guard-template-deploy.ts`), since both use the same Worker
+  names. `src/config-split.test.ts` fails when the two files drift apart in
+  anything but per-deployment values.

@@ -24,7 +24,14 @@ if (process.env.NITRO) {
     })
   );
 } else {
-  plugins.unshift(cloudflare({ viteEnvironment: { name: 'ssr' } }));
+  // WRANGLER_CONFIG=wrangler.hosted.jsonc builds flarepanel.dev; the default
+  // wrangler.jsonc is the self-hosting template.
+  plugins.unshift(
+    cloudflare({
+      viteEnvironment: { name: 'ssr' },
+      configPath: process.env.WRANGLER_CONFIG,
+    })
+  );
 }
 
 // Behind the hub's Caddy the page is `https://<name>.openpanel.cc`: Vite has to accept that Host,

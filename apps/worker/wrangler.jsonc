@@ -1,28 +1,35 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
+  // Self-hosting template: set the values marked "yours" and deploy with
+  // `bunx wrangler deploy` (see docs.flarepanel.dev/self-hosting/deploy).
+  // flarepanel.dev itself deploys from wrangler.hosted.jsonc.
   "name": "flarepanel-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-03-10",
   "compatibility_flags": ["nodejs_compat"],
   // Production: api.flarepanel.dev. Local: `bun run dev` with .dev.vars
   // overriding the vars below (Miniflare, free).
-  "routes": [{ "pattern": "api.flarepanel.dev", "custom_domain": true }],
+  // Yours: the API's custom domain.
+  "routes": [{ "pattern": "api.example.com", "custom_domain": true }],
   // Per-Worker cost cap : at most 10 s CPU per invocation.
   "limits": { "cpu_ms": 10000 },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "flarepanel",
-      "database_id": "6c5754e3-81e9-40ce-9112-2608ee72a257",
+      // Yours: from `bunx wrangler d1 create flarepanel`.
+      "database_id": "<your-d1-database-id>",
       "migrations_dir": "../../packages/db/migrations"
-    },
-    // IP geolocation (DB-IP City Lite, CC BY 4.0), loaded and refreshed
-    // monthly by the API itself. Optional: remove to turn GeoIP off.
-    {
-      "binding": "GEO_DB",
-      "database_name": "flarepanel-geo",
-      "database_id": "5e7820f8-43e9-42bb-9842-0d1929dec17d"
     }
+    // Optional IP geolocation (DB-IP City Lite, CC BY 4.0) for server-side
+    // events and the IP lookup tool: create it with
+    // `bunx wrangler d1 create flarepanel-geo` and uncomment this entry
+    // (and add a comma after the entry above).
+    // {
+    //   "binding": "GEO_DB",
+    //   "database_name": "flarepanel-geo",
+    //   "database_id": "<your-geo-database-id>"
+    // }
   ],
   "durable_objects": {
     "bindings": [
@@ -98,16 +105,19 @@
   },
   "vars": {
     "NODE_ENV": "production",
+    // A self-hosted install: no plans, trials or billing pages; limits are
+    // yours to set (see the self-hosting overview).
     "SELF_HOSTED": "true",
-    "API_URL": "https://api.flarepanel.dev",
-    "DASHBOARD_URL": "https://dashboard.flarepanel.dev",
-    "CUSTOM_COOKIE_DOMAIN": ".flarepanel.dev",
+    // Yours: where the API and the dashboard live.
+    "API_URL": "https://api.example.com",
+    "DASHBOARD_URL": "https://analytics.example.com",
+    "CUSTOM_COOKIE_DOMAIN": ".example.com",
     // Cloudflare sets cf-connecting-ip itself; clients cannot spoof it.
     "TRUSTED_IP_HEADER_ORDER": "cf-connecting-ip",
     // Hot events kept in each project's Durable Object; R2 keeps them all.
     "FLAREPANEL_EVENT_RETENTION_DAYS": "90",
     // Checked every 5 minutes by the cron; failures email OPS_ALERT_EMAIL.
-    "UPTIME_URLS": "https://dashboard.flarepanel.dev/login,https://docs.flarepanel.dev/,https://flarepanel.dev/"
+    "UPTIME_URLS": "https://analytics.example.com/login"
   },
   "observability": { "enabled": true, "head_sampling_rate": 0.1 }
 }

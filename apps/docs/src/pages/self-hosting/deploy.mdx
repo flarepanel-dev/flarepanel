@@ -36,9 +36,9 @@ Put the D1 database id from the first command into `apps/worker/wrangler.jsonc` 
 
 ### Point it at your domains
 
-In `apps/worker/wrangler.jsonc`, set the `routes` custom domain and the `API_URL`, `DASHBOARD_URL` and `CUSTOM_COOKIE_DOMAIN` vars. In `apps/start/wrangler.jsonc`, set the dashboard's custom domain and the same two URLs.
+`apps/worker/wrangler.jsonc` and `apps/start/wrangler.jsonc` are the self-hosting templates (flarepanel.dev's own settings live next to them in `wrangler.hosted.jsonc`). Replace the values marked "Yours": the custom domains in `routes`, and the `API_URL`, `DASHBOARD_URL` and `CUSTOM_COOKIE_DOMAIN` vars (the dashboard takes the same two URLs). `UPTIME_URLS` lists what the API's uptime check opens.
 
-Make sure both files' `vars` have `"SELF_HOSTED": "true"`. It is the switch between a self-hosted install and the hosted service: with it there are no plans, trials or billing pages, and limits are yours to set.
+Both templates already set `"SELF_HOSTED": "true"`, the switch between a self-hosted install and the hosted service: with it there are no plans, trials or billing pages, and limits are yours to set.
 
 ### Add the secrets
 
@@ -53,7 +53,7 @@ openssl rand -hex 32 | bunx wrangler secret put ENCRYPTION_KEY
 
 ### IP geolocation (optional)
 
-Browsers are located by Cloudflare itself. Events a server sends with the visitor's address (`__ip`), and the IP lookup tool, need a table of IP ranges. Create its database and put its id in `apps/worker/wrangler.jsonc` (`d1_databases`, binding `GEO_DB`):
+Browsers are located by Cloudflare itself. Events a server sends with the visitor's address (`__ip`), and the IP lookup tool, need a table of IP ranges. Create its database, then uncomment the `GEO_DB` entry in `apps/worker/wrangler.jsonc` and put the id there:
 
 ```bash
 bunx wrangler d1 create flarepanel-geo

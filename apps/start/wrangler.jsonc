@@ -1,15 +1,21 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
+  // Self-hosting template: set the values marked "yours" and deploy with
+  // `bun run deploy`. flarepanel.dev itself deploys from wrangler.hosted.jsonc.
   "name": "flarepanel-dashboard",
   "compatibility_date": "2026-03-10",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
-  "routes": [{ "pattern": "dashboard.flarepanel.dev", "custom_domain": true }],
+  // Yours: the dashboard's custom domain.
+  "routes": [{ "pattern": "analytics.example.com", "custom_domain": true }],
   // Per-Worker cost cap .
   "limits": { "cpu_ms": 10000 },
   "vars": {
-    "API_URL": "https://api.flarepanel.dev",
-    "DASHBOARD_URL": "https://dashboard.flarepanel.dev",
+    // Yours: the same two addresses as the API's.
+    "API_URL": "https://api.example.com",
+    "DASHBOARD_URL": "https://analytics.example.com",
+    // Self-hosted branding and no billing pages, as the API.
+    "SELF_HOSTED": "true",
     "NODE_ENV": "production",
     "APP_VERSION": "1.0.0"
   },
