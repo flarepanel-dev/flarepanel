@@ -54,7 +54,7 @@ export default function DeleteProject({ project }: Props) {
   );
 
   return (
-    <Widget className="w-full max-w-screen-md">
+    <Widget className="settings-danger w-full max-w-screen-md">
       <WidgetHead>
         <span className="title">Delete Project</span>
       </WidgetHead>

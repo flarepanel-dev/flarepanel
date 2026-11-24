@@ -237,14 +237,15 @@ function Component() {
   return (
     <div className="max-w-screen-lg space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="space-y-1">
+        {/* The hosted edition shows this in the coloured tab banner. */}
+        <div className="hosted:hidden space-y-1">
           <h2 className="font-semibold text-lg">Widgets</h2>
           <p className="max-w-prose text-muted-foreground">
             Show your numbers on your own site. Switch a widget on to get its
             public link; switch it off and the link stops working.
           </p>
         </div>
-        <span className="text-muted-foreground text-sm tabular-nums">
+        <span className="hosted:ml-auto text-muted-foreground text-sm tabular-nums">
           {onCount} of {KIND_ORDER.length} on
         </span>
       </div>

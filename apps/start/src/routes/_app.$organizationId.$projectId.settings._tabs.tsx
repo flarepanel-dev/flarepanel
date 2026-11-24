@@ -4,9 +4,16 @@ import {
   useLocation,
   useRouter,
 } from '@tanstack/react-router';
+import type React from 'react';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageHeader } from '@/components/page-header';
+import {
+  PROJECT_SETTINGS_TABS,
+  type SettingsTab,
+} from '@/components/settings/settings-tabs';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAppContext } from '@/hooks/use-app-context';
+import { cn } from '@/utils/cn';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute(
@@ -37,18 +44,11 @@ function ProjectDashboard() {
   const router = useRouter();
   const location = useLocation();
   const tab = location.pathname.split('/').pop();
-
-  const settingsTabs = [
-    { id: 'details', label: 'Details' },
-    { id: 'events', label: 'Events' },
-    { id: 'clients', label: 'Clients / API keys' },
-    { id: 'tracking', label: 'Tracking script' },
-    { id: 'mcp', label: 'MCP' },
-    { id: 'widgets', label: 'Widgets' },
-    { id: 'imports', label: 'Imports' },
-    { id: 'gsc', label: 'Google Search' },
-    { id: 'ai', label: 'AI' },
-  ];
+  const { isSelfHosted } = useAppContext();
+  // The coloured tabs, banners and card accents are the hosted edition's
+  // look; self-hosted installs keep the plain settings.
+  const hosted = !isSelfHosted;
+  const active = PROJECT_SETTINGS_TABS.find((item) => item.id === tab);
 
   const handleTabChange = (tabId: string) => {
     router.navigate({
@@ -58,22 +58,71 @@ function ProjectDashboard() {
   };
 
   return (
-    <div className="container p-8">
+    <div
+      className="container p-8"
+      data-edition={hosted ? 'hosted' : 'self-hosted'}
+      style={
+        active
+          ? ({ '--tab-accent': active.accent } as React.CSSProperties)
+          : undefined
+      }
+    >
       <PageHeader
         description="Manage your project settings here"
         title="Project settings"
       />
 
       <Tabs className="mt-2 mb-8" onValueChange={handleTabChange} value={tab}>
-        <TabsList>
-          {settingsTabs.map((tab) => (
-            <TabsTrigger key={tab.id} value={tab.id}>
-              {tab.label}
+        <TabsList className="hide-scrollbar max-w-full overflow-x-auto">
+          {PROJECT_SETTINGS_TABS.map((item) => (
+            <TabsTrigger
+              className={cn(
+                hosted && 'data-[state=active]:border-(--item-accent)'
+              )}
+              key={item.id}
+              style={{ '--item-accent': item.accent } as React.CSSProperties}
+              value={item.id}
+            >
+              <span className="flex items-center gap-1.5">
+                {hosted && (
+                  <item.icon
+                    aria-hidden
+                    className="size-3.5 shrink-0 text-(--item-accent)"
+                  />
+                )}
+                {item.label}
+              </span>
             </TabsTrigger>
           ))}
         </TabsList>
       </Tabs>
-      <Outlet />
+      {hosted && active && <SettingsBanner tab={active} />}
+      <div className="settings-tab-body">
+        <Outlet />
+      </div>
+    </div>
+  );
+}
+
+function SettingsBanner({ tab }: { tab: SettingsTab }) {
+  const Icon = tab.icon;
+  return (
+    <div className="relative mb-8 overflow-hidden rounded-xl border border-[color-mix(in_oklab,var(--tab-accent)_28%,var(--border))] bg-[color-mix(in_oklab,var(--tab-accent)_7%,var(--card))] p-5">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(ellipse_at_top_right,color-mix(in_oklab,var(--tab-accent)_22%,transparent),transparent_70%)]"
+      />
+      <div className="relative flex items-start gap-4">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-(--tab-accent) text-white shadow-sm">
+          <Icon className="size-5" />
+        </div>
+        <div className="min-w-0 space-y-1">
+          <h2 className="font-semibold text-lg">{tab.title}</h2>
+          <p className="max-w-prose text-muted-foreground text-sm">
+            {tab.description}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

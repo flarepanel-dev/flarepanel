@@ -7,6 +7,7 @@
 @custom-variant dark (&:is(.dark *));
 @custom-variant light (&:is(.light *));
 @custom-variant system (&:is(.system *));
+@custom-variant hosted (&:where([data-edition="hosted"], [data-edition="hosted"] *));
 
 body {
   @apply m-0;
@@ -651,4 +652,14 @@ html:has([data-gesture] .react-grid-item.react-draggable-dragging),
   font-size: 12px;
   font-weight: 600;
   pointer-events: none;
+}
+
+/* Hosted edition: cards in a project settings tab carry the tab's colour as
+   a thin top line (the tab sets --tab-accent). Self-hosted stays plain. */
+[data-edition="hosted"] .settings-tab-body .card {
+  border-top: 2px solid
+    color-mix(in oklab, var(--tab-accent, var(--chart-0)) 75%, transparent);
+}
+[data-edition="hosted"] .settings-tab-body .card.settings-danger {
+  border-top-color: var(--destructive);
 }

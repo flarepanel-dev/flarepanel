@@ -1,5 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ExternalLinkIcon, PlusIcon } from 'lucide-react';
+import {
+  Code2Icon,
+  CommandIcon,
+  ExternalLinkIcon,
+  type LucideIcon,
+  MonitorIcon,
+  MousePointer2Icon,
+  PlusIcon,
+  TerminalIcon,
+  WindIcon,
+} from 'lucide-react';
+import type React from 'react';
+import type { ReactNode } from 'react';
 import CopyInput from '@/components/forms/copy-input';
 import Syntax from '@/components/syntax';
 import {
@@ -22,14 +34,17 @@ export const Route = createFileRoute(
 const TOKEN_PLACEHOLDER = 'BASE64_TOKEN';
 const DOCS_URL = 'https://docs.flarepanel.dev';
 
-type AiClient = {
+interface AiClient {
   id: string;
   name: string;
+  /** Hosted edition only: a coloured icon tile beside the name. */
+  icon: LucideIcon;
+  accent: string;
   description: React.ReactNode;
   configFile?: string;
   language: 'json' | 'bash';
   snippet: (mcpUrl: string) => string;
-};
+}
 
 const buildClients = (mcpEndpoint: string): AiClient[] => {
   const url = mcpEndpoint;
@@ -40,6 +55,8 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
   return [
     {
       id: 'claude-desktop',
+      icon: MonitorIcon,
+      accent: 'var(--chart-2)',
       name: 'Claude Desktop',
       description: (
         <>
@@ -68,6 +85,8 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
     },
     {
       id: 'claude-code',
+      icon: TerminalIcon,
+      accent: 'var(--chart-2)',
       name: 'Claude Code (CLI)',
       description: (
         <>
@@ -82,6 +101,8 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
     },
     {
       id: 'cursor',
+      icon: MousePointer2Icon,
+      accent: 'var(--chart-4)',
       name: 'Cursor',
       description: (
         <>
@@ -109,6 +130,8 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
     },
     {
       id: 'windsurf',
+      icon: WindIcon,
+      accent: 'var(--chart-1)',
       name: 'Windsurf',
       description: (
         <>
@@ -134,6 +157,8 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
     },
     {
       id: 'vscode',
+      icon: Code2Icon,
+      accent: 'var(--chart-0)',
       name: 'VS Code (Copilot)',
       description: (
         <>
@@ -160,6 +185,8 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
     },
     {
       id: 'raycast',
+      icon: CommandIcon,
+      accent: 'var(--chart-11)',
       name: 'Raycast',
       description: (
         <>
@@ -191,8 +218,9 @@ function Component() {
   return (
     <div className="col gap-6">
       <div className="col gap-2">
-        <h2 className="font-semibold text-lg">MCP Server</h2>
-        <p className="text-muted-foreground text-sm">
+        {/* The hosted edition shows the title in the coloured tab banner. */}
+        <h2 className="hosted:hidden font-semibold text-lg">MCP Server</h2>
+        <p className="hosted:rounded-lg hosted:border hosted:border-[color-mix(in_oklab,var(--chart-2)_35%,var(--border))] hosted:bg-[color-mix(in_oklab,var(--chart-2)_8%,var(--card))] hosted:p-3 hosted:text-foreground/80 text-muted-foreground text-sm">
           Connect any MCP-compatible AI client (Claude, Cursor, Windsurf, …) to
           your FlarePanel data. Most of its tools read — events, sessions,
           profiles, funnels, retention and more — but it can also create, edit
@@ -200,58 +228,78 @@ function Component() {
         </p>
       </div>
 
-      <div className="col gap-2">
-        <CopyInput label="Endpoint" value={mcpEndpoint} />
-        <p className="text-muted-foreground text-xs">
-          Send your token as an <code>Authorization: Bearer</code> header, with{' '}
-          <code>base64(clientId:clientSecret)</code> in place of{' '}
-          <code>{TOKEN_PLACEHOLDER}</code>. Clients that can't set headers take
-          it as a <code>?token=</code> query param instead.
-        </p>
-      </div>
-
-      <div className="col gap-3 rounded-lg border bg-def-200 p-4">
-        <div className="col gap-1">
-          <div className="font-medium">Need a token?</div>
-          <p className="text-muted-foreground text-sm">
-            Only <code>read</code> and <code>root</code> clients can
-            authenticate with MCP. Create one and copy the MCP token from the
-            success screen — it's only shown once.
+      <Step number={1}>
+        <div className="col gap-2">
+          <CopyInput label="Endpoint" value={mcpEndpoint} />
+          <p className="text-muted-foreground text-xs">
+            Send your token as an <code>Authorization: Bearer</code> header,
+            with <code>base64(clientId:clientSecret)</code> in place of{' '}
+            <code>{TOKEN_PLACEHOLDER}</code>. Clients that can't set headers
+            take it as a <code>?token=</code> query param instead.
           </p>
         </div>
-        <div>
-          <Button icon={PlusIcon} onClick={() => pushModal('AddClient')}>
-            Create MCP client
-          </Button>
-        </div>
-      </div>
+      </Step>
 
-      <div className="col gap-2">
-        <div className="font-medium">Configure your AI client</div>
-        <Accordion className="rounded-lg border" collapsible type="single">
-          {clients.map((client) => (
-            <AccordionItem className="px-4" key={client.id} value={client.id}>
-              <AccordionTrigger>{client.name}</AccordionTrigger>
-              <AccordionContent className="col gap-3">
-                <p className="text-muted-foreground text-sm">
-                  {client.description}
-                </p>
-                {client.configFile && (
-                  <p className="text-muted-foreground text-xs">
-                    <span className="font-medium">Config file:</span>{' '}
-                    <code>{client.configFile}</code>
+      <Step number={2}>
+        <div className="col gap-3 rounded-lg border hosted:border-[color-mix(in_oklab,var(--tab-accent)_35%,var(--border))] bg-def-200 hosted:bg-[color-mix(in_oklab,var(--tab-accent)_8%,var(--card))] p-4">
+          <div className="col gap-1">
+            <div className="font-medium">Need a token?</div>
+            <p className="text-muted-foreground text-sm">
+              Only <code>read</code> and <code>root</code> clients can
+              authenticate with MCP. Create one and copy the MCP token from the
+              success screen — it's only shown once.
+            </p>
+          </div>
+          <div>
+            <Button icon={PlusIcon} onClick={() => pushModal('AddClient')}>
+              Create MCP client
+            </Button>
+          </div>
+        </div>
+      </Step>
+
+      <Step number={3}>
+        <div className="col gap-2">
+          <div className="font-medium">Configure your AI client</div>
+          <Accordion className="rounded-lg border" collapsible type="single">
+            {clients.map((client) => (
+              <AccordionItem className="px-4" key={client.id} value={client.id}>
+                <AccordionTrigger>
+                  <span className="flex items-center gap-3">
+                    <span
+                      className="hosted:flex hidden size-7 shrink-0 items-center justify-center rounded-md bg-(--client-accent)/15 text-(--client-accent)"
+                      style={
+                        {
+                          '--client-accent': client.accent,
+                        } as React.CSSProperties
+                      }
+                    >
+                      <client.icon aria-hidden className="size-4" />
+                    </span>
+                    {client.name}
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="col gap-3">
+                  <p className="text-muted-foreground text-sm">
+                    {client.description}
                   </p>
-                )}
-                <Syntax
-                  className="border"
-                  code={client.snippet(mcpEndpoint)}
-                  language={client.language}
-                />
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </div>
+                  {client.configFile && (
+                    <p className="text-muted-foreground text-xs">
+                      <span className="font-medium">Config file:</span>{' '}
+                      <code>{client.configFile}</code>
+                    </p>
+                  )}
+                  <Syntax
+                    className="border"
+                    code={client.snippet(mcpEndpoint)}
+                    language={client.language}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </Step>
 
       <a
         className={cn(buttonVariants({ variant: 'outline' }), 'self-start')}
@@ -262,6 +310,21 @@ function Component() {
         <ExternalLinkIcon className="h-4 w-4" />
         Read the full MCP docs
       </a>
+    </div>
+  );
+}
+
+/** Hosted edition: a numbered, coloured step marker; self-hosted shows none. */
+function Step({ number, children }: { number: number; children: ReactNode }) {
+  return (
+    <div className="hosted:grid hosted:grid-cols-[2rem_minmax(0,1fr)] hosted:gap-4">
+      <div
+        aria-hidden
+        className="hosted:flex hidden size-8 items-center justify-center rounded-full bg-(--tab-accent) font-semibold text-sm text-white"
+      >
+        {number}
+      </div>
+      <div className="min-w-0">{children}</div>
     </div>
   );
 }
