@@ -34,6 +34,7 @@ Each project has one Durable Object holding:
 - **gsc_daily**, **gsc_pages_daily**, **gsc_queries_daily**: Search Console numbers per day, page and query.
 - **import_staging**: an import's events while it runs, before they are committed in time order.
 - **replay_sessions**: which sessions have a replay (the chunks are in R2).
+- **bot_events**: recent bot hits (kept out of analytics), at most 5,000 a day, for 30 days.
 
 Reports, the REST API, the MCP server and the chat assistant all read the same Durable Object, so every page answers from one place.
 

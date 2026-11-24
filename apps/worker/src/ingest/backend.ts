@@ -10,8 +10,6 @@ import {
   type Buffers,
   checkNotificationRulesForEvent,
   countRecordedSession,
-  getProjectReplayAccess,
-  replayAccessConfig,
   createCtx,
   type DeviceRequest,
   type EventStore,
@@ -19,13 +17,16 @@ import {
   getGeoFromCf,
   getNotificationRulesByProjectId,
   getProjectByIdCached,
+  getProjectReplayAccess,
   type IClickhouseProfile,
   type IClickhouseSessionReplayChunk,
   type IngestBackend,
   type IServiceCreateEventPayload,
+  replayAccessConfig,
   type TrackDraft,
   updateEventsCount,
 } from '@flarepanel/core';
+import type { BotEventRow } from '@flarepanel/core/ingest/cloudflare';
 import type { CacheStore } from '@flarepanel/platform';
 import { toDots } from '@flarepanel/shared';
 import type { Env } from '../index';
@@ -89,8 +90,21 @@ export function createCloudflareIngestBackend({
       return false;
     },
 
-    // Bot counts arrive with Phase 3b.
-    recordBot: () => Promise.resolve(),
+    // Bot hits stay out of analytics; the project's Durable Object lists
+    // them (5,000 a day at most, 30 days).
+    recordBot: async (bot) => {
+      await projectEventsStub(env, bot.projectId).addBotEvent({
+        id: crypto.randomUUID(),
+        name: bot.name,
+        type: bot.type,
+        project_id: bot.projectId,
+        path: bot.path,
+        created_at: new Date(bot.createdAt)
+          .toISOString()
+          .replace('T', ' ')
+          .replace('Z', ''),
+      });
+    },
 
     geo: ({ cf, ipOverridden }) =>
       Promise.resolve(getGeoFromCf(cf, { ipOverridden })),
@@ -258,6 +272,8 @@ export function createWorkerEventStore(
       projectEventsStub(env, projectId).countSessions(query),
     getSession: (projectId, sessionId) =>
       projectEventsStub(env, projectId).getSession(sessionId),
+    botEvents: (projectId, page) =>
+      projectEventsStub(env, projectId).botEvents(page),
     replayChunks: env.EVENTS_ARCHIVE
       ? (projectId, sessionId, page) =>
           readReplayChunks(
@@ -371,7 +387,11 @@ export function createWorkerBuffers(
       },
     },
     aiEvent: { add: noop },
-    bot: { add: noop },
+    // Bot hits: kept out of analytics, listed from the project's Durable Object.
+    bot: {
+      add: (row: BotEventRow) =>
+        projectEventsStub(env, row.project_id).addBotEvent(row),
+    },
   };
   return new Proxy(standIns, {
     get(target, property) {

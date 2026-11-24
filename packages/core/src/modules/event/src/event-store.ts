@@ -5,6 +5,7 @@
 
 import type { ImportFileStore } from '../../import/src/workers-import';
 import type { AiQuery } from '../../ingest/cloudflare/ai-query';
+import type { BotEventRow as IClickhouseBotEvent } from '../../ingest/cloudflare/bot-store';
 import type {
   ChartRow,
   ChartScanQuery,
@@ -231,6 +232,11 @@ export interface EventStore {
     projectId: string,
     sessionId: string
   ): Promise<IClickhouseSession | null>;
+  /** Detected bot hits, newest first, with the total kept. */
+  botEvents?(
+    projectId: string,
+    page: { limit: number; offset: number }
+  ): Promise<{ rows: IClickhouseBotEvent[]; count: number }>;
   /**
    * A page of a session's replay chunks in playback order (started, ended,
    * index), each with its rrweb events as JSON text. `offset` counts chunks.

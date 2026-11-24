@@ -31,12 +31,13 @@ export const toolsRoutes = defineRoutes((app) =>
     )
     .get(
       '/tools/ip-lookup',
-      async ({ query, ctx, status }) => {
+      async ({ query, ctx, status, request }) => {
         const outcome = await runIpLookup(
           ctx.config,
           query.ip,
           ctx.headers,
-          ctx.logger
+          ctx.logger,
+          (request as Request & { cf?: unknown }).cf
         );
         if (outcome.status !== 200) {
           return status(outcome.status, { error: outcome.error });

@@ -28,6 +28,7 @@ import {
   publicApiRoutes,
   queues,
   requestLogging,
+  setSandboxRunner,
   TRPC_ENDPOINT,
 } from '@flarepanel/core';
 import {
@@ -60,6 +61,7 @@ import {
 import { createEmptyClickHouse } from './ingest/empty-clickhouse';
 import { liveAccessRoute, matchLivePath } from './ingest/live';
 import { ProjectEventsDurableObject } from './ingest/project-events-do';
+import { createDynamicWorkerRunner } from './js-sandbox';
 import { createConsoleLogger } from './logger';
 import {
   DEAD_LETTER_QUEUE,
@@ -90,6 +92,8 @@ export interface Env {
   FLAREPANEL_EVENT_RETENTION_DAYS?: string;
   /** Cloudflare Email Service; account emails go out through it when bound. */
   EMAIL?: SendEmail;
+  /** Dynamic Workers: JavaScript webhook templates run here. */
+  LOADER?: WorkerLoader;
   /** Where failed-job alerts go (one per job and hour). Unset: no email. */
   OPS_ALERT_EMAIL?: string;
   /** Secret: enables the /__ops recovery endpoints (see ops-routes.ts). */
@@ -136,6 +140,10 @@ async function boot(env: Env): Promise<Booted> {
   const logger = createConsoleLogger(config.LOG_LEVEL ?? 'info');
 
   bindD1Database(env.DB);
+  // Workers cannot spawn the Bun template sandbox; Dynamic Workers replace it.
+  if (env.LOADER) {
+    setSandboxRunner(createDynamicWorkerRunner(env.LOADER));
+  }
   const stores = await createCloudflareStores(env);
   configurePlatformStores(stores);
 

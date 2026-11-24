@@ -20,6 +20,9 @@ import {
   answerAiQuery,
   answerToolQuery,
   archivePrefix,
+  BOT_EVENTS_TTL_MS,
+  type BotEventRow,
+  type BotStore,
   buildArchiveObjects,
   type ChartScanQuery,
   type CohortQuery,
@@ -45,6 +48,7 @@ import {
   loadAiContent,
   type MetricsQuery,
   openAiStore,
+  openBotStore,
   openCohortStore,
   openGroupStore,
   openGscStore,
@@ -168,6 +172,7 @@ interface State {
   gsc: GscStore;
   imports: ImportStore;
   replays: ReplayIndex;
+  bots: BotStore;
   sql: EngineSql;
   service: ProjectEventsService;
 }
@@ -267,6 +272,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     const ai = openAiStore(sql, () => Date.now());
     const gsc = openGscStore(sql);
     const replays = openReplayIndex(sql);
+    const bots = openBotStore(sql);
     const imports = openImportStore(sql);
     const service = createProjectEventsService({
       engine,
@@ -320,6 +326,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       gsc,
       imports,
       replays,
+      bots,
       sql,
     };
   }
@@ -829,6 +836,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
         hotFrom: Date.now() - this.retentionDays() * DAY_MS,
         scan: (from, to, visit) => engine.scanRange(from, to, visit),
         profiles: () => profiles.all(),
+        sessions: (from, to, visit) => engine.visitSessions(from, to, visit),
       })
     );
   }
@@ -1065,6 +1073,21 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       : null;
   }
 
+  /** One detected bot hit (kept out of analytics), for the bot list. */
+  async addBotEvent(row: BotEventRow) {
+    const { bots } = await this.state;
+    return bots.add(row);
+  }
+
+  /** The bot list, newest first, with the total kept. */
+  async botEvents(page: { limit: number; offset: number }) {
+    const { bots } = await this.state;
+    return {
+      rows: bots.page(this.projectId ?? '', page.limit, page.offset),
+      count: bots.count(),
+    };
+  }
+
   /** Whether a session is unknown, already recorded, or new to replay. */
   async replayState(sessionId: string) {
     const { engine, replays } = await this.state;
@@ -1148,7 +1171,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
 
   async alarm() {
     this.alarmAt = null;
-    const { engine, ai, replays } = await this.state;
+    const { engine, ai, replays, bots } = await this.state;
     const result = await engine.tick();
     await this.queueSessionFunnels(
       result.endedSessions.map((session) => session.id)
@@ -1162,7 +1185,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     await this.stream(engine).catch((error) =>
       this.logger.error({ err: error }, 'Could not send events to Basin')
     );
-    await this.applyRetention(engine, ai, replays);
+    await this.applyRetention(engine, ai, replays, bots);
     if (result.endedSessions.length > 0) {
       this.scheduleBroadcast();
     }
@@ -1310,7 +1333,8 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   private async applyRetention(
     engine: ProjectEventsEngine,
     ai: AiStore,
-    replays: ReplayIndex
+    replays: ReplayIndex,
+    bots: BotStore
   ) {
     const storage = this.ctx.storage;
     const lastRun = (await storage.get<number>(KEY_RETENTION_AT)) ?? 0;
@@ -1336,6 +1360,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     engine.pruneSessionLog(Date.now() - days * DAY_MS);
     ai.expireContent(Date.now() - AI_CONTENT_TTL_MS);
     replays.expire(Date.now() - REPLAY_TTL_MS);
+    bots.expire(Date.now() - BOT_EVENTS_TTL_MS);
     await storage.put(KEY_RETENTION_AT, Date.now());
   }
 

@@ -166,9 +166,7 @@ describe('tool scans', () => {
     expect(await find({ performedEvent: 'purchase' })).toEqual(['ben']);
     expect(
       await find({
-        filters: [
-          { name: 'properties.plan', operator: 'is', value: ['pro'] },
-        ],
+        filters: [{ name: 'properties.plan', operator: 'is', value: ['pro'] }],
       })
     ).toEqual(['ana']);
   });
@@ -218,5 +216,91 @@ describe('tool scans', () => {
     expect(wallClockEndMs('2026-11-23 10:00:00', 'UTC')).toBe(
       wallClockToMs('2026-11-23 10:00:00', 'UTC')
     );
+  });
+});
+
+describe('traffic attribution', () => {
+  const session = (
+    fields: Record<string, unknown>
+  ): Record<string, unknown> => ({
+    id: String(Math.random()),
+    utm_source: '',
+    utm_campaign: '',
+    country: '',
+    screen_view_count: 1,
+    revenue: 0,
+    ...fields,
+  });
+  const sessions = [
+    session({ utm_source: 'google', utm_campaign: 'spring', revenue: 4900 }),
+    session({
+      utm_source: 'google',
+      utm_campaign: 'spring',
+      screen_view_count: 3,
+    }),
+    session({ utm_source: 'google', utm_campaign: 'fall', revenue: 100 }),
+    session({ utm_source: 'x', utm_campaign: 'launch' }),
+  ];
+  const source: ToolScanSource = {
+    now: 0,
+    hotFrom: 0,
+    scan: () => Promise.resolve(true),
+    profiles: () => [],
+    sessions: (_from, _to, visit) => {
+      for (const s of sessions) {
+        visit(s as never);
+      }
+      return true;
+    },
+  };
+
+  it('groups sessions by two columns with page views and revenue in units', async () => {
+    const rows = (await answerToolQuery(
+      {
+        kind: 'trafficAttribution',
+        from: 0,
+        to: 1,
+        dimensions: ['utm_source', 'utm_campaign'],
+        sortBy: 'revenue',
+        limit: 2,
+      },
+      source
+    )) as Record<string, unknown>[];
+    expect(rows).toEqual([
+      {
+        utm_source: 'google',
+        utm_campaign: 'spring',
+        sessions: 2,
+        pageviews: 4,
+        revenue: 49,
+      },
+      {
+        utm_source: 'google',
+        utm_campaign: 'fall',
+        sessions: 1,
+        pageviews: 1,
+        revenue: 1,
+      },
+    ]);
+  });
+
+  it('ignores columns a session does not have', async () => {
+    const rows = (await answerToolQuery(
+      {
+        kind: 'trafficAttribution',
+        from: 0,
+        to: 1,
+        dimensions: ['utm_source', 'password'],
+        sortBy: 'sessions',
+        limit: 10,
+      },
+      source
+    )) as Record<string, unknown>[];
+    expect(rows[0]).toEqual({
+      utm_source: 'google',
+      sessions: 3,
+      pageviews: 5,
+      revenue: 50,
+    });
   });
 });

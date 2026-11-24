@@ -32,6 +32,8 @@ import {
   truncateRows,
 } from './shared';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 const TRAFFIC_COLUMNS = [
   'referrer_name',
   'referrer_type',
@@ -266,6 +268,23 @@ export function analyticsTools(ctx: ChatToolContext) {
       }),
       execute: async ({ dimensions, startDate, endDate, sortBy, limit }) => {
         const range = resolveRange(ctx, { startDate, endDate });
+        if (deps.eventStore) {
+          // Workers: the project's Durable Object groups its sessions.
+          const from = Date.parse(`${toDateOnly(range.startDate)}T00:00:00Z`);
+          const to =
+            Date.parse(`${toDateOnly(range.endDate)}T00:00:00Z`) + DAY_MS;
+          const stored = JSON.parse(
+            await deps.eventStore.tools(projectId, {
+              kind: 'trafficAttribution',
+              from,
+              to,
+              dimensions,
+              sortBy,
+              limit,
+            })
+          ) as Record<string, string | number>[];
+          return { dimensions, ...range, ...truncateRows(stored, limit) };
+        }
         const groupBy = sql.join(
           dimensions.map((dimension) => sql.id(dimension, TRAFFIC_COLUMNS)),
           ', '

@@ -9,10 +9,10 @@ import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
 import { stripFixedStringPadding } from '../../shared/ch-fixed-string';
 import { toRowFilters } from '../chart/src/engine/store-rows';
-import type { ListEventsQuery } from '../ingest/cloudflare/engine';
-import type { RowFilter } from '../ingest/cloudflare/filter-eval';
 import { getEventFiltersWhereClause } from '../chart/src/filter-where';
 import { buildFilterWhere } from '../chart/src/table-filter-where';
+import type { ListEventsQuery } from '../ingest/cloudflare/engine';
+import type { RowFilter } from '../ingest/cloudflare/filter-eval';
 import {
   getProfileById,
   getProfilesCached,
@@ -802,7 +802,11 @@ export async function getEventsCount(
   if (deps.eventStore) {
     const rowFilters = storedListFilters({ filters, cohortId });
     if (profileId) {
-      rowFilters.push({ name: 'profile_id', operator: 'is', value: [profileId] });
+      rowFilters.push({
+        name: 'profile_id',
+        operator: 'is',
+        value: [profileId],
+      });
     }
     const to = endDate ?? new Date();
     const { rows } = await deps.eventStore.eventCounts(projectId, {
@@ -1106,13 +1110,21 @@ export async function queryEventsCore(
   if (deps.eventStore) {
     const filters = toRowFilters(input.filters);
     if (input.profileIds?.length) {
-      filters.push({ name: 'profile_id', operator: 'is', value: input.profileIds });
+      filters.push({
+        name: 'profile_id',
+        operator: 'is',
+        value: input.profileIds,
+      });
     }
     for (const [column, value] of Object.entries(queryEventsEquals(input))) {
       filters.push({ name: column, operator: 'is', value: [value] });
     }
     for (const [key, value] of Object.entries(input.properties ?? {})) {
-      filters.push({ name: `properties.${key}`, operator: 'is', value: [value] });
+      filters.push({
+        name: `properties.${key}`,
+        operator: 'is',
+        value: [value],
+      });
     }
     const range = queryEventsDateRange(input);
     return readStoredEvents(
@@ -1406,6 +1418,19 @@ export async function getBotEventsPage(
     limit: number;
   }
 ) {
+  if (deps.eventStore?.botEvents) {
+    const page = await deps.eventStore.botEvents(projectId, {
+      limit,
+      offset: (cursor ?? 0) * limit,
+    });
+    return {
+      data: page.rows.map((item) => ({
+        ...item,
+        createdAt: convertClickhouseDateToJs(item.created_at),
+      })),
+      count: page.count,
+    };
+  }
   const [events, counts] = await Promise.all([
     chQuery<IClickhouseBotEvent>(
       deps,

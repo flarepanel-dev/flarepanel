@@ -25,12 +25,13 @@ FlarePanel is in early access. This page is updated as parts move over from Open
 | Groups: list, group pages, members, `group.*` filters and breakdowns | Works |
 | Cohorts: event and property cohorts, refreshed every 30 minutes, cohort filters in reports | Works (event cohorts read the last 90 days plus the R2 archive) |
 | AI analytics: cost, tokens, latency, errors, traces and calls, prompt and response text | Works (text kept 30 days) |
+| Bot traffic: kept out of analytics, recent bot hits listed through the API | Works (up to 5,000 a project a day, kept 30 days) |
 | Session replay (web SDK, `sessionReplay: { enabled: true }`) | Works, kept 30 days, with a monthly number of recorded sessions per organization ([details](/self-hosting#self-hosted-and-hosted)) |
 | Report builder: line, bar, area, pie and metric charts with breakdowns, filters and formulas | Works over all history (older than 90 days read from the R2 archive) |
 | Funnels (with breakdowns and time to convert) and retention cohorts | Work over all history (older than 90 days read from the R2 archive) |
 | Faster long-history reports for very large installs (self-hosted, opt-in) | [Advanced analytics](/self-hosting/advanced-analytics) |
 | Conversion, user flow (Sankey) and distribution charts | Work over all history (older than 90 days read from the R2 archive) |
-| Notifications: event and funnel rules, in-app, email, Slack and webhooks | Works |
+| Notifications: event and funnel rules, in-app, email, Slack and webhooks (including JavaScript templates, run in a sandboxed Dynamic Worker) | Works |
 | Insights (daily changes in referrers, countries, devices, entry pages and pages) and referrer spikes on the overview chart | Works |
 | REST API (`/insights`, `/export/events`) and MCP server for AI assistants | Works |
 | Chat assistant and natural-language filters | Works with an OpenAI or Anthropic key ([setup](/self-hosting/deploy#ai-chat-assistant)) |

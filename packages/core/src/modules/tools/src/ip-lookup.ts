@@ -1,4 +1,6 @@
+import { isWorkersRuntime } from '@flarepanel/shared/server';
 import { getGeoLocation } from '../../../clients/geo';
+import { getGeoFromCf } from '../../../clients/geo-cf';
 import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';
 import { getClientIpFromHeaders } from '../../../shared/get-client-ip';
@@ -25,7 +27,7 @@ export interface IpLookupResult {
 
 export type IpLookupOutcome =
   | { status: 200; result: IpLookupResult }
-  | { status: 400 | 429 | 500; error: string };
+  | { status: 400 | 429 | 500 | 501; error: string };
 
 function isPrivateIP(ip: string): boolean {
   if (ip === '::1') {
@@ -66,7 +68,9 @@ export async function runIpLookup(
   config: CoreConfig,
   ipParam: string | undefined,
   headers: Record<string, string | string[] | undefined> | Headers,
-  logger?: Pick<Logger, 'error'>
+  logger?: Pick<Logger, 'error'>,
+  /** Workers: `request.cf`, Cloudflare's location of the caller. */
+  cf?: unknown
 ): Promise<IpLookupOutcome> {
   const { ip: clientIp } = getClientIpFromHeaders(config.ipHeaders, headers);
   if (
@@ -89,8 +93,21 @@ export async function runIpLookup(
     return { status: 400, error: 'Invalid IP address format' };
   }
 
+  // Workers have no GeoIP database (it would not fit in a Worker's memory);
+  // Cloudflare locates the caller itself, so only that address can be looked up.
+  const onWorkers = isWorkersRuntime();
+  if (onWorkers && ipToLookup !== clientIp) {
+    return {
+      status: 501,
+      error:
+        'Only your own IP address can be looked up on this server. Leave the address empty to look up yours.',
+    };
+  }
+
   try {
-    const geo = await getGeoLocation(ipToLookup);
+    const geo = onWorkers
+      ? getGeoFromCf(cf, { ipOverridden: false }).geo
+      : await getGeoLocation(ipToLookup);
     return {
       status: 200,
       result: {

@@ -42,13 +42,6 @@ export { registerBufferMetrics } from './buffers/buffer.metrics';
 export type { Buffers } from './buffers/create-buffers';
 export { createBuffers } from './buffers/create-buffers';
 export type { IClickhouseSessionReplayChunk } from './buffers/replay-buffer';
-export {
-  countRecordedSession,
-  getProjectReplayAccess,
-  type ProjectReplayAccess,
-  type ReplayAccessConfig,
-  replayAccessConfig,
-} from './modules/session/replay-access';
 export { createClients } from './clients/create-clients';
 export {
   type CfGeoProperties,
@@ -342,6 +335,13 @@ export {
   createInitialSalts,
   createSaltService,
 } from './modules/salt/salt.service';
+export {
+  countRecordedSession,
+  getProjectReplayAccess,
+  type ProjectReplayAccess,
+  type ReplayAccessConfig,
+  replayAccessConfig,
+} from './modules/session/replay-access';
 export type {
   IClickhouseSession,
   IServiceSession,
@@ -426,6 +426,11 @@ export {
   getTrustedIpFromHeaders,
   TRUSTED_IP_HEADER_ORDER,
 } from './shared/get-client-ip';
+export {
+  type SandboxLimits,
+  type SandboxRunner,
+  setSandboxRunner,
+} from './shared/js-runtime';
 export { getReferrerWithQuery, parseReferrer } from './shared/parse-referrer';
 export { redactSensitive } from './shared/sanitize-url';
 // Shared by `rpc/base.ts`, which may not deep-import a module.

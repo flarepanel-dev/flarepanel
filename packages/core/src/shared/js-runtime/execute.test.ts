@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { execute, runInSandbox } from './execute';
+import { afterEach, describe, expect, it } from 'bun:test';
+import { execute, runInSandbox, setSandboxRunner } from './execute';
 
 const IS_LINUX = process.platform === 'linux';
 
@@ -41,5 +41,42 @@ describe('template sandbox', () => {
     ).toEqual({
       n: 2,
     });
+  });
+});
+
+describe('a registered sandbox runner (Workers)', () => {
+  afterEach(() => setSandboxRunner(undefined));
+
+  it('runs validated templates through the runner instead of a child process', async () => {
+    const seen: string[] = [];
+    setSandboxRunner((code, payload) => {
+      seen.push(code);
+      return Promise.resolve(JSON.stringify({ echoed: payload.name }));
+    });
+    expect(
+      await execute('(payload) => ({ echoed: payload.name })', {
+        name: 'signup',
+      })
+    ).toEqual({ echoed: 'signup' });
+    expect(seen).toHaveLength(1);
+  });
+
+  it('never hands an invalid template to the runner', async () => {
+    let called = false;
+    setSandboxRunner(() => {
+      called = true;
+      return Promise.resolve('');
+    });
+    await expect(
+      execute('(payload) => fetch("https://example.com")', {})
+    ).rejects.toThrow('Invalid JavaScript template');
+    expect(called).toBe(false);
+  });
+
+  it('reports the runner’s template errors like the child process does', async () => {
+    setSandboxRunner(() => Promise.reject(new Error('bad template')));
+    await expect(execute('(payload) => payload', {})).rejects.toThrow(
+      'Error executing JavaScript template: bad template'
+    );
   });
 });

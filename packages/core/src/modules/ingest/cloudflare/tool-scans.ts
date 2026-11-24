@@ -13,9 +13,13 @@
 // - page conversions: a page view counts for a visitor when their next
 //   conversion (after the view) comes within the window; visitors are the
 //   page's distinct sessions.
+// - traffic attribution: sessions grouped by one or two of their own columns
+//   (UTM, referrer, place, device), with sessions, page views and revenue
+//   (cents to units, as `sum(revenue) / 100`), largest first.
 
 import type { IClickhouseEvent } from '../../event/event.service';
 import type { IClickhouseProfile } from '../../profile/profile.service';
+import type { IClickhouseSession } from '../../session/session.service';
 import { matchesFilters, type RowFilter } from './filter-eval';
 import { eventTimeMs } from './time-buckets';
 
@@ -36,6 +40,14 @@ export type ToolQuery =
       to: number;
       conversionEvent: string;
       windowHours: number;
+      limit: number;
+    }
+  | {
+      kind: 'trafficAttribution';
+      from: number;
+      to: number;
+      dimensions: string[];
+      sortBy: 'sessions' | 'pageviews' | 'revenue';
       limit: number;
     };
 
@@ -65,6 +77,67 @@ export interface ToolScanSource {
     visit: (event: IClickhouseEvent) => void
   ) => Promise<boolean>;
   profiles: () => IClickhouseProfile[];
+  /** Sessions created in [from, to): open ones and the session log. */
+  sessions?: (
+    from: number,
+    to: number,
+    visit: (session: IClickhouseSession) => void
+  ) => boolean;
+}
+
+/** Columns a session carries that attribution may group by. */
+const ATTRIBUTION_COLUMNS = new Set([
+  'referrer_name',
+  'referrer_type',
+  'referrer',
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+  'country',
+  'region',
+  'city',
+  'device',
+  'browser',
+  'os',
+  'entry_path',
+  'exit_path',
+]);
+
+function trafficAttribution(
+  source: ToolScanSource,
+  query: Extract<ToolQuery, { kind: 'trafficAttribution' }>
+) {
+  const dimensions = query.dimensions.filter((d) => ATTRIBUTION_COLUMNS.has(d));
+  const groups = new Map<
+    string,
+    { keys: string[]; sessions: number; pageviews: number; revenue: number }
+  >();
+  source.sessions?.(query.from, query.to, (session) => {
+    const record = session as unknown as Record<string, unknown>;
+    const keys = dimensions.map((d) => String(record[d] ?? ''));
+    const id = JSON.stringify(keys);
+    const group = groups.get(id) ?? {
+      keys,
+      sessions: 0,
+      pageviews: 0,
+      revenue: 0,
+    };
+    group.sessions += 1;
+    group.pageviews += Number(session.screen_view_count ?? 0);
+    group.revenue += Number(session.revenue ?? 0);
+    groups.set(id, group);
+  });
+  return [...groups.values()]
+    .map((group) => ({
+      ...Object.fromEntries(dimensions.map((d, i) => [d, group.keys[i]])),
+      sessions: group.sessions,
+      pageviews: group.pageviews,
+      revenue: group.revenue / 100,
+    }))
+    .sort((a, b) => b[query.sortBy] - a[query.sortBy])
+    .slice(0, query.limit);
 }
 
 const dayKey = (ms: number) => new Date(ms).toISOString().slice(0, 10);
@@ -180,9 +253,7 @@ function matchesSearch(profile: IClickhouseProfile, search: string): boolean {
     profile.last_name,
     `${profile.first_name} ${profile.last_name}`,
   ].map((value) => (value ?? '').toLowerCase());
-  return tokens.every((token) =>
-    fields.some((field) => field.includes(token))
-  );
+  return tokens.every((token) => fields.some((field) => field.includes(token)));
 }
 
 function createdMs(profile: IClickhouseProfile): number {
@@ -292,7 +363,12 @@ async function pageConversions(
   const windowMs = query.windowHours * 60 * 60 * 1000;
   const pages = new Map<
     string,
-    { path: string; origin: string; sessions: Set<string>; converters: Set<string> }
+    {
+      path: string;
+      origin: string;
+      sessions: Set<string>;
+      converters: Set<string>;
+    }
   >();
   await source.scan(query.from, query.to, (event) => {
     if (event.name !== 'screen_view' || !event.path) {
@@ -356,6 +432,8 @@ export function answerToolQuery(
       );
     case 'pageConversions':
       return pageConversions(source, query);
+    case 'trafficAttribution':
+      return Promise.resolve(trafficAttribution(source, query));
     default:
       return findProfiles(source, query.query);
   }

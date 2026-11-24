@@ -34,6 +34,13 @@ export {
 } from './basin-row';
 export { assertTableName } from './basin-sql';
 export {
+  BOT_EVENTS_PER_DAY,
+  BOT_EVENTS_TTL_MS,
+  type BotEventRow,
+  type BotStore,
+  openBotStore,
+} from './bot-store';
+export {
   type ChartRow,
   type ChartScanEvent,
   type ChartScanQuery,

@@ -2703,6 +2703,31 @@ export async function openProjectEventsEngine({
     return count;
   }
 
+  /**
+   * Visits every session created in [from, to): the open ones, then the log
+   * (up to SESSION_SCAN_MAX). False when the log was cut short.
+   */
+  function visitSessions(
+    from: number,
+    to: number,
+    visit: (session: IClickhouseSession) => void
+  ): boolean {
+    const query = { from };
+    const seen = new Set<string>();
+    for (const session of liveSessionsInRange(query, to)) {
+      seen.add(session.id);
+      visit(session);
+    }
+    let logged = 0;
+    for (const session of loggedSessions(query, to)) {
+      logged += 1;
+      if (!seen.has(session.id)) {
+        visit(session);
+      }
+    }
+    return logged < SESSION_SCAN_MAX;
+  }
+
   function getSession(sessionId: string): IClickhouseSession | null {
     for (const entry of sessions.values()) {
       if (entry.session.id === sessionId) {
@@ -3011,6 +3036,7 @@ export async function openProjectEventsEngine({
     realtime,
     listSessions,
     countSessions,
+    visitSessions,
     getSession,
     pruneSessionLog,
     projectCard,

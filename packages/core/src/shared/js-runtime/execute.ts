@@ -81,7 +81,28 @@ export function runInSandbox(
   payload: Record<string, unknown>,
   limits: SandboxLimits = DEFAULT_LIMITS
 ): Promise<string> {
+  if (sandboxRunner) {
+    return sandboxRunner(code, payload, limits);
+  }
   return limitSandboxes(() => spawnSandbox(code, payload, limits));
+}
+
+/**
+ * Runs a validated template somewhere other than a child process, with the
+ * child's contract: resolves with the result as JSON text ('' for undefined),
+ * rejects with the template's error message. Workers, which cannot spawn,
+ * register one that runs the template in a Dynamic Worker.
+ */
+export type SandboxRunner = (
+  code: string,
+  payload: Record<string, unknown>,
+  limits: SandboxLimits
+) => Promise<string>;
+
+let sandboxRunner: SandboxRunner | undefined;
+
+export function setSandboxRunner(runner: SandboxRunner | undefined): void {
+  sandboxRunner = runner;
 }
 
 function spawnSandbox(
