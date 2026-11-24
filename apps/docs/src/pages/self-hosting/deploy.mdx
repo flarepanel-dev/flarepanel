@@ -49,12 +49,13 @@ openssl rand -hex 32 | bunx wrangler secret put ENCRYPTION_KEY
 
 `ENCRYPTION_KEY` encrypts the credentials FlarePanel stores for you: S3 and GCS export keys and Search Console tokens. Without it, saving an export fails. Keep it stable: if you replace it, stored credentials can no longer be read and have to be entered again.
 
-### Expire AI prompt text in R2
+### Expire AI text and session replays in R2
 
-Prompt and response text of [AI calls](#ai-analytics) is kept 30 days, like OpenPanel's. Add a lifecycle rule so R2 removes its copies after that:
+Prompt and response text of [AI calls](#ai-analytics) and [session replays](#session-replay) are kept 30 days, like OpenPanel's. Add lifecycle rules so R2 removes them after that:
 
 ```bash
 bunx wrangler r2 bucket lifecycle add flarepanel-events ai-text-30-days ai/ --expire-days 30
+bunx wrangler r2 bucket lifecycle add flarepanel-events replays-30-days replays/ --expire-days 30
 ```
 
 ### Migrate and deploy
@@ -112,6 +113,12 @@ bunx wrangler secret put AWS_SECRET_ACCESS_KEY
 ## AI analytics
 
 AI calls sent with `@flarepanel/ai` (or `op.ai`) are stored per call in the project's Durable Object. Prompt and response text waits there until its trace is quiet for 5 minutes, then moves to R2 as one gzip file per trace (`ai/<project>/<trace>.json.gz`) and is shown for 30 days.
+
+## Session replay
+
+Turn it on in the web SDK with `sessionReplay: { enabled: true }` (and `sampleRate` to record a share of sessions). Inputs and text are masked by default. Each recorded chunk (about every 10 seconds of activity) is stored gzip-compressed as one R2 object under `replays/<project>/<session>/`, and the project's Durable Object marks the session so the Sessions pages show **Watch replay**. Chunks for sessions the project never saw are refused.
+
+Cost: one R2 write per chunk (the first million each month are free, then $4.50 per million) and the stored bytes for 30 days (10 GB free, then $0.015 per GB-month). Check current prices on Cloudflare's R2 pricing page. A 5-minute session is about 30 writes; watching it reads 40 chunks at a time.
 
 ## Imports and exports
 

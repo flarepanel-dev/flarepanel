@@ -33,6 +33,7 @@ Each project has one Durable Object holding:
 - **ai_events**: one row per AI call (cost, tokens, latency, errors, a short preview); prompt and response text waits in **ai_content** until the trace is quiet, then moves to R2.
 - **gsc_daily**, **gsc_pages_daily**, **gsc_queries_daily**: Search Console numbers per day, page and query.
 - **import_staging**: an import's events while it runs, before they are committed in time order.
+- **replay_sessions**: which sessions have a replay (the chunks are in R2).
 
 Reports, the REST API, the MCP server and the chat assistant all read the same Durable Object, so every page answers from one place.
 
@@ -46,7 +47,7 @@ Raw events are copied to R2 as newline-delimited JSON, one object per project an
 v1/events/project_id=<id>/date=YYYY-MM-DD/hour=HH/<firstChunk>-<lastChunk>.ndjson.gz
 ```
 
-The same bucket holds each AI trace's prompt and response text (`ai/<project>/<trace>.json.gz`, removed after 30 days by a lifecycle rule) and the copies an import reads (`imports/<project>/<import>/`, removed when it ends).
+The same bucket holds each AI trace's prompt and response text (`ai/<project>/<trace>.json.gz`), session replay chunks (`replays/<project>/<session>/<start>-<end>-<index>.json.gz`; both removed after 30 days by lifecycle rules), failed jobs (`dead-letters/`) and the copies an import reads (`imports/<project>/<import>/`, removed when it ends).
 
 Recent events stay in the Durable Object for 90 days by default (`FLAREPANEL_EVENT_RETENTION_DAYS`); R2 keeps everything. Reports that reach further back read the older hours from the R2 archive (at most 3,000 archive files per report, so very long ranges on very busy projects show what was read).
 

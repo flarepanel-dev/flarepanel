@@ -17,6 +17,7 @@ import {
   getNotificationRulesByProjectId,
   getProjectByIdCached,
   type IClickhouseProfile,
+  type IClickhouseSessionReplayChunk,
   type IngestBackend,
   type IServiceCreateEventPayload,
   type TrackDraft,
@@ -26,6 +27,7 @@ import type { CacheStore } from '@flarepanel/platform';
 import { toDots } from '@flarepanel/shared';
 import type { Env } from '../index';
 import { createImportFileStore } from './import-files';
+import { readReplayChunks, storeReplayChunk } from './replays';
 
 /** Repeats of one request inside this window are dropped. */
 const DEDUPE_TTL_SECONDS = 1;
@@ -220,8 +222,7 @@ export function createWorkerEventStore(
       projectEventsStub(env, projectId).exportRead(integrationId, maxEvents),
     exportAck: (projectId, integrationId, through) =>
       projectEventsStub(env, projectId).exportAck(integrationId, through),
-    tools: (projectId, query) =>
-      projectEventsStub(env, projectId).tools(query),
+    tools: (projectId, query) => projectEventsStub(env, projectId).tools(query),
     cohorts: (projectId, query) =>
       projectEventsStub(env, projectId).cohorts(query),
     groups: (projectId, query) =>
@@ -253,6 +254,15 @@ export function createWorkerEventStore(
       projectEventsStub(env, projectId).countSessions(query),
     getSession: (projectId, sessionId) =>
       projectEventsStub(env, projectId).getSession(sessionId),
+    replayChunks: env.EVENTS_ARCHIVE
+      ? (projectId, sessionId, page) =>
+          readReplayChunks(
+            env.EVENTS_ARCHIVE as R2Bucket,
+            projectId,
+            sessionId,
+            page
+          )
+      : undefined,
     listProfiles: (projectId, query) =>
       projectEventsStub(env, projectId).listProfiles(query),
     countEvents: (projectId, from, to) =>
@@ -268,11 +278,15 @@ export function createWorkerEventStore(
 const noop = () => Promise.resolve();
 
 /**
- * The buffers `/track` and `/track/device-id` touch on Workers: sessions live
- * in the project's Durable Object; profile, group, replay, AI and bot rows
- * have no store yet and are dropped. Anything else still throws.
+ * The buffers `/track` and `/track/device-id` touch on Workers: sessions,
+ * profiles and groups live in the project's Durable Object, replay chunks in
+ * R2; AI and bot rows passed here are dropped (AI calls are stored by the
+ * ingest pipeline itself). Anything else still throws.
  */
-export function createWorkerBuffers(env: Pick<Env, 'PROJECT_EVENTS'>): Buffers {
+export function createWorkerBuffers(
+  env: Pick<Env, 'PROJECT_EVENTS' | 'EVENTS_ARCHIVE'>,
+  cache: CacheStore
+): Buffers {
   const standIns: Record<string, unknown> = {
     event: {
       getActiveVisitorCount: (projectId: string) =>
@@ -315,7 +329,29 @@ export function createWorkerBuffers(env: Pick<Env, 'PROJECT_EVENTS'>): Buffers {
           },
         }),
     },
-    replay: { add: noop },
+    // Session replay chunks: gzip in R2, the session marked in its project.
+    replay: {
+      add: async (chunk: IClickhouseSessionReplayChunk) => {
+        if (!env.EVENTS_ARCHIVE) {
+          return;
+        }
+        await storeReplayChunk(
+          env.EVENTS_ARCHIVE,
+          cache,
+          projectEventsStub(env, chunk.project_id),
+          {
+            projectId: chunk.project_id,
+            sessionId: chunk.session_id,
+            chunkIndex: chunk.chunk_index,
+            startedAt: chunk.started_at,
+            endedAt: chunk.ended_at,
+            payload: chunk.payload,
+            eventsCount: chunk.events_count,
+            isFullSnapshot: chunk.is_full_snapshot,
+          }
+        );
+      },
+    },
     aiEvent: { add: noop },
     bot: { add: noop },
   };

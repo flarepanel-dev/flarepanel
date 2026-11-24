@@ -82,11 +82,13 @@ export type {
 } from './event-count-scan';
 export { type RowFilter, unsupportedFilters } from './filter-eval';
 export type { FunnelScanQuery, FunnelScanResult } from './funnel-scan';
+export type { GroupQuery } from './group-query';
+export type { GroupSummary } from './group-scan';
 export {
-  answerToolQuery,
-  type FindProfilesQuery,
-  type ToolQuery,
-} from './tool-scans';
+  type GroupStore,
+  openGroupStore,
+  type StoredGroup,
+} from './group-store';
 export {
   type GscQuery,
   type GscStore,
@@ -99,13 +101,6 @@ export {
   type ImportStore,
   openImportStore,
 } from './import-store';
-export type { GroupQuery } from './group-query';
-export type { GroupSummary } from './group-scan';
-export {
-  type GroupStore,
-  openGroupStore,
-  type StoredGroup,
-} from './group-store';
 export type {
   JourneyScanQuery,
   JourneyScanResult,
@@ -138,6 +133,15 @@ export type {
   RealtimeLocationFilter,
   RealtimeQuery,
 } from './realtime-scan';
+export {
+  isReplayId,
+  openReplayIndex,
+  REPLAY_TTL_MS,
+  type ReplayChunkRef,
+  type ReplayIndex,
+  replayChunkKey,
+  replayPrefix,
+} from './replay-store';
 export type {
   RetentionInterval,
   RetentionRow,
@@ -151,8 +155,13 @@ export {
   type BucketInterval,
   buildBuckets,
   type WeekStart,
+  wallClockEndMs,
   wallClockIso,
   wallClockText,
-  wallClockEndMs,
   wallClockToMs,
 } from './time-buckets';
+export {
+  answerToolQuery,
+  type FindProfilesQuery,
+  type ToolQuery,
+} from './tool-scans';

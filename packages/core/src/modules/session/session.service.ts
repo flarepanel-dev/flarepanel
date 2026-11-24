@@ -410,15 +410,20 @@ export async function getSessionReplayChunksFrom(
   projectId: string,
   fromIndex: number
 ) {
-  const rows = await chQuery<{ chunk_index: number; payload: string }>(
-    deps,
-    sessionReplayChunksQuery({
-      sessionId,
-      projectId,
-      limit: REPLAY_CHUNKS_PAGE_SIZE + 1,
-      offset: fromIndex,
-    })
-  );
+  const rows = deps.eventStore?.replayChunks
+    ? await deps.eventStore.replayChunks(projectId, sessionId, {
+        offset: fromIndex,
+        limit: REPLAY_CHUNKS_PAGE_SIZE + 1,
+      })
+    : await chQuery<{ chunk_index: number; payload: string }>(
+        deps,
+        sessionReplayChunksQuery({
+          sessionId,
+          projectId,
+          limit: REPLAY_CHUNKS_PAGE_SIZE + 1,
+          offset: fromIndex,
+        })
+      );
 
   const page = rows.slice(0, REPLAY_CHUNKS_PAGE_SIZE);
   // `nextIndex` counts every row read, so an unparseable chunk is skipped rather
@@ -463,7 +468,10 @@ export async function getSessionById(
     if (!session) {
       throw new Error('Session not found');
     }
-    return { ...transformSession(session), hasReplay: false };
+    return {
+      ...transformSession(session),
+      hasReplay: Boolean(session.has_replay),
+    };
   }
   const [sessionRows, hasReplayRows] = await Promise.all([
     chQuery<IClickhouseSession>(

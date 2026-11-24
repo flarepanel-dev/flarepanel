@@ -41,6 +41,7 @@ export type { BufferDeps } from './buffers/base-buffer';
 export { registerBufferMetrics } from './buffers/buffer.metrics';
 export type { Buffers } from './buffers/create-buffers';
 export { createBuffers } from './buffers/create-buffers';
+export type { IClickhouseSessionReplayChunk } from './buffers/replay-buffer';
 export { createClients } from './clients/create-clients';
 export {
   type CfGeoProperties,
@@ -183,10 +184,10 @@ export {
   transformSessionToEvent,
 } from './modules/event/event.service';
 export type { EventStore } from './modules/event/src/event-store';
-export type { ImportFileStore } from './modules/import/src/workers-import';
 export type { IServiceGroup } from './modules/group/group.service';
 export { getGscCannibalization } from './modules/gsc/gsc.service';
 export { setBooting, setShuttingDown } from './modules/health/src/shutdown';
+export type { ImportFileStore } from './modules/import/src/workers-import';
 export type {
   BotMatch,
   DeviceRequest,
@@ -362,7 +363,6 @@ export type { SiteCheckResult } from './modules/tools/src/site-checker';
 export { runSiteCheck } from './modules/tools/src/site-checker';
 export { createUserService } from './modules/user/user.service';
 export type { ILogger } from './pino-logger';
-export { redactSensitive } from './shared/sanitize-url';
 export {
   createLogger,
   getServiceName,
@@ -420,5 +420,6 @@ export {
   TRUSTED_IP_HEADER_ORDER,
 } from './shared/get-client-ip';
 export { getReferrerWithQuery, parseReferrer } from './shared/parse-referrer';
+export { redactSensitive } from './shared/sanitize-url';
 // Shared by `rpc/base.ts`, which may not deep-import a module.
 export { EMPTY_SESSION } from './shared/session';

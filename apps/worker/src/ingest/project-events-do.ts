@@ -51,6 +51,7 @@ import {
   openImportStore,
   openProfileStore,
   openProjectEventsEngine,
+  openReplayIndex,
   type PageSeriesQuery,
   type PagesScanQuery,
   type ProfileListQuery,
@@ -60,9 +61,12 @@ import {
   type ProjectEventsService,
   type ProjectEventsTrackInput,
   profileFromVisitor,
+  REPLAY_TTL_MS,
   type RealtimeQuery,
+  type ReplayIndex,
   type RetentionScanQuery,
   type RowFilter,
+  replayPrefix,
   type SankeyScanQuery,
   type SessionListQuery,
   type SqlRow,
@@ -163,6 +167,7 @@ interface State {
   ai: AiStore;
   gsc: GscStore;
   imports: ImportStore;
+  replays: ReplayIndex;
   sql: EngineSql;
   service: ProjectEventsService;
 }
@@ -261,6 +266,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     const cohorts = openCohortStore(sql, () => Date.now());
     const ai = openAiStore(sql, () => Date.now());
     const gsc = openGscStore(sql);
+    const replays = openReplayIndex(sql);
     const imports = openImportStore(sql);
     const service = createProjectEventsService({
       engine,
@@ -313,6 +319,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       ai,
       gsc,
       imports,
+      replays,
       sql,
     };
   }
@@ -452,9 +459,13 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     }
     const bucket = this.env.EVENTS_ARCHIVE;
     let deleted = 0;
-    // Archived events and each AI trace's text.
+    // Archived events, each AI trace's text and the session replays.
     for (const prefix of bucket
-      ? [archivePrefix(projectId), aiContentPrefix(projectId)]
+      ? [
+          archivePrefix(projectId),
+          aiContentPrefix(projectId),
+          replayPrefix(projectId),
+        ]
       : []) {
       let cursor: string | undefined;
       do {
@@ -1032,8 +1043,13 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   }
 
   async listSessions(query: SessionListQuery) {
-    const { engine } = await this.state;
-    return engine.listSessions(query);
+    const { engine, replays } = await this.state;
+    const sessions = engine.listSessions(query);
+    const recorded = replays.recorded(sessions.map((session) => session.id));
+    return sessions.map((session) => ({
+      ...session,
+      has_replay: recorded.has(session.id),
+    }));
   }
 
   async countSessions(query: SessionListQuery) {
@@ -1042,8 +1058,24 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   }
 
   async getSession(sessionId: string) {
-    const { engine } = await this.state;
-    return engine.getSession(sessionId);
+    const { engine, replays } = await this.state;
+    const session = engine.getSession(sessionId);
+    return session
+      ? { ...session, has_replay: replays.recorded([sessionId]).has(sessionId) }
+      : null;
+  }
+
+  /**
+   * Marks a session as recorded, the first time the Worker stores one of its
+   * replay chunks. Chunks for a session this project never saw are refused.
+   */
+  async markReplay(sessionId: string, startedAtMs: number) {
+    const { engine, replays } = await this.state;
+    if (!engine.getSession(sessionId)) {
+      return false;
+    }
+    replays.mark(sessionId, startedAtMs);
+    return true;
   }
 
   async eventNames() {
@@ -1105,7 +1137,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
 
   async alarm() {
     this.alarmAt = null;
-    const { engine, ai } = await this.state;
+    const { engine, ai, replays } = await this.state;
     const result = await engine.tick();
     await this.queueSessionFunnels(
       result.endedSessions.map((session) => session.id)
@@ -1119,7 +1151,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     await this.stream(engine).catch((error) =>
       this.logger.error({ err: error }, 'Could not send events to Basin')
     );
-    await this.applyRetention(engine, ai);
+    await this.applyRetention(engine, ai, replays);
     if (result.endedSessions.length > 0) {
       this.scheduleBroadcast();
     }
@@ -1264,7 +1296,11 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     });
   }
 
-  private async applyRetention(engine: ProjectEventsEngine, ai: AiStore) {
+  private async applyRetention(
+    engine: ProjectEventsEngine,
+    ai: AiStore,
+    replays: ReplayIndex
+  ) {
     const storage = this.ctx.storage;
     const lastRun = (await storage.get<number>(KEY_RETENTION_AT)) ?? 0;
     if (Date.now() - lastRun < RETENTION_INTERVAL_MS) {
@@ -1288,6 +1324,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     });
     engine.pruneSessionLog(Date.now() - days * DAY_MS);
     ai.expireContent(Date.now() - AI_CONTENT_TTL_MS);
+    replays.expire(Date.now() - REPLAY_TTL_MS);
     await storage.put(KEY_RETENTION_AT, Date.now());
   }
 

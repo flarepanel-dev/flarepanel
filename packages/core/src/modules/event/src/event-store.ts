@@ -3,11 +3,8 @@
 // first dashboard screens use (event list, project card) read through this
 // port when it is present. Bun leaves it unset and keeps its ClickHouse reads.
 
-import type { AiQuery } from '../../ingest/cloudflare/ai-query';
-import type { GscQuery } from '../../ingest/cloudflare/gsc-store';
 import type { ImportFileStore } from '../../import/src/workers-import';
-import type { ImportQuery } from '../../ingest/cloudflare/import-store';
-import type { ToolQuery } from '../../ingest/cloudflare/tool-scans';
+import type { AiQuery } from '../../ingest/cloudflare/ai-query';
 import type {
   ChartRow,
   ChartScanQuery,
@@ -40,6 +37,8 @@ import type {
   FunnelScanResult,
 } from '../../ingest/cloudflare/funnel-scan';
 import type { GroupQuery } from '../../ingest/cloudflare/group-query';
+import type { GscQuery } from '../../ingest/cloudflare/gsc-store';
+import type { ImportQuery } from '../../ingest/cloudflare/import-store';
 import type {
   JourneyScanQuery,
   JourneyScanResult,
@@ -65,6 +64,7 @@ import type {
   SankeyScanQuery,
   SankeyScanResult,
 } from '../../ingest/cloudflare/sankey-scan';
+import type { ToolQuery } from '../../ingest/cloudflare/tool-scans';
 import type { IClickhouseSession } from '../../session/session.service';
 
 export interface EventStore {
@@ -231,6 +231,15 @@ export interface EventStore {
     projectId: string,
     sessionId: string
   ): Promise<IClickhouseSession | null>;
+  /**
+   * A page of a session's replay chunks in playback order (started, ended,
+   * index), each with its rrweb events as JSON text. `offset` counts chunks.
+   */
+  replayChunks?(
+    projectId: string,
+    sessionId: string,
+    page: { offset: number; limit: number }
+  ): Promise<{ chunk_index: number; payload: string }[]>;
   /** One dimension's totals per UTC day, `fromDay`..`toDay` (`YYYY-MM-DD`). */
   dimensionDays(
     projectId: string,
