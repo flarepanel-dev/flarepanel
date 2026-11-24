@@ -203,6 +203,44 @@ const LinkButton = ({
   // Determine spinner size based on button size
   const spinnerSize = size === 'lg' || size === 'xl' ? 'md' : 'sm';
 
+  // The router's Link ignores `href`: given only an href it linked to the
+  // current route, so external buttons (docs, checkout) reloaded the same
+  // page. An href without a `to` is a plain anchor.
+  const { href, to, target, rel } = props as {
+    href?: string;
+    to?: unknown;
+    target?: string;
+    rel?: string;
+  };
+  if (href && to === undefined) {
+    const content =
+      typeof children === 'function'
+        ? children({ isActive: false, isTransitioning: false })
+        : children;
+    return (
+      <a
+        className={cn(buttonVariants({ variant, size, className }))}
+        href={href}
+        rel={rel ?? (target === '_blank' ? 'noopener noreferrer' : undefined)}
+        target={target}
+      >
+        {Icon && (
+          <Icon
+            className={cn(
+              'mr-2 h-4 w-4 flex-shrink-0',
+              responsive && 'mr-0 sm:mr-2'
+            )}
+          />
+        )}
+        {responsive ? (
+          <span className="hidden sm:block">{content}</span>
+        ) : (
+          content
+        )}
+      </a>
+    );
+  }
+
   return (
     <Link
       className={cn(buttonVariants({ variant, size, className }))}

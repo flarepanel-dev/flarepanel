@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useAppContext } from '@/hooks/use-app-context';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 
@@ -23,12 +24,15 @@ export const Route = createFileRoute(
   component: GscSettings,
 });
 
-const GSC_SELF_HOSTING_DOCS_URL = 'https://docs.flarepanel.dev/self-hosting';
+// The section with the Google Cloud steps and the three Worker secrets.
+const GSC_SELF_HOSTING_DOCS_URL =
+  'https://docs.flarepanel.dev/self-hosting/deploy#google-search-console-seo-page';
 
 function GscSettings() {
   const { projectId } = useAppParams();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const { isSelfHosted } = useAppContext();
   const [selectedSite, setSelectedSite] = useState('');
 
   const providersQuery = useQuery(trpc.auth.providers.queryOptions());
@@ -108,22 +112,35 @@ function GscSettings() {
             performance data.
           </p>
         </div>
-        <div className="flex flex-col gap-4 rounded-lg border p-6">
-          <p className="text-muted-foreground text-sm">
-            Google Search Console is not configured on this instance. Whoever
-            operates it needs to create a Google OAuth client and add it to the
-            API and worker environment. The setup guide has the details.
-          </p>
-          <LinkButton
-            className="w-fit"
-            href={GSC_SELF_HOSTING_DOCS_URL}
-            rel="noopener"
-            target="_blank"
-            variant="outline"
-          >
-            Read the setup guide
-          </LinkButton>
-        </div>
+        {isSelfHosted ? (
+          <div className="flex flex-col gap-4 rounded-lg border p-6">
+            <p className="text-muted-foreground text-sm">
+              Google Search Console is not set up on this server yet. Whoever
+              runs it creates a Google OAuth client in Google Cloud and adds
+              three secrets to the API Worker: <code>GOOGLE_CLIENT_ID</code>,{' '}
+              <code>GOOGLE_CLIENT_SECRET</code> and{' '}
+              <code>GSC_GOOGLE_REDIRECT_URI</code>. The guide walks through it.
+            </p>
+            <LinkButton
+              className="w-fit"
+              href={GSC_SELF_HOSTING_DOCS_URL}
+              target="_blank"
+              variant="outline"
+            >
+              Open the setup guide
+            </LinkButton>
+          </div>
+        ) : (
+          // Hosted: customers cannot set this up, so no operator steps.
+          <div className="flex flex-col gap-2 rounded-lg border p-6">
+            <p className="font-medium">Coming soon on FlarePanel Cloud</p>
+            <p className="text-muted-foreground text-sm">
+              Connecting Google Search Console is not switched on yet. The rest
+              of your analytics works as usual, and this tab will show a Connect
+              button once it is ready.
+            </p>
+          </div>
+        )}
       </div>
     );
   }
