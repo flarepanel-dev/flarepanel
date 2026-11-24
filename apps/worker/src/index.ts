@@ -146,7 +146,7 @@ interface Booted {
   fetch: (request: Request) => Response | Promise<Response>;
 }
 
-let booted: Promise<Booted> | undefined;
+let booted: Booted | undefined;
 
 async function boot(env: Env): Promise<Booted> {
   const config = loadConfig();
@@ -284,11 +284,20 @@ async function boot(env: Env): Promise<Booted> {
   return { deps, fetch: (request) => app.fetch(request) };
 }
 
-function getBooted(env: Env) {
-  booted ??= boot(env).catch((error) => {
-    booted = undefined;
-    throw error;
-  });
+/**
+ * Only a finished boot is shared. Workers forbid one request from awaiting a
+ * promise another request created: if the request that started the boot ends
+ * first, the shared promise can never settle and every later request in the
+ * isolate failed with "This promise was created by a request that has since
+ * ended" (error 1101). Concurrent cold requests now each boot once; the first
+ * to finish is kept.
+ */
+async function getBooted(env: Env): Promise<Booted> {
+  if (booted) {
+    return booted;
+  }
+  const fresh = await boot(env);
+  booted ??= fresh;
   return booted;
 }
 
