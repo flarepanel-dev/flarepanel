@@ -90,6 +90,9 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         </EmptyState>
       );
     }
+    if (isStaleChunkError(error) && reloadOnceForNewDeploy()) {
+      return <FullPageLoadingState />;
+    }
     return (
       <FullPageErrorState
         description={error.message}
@@ -101,6 +104,34 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   },
   pendingComponent: FullPageLoadingState,
 });
+
+// A tab opened before a deploy asks for code files the new deploy replaced.
+// Reload once to pick up the new files; a second failure within a minute
+// shows the error instead of looping.
+const STALE_CHUNK_PATTERN =
+  /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i;
+const RELOAD_KEY = 'flarepanel:chunk-reload-at';
+
+function isStaleChunkError(error: unknown): boolean {
+  return error instanceof Error && STALE_CHUNK_PATTERN.test(error.message);
+}
+
+function reloadOnceForNewDeploy(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  try {
+    const last = Number(window.sessionStorage.getItem(RELOAD_KEY) ?? 0);
+    if (Date.now() - last < 60_000) {
+      return false;
+    }
+    window.sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+  } catch {
+    return false;
+  }
+  window.location.reload();
+  return true;
+}
 
 // Tie dashboard events to the signed-in user so activation funnels
 // (signup -> project created -> first event -> report) can be measured.
