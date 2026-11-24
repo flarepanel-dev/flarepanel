@@ -13,11 +13,13 @@ import {
   ExternalLinkIcon,
   type LucideIcon,
   RadioIcon,
+  UsersIcon,
 } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { toast } from 'sonner';
 import CopyInput from '@/components/forms/copy-input';
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import { LogoSquare } from '@/components/logo';
 import { Ping } from '@/components/ping';
 import Syntax from '@/components/syntax';
 import { Button } from '@/components/ui/button';
@@ -37,6 +39,7 @@ export const Route = createFileRoute(
 });
 
 type EmbedTheme = 'auto' | 'light' | 'dark';
+type Kind = 'realtime' | 'traffic' | 'counter' | 'badge';
 
 interface StoredWidget {
   id: string;
@@ -58,10 +61,65 @@ const DEFAULT_TRAFFIC: ITrafficWidgetOptions = {
   referrers: true,
 };
 
+interface KindMeta {
+  title: string;
+  /** One line on the tile. */
+  summary: string;
+  /** The longer text above the settings. */
+  description: string;
+  icon: LucideIcon;
+  /** The stored widget behind it: the badge shares the counter's link. */
+  store: IWidgetType;
+  badge?: string;
+  preview: { height: number; width?: number };
+}
+
+const KINDS: Record<Kind, KindMeta> = {
+  realtime: {
+    title: 'Realtime',
+    summary: 'Visitors right now, live',
+    description:
+      'Visitors in the last 30 minutes with a per-minute chart, plus where they come from and what they read. Updates live.',
+    icon: RadioIcon,
+    store: 'realtime',
+    preview: { height: 420 },
+  },
+  traffic: {
+    title: 'Traffic',
+    summary: '7 or 30 days, top pages',
+    description:
+      'Visitors and pageviews over the last 7 or 30 days on a chart, with your top pages and sources. A public stats page in one embed.',
+    icon: AreaChartIcon,
+    store: 'traffic',
+    badge: 'New',
+    preview: { height: 440 },
+  },
+  counter: {
+    title: 'Live counter',
+    summary: 'One line for a header',
+    description:
+      'One line with a live dot and the number of people on your site right now. Fits in a header, a footer or a sidebar.',
+    icon: ActivityIcon,
+    store: 'counter',
+    preview: { height: 32, width: 220 },
+  },
+  badge: {
+    title: 'Visitors badge',
+    summary: '30-day visitors badge',
+    description:
+      'A badge with your visitors over the last 30 days. It shares its link with the live counter, so the two turn on and off together.',
+    icon: AwardIcon,
+    store: 'counter',
+    preview: { height: 48, width: 250 },
+  },
+};
+
+const KIND_ORDER: Kind[] = ['realtime', 'traffic', 'counter', 'badge'];
+
 /** `/widget/<kind>?a=1&b=2`, skipping empty values. */
 function widgetPath(
   dashboardUrl: string,
-  kind: string,
+  kind: Kind,
   params: Record<string, string | boolean | undefined>
 ) {
   const search = Object.entries(params)
@@ -71,8 +129,21 @@ function widgetPath(
   return `${dashboardUrl}/widget/${kind}${search ? `?${search}` : ''}`;
 }
 
-function themeParam(theme: EmbedTheme) {
-  return theme === 'auto' ? undefined : theme;
+function embedCode(kind: Kind, url: string) {
+  switch (kind) {
+    case 'realtime':
+      return `<iframe src="${url}" width="100%" height="420" frameborder="0" style="border-radius: 12px;" title="Live visitors"></iframe>`;
+    case 'traffic':
+      return `<iframe src="${url}" width="100%" height="440" frameborder="0" style="border-radius: 12px;" title="Site traffic"></iframe>`;
+    case 'counter':
+      return `<iframe src="${url}" height="32" width="220" style="border: none; overflow: hidden;" title="Visitors right now"></iframe>`;
+    case 'badge':
+      return `<a href="https://flarepanel.dev" style="display: inline-block; overflow: hidden; border-radius: 8px;">
+  <iframe src="${url}" height="48" width="250" style="border: none; overflow: hidden; pointer-events: none;" title="Visitors badge"></iframe>
+</a>`;
+    default:
+      return '';
+  }
 }
 
 function Component() {
@@ -80,6 +151,13 @@ function Component() {
   const { dashboardUrl } = useAppContext();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const [selected, setSelected] = useState<Kind>('realtime');
+  const [themes, setThemes] = useState<Record<Kind, EmbedTheme>>({
+    realtime: 'auto',
+    traffic: 'auto',
+    counter: 'auto',
+    badge: 'auto',
+  });
 
   const realtimeQuery = useQuery(
     trpc.widget.get.queryOptions({ projectId, type: 'realtime' })
@@ -125,11 +203,6 @@ function Component() {
     })
   );
 
-  const toggle = (type: IWidgetType, enabled: boolean) =>
-    toggleMutation.mutate({ projectId, organizationId, type, enabled });
-  const saveOptions = (options: IWidgetOptions) =>
-    optionsMutation.mutate({ projectId, organizationId, options });
-
   if (
     realtimeQuery.isLoading ||
     trafficQuery.isLoading ||
@@ -138,349 +211,298 @@ function Component() {
     return <FullPageLoadingState />;
   }
 
-  const realtime = realtimeQuery.data as StoredWidget | null | undefined;
-  const traffic = trafficQuery.data as StoredWidget | null | undefined;
-  const counter = counterQuery.data as StoredWidget | null | undefined;
-  const pending = (type: IWidgetType) =>
-    toggleMutation.isPending && toggleMutation.variables?.type === type;
+  const stored: Record<IWidgetType, StoredWidget | null | undefined> = {
+    realtime: realtimeQuery.data as StoredWidget | null | undefined,
+    traffic: trafficQuery.data as StoredWidget | null | undefined,
+    counter: counterQuery.data as StoredWidget | null | undefined,
+  };
+  const widgetOf = (kind: Kind) => stored[KINDS[kind].store];
+  const isOn = (kind: Kind) => widgetOf(kind)?.public === true;
+  const isBusy = (kind: Kind) =>
+    toggleMutation.isPending &&
+    toggleMutation.variables?.type === KINDS[kind].store;
+  const toggle = (kind: Kind, enabled: boolean) => {
+    setSelected(kind);
+    toggleMutation.mutate({
+      projectId,
+      organizationId,
+      type: KINDS[kind].store,
+      enabled,
+    });
+  };
+  const saveOptions = (options: IWidgetOptions) =>
+    optionsMutation.mutate({ projectId, organizationId, options });
+  const onCount = KIND_ORDER.filter(isOn).length;
 
   return (
     <div className="max-w-screen-lg space-y-6">
-      <div className="space-y-1">
-        <h2 className="font-semibold text-lg">Widgets</h2>
-        <p className="text-muted-foreground">
-          Show your numbers on your own site. Each widget gets a public link
-          once it is on; turn it off and the link stops working. Previews show
-          sample data until a widget is on.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="space-y-1">
+          <h2 className="font-semibold text-lg">Widgets</h2>
+          <p className="max-w-prose text-muted-foreground">
+            Show your numbers on your own site. Switch a widget on to get its
+            public link; switch it off and the link stops working.
+          </p>
+        </div>
+        <span className="text-muted-foreground text-sm tabular-nums">
+          {onCount} of {KIND_ORDER.length} on
+        </span>
       </div>
 
-      <RealtimeCard
-        busy={pending('realtime')}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {KIND_ORDER.map((kind) => (
+          <WidgetTile
+            busy={isBusy(kind)}
+            key={kind}
+            kind={kind}
+            on={isOn(kind)}
+            onSelect={() => setSelected(kind)}
+            onToggle={(enabled) => toggle(kind, enabled)}
+            selected={selected === kind}
+          />
+        ))}
+      </div>
+
+      <WidgetDetails
+        busy={isBusy(selected)}
         dashboardUrl={dashboardUrl}
+        kind={selected}
         onOptions={saveOptions}
-        onToggle={(enabled) => toggle('realtime', enabled)}
+        onTheme={(theme) =>
+          setThemes((current) => ({ ...current, [selected]: theme }))
+        }
+        onToggle={(enabled) => toggle(selected, enabled)}
         savingOptions={optionsMutation.isPending}
-        widget={realtime}
-      />
-      <TrafficCard
-        busy={pending('traffic')}
-        dashboardUrl={dashboardUrl}
-        onOptions={saveOptions}
-        onToggle={(enabled) => toggle('traffic', enabled)}
-        savingOptions={optionsMutation.isPending}
-        widget={traffic}
-      />
-      <CounterCard
-        busy={pending('counter')}
-        dashboardUrl={dashboardUrl}
-        onToggle={(enabled) => toggle('counter', enabled)}
-        widget={counter}
-      />
-      <BadgeCard
-        busy={pending('counter')}
-        dashboardUrl={dashboardUrl}
-        onToggle={(enabled) => toggle('counter', enabled)}
-        widget={counter}
+        theme={themes[selected]}
+        widget={widgetOf(selected)}
       />
     </div>
   );
 }
 
-interface CardProps {
+function WidgetTile({
+  kind,
+  on,
+  busy,
+  selected,
+  onSelect,
+  onToggle,
+}: {
+  kind: Kind;
+  on: boolean;
+  busy: boolean;
+  selected: boolean;
+  onSelect: () => void;
+  onToggle: (enabled: boolean) => void;
+}) {
+  const meta = KINDS[kind];
+  const Icon = meta.icon;
+  const switchId = `widget-${kind}`;
+  return (
+    <div
+      className={cn(
+        'group flex flex-col overflow-hidden rounded-xl border bg-card transition-[border-color,box-shadow]',
+        selected
+          ? 'border-foreground/40 shadow-sm ring-1 ring-foreground/15'
+          : 'hover:border-foreground/25'
+      )}
+    >
+      <button
+        aria-label={`Show ${meta.title} settings`}
+        aria-pressed={selected}
+        className="relative block h-32 w-full overflow-hidden border-b bg-def-100 text-left"
+        onClick={onSelect}
+        type="button"
+      >
+        <div
+          className={cn(
+            'absolute inset-0 transition-opacity',
+            on ? 'opacity-100' : 'opacity-60 group-hover:opacity-80'
+          )}
+        >
+          <Thumbnail kind={kind} />
+        </div>
+        {meta.badge && (
+          <span className="absolute top-2 right-2 rounded-full bg-chart-0 px-2 py-px font-medium text-[11px] text-white">
+            {meta.badge}
+          </span>
+        )}
+      </button>
+      <div className="flex items-center gap-3 p-3">
+        <Icon className="size-4 shrink-0 text-muted-foreground" />
+        <button
+          className="min-w-0 flex-1 text-left"
+          onClick={onSelect}
+          type="button"
+        >
+          <span className="block truncate font-medium text-sm">
+            {meta.title}
+          </span>
+          <span className="flex items-center gap-1.5 text-muted-foreground text-xs">
+            {on ? (
+              <>
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                On
+              </>
+            ) : (
+              meta.summary
+            )}
+          </span>
+        </button>
+        <Switch
+          aria-label={`${meta.title} ${on ? 'on' : 'off'}`}
+          checked={on}
+          disabled={busy}
+          id={switchId}
+          onCheckedChange={onToggle}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Small drawn previews for the tiles: sample shapes, not real numbers.
+const THUMB_BARS = [
+  5, 8, 6, 9, 7, 4, 10, 12, 8, 11, 9, 14, 12, 16, 13, 18, 15, 20,
+];
+const THUMB_AREA =
+  'M0 34 C10 30 18 31 26 28 S42 22 52 25 S70 18 80 20 S96 12 106 15 S124 8 132 10 L140 6 L140 44 L0 44 Z';
+
+function Thumbnail({ kind }: { kind: Kind }) {
+  if (kind === 'realtime') {
+    return (
+      <div className="flex h-full flex-col justify-between p-4">
+        <div className="flex items-center gap-1.5 font-medium text-[10px] text-muted-foreground uppercase tracking-wide">
+          <Ping />
+          Users now
+        </div>
+        <div className="font-bold text-3xl tabular-nums leading-none">42</div>
+        <div className="flex h-8 items-end gap-[3px]">
+          {THUMB_BARS.map((height, index) => (
+            <div
+              className="flex-1 rounded-[2px] bg-chart-0"
+              key={index.toString()}
+              style={{ height: `${(height / 20) * 100}%` }}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (kind === 'traffic') {
+    return (
+      <div className="flex h-full flex-col justify-between p-4">
+        <div className="flex items-baseline gap-4">
+          <div>
+            <div className="font-bold text-2xl tabular-nums leading-none">
+              7.3K
+            </div>
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              Visitors
+            </div>
+          </div>
+          <div>
+            <div className="font-bold text-2xl tabular-nums leading-none">
+              21K
+            </div>
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              Pageviews
+            </div>
+          </div>
+        </div>
+        <svg
+          aria-hidden
+          className="h-11 w-full text-chart-0"
+          preserveAspectRatio="none"
+          viewBox="0 0 140 44"
+        >
+          <path d={THUMB_AREA} fill="currentColor" fillOpacity="0.2" />
+          <path
+            d={THUMB_AREA.replace(/ L140 44 L0 44 Z$/, '')}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+      </div>
+    );
+  }
+  if (kind === 'counter') {
+    return (
+      <div className="flex h-full items-center justify-center p-4">
+        <div className="flex items-center gap-2 rounded-full border bg-card px-3.5 py-2 text-sm shadow-sm">
+          <Ping />
+          <span className="font-semibold tabular-nums">42</span>
+          <span className="text-muted-foreground">unique visitors</span>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex h-full items-center justify-center p-4">
+      <div className="flex w-full max-w-[210px] items-center gap-2.5 rounded-lg bg-[#16171c] px-2.5 py-2 text-white shadow-sm">
+        <LogoSquare className="size-7" />
+        <div className="min-w-0 flex-1 leading-tight">
+          <div className="text-[8px] text-white/70 uppercase tracking-wide">
+            Analytics from
+          </div>
+          <div className="font-semibold text-sm">FlarePanel</div>
+        </div>
+        <div className="flex flex-col items-center gap-0.5">
+          <UsersIcon className="size-3.5" />
+          <span className="font-medium text-xs tabular-nums">8.6K</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WidgetDetails({
+  kind,
+  widget,
+  dashboardUrl,
+  busy,
+  theme,
+  onTheme,
+  onToggle,
+  onOptions,
+  savingOptions,
+}: {
+  kind: Kind;
   widget: StoredWidget | null | undefined;
   dashboardUrl: string;
   busy: boolean;
+  theme: EmbedTheme;
+  onTheme: (theme: EmbedTheme) => void;
   onToggle: (enabled: boolean) => void;
-}
-
-interface OptionsProps {
   onOptions: (options: IWidgetOptions) => void;
   savingOptions: boolean;
-}
-
-/** The live link when the widget is on, else the sample-data preview. */
-function useWidgetLinks(
-  widget: StoredWidget | null | undefined,
-  dashboardUrl: string,
-  kind: string,
-  theme: EmbedTheme
-) {
+}) {
+  const meta = KINDS[kind];
+  const Icon = meta.icon;
+  const themeParam = theme === 'auto' || kind === 'badge' ? undefined : theme;
   const live =
     widget?.public === true
       ? widgetPath(dashboardUrl, kind, {
           shareId: widget.id,
-          theme: themeParam(theme),
+          theme: themeParam,
         })
       : null;
   const preview =
-    live ??
-    widgetPath(dashboardUrl, kind, { demo: true, theme: themeParam(theme) });
-  return { live, preview };
-}
-
-function RealtimeCard({
-  widget,
-  dashboardUrl,
-  busy,
-  onToggle,
-  onOptions,
-  savingOptions,
-}: CardProps & OptionsProps) {
-  const [theme, setTheme] = useState<EmbedTheme>('auto');
-  const { live, preview } = useWidgetLinks(
-    widget,
-    dashboardUrl,
-    'realtime',
-    theme
-  );
-  const options =
+    live ?? widgetPath(dashboardUrl, kind, { demo: true, theme: themeParam });
+  const realtime =
     widget?.options.type === 'realtime' ? widget.options : DEFAULT_REALTIME;
-  const set = (patch: Partial<IRealtimeWidgetOptions>) =>
-    onOptions({ ...options, ...patch });
-
-  return (
-    <WidgetCard
-      busy={busy}
-      description="Visitors in the last 30 minutes with a per-minute chart, plus where they come from and what they read. Updates live."
-      enabled={!!live}
-      icon={RadioIcon}
-      onToggle={onToggle}
-      preview={
-        <PreviewFrame
-          height={420}
-          // Options change what the widget returns, so reload the frame.
-          key={`${options.countries}${options.referrers}${options.paths}`}
-          live={!!live}
-          src={preview}
-          title="Realtime widget preview"
-        />
-      }
-      title="Realtime"
-    >
-      {live && (
-        <>
-          <OptionGroup title="Show">
-            <OptionSwitch
-              checked={options.countries}
-              disabled={savingOptions}
-              id="realtime-countries"
-              label="Countries"
-              onChange={(countries) => set({ countries })}
-            />
-            <OptionSwitch
-              checked={options.referrers}
-              disabled={savingOptions}
-              id="realtime-referrers"
-              label="Sources"
-              onChange={(referrers) => set({ referrers })}
-            />
-            <OptionSwitch
-              checked={options.paths}
-              disabled={savingOptions}
-              id="realtime-paths"
-              label="Pages"
-              onChange={(paths) => set({ paths })}
-            />
-          </OptionGroup>
-          <ThemePicker onChange={setTheme} value={theme} />
-          <EmbedCode
-            code={`<iframe src="${live}" width="100%" height="420" frameborder="0" style="border-radius: 12px;" title="Live visitors"></iframe>`}
-            url={live}
-          />
-        </>
-      )}
-    </WidgetCard>
-  );
-}
-
-function TrafficCard({
-  widget,
-  dashboardUrl,
-  busy,
-  onToggle,
-  onOptions,
-  savingOptions,
-}: CardProps & OptionsProps) {
-  const [theme, setTheme] = useState<EmbedTheme>('auto');
-  const { live, preview } = useWidgetLinks(
-    widget,
-    dashboardUrl,
-    'traffic',
-    theme
-  );
-  const options =
+  const traffic =
     widget?.options.type === 'traffic' ? widget.options : DEFAULT_TRAFFIC;
-  const set = (patch: Partial<ITrafficWidgetOptions>) =>
-    onOptions({ ...options, ...patch });
+  // Options change what the widget returns, so the frame reloads with them.
+  const frameKey =
+    kind === 'realtime'
+      ? `${realtime.countries}${realtime.referrers}${realtime.paths}`
+      : kind === 'traffic'
+        ? `${traffic.range}${traffic.pages}${traffic.referrers}`
+        : kind;
 
-  return (
-    <WidgetCard
-      badge="New"
-      busy={busy}
-      description="Visitors and pageviews over the last 7 or 30 days on a chart, with your top pages and sources. A public stats page in one embed."
-      enabled={!!live}
-      icon={AreaChartIcon}
-      onToggle={onToggle}
-      preview={
-        <PreviewFrame
-          height={440}
-          key={`${options.range}${options.pages}${options.referrers}`}
-          live={!!live}
-          src={preview}
-          title="Traffic widget preview"
-        />
-      }
-      title="Traffic"
-    >
-      {live && (
-        <>
-          <OptionGroup title="Period">
-            <ToggleGroup
-              className="justify-start"
-              disabled={savingOptions}
-              onValueChange={(range) => {
-                if (range === '7d' || range === '30d') {
-                  set({ range });
-                }
-              }}
-              type="single"
-              value={options.range}
-              variant="outline"
-            >
-              <ToggleGroupItem value="7d">7 days</ToggleGroupItem>
-              <ToggleGroupItem value="30d">30 days</ToggleGroupItem>
-            </ToggleGroup>
-          </OptionGroup>
-          <OptionGroup title="Show">
-            <OptionSwitch
-              checked={options.pages}
-              disabled={savingOptions}
-              id="traffic-pages"
-              label="Top pages"
-              onChange={(pages) => set({ pages })}
-            />
-            <OptionSwitch
-              checked={options.referrers}
-              disabled={savingOptions}
-              id="traffic-referrers"
-              label="Top sources"
-              onChange={(referrers) => set({ referrers })}
-            />
-          </OptionGroup>
-          <ThemePicker onChange={setTheme} value={theme} />
-          <EmbedCode
-            code={`<iframe src="${live}" width="100%" height="440" frameborder="0" style="border-radius: 12px;" title="Site traffic"></iframe>`}
-            note="Numbers refresh every 5 minutes."
-            url={live}
-          />
-        </>
-      )}
-    </WidgetCard>
-  );
-}
-
-function CounterCard({ widget, dashboardUrl, busy, onToggle }: CardProps) {
-  const [theme, setTheme] = useState<EmbedTheme>('auto');
-  const { live, preview } = useWidgetLinks(
-    widget,
-    dashboardUrl,
-    'counter',
-    theme
-  );
-
-  return (
-    <WidgetCard
-      busy={busy}
-      description="One line with a live dot and the number of people on your site right now. Fits in a header, a footer or a sidebar."
-      enabled={!!live}
-      icon={ActivityIcon}
-      onToggle={onToggle}
-      preview={
-        <PreviewFrame
-          height={32}
-          live={!!live}
-          src={preview}
-          title="Live counter preview"
-          width={220}
-        />
-      }
-      title="Live counter"
-    >
-      {live && (
-        <>
-          <ThemePicker onChange={setTheme} value={theme} />
-          <EmbedCode
-            code={`<iframe src="${live}" height="32" width="220" style="border: none; overflow: hidden;" title="Visitors right now"></iframe>`}
-            url={live}
-          />
-        </>
-      )}
-    </WidgetCard>
-  );
-}
-
-function BadgeCard({ widget, dashboardUrl, busy, onToggle }: CardProps) {
-  const { live, preview } = useWidgetLinks(
-    widget,
-    dashboardUrl,
-    'badge',
-    'auto'
-  );
-
-  return (
-    <WidgetCard
-      busy={busy}
-      description="A badge with your visitors over the last 30 days. It shares its link with the live counter, so the two turn on and off together."
-      enabled={!!live}
-      icon={AwardIcon}
-      onToggle={onToggle}
-      preview={
-        <PreviewFrame
-          className="pointer-events-none"
-          height={48}
-          live={!!live}
-          src={preview}
-          title="Visitors badge preview"
-          width={250}
-        />
-      }
-      title="Visitors badge"
-    >
-      {live && (
-        <EmbedCode
-          code={`<a href="https://flarepanel.dev" style="display: inline-block; overflow: hidden; border-radius: 8px;">
-  <iframe src="${live}" height="48" width="250" style="border: none; overflow: hidden; pointer-events: none;" title="Visitors badge"></iframe>
-</a>`}
-          url={live}
-        />
-      )}
-    </WidgetCard>
-  );
-}
-
-function WidgetCard({
-  title,
-  icon: Icon,
-  badge,
-  description,
-  enabled,
-  busy,
-  onToggle,
-  preview,
-  children,
-}: {
-  title: string;
-  icon: LucideIcon;
-  badge?: string;
-  description: string;
-  enabled: boolean;
-  busy: boolean;
-  onToggle: (enabled: boolean) => void;
-  preview: ReactNode;
-  children?: ReactNode;
-}) {
-  const switchId = `widget-${title.toLowerCase().replace(/\s+/g, '-')}`;
   return (
     <Widget className="w-full">
       <WidgetHead className="row items-start justify-between gap-6">
@@ -490,37 +512,147 @@ function WidgetCard({
           </div>
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2">
-              <label className="title" htmlFor={switchId}>
-                {title}
-              </label>
-              {badge && (
-                <span className="rounded-full bg-chart-0/15 px-2 py-px font-medium text-chart-0 text-xs">
-                  {badge}
-                </span>
-              )}
+              <span className="title">{meta.title}</span>
+              <StatusPill on={!!live} />
             </div>
             <p className="max-w-prose text-muted-foreground text-sm">
-              {description}
+              {meta.description}
             </p>
           </div>
         </div>
-        <Switch
-          checked={enabled}
-          disabled={busy}
-          id={switchId}
-          onCheckedChange={onToggle}
-        />
       </WidgetHead>
-      <WidgetBody
-        className={cn(
-          'grid gap-6',
-          children && 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]'
-        )}
-      >
-        {children && <div className="min-w-0 space-y-5">{children}</div>}
-        <div className="min-w-0">{preview}</div>
+      <WidgetBody className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+        <div className="min-w-0 space-y-5">
+          {live ? (
+            <>
+              {kind === 'realtime' && (
+                <OptionGroup title="Show">
+                  <OptionSwitch
+                    checked={realtime.countries}
+                    disabled={savingOptions}
+                    id="realtime-countries"
+                    label="Countries"
+                    onChange={(countries) =>
+                      onOptions({ ...realtime, countries })
+                    }
+                  />
+                  <OptionSwitch
+                    checked={realtime.referrers}
+                    disabled={savingOptions}
+                    id="realtime-referrers"
+                    label="Sources"
+                    onChange={(referrers) =>
+                      onOptions({ ...realtime, referrers })
+                    }
+                  />
+                  <OptionSwitch
+                    checked={realtime.paths}
+                    disabled={savingOptions}
+                    id="realtime-paths"
+                    label="Pages"
+                    onChange={(paths) => onOptions({ ...realtime, paths })}
+                  />
+                </OptionGroup>
+              )}
+              {kind === 'traffic' && (
+                <>
+                  <OptionGroup title="Period">
+                    <ToggleGroup
+                      className="justify-start"
+                      disabled={savingOptions}
+                      onValueChange={(range) => {
+                        if (range === '7d' || range === '30d') {
+                          onOptions({ ...traffic, range });
+                        }
+                      }}
+                      type="single"
+                      value={traffic.range}
+                      variant="outline"
+                    >
+                      <ToggleGroupItem value="7d">7 days</ToggleGroupItem>
+                      <ToggleGroupItem value="30d">30 days</ToggleGroupItem>
+                    </ToggleGroup>
+                  </OptionGroup>
+                  <OptionGroup title="Show">
+                    <OptionSwitch
+                      checked={traffic.pages}
+                      disabled={savingOptions}
+                      id="traffic-pages"
+                      label="Top pages"
+                      onChange={(pages) => onOptions({ ...traffic, pages })}
+                    />
+                    <OptionSwitch
+                      checked={traffic.referrers}
+                      disabled={savingOptions}
+                      id="traffic-referrers"
+                      label="Top sources"
+                      onChange={(referrers) =>
+                        onOptions({ ...traffic, referrers })
+                      }
+                    />
+                  </OptionGroup>
+                </>
+              )}
+              {kind !== 'badge' && (
+                <ThemePicker onChange={onTheme} value={theme} />
+              )}
+              <EmbedCode
+                code={embedCode(kind, live)}
+                note={
+                  kind === 'traffic'
+                    ? 'Numbers refresh every 5 minutes.'
+                    : undefined
+                }
+                url={live}
+              />
+            </>
+          ) : (
+            <div className="flex flex-col items-start gap-4 rounded-lg border border-dashed p-6">
+              <div className="space-y-1">
+                <h3 className="font-medium">This widget is off</h3>
+                <p className="text-muted-foreground text-sm">
+                  The preview shows sample data. Switch it on to see your own
+                  numbers and get the link and embed code.
+                </p>
+              </div>
+              <Button disabled={busy} onClick={() => onToggle(true)}>
+                Turn on {meta.title.toLowerCase()}
+              </Button>
+            </div>
+          )}
+        </div>
+        <PreviewFrame
+          height={meta.preview.height}
+          key={frameKey}
+          live={!!live}
+          pointerEvents={kind !== 'badge'}
+          src={preview}
+          title={`${meta.title} preview`}
+          width={meta.preview.width}
+        />
       </WidgetBody>
     </Widget>
+  );
+}
+
+function StatusPill({ on }: { on: boolean }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full px-2 py-px font-medium text-xs',
+        on
+          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+          : 'bg-def-200 text-muted-foreground'
+      )}
+    >
+      <span
+        className={cn(
+          'size-1.5 rounded-full',
+          on ? 'bg-emerald-500' : 'bg-muted-foreground/60'
+        )}
+      />
+      {on ? 'On' : 'Off'}
+    </span>
   );
 }
 
@@ -530,17 +662,17 @@ function PreviewFrame({
   height,
   width,
   live,
-  className,
+  pointerEvents,
 }: {
   src: string;
   title: string;
   height: number;
   width?: number;
   live: boolean;
-  className?: string;
+  pointerEvents: boolean;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border bg-def-100">
+    <div className="min-w-0 self-start overflow-hidden rounded-lg border bg-def-100">
       <div className="flex h-10 items-center justify-between gap-3 border-b px-3 text-muted-foreground text-xs">
         <span className="flex items-center gap-2">
           {live ? (
@@ -563,9 +695,12 @@ function PreviewFrame({
           </Button>
         )}
       </div>
-      <div className={cn('flex justify-center', width && 'p-6')}>
+      <div className={cn('flex justify-center', width && 'px-6 py-10')}>
         <iframe
-          className={cn('block border-0', className)}
+          className={cn(
+            'block border-0',
+            !pointerEvents && 'pointer-events-none'
+          )}
           height={height}
           loading="lazy"
           src={src}
