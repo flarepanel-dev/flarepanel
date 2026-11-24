@@ -17,6 +17,7 @@ import { Route as PublicRouteImport } from './routes/_public'
 import { Route as LoginRouteImport } from './routes/_login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WidgetTrafficRouteImport } from './routes/widget/traffic'
 import { Route as WidgetRealtimeRouteImport } from './routes/widget/realtime'
 import { Route as WidgetCounterRouteImport } from './routes/widget/counter'
 import { Route as WidgetBadgeRouteImport } from './routes/widget/badge'
@@ -167,6 +168,11 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WidgetTrafficRoute = WidgetTrafficRouteImport.update({
+  id: '/widget/traffic',
+  path: '/widget/traffic',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WidgetRealtimeRoute = WidgetRealtimeRouteImport.update({
@@ -768,6 +774,7 @@ export interface FileRoutesByFullPath {
   '/widget/badge': typeof WidgetBadgeRoute
   '/widget/counter': typeof WidgetCounterRoute
   '/widget/realtime': typeof WidgetRealtimeRoute
+  '/widget/traffic': typeof WidgetTrafficRoute
   '/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRouteWithChildren
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
@@ -862,6 +869,7 @@ export interface FileRoutesByTo {
   '/widget/badge': typeof WidgetBadgeRoute
   '/widget/counter': typeof WidgetCounterRoute
   '/widget/realtime': typeof WidgetRealtimeRoute
+  '/widget/traffic': typeof WidgetTrafficRoute
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
   '/invite/$inviteId': typeof PublicInviteInviteIdRoute
@@ -950,6 +958,7 @@ export interface FileRoutesById {
   '/widget/badge': typeof WidgetBadgeRoute
   '/widget/counter': typeof WidgetCounterRoute
   '/widget/realtime': typeof WidgetRealtimeRoute
+  '/widget/traffic': typeof WidgetTrafficRoute
   '/_app/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRouteWithChildren
   '/_app/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/_app/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
@@ -1058,6 +1067,7 @@ export interface FileRouteTypes {
     | '/widget/badge'
     | '/widget/counter'
     | '/widget/realtime'
+    | '/widget/traffic'
     | '/$organizationId/$projectId'
     | '/$organizationId/billing'
     | '/$organizationId/settings'
@@ -1152,6 +1162,7 @@ export interface FileRouteTypes {
     | '/widget/badge'
     | '/widget/counter'
     | '/widget/realtime'
+    | '/widget/traffic'
     | '/$organizationId/billing'
     | '/$organizationId/settings'
     | '/invite/$inviteId'
@@ -1239,6 +1250,7 @@ export interface FileRouteTypes {
     | '/widget/badge'
     | '/widget/counter'
     | '/widget/realtime'
+    | '/widget/traffic'
     | '/_app/$organizationId/$projectId'
     | '/_app/$organizationId/billing'
     | '/_app/$organizationId/settings'
@@ -1344,6 +1356,7 @@ export interface RootRouteChildren {
   WidgetBadgeRoute: typeof WidgetBadgeRoute
   WidgetCounterRoute: typeof WidgetCounterRoute
   WidgetRealtimeRoute: typeof WidgetRealtimeRoute
+  WidgetTrafficRoute: typeof WidgetTrafficRoute
   ShareDashboardShareIdRoute: typeof ShareDashboardShareIdRoute
   ShareOverviewShareIdRoute: typeof ShareOverviewShareIdRoute
   ShareReportShareIdRoute: typeof ShareReportShareIdRoute
@@ -1391,6 +1404,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/widget/traffic': {
+      id: '/widget/traffic'
+      path: '/widget/traffic'
+      fullPath: '/widget/traffic'
+      preLoaderRoute: typeof WidgetTrafficRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/widget/realtime': {
@@ -2702,6 +2722,7 @@ const rootRouteChildren: RootRouteChildren = {
   WidgetBadgeRoute: WidgetBadgeRoute,
   WidgetCounterRoute: WidgetCounterRoute,
   WidgetRealtimeRoute: WidgetRealtimeRoute,
+  WidgetTrafficRoute: WidgetTrafficRoute,
   ShareDashboardShareIdRoute: ShareDashboardShareIdRoute,
   ShareOverviewShareIdRoute: ShareOverviewShareIdRoute,
   ShareReportShareIdRoute: ShareReportShareIdRoute,

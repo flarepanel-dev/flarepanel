@@ -953,8 +953,16 @@ export type IReportOptions = z.infer<typeof zReportOptions>;
 export type ISankeyOptions = z.infer<typeof zSankeyOptions>;
 export type IHistogramOptions = z.infer<typeof zHistogramOptions>;
 
-export const zWidgetType = z.enum(['realtime', 'counter']);
+export const zWidgetType = z.enum(['realtime', 'counter', 'traffic']);
 export type IWidgetType = z.infer<typeof zWidgetType>;
+
+/** Visitors per day with the top pages and sources, over 7 or 30 days. */
+export const zTrafficWidgetOptions = z.object({
+  type: z.literal('traffic'),
+  range: z.enum(['7d', '30d']).default('30d'),
+  pages: z.boolean().default(true),
+  referrers: z.boolean().default(true),
+});
 
 export const zRealtimeWidgetOptions = z.object({
   type: z.literal('realtime'),
@@ -970,11 +978,13 @@ export const zCounterWidgetOptions = z.object({
 export const zWidgetOptions = z.discriminatedUnion('type', [
   zRealtimeWidgetOptions,
   zCounterWidgetOptions,
+  zTrafficWidgetOptions,
 ]);
 
 export type IWidgetOptions = z.infer<typeof zWidgetOptions>;
 export type ICounterWidgetOptions = z.infer<typeof zCounterWidgetOptions>;
 export type IRealtimeWidgetOptions = z.infer<typeof zRealtimeWidgetOptions>;
+export type ITrafficWidgetOptions = z.infer<typeof zTrafficWidgetOptions>;
 
 // Base input schema - for API calls, engine, chart queries
 export const zReportInput = z.object({

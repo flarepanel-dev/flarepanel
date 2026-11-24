@@ -3,45 +3,63 @@ import { createFileRoute } from '@tanstack/react-router';
 import { UsersIcon } from 'lucide-react';
 import { z } from 'zod';
 import { LogoSquare } from '@/components/logo';
+import {
+  embedSearch,
+  MissingWidgetLink,
+  SAMPLE_BADGE_VISITORS,
+  useEmbedTheme,
+  useMounted,
+} from '@/components/widgets/embed';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 
-const widgetSearchSchema = z.object({
-  shareId: z.string(),
-  color: z.string().optional(),
-});
+const widgetSearchSchema = z.object(embedSearch);
+const BADGE_PLATE = '#16171c';
 
 export const Route = createFileRoute('/widget/badge')({
   // Embedded in someone else's page, so this stays small. Without it a
   // missing `shareId` fell through to the root handler, which prints
   // `error.message` — for a ZodError that is the raw issues array.
-  errorComponent: () => (
-    <div className="p-2 text-muted-foreground text-xs">
-      Missing or invalid widget link.
-    </div>
-  ),
+  errorComponent: MissingWidgetLink,
   component: RouteComponent,
   validateSearch: widgetSearchSchema,
 });
 
 function RouteComponent() {
-  const { shareId, color } = Route.useSearch();
-  const trpc = useTRPC();
+  const { shareId, color, demo, theme } = Route.useSearch();
+  useEmbedTheme(theme);
+  if (demo) {
+    return <DemoBadge color={color} />;
+  }
+  if (!shareId) {
+    return <MissingWidgetLink />;
+  }
+  return <LiveBadge color={color} shareId={shareId} />;
+}
 
-  // Fetch widget data
+function DemoBadge({ color }: { color?: string }) {
+  const mounted = useMounted();
+  return (
+    <BadgeWidget
+      color={color}
+      isLoading={!mounted}
+      visitors={SAMPLE_BADGE_VISITORS}
+    />
+  );
+}
+
+function LiveBadge({ shareId, color }: { shareId: string; color?: string }) {
+  const trpc = useTRPC();
   const { data, isLoading } = useQuery(
     trpc.widget.badge.queryOptions({ shareId })
   );
-
-  if (isLoading) {
-    return <BadgeWidget color={color} isLoading visitors={0} />;
-  }
-
-  if (!data) {
-    return <BadgeWidget color={color} visitors={0} />;
-  }
-
-  return <BadgeWidget color={color} visitors={data.visitors} />;
+  return (
+    <BadgeWidget
+      color={color}
+      isLoading={isLoading}
+      visitors={data?.visitors ?? 0}
+    />
+  );
 }
 
 interface BadgeWidgetProps {
@@ -55,8 +73,10 @@ function BadgeWidget({ visitors, isLoading, color }: BadgeWidgetProps) {
   return (
     <div
       className="group center-center absolute inset-0 inline-flex items-center gap-3 rounded-lg px-2"
+      // The text is white, so the badge brings its own dark plate unless the
+      // embed code picks a colour; on a white page it was invisible.
       style={{
-        backgroundColor: color,
+        backgroundColor: color || BADGE_PLATE,
       }}
     >
       <div className="flex-shrink-0">

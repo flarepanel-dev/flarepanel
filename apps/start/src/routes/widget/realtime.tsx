@@ -9,6 +9,13 @@ import { OPChartTooltip } from '@/components/charts/op-tooltip';
 import { LogoSquare } from '@/components/logo';
 import { Ping } from '@/components/ping';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import {
+  embedSearch,
+  MissingWidgetLink,
+  sampleRealtime,
+  useEmbedTheme,
+  useMounted,
+} from '@/components/widgets/embed';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import useWS from '@/hooks/use-ws';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -29,26 +36,58 @@ type HistogramPoint =
   };
 
 const widgetSearchSchema = z.object({
-  shareId: z.string(),
+  ...embedSearch,
   limit: z.number().default(10),
-  color: z.string().optional(),
+  // Demo previews only: which lists the sample shows.
+  countries: z.boolean().optional().catch(undefined),
+  referrers: z.boolean().optional().catch(undefined),
+  paths: z.boolean().optional().catch(undefined),
 });
 
 export const Route = createFileRoute('/widget/realtime')({
   // Embedded in someone else's page, so this stays small. Without it a
   // missing `shareId` fell through to the root handler, which prints
   // `error.message` — for a ZodError that is the raw issues array.
-  errorComponent: () => (
-    <div className="p-2 text-muted-foreground text-xs">
-      Missing or invalid widget link.
-    </div>
-  ),
+  errorComponent: MissingWidgetLink,
   component: RouteComponent,
   validateSearch: widgetSearchSchema,
 });
 
 function RouteComponent() {
-  const { shareId, limit, color } = Route.useSearch();
+  const search = Route.useSearch();
+  useEmbedTheme(search.theme);
+  if (search.demo) {
+    return <DemoRealtime />;
+  }
+  if (!search.shareId) {
+    return <MissingWidgetLink />;
+  }
+  return <LiveRealtime shareId={search.shareId} />;
+}
+
+function DemoRealtime() {
+  const { limit, color, countries, referrers, paths } = Route.useSearch();
+  const mounted = useMounted();
+  if (!mounted) {
+    return <RealtimeWidgetSkeleton limit={limit} />;
+  }
+  const sample = sampleRealtime();
+  return (
+    <RealtimeView
+      color={color}
+      data={{
+        ...sample,
+        countries: countries === false ? [] : sample.countries,
+        referrers: referrers === false ? [] : sample.referrers,
+        paths: paths ? sample.paths : [],
+      }}
+      limit={limit}
+    />
+  );
+}
+
+function LiveRealtime({ shareId }: { shareId: string }) {
+  const { limit, color } = Route.useSearch();
   const trpc = useTRPC();
 
   // Fetch widget data
@@ -111,6 +150,14 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
     }
   );
 
+  return <RealtimeView color={color} data={data} limit={limit} />;
+}
+
+function RealtimeView({
+  data,
+  limit,
+  color,
+}: Omit<RealtimeWidgetProps, 'shareId'>) {
   const barColor = color || DEFAULT_BAR_COLOR;
   const firstMinute = data.histogram[0]?.time;
   const lastMinute = data.histogram.at(-1)?.time;

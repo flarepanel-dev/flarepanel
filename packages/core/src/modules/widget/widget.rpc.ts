@@ -25,6 +25,7 @@ import { getSettingsForProject } from '../organization/organization.service';
 import {
   zCounterWidgetOptions,
   zRealtimeWidgetOptions,
+  zTrafficWidgetOptions,
   zWidgetOptions,
   zWidgetType,
 } from '../report/report.constants';
@@ -35,6 +36,27 @@ const REALTIME_TOP_LIST_LIMIT = 10;
 const BADGE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const REALTIME_MINUTES = 30;
 const MINUTE_MS = 60_000;
+const DAY_MS = 24 * 60 * MINUTE_MS;
+const TRAFFIC_CACHE_TTL_SECONDS = 5 * 60;
+const TRAFFIC_TOP_LIST_LIMIT = 5;
+/** Rows read before merging by name, so the merged top five stay right. */
+const TRAFFIC_TOP_LIST_READ = 50;
+
+/** Sums rows that share a name and returns the largest `TRAFFIC_TOP_LIST_LIMIT`. */
+export function topByName(
+  rows: { name: string; pageviews: number; sessions: number }[],
+  field: 'pageviews' | 'sessions'
+): [string, number][] {
+  const totals = new Map<string, number>();
+  for (const row of rows) {
+    if (row.name) {
+      totals.set(row.name, (totals.get(row.name) ?? 0) + row[field]);
+    }
+  }
+  return [...totals.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, TRAFFIC_TOP_LIST_LIMIT);
+}
 
 /** The realtime widget's numbers from the project's Durable Object. */
 async function realtimeWidgetFromEventStore(
@@ -105,8 +127,10 @@ const REALTIME_WINDOW = sql`created_at >= (now() - INTERVAL 30 MINUTE)`;
 
 // The type lives in the `options` JSON, so nothing stops two concurrent
 // enables from each creating a row; reads take the oldest, writes hit all.
+// D1 is SQLite, where Prisma takes a JSON path as one `$.key` string (the
+// array form is Postgres only and fails at runtime).
 function widgetsOfType(projectId: string, type: z.infer<typeof zWidgetType>) {
-  return { projectId, options: { path: ['type'], equals: type } };
+  return { projectId, options: { path: '$.type', equals: type } };
 }
 
 function findWidgetByType(
@@ -210,7 +234,9 @@ export const widgetRouter = createTRPCRouter({
       const defaultOptions =
         input.type === 'realtime'
           ? zRealtimeWidgetOptions.parse({ type: 'realtime' })
-          : zCounterWidgetOptions.parse({ type: 'counter' });
+          : input.type === 'traffic'
+            ? zTrafficWidgetOptions.parse({ type: 'traffic' })
+            : zCounterWidgetOptions.parse({ type: 'counter' });
 
       return upsertWidgetByType(ctx.db, {
         projectId: input.projectId,
@@ -297,6 +323,86 @@ export const widgetRouter = createTRPCRouter({
       return {
         projectId,
         visitors,
+      };
+    }),
+
+  trafficData: publicProcedure
+    .input(z.object({ shareId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const widget = await ctx.db.shareWidget.findUnique({
+        where: { id: input.shareId },
+        include: { project: { select: { domain: true, name: true } } },
+      });
+      if (!widget?.public) {
+        throw new TRPCNotFoundError('Widget not found');
+      }
+      const { projectId, options } = widget;
+      if (options.type !== 'traffic') {
+        throw new TRPCNotFoundError('Invalid widget type');
+      }
+      const store = ctx.eventStore;
+      if (!store) {
+        // Self-hosted ClickHouse installs keep the realtime/counter widgets.
+        throw new TRPCNotFoundError('Traffic widget needs the event store');
+      }
+      const { timezone } = await getSettingsForProject(ctx, projectId);
+      const days = options.range === '7d' ? 7 : 30;
+      const cacheKey = `widget:traffic:${widget.id}:${options.range}:${options.pages ? 1 : 0}${options.referrers ? 1 : 0}`;
+
+      const data = await getCache(
+        cacheKey,
+        TRAFFIC_CACHE_TTL_SECONDS,
+        async () => {
+          const to = Date.now();
+          const from = to - days * DAY_MS;
+          const [metrics, pages, referrers] = await Promise.all([
+            store.metrics(projectId, { from, to, interval: 'day', timezone }),
+            options.pages
+              ? store.topDimension(
+                  projectId,
+                  'path',
+                  new Date(from),
+                  new Date(to),
+                  TRAFFIC_TOP_LIST_READ
+                )
+              : Promise.resolve([]),
+            options.referrers
+              ? store.topDimension(
+                  projectId,
+                  'referrer_name',
+                  new Date(from),
+                  new Date(to),
+                  TRAFFIC_TOP_LIST_READ
+                )
+              : Promise.resolve([]),
+          ]);
+          return {
+            visitors: metrics.totals.visitors,
+            pageviews: metrics.totals.screenViews,
+            series: metrics.series.map((point) => ({
+              // The project's local day, `yyyy-MM-dd`.
+              date: wallClockText(point.start, timezone).slice(0, 10),
+              visitors: point.visitors,
+              pageviews: point.screenViews,
+            })),
+            // A path comes once per origin (www and apex, preview hosts):
+            // the widget shows it once.
+            pages: topByName(pages, 'pageviews').map(([path, count]) => ({
+              path,
+              count,
+            })),
+            referrers: topByName(referrers, 'sessions').map(
+              ([referrer, count]) => ({ referrer, count })
+            ),
+          };
+        }
+      );
+
+      return {
+        projectId,
+        project: widget.project,
+        range: options.range,
+        ...data,
       };
     }),
 
