@@ -1,0 +1,76 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: MCP server
+description: Connect Claude, Cursor and other AI tools to your FlarePanel data.
+---
+
+# MCP server
+
+FlarePanel runs an [MCP](https://modelcontextprotocol.io) server, so AI tools such as Claude, Cursor, Windsurf, VS Code and Raycast can read your analytics and answer questions about them. Ask "which pages lost the most traffic this week?" in your AI tool and it calls FlarePanel for the numbers.
+
+## 1. Create a token
+
+1. In the dashboard, open **Project settings → MCP**.
+2. Press **Create MCP client** and pick a client type:
+   - **Read**: reads one project. It cannot change anything. Start with this one.
+   - **Root**: reads every project in the workspace, and can also create, edit and delete dashboards and reports.
+3. Copy the **MCP token** from the success screen. It is shown once; if you lose it, create a new client.
+
+The token is `base64(clientId:clientSecret)`. Write-only clients, the kind your website uses to send events, cannot use MCP.
+
+## 2. Add the server to your AI tool
+
+The endpoint is:
+
+```
+https://api.flarepanel.dev/mcp
+```
+
+On a self-hosted install it is your own API address followed by `/mcp`. Send the token as an `Authorization: Bearer` header. Tools that cannot set headers can put it in the address instead: `https://api.flarepanel.dev/mcp?token=YOUR_TOKEN`.
+
+The dashboard's MCP tab has a ready snippet for each tool, with your endpoint filled in. Two examples:
+
+**Claude Code**
+
+```bash
+claude mcp add --transport http flarepanel https://api.flarepanel.dev/mcp \
+  --header "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Claude Desktop** (`claude_desktop_config.json`, under **Settings → Developer → Edit Config**)
+
+```json
+{
+  "mcpServers": {
+    "flarepanel": {
+      "type": "streamable-http",
+      "url": "https://api.flarepanel.dev/mcp",
+      "headers": { "Authorization": "Bearer YOUR_TOKEN" }
+    }
+  }
+}
+```
+
+Cursor, Windsurf, VS Code (Copilot) and Raycast use the same address and header; their snippets are in the dashboard.
+
+## What your AI tool can do
+
+Every client can read:
+
+- **Projects and links**: your projects and links to the matching dashboard pages.
+- **Overview**: visitors, sessions, bounce rate, session length, pageviews and revenue over any date range, and daily, weekly or monthly active users.
+- **Pages and sources**: top pages, entry and exit pages, page performance, conversions per page, referrers, countries and devices.
+- **Events, sessions and people**: event names and their properties, recent events and sessions, profiles and their activity, and groups.
+- **Funnels, retention and user flow**: conversion between steps, cohort retention, how long since users were last seen, and the paths people take.
+- **Dashboards and reports**: your saved dashboards and the data behind each report.
+- **Google Search Console**: clicks, impressions, queries and pages, once a site is connected under **Project settings → Google Search**.
+
+Root clients can also create, edit, duplicate and delete dashboards and reports, and arrange their layout.
+
+## Keep the token safe
+
+- Anyone with the token can read what the client can read. Use a **read** client unless your AI tool needs to edit dashboards.
+- To revoke a token, delete its client under **Project settings → Clients / API keys**. Requests with it stop working.
+- A token in the address (`?token=`) can end up in logs and browser history. Prefer the header when your tool supports it.

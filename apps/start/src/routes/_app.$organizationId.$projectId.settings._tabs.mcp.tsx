@@ -1,17 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import {
-  Code2Icon,
-  CommandIcon,
-  ExternalLinkIcon,
-  type LucideIcon,
-  MonitorIcon,
-  MousePointer2Icon,
-  PlusIcon,
-  TerminalIcon,
-  WindIcon,
-} from 'lucide-react';
+import { ExternalLinkIcon, PlusIcon } from 'lucide-react';
 import type React from 'react';
 import type { ReactNode } from 'react';
+import { BrandLogo, type BrandLogoId } from '@/components/brand-logos';
 import CopyInput from '@/components/forms/copy-input';
 import Syntax from '@/components/syntax';
 import {
@@ -32,14 +23,13 @@ export const Route = createFileRoute(
 });
 
 const TOKEN_PLACEHOLDER = 'BASE64_TOKEN';
-const DOCS_URL = 'https://docs.flarepanel.dev';
+const DOCS_URL = 'https://docs.flarepanel.dev/features/mcp';
 
 interface AiClient {
   id: string;
   name: string;
-  /** Hosted edition only: a coloured icon tile beside the name. */
-  icon: LucideIcon;
-  accent: string;
+  /** Hosted edition only: the tool's own mark beside its name. */
+  logo: BrandLogoId;
   description: React.ReactNode;
   configFile?: string;
   language: 'json' | 'bash';
@@ -55,8 +45,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
   return [
     {
       id: 'claude-desktop',
-      icon: MonitorIcon,
-      accent: 'var(--chart-2)',
+      logo: 'claude',
       name: 'Claude Desktop',
       description: (
         <>
@@ -85,8 +74,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
     },
     {
       id: 'claude-code',
-      icon: TerminalIcon,
-      accent: 'var(--chart-2)',
+      logo: 'claude',
       name: 'Claude Code (CLI)',
       description: (
         <>
@@ -101,8 +89,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
     },
     {
       id: 'cursor',
-      icon: MousePointer2Icon,
-      accent: 'var(--chart-4)',
+      logo: 'cursor',
       name: 'Cursor',
       description: (
         <>
@@ -130,8 +117,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
     },
     {
       id: 'windsurf',
-      icon: WindIcon,
-      accent: 'var(--chart-1)',
+      logo: 'windsurf',
       name: 'Windsurf',
       description: (
         <>
@@ -157,8 +143,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
     },
     {
       id: 'vscode',
-      icon: Code2Icon,
-      accent: 'var(--chart-0)',
+      logo: 'vscode',
       name: 'VS Code (Copilot)',
       description: (
         <>
@@ -185,8 +170,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
     },
     {
       id: 'raycast',
-      icon: CommandIcon,
-      accent: 'var(--chart-11)',
+      logo: 'raycast',
       name: 'Raycast',
       description: (
         <>
@@ -222,9 +206,10 @@ function Component() {
         <h2 className="hosted:hidden font-semibold text-lg">MCP Server</h2>
         <p className="hosted:rounded-lg hosted:border hosted:border-[color-mix(in_oklab,var(--chart-2)_35%,var(--border))] hosted:bg-[color-mix(in_oklab,var(--chart-2)_8%,var(--card))] hosted:p-3 hosted:text-foreground/80 text-muted-foreground text-sm">
           Connect any MCP-compatible AI client (Claude, Cursor, Windsurf, …) to
-          your FlarePanel data. Most of its tools read — events, sessions,
-          profiles, funnels, retention and more — but it can also create, edit
-          and delete dashboards and reports, so treat the token as write access.
+          your FlarePanel data. A <strong>read</strong> client reads this
+          project only and cannot change anything. A <strong>root</strong>{' '}
+          client reads every project in the workspace and can also create, edit
+          and delete dashboards and reports, so keep its token private.
         </p>
       </div>
 
@@ -266,15 +251,8 @@ function Component() {
               <AccordionItem className="px-4" key={client.id} value={client.id}>
                 <AccordionTrigger>
                   <span className="flex items-center gap-3">
-                    <span
-                      className="hosted:flex hidden size-7 shrink-0 items-center justify-center rounded-md bg-(--client-accent)/15 text-(--client-accent)"
-                      style={
-                        {
-                          '--client-accent': client.accent,
-                        } as React.CSSProperties
-                      }
-                    >
-                      <client.icon aria-hidden className="size-4" />
+                    <span className="hosted:flex hidden size-7 shrink-0 items-center justify-center rounded-md border bg-def-100">
+                      <BrandLogo className="size-4" id={client.logo} />
                     </span>
                     {client.name}
                   </span>
@@ -302,12 +280,15 @@ function Component() {
       </Step>
 
       <a
-        className={cn(buttonVariants({ variant: 'outline' }), 'self-start')}
+        className={cn(
+          buttonVariants({ variant: 'outline' }),
+          'hosted:ml-12 self-start'
+        )}
         href={DOCS_URL}
         rel="noreferrer"
         target="_blank"
       >
-        <ExternalLinkIcon className="h-4 w-4" />
+        <ExternalLinkIcon className="mr-2 h-4 w-4" />
         Read the full MCP docs
       </a>
     </div>
