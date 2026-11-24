@@ -202,8 +202,7 @@ function Component() {
   return (
     <div className="col gap-6">
       <div className="col gap-2">
-        {/* The hosted edition shows the title in the coloured tab banner. */}
-        <h2 className="hosted:hidden font-semibold text-lg">MCP Server</h2>
+        <h2 className="font-semibold text-lg">MCP Server</h2>
         <p className="hosted:rounded-lg hosted:border hosted:border-[color-mix(in_oklab,var(--chart-2)_35%,var(--border))] hosted:bg-[color-mix(in_oklab,var(--chart-2)_8%,var(--card))] hosted:p-3 hosted:text-foreground/80 text-muted-foreground text-sm">
           Connect any MCP-compatible AI client (Claude, Cursor, Windsurf, …) to
           your FlarePanel data. A <strong>read</strong> client reads this

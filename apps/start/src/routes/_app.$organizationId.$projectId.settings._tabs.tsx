@@ -7,10 +7,7 @@ import {
 import type React from 'react';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageHeader } from '@/components/page-header';
-import {
-  PROJECT_SETTINGS_TABS,
-  type SettingsTab,
-} from '@/components/settings/settings-tabs';
+import { PROJECT_SETTINGS_TABS } from '@/components/settings/settings-tabs';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppContext } from '@/hooks/use-app-context';
 import { cn } from '@/utils/cn';
@@ -45,7 +42,7 @@ function ProjectDashboard() {
   const location = useLocation();
   const tab = location.pathname.split('/').pop();
   const { isSelfHosted } = useAppContext();
-  // The coloured tabs, banners and card accents are the hosted edition's
+  // The coloured tabs and card accents are the hosted edition's
   // look; self-hosted installs keep the plain settings.
   const hosted = !isSelfHosted;
   const active = PROJECT_SETTINGS_TABS.find((item) => item.id === tab);
@@ -96,32 +93,8 @@ function ProjectDashboard() {
           ))}
         </TabsList>
       </Tabs>
-      {hosted && active && <SettingsBanner tab={active} />}
       <div className="settings-tab-body">
         <Outlet />
-      </div>
-    </div>
-  );
-}
-
-function SettingsBanner({ tab }: { tab: SettingsTab }) {
-  const Icon = tab.icon;
-  return (
-    <div className="relative mb-8 overflow-hidden rounded-xl border border-[color-mix(in_oklab,var(--tab-accent)_28%,var(--border))] bg-[color-mix(in_oklab,var(--tab-accent)_7%,var(--card))] p-5">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(ellipse_at_top_right,color-mix(in_oklab,var(--tab-accent)_22%,transparent),transparent_70%)]"
-      />
-      <div className="relative flex items-start gap-4">
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-(--tab-accent) text-white shadow-sm">
-          <Icon className="size-5" />
-        </div>
-        <div className="min-w-0 space-y-1">
-          <h2 className="font-semibold text-lg">{tab.title}</h2>
-          <p className="max-w-prose text-muted-foreground text-sm">
-            {tab.description}
-          </p>
-        </div>
       </div>
     </div>
   );
