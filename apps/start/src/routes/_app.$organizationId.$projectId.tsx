@@ -83,5 +83,16 @@ function ProjectDashboard() {
     );
   }
 
+  // Over the plan's events: collection goes on, analytics reads are refused
+  // by the API until an upgrade or the next billing period.
+  if (
+    organization.isActive &&
+    organization.isExceeded &&
+    organization.subscriptionPeriodEventsLimit > 0 &&
+    organization.subscriptionPeriodEventsCountExceededAt
+  ) {
+    return <BillingPrompt organization={organization} type={'overLimit'} />;
+  }
+
   return <Outlet />;
 }

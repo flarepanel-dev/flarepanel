@@ -12,6 +12,7 @@ import {
   timeWindows,
 } from '../../report/report.constants';
 import { getDatesFromRange } from '../../report/src/chart-dates';
+import { recordChatSpend } from './limits';
 import { resolveDefaultChatModel } from './providers';
 import { buildReportConfig, zChartInput } from './tools/charts';
 import { discoveryTools } from './tools/discovery';
@@ -62,6 +63,8 @@ export interface ReportDraftInput {
   timezone: string;
   /** Who asked, for the deployment's own AI tracking. */
   userId?: string;
+  /** The workspace whose monthly AI budget the draft counts toward. */
+  organizationId?: string;
 }
 
 /** `report` is null when the request could not be mapped; `summary` then says why. */
@@ -269,6 +272,16 @@ export async function runReportDraft(
         reasoning: resolved.entry.reasoning,
       })
   );
+  if (input.organizationId) {
+    await recordChatSpend(deps, {
+      organizationId: input.organizationId,
+      modelId: resolved.entry.modelId,
+      inputTokens: result.totalUsage.inputTokens,
+      outputTokens: result.totalUsage.outputTokens,
+    }).catch((error) =>
+      deps.logger.warn({ err: error }, 'Could not record the draft spend')
+    );
+  }
   deps.logger.info(
     {
       projectId: input.projectId,

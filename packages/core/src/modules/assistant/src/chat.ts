@@ -20,6 +20,7 @@ import {
 import { createChatActions } from './actions';
 import type { ChatToolContext } from './context';
 import { failInterruptedToolParts } from './interrupted-tools';
+import { recordChatSpend } from './limits';
 import type { AssistantUIMessage } from './message';
 import { deleteMessagesFrom, loadMessages, saveMessages } from './persistence';
 import { buildSystemPrompt } from './prompt';
@@ -236,6 +237,18 @@ export async function runChat(
                       durationMs,
                     },
                     'chat turn finished'
+                  );
+                  // Counts toward the workspace's monthly AI budget (hosted).
+                  recordChatSpend(deps, {
+                    organizationId: request.organizationId,
+                    modelId: entry.modelId,
+                    inputTokens: part.totalUsage.inputTokens,
+                    outputTokens: part.totalUsage.outputTokens,
+                  }).catch((error) =>
+                    deps.logger.warn(
+                      { err: error },
+                      'Could not record the chat spend'
+                    )
                   );
                   return {
                     totalTokens: part.totalUsage.totalTokens,

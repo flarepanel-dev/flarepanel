@@ -11,7 +11,7 @@ import { formatDate } from '@/utils/date';
 import { op } from '@/utils/op';
 
 const FEATURES = [
-  'Plans start at $2.5/month',
+  'Plans start at $3/month',
   'Unlimited reports, members and projects',
   'Advanced funnels and conversions',
   'Real-time analytics',
@@ -35,7 +35,7 @@ interface CopyVariant {
 }
 
 const COPY: Record<
-  'expired' | 'trialEnded' | 'unpaid' | 'freePlan' | 'paused',
+  'expired' | 'trialEnded' | 'unpaid' | 'freePlan' | 'paused' | 'overLimit',
   CopyVariant
 > = {
   trialEnded: {
@@ -78,11 +78,21 @@ const COPY: Record<
     cta: () => 'Resume subscription now',
     note: 'Resuming starts a new billing period right away. Your events keep being collected while paused, so nothing is lost.',
   },
+  overLimit: {
+    badge: { label: 'Over plan limit', variant: 'warning' },
+    gradient: 'rgb(245 158 11)',
+    title: 'Analytics are paused for this billing period',
+    lead: "Your projects sent more events this month than your plan includes. We're still collecting every one of them; only the dashboards, reports and API reads are paused. Move to a bigger plan and everything is back in about a minute, or wait for your next billing period.",
+    dateLabel: 'Next billing period',
+    action: 'checkout',
+    cta: (plan, price) => `Upgrade to ${plan} for ${price}/month`,
+    note: 'Nothing is lost: events from the paused days show up as soon as analytics are back.',
+  },
   freePlan: {
     badge: { label: 'Plan change', variant: 'secondary' },
     gradient: 'rgb(16 185 129)',
     title: 'We retired the free plan',
-    lead: "We'd rather run a small, sustainable service than a free one we can't support properly. Paid plans start at $2.5/month and your data carries over as-is.",
+    lead: "We'd rather run a small, sustainable service than a free one we can't support properly. Paid plans start at $3/month and your data carries over as-is.",
     dateLabel: 'Subscription ended',
     action: 'checkout',
     cta: (plan, price) => `Continue with ${plan} for ${price}/month`,

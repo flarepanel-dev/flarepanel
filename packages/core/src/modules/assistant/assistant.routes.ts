@@ -6,7 +6,11 @@ import {
 } from '../organization/organization.service';
 import { getProjectById } from '../project/project.service';
 import { zChatRequest } from './assistant.constants';
-import { checkChatLimits, resolveChatTier } from './src/limits';
+import {
+  chatMonthlyBudgetMicros,
+  checkChatLimits,
+  resolveChatTier,
+} from './src/limits';
 
 const TOO_MANY_REQUESTS = 429;
 
@@ -58,6 +62,10 @@ export const assistantRoutes = defineRoutes((app) =>
         organizationId: organization.id,
         userId,
         tier: resolveChatTier(organization, ctx.config.selfHosted),
+        budgetMicros: chatMonthlyBudgetMicros(
+          resolveChatTier(organization, ctx.config.selfHosted),
+          organization.subscriptionPeriodEventsLimit
+        ),
       });
       if (limited) {
         return status(TOO_MANY_REQUESTS, limited);

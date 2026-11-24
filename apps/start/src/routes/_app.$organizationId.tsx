@@ -138,6 +138,12 @@ function Component() {
   const hideBannerForPrompt =
     isProjectRoute &&
     subscriptionBlocksDashboard(organization.subscriptionState);
+  const isOverLimit = Boolean(
+    organization.subscriptionPeriodEventsCountExceededAt &&
+      organization.isActive &&
+      organization.isExceeded &&
+      organization.subscriptionPeriodEventsLimit > 0
+  );
 
   const location = useLocation();
   const isBillingPage = /\/.+\/billing/.test(location.pathname);
@@ -168,7 +174,7 @@ function Component() {
         organization.subscriptionPeriodEventsCount >=
           organization.subscriptionPeriodEventsLimit * 0.8 && (
           <Alert
-            description={`You've used ${Math.round((organization.subscriptionPeriodEventsCount / organization.subscriptionPeriodEventsLimit) * 100)}% of your ${organization.subscriptionPeriodEventsLimit.toLocaleString()} monthly events. If you go over, we keep collecting your events but charts pause until you upgrade.`}
+            description={`You've used ${Math.round((organization.subscriptionPeriodEventsCount / organization.subscriptionPeriodEventsLimit) * 100)}% of your ${organization.subscriptionPeriodEventsLimit.toLocaleString()} monthly events. If you go over, we keep collecting your events but analytics pause until you upgrade or your next billing period.`}
             title="Approaching your events limit"
           >
             <LinkButton
@@ -181,12 +187,12 @@ function Component() {
             </LinkButton>
           </Alert>
         )}
-      {organization.subscriptionPeriodEventsCountExceededAt &&
-        organization.isActive &&
-        organization.isExceeded && (
+      {isOverLimit &&
+        !isProjectRoute &&
+        organization.subscriptionPeriodEventsCountExceededAt && (
           <Alert
-            description={`You hit your monthly events limit on ${format(organization.subscriptionPeriodEventsCountExceededAt, 'PPP')}. We're still collecting your events — nothing is lost — but charts won't show new data until you upgrade or your next cycle starts.`}
-            title="Events limit exceeded"
+            description={`You hit your monthly events limit on ${format(organization.subscriptionPeriodEventsCountExceededAt, 'PPP')}. We're still collecting your events — nothing is lost — but analytics are paused until you upgrade or your next billing period starts.`}
+            title="Analytics paused: events limit exceeded"
           >
             <LinkButton
               params={{

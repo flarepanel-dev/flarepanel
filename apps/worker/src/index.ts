@@ -28,9 +28,9 @@ import {
   publicApiRoutes,
   queues,
   requestLogging,
+  setGeoLookup,
   setSandboxRunner,
   TRPC_ENDPOINT,
-  setGeoLookup,
 } from '@flarepanel/core';
 import {
   createCloudflareProducers,
@@ -54,6 +54,16 @@ import { createAdvancedAnalytics } from './advanced/analytics';
 import { readAdvancedConfig } from './advanced/config';
 import { BasinUsageDurableObject } from './advanced/usage-do';
 import {
+  createGeoipLookup,
+  GEOIP_MESSAGE_KIND,
+  maybeStartGeoipRefresh,
+  runGeoipRefreshStep,
+} from './geoip';
+import {
+  createPauseCheck,
+  guardAnalyticsPause,
+} from './ingest/analytics-pause';
+import {
   createCloudflareIngestBackend,
   createWorkerBuffers,
   createWorkerEventStore,
@@ -62,12 +72,6 @@ import {
 import { createEmptyClickHouse } from './ingest/empty-clickhouse';
 import { liveAccessRoute, matchLivePath } from './ingest/live';
 import { ProjectEventsDurableObject } from './ingest/project-events-do';
-import {
-  createGeoipLookup,
-  GEOIP_MESSAGE_KIND,
-  maybeStartGeoipRefresh,
-  runGeoipRefreshStep,
-} from './geoip';
 import { createDynamicWorkerRunner } from './js-sandbox';
 import { createConsoleLogger } from './logger';
 import {
@@ -188,7 +192,29 @@ async function boot(env: Env): Promise<Booted> {
       cache: stores.cache,
       deps: () => deps,
     }),
-    eventStore: createWorkerEventStore(env),
+    // Over the plan's events, reads pause (hosted only); collection goes on.
+    eventStore: guardAnalyticsPause(
+      createWorkerEventStore(env),
+      createPauseCheck({
+        cache: stores.cache,
+        selfHosted: () => deps.config.selfHosted,
+        organizationOf: async (projectId) =>
+          (
+            await deps.db.project.findUnique({
+              where: { id: projectId },
+              select: {
+                organization: {
+                  select: {
+                    subscriptionPeriodEventsCount: true,
+                    subscriptionPeriodEventsLimit: true,
+                    subscriptionPeriodEventsCountExceededAt: true,
+                  },
+                },
+              },
+            })
+          )?.organization ?? null,
+      })
+    ),
   };
   const advanced = readAdvancedConfig(env);
   if (advanced) {
@@ -343,25 +369,22 @@ export default {
         jobs.push(message);
       }
     }
-    await processCloudflareJobBatch(
-      jobs as unknown as QueueMessageLike[],
-      {
-        definitions: queues,
-        deps,
-        onTerminalFailure: (failure) =>
-          ctx.waitUntil(
-            reportFailedJob(env, deps.logger, {
-              source: 'retries-exhausted',
-              queue: failure.queue,
-              job: failure.job,
-              jobId: failure.jobId,
-              attempts: failure.attempts,
-              error: failure.error.message,
-              data: failure.data,
-            })
-          ),
-      }
-    );
+    await processCloudflareJobBatch(jobs as unknown as QueueMessageLike[], {
+      definitions: queues,
+      deps,
+      onTerminalFailure: (failure) =>
+        ctx.waitUntil(
+          reportFailedJob(env, deps.logger, {
+            source: 'retries-exhausted',
+            queue: failure.queue,
+            job: failure.job,
+            jobId: failure.jobId,
+            attempts: failure.attempts,
+            error: failure.error.message,
+            data: failure.data,
+          })
+        ),
+    });
   },
 
   async scheduled(

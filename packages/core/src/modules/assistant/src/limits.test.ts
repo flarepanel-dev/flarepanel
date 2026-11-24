@@ -6,8 +6,11 @@ import {
 } from '../assistant.constants';
 import {
   type ChatLimitStore,
+  chatCostMicros,
+  chatMonthlyBudgetMicros,
   checkChatLimits,
   readChatUsageToday,
+  recordChatSpend,
   resolveChatTier,
 } from './limits';
 
@@ -106,6 +109,13 @@ class MemoryStore implements ChatLimitStore {
       this.expiries.set(key, windowMs);
     }
     return Promise.resolve({ count: next, ttlMs: this.expiries.get(key) ?? 0 });
+  }
+  set(key: string, value: string, ttlMs?: number) {
+    this.values.set(key, Number(value));
+    if (ttlMs !== undefined) {
+      this.expiries.set(key, ttlMs);
+    }
+    return Promise.resolve();
   }
 }
 
@@ -208,5 +218,64 @@ describe('checkChatLimits', () => {
       now: NOW,
     });
     expect(refusal).toBeNull();
+  });
+});
+
+describe('monthly AI budget', () => {
+  test('is a tenth of the plan price, at least $1; none when self-hosted', () => {
+    expect(chatMonthlyBudgetMicros('trial', 1_000_000)).toBe(1_000_000);
+    // 10K plan ($3): the $1 floor.
+    expect(chatMonthlyBudgetMicros('starter', 10_000)).toBe(1_000_000);
+    // 1M plan ($45): $4.50.
+    expect(chatMonthlyBudgetMicros('growth', 1_000_000)).toBe(4_500_000);
+    // 50M plan ($450): $45.
+    expect(chatMonthlyBudgetMicros('scale', 50_000_000)).toBe(45_000_000);
+    expect(chatMonthlyBudgetMicros('unlimited', 1_000_000)).toBeNull();
+    expect(chatMonthlyBudgetMicros('blocked', 1_000_000)).toBeNull();
+  });
+
+  test('prices a turn from its tokens; unknown models as the dearest', () => {
+    // 20K in, 1K out on GPT-6.1 Sol ($2 / $10 per 1M): $0.05.
+    expect(chatCostMicros('gpt-6.1-sol', 20_000, 1000)).toBe(50_000);
+    expect(chatCostMicros('some-new-model', 1_000_000, 0)).toBe(5_000_000);
+    expect(chatCostMicros('gpt-6.1-sol', undefined, undefined)).toBe(0);
+  });
+
+  test('refuses once the month is spent, and starts over next month', async () => {
+    const store = new MemoryStore();
+    const now = new Date('2026-11-24T10:00:00Z');
+    const input = {
+      organizationId: 'org',
+      userId: 'u1',
+      tier: 'growth' as const,
+      budgetMicros: 100_000,
+      now,
+    };
+    expect(await checkChatLimits(deps(store), input)).toBeNull();
+    // Two Sol turns of $0.05 use the $0.10 budget.
+    for (let i = 0; i < 2; i++) {
+      await recordChatSpend(deps(store), {
+        organizationId: 'org',
+        modelId: 'gpt-6.1-sol',
+        inputTokens: 20_000,
+        outputTokens: 1000,
+        now,
+      });
+    }
+    const refused = await checkChatLimits(deps(store), {
+      ...input,
+      userId: 'u2',
+    });
+    expect(refused).toMatchObject({
+      reason: 'monthly',
+      resetsAt: '2026-12-01T00:00:00.000Z',
+    });
+    expect(
+      await checkChatLimits(deps(store), {
+        ...input,
+        userId: 'u3',
+        now: new Date('2026-12-01T00:00:01Z'),
+      })
+    ).toBeNull();
   });
 });

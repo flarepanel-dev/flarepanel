@@ -42,6 +42,7 @@ export { registerBufferMetrics } from './buffers/buffer.metrics';
 export type { Buffers } from './buffers/create-buffers';
 export { createBuffers } from './buffers/create-buffers';
 export type { IClickhouseSessionReplayChunk } from './buffers/replay-buffer';
+export { createClients } from './clients/create-clients';
 export {
   type GeoLocation,
   type GeoLookup,
@@ -49,8 +50,6 @@ export {
   hasGeoLookup,
   setGeoLookup,
 } from './clients/geo';
-export * as geoipDbip from './modules/geo/geoip-dbip';
-export { createClients } from './clients/create-clients';
 export {
   type CfGeoProperties,
   type CfGeoResult,
@@ -192,6 +191,7 @@ export {
   transformSessionToEvent,
 } from './modules/event/event.service';
 export type { EventStore } from './modules/event/src/event-store';
+export * as geoipDbip from './modules/geo/geoip-dbip';
 export type { IServiceGroup } from './modules/group/group.service';
 export { getGscCannibalization } from './modules/gsc/gsc.service';
 export { setBooting, setShuttingDown } from './modules/health/src/shutdown';
@@ -372,6 +372,12 @@ export {
   zShareReport,
 } from './modules/share/share.constants';
 export { createShareService } from './modules/share/share.service';
+export {
+  ANALYTICS_PAUSED_MESSAGE,
+  AnalyticsPausedError,
+  isAnalyticsPaused,
+  type PauseOrganization,
+} from './modules/subscription/analytics-pause';
 export { toSubscriptionDiscount } from './modules/subscription/subscription.service';
 export { runIpLookup } from './modules/tools/src/ip-lookup';
 export type { SiteCheckResult } from './modules/tools/src/site-checker';

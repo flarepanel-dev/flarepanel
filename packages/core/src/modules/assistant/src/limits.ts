@@ -1,3 +1,4 @@
+import { PRICING } from '@flarepanel/payments/prices';
 import {
   getSubscriptionState,
   type SubscriptionStateInput,
@@ -8,6 +9,9 @@ import type { Logger } from '../../../logger';
 import {
   CHAT_BURST_LIMIT,
   CHAT_MESSAGES_PER_DAY,
+  CHAT_MODEL_PRICES,
+  CHAT_MONTHLY_BUDGET_MIN_USD,
+  CHAT_MONTHLY_BUDGET_SHARE,
   CHAT_TIER_EVENT_BANDS,
   type ChatLimitError,
   type ChatTier,
@@ -58,7 +62,10 @@ export function resolveChatTier(
 }
 
 /** The subset of the coordination store the counters need; narrow so tests can stub it. */
-export type ChatLimitStore = Pick<CoordinationStore, 'get' | 'increment'>;
+export type ChatLimitStore = Pick<
+  CoordinationStore,
+  'get' | 'increment' | 'set'
+>;
 
 export interface ChatLimitDeps {
   stores: { coordination: ChatLimitStore };
@@ -69,7 +76,108 @@ export interface ChatLimitInput {
   organizationId: string;
   userId: string;
   tier: ChatTier;
+  /** The month's AI budget in micro-dollars; null or absent is none. */
+  budgetMicros?: number | null;
   now?: Date;
+}
+
+const MICROS_PER_USD = 1_000_000;
+const MONTH_TTL_MS = 32 * DAY_MS;
+const MOST_EXPENSIVE = Object.values(CHAT_MODEL_PRICES).reduce((max, price) =>
+  price.output > max.output ? price : max
+);
+
+const spendKey = (organizationId: string, now: Date) =>
+  `chat:spend:${organizationId}:${now.toISOString().slice(0, 7)}`;
+
+/**
+ * The month's AI budget for a workspace, in micro-dollars: a share of its
+ * plan's price, at least the minimum. Null when there is no budget
+ * (self-hosted) or no AI at all (blocked).
+ */
+export function chatMonthlyBudgetMicros(
+  tier: ChatTier,
+  eventsLimit: number
+): number | null {
+  if (tier === 'unlimited' || tier === 'blocked') {
+    return null;
+  }
+  const plan =
+    tier === 'trial'
+      ? undefined
+      : (PRICING.find((price) => price.events >= eventsLimit) ??
+        PRICING.at(-1));
+  const usd = Math.max(
+    CHAT_MONTHLY_BUDGET_MIN_USD,
+    (plan?.price ?? 0) * CHAT_MONTHLY_BUDGET_SHARE
+  );
+  return Math.round(usd * MICROS_PER_USD);
+}
+
+/** What a model call cost, in micro-dollars, from its token counts. */
+export function chatCostMicros(
+  modelId: string,
+  inputTokens: number | undefined,
+  outputTokens: number | undefined
+): number {
+  const price = CHAT_MODEL_PRICES[modelId] ?? MOST_EXPENSIVE;
+  // USD per 1M tokens is micro-dollars per token.
+  return Math.ceil(
+    (inputTokens ?? 0) * price.input + (outputTokens ?? 0) * price.output
+  );
+}
+
+/** Adds a finished turn's cost to the workspace's month. */
+export async function recordChatSpend(
+  deps: ChatLimitDeps,
+  input: {
+    organizationId: string;
+    modelId: string;
+    inputTokens: number | undefined;
+    outputTokens: number | undefined;
+    now?: Date;
+  }
+): Promise<void> {
+  const now = input.now ?? new Date();
+  const cost = chatCostMicros(
+    input.modelId,
+    input.inputTokens,
+    input.outputTokens
+  );
+  if (cost <= 0) {
+    return;
+  }
+  const key = spendKey(input.organizationId, now);
+  const spent = Number((await deps.stores.coordination.get(key)) ?? 0) || 0;
+  await deps.stores.coordination.set(key, String(spent + cost), MONTH_TTL_MS);
+}
+
+/** The month's AI spend so far, in micro-dollars. */
+export async function chatSpentMicros(
+  deps: ChatLimitDeps,
+  organizationId: string,
+  now = new Date()
+): Promise<number> {
+  return (
+    Number(
+      (await deps.stores.coordination.get(spendKey(organizationId, now))) ?? 0
+    ) || 0
+  );
+}
+
+function nextMonthStart(now: Date): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+}
+
+function monthlyError(tier: ChatTier, now: Date): ChatLimitError {
+  return {
+    code: 'chat_limit',
+    reason: 'monthly',
+    tier,
+    limit: 0,
+    resetsAt: nextMonthStart(now).toISOString(),
+    message: `This month's AI assistant allowance on the ${TIER_LABELS[tier]} plan is used up. It renews on the 1st (UTC); a larger plan includes more.`,
+  };
 }
 
 const dayKey = (organizationId: string, now: Date) =>
@@ -148,6 +256,12 @@ export async function checkChatLimits(
     );
     if (burst.hits > CHAT_BURST_LIMIT.max) {
       return burstError(tier, burst.ttlMs, now);
+    }
+    if (input.budgetMicros !== null && input.budgetMicros !== undefined) {
+      const spent = await chatSpentMicros(deps, input.organizationId, now);
+      if (spent >= input.budgetMicros) {
+        return monthlyError(tier, now);
+      }
     }
     const cap = CHAT_MESSAGES_PER_DAY[tier];
     if (cap === null) {

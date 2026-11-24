@@ -14,7 +14,11 @@ import {
   getDefaultChatModelId,
   zReportDraftRequest,
 } from './assistant.constants';
-import { checkChatLimits, resolveChatTier } from './src/limits';
+import {
+  chatMonthlyBudgetMicros,
+  checkChatLimits,
+  resolveChatTier,
+} from './src/limits';
 
 export const chatRouter = createTRPCRouter({
   models: protectedProcedure.query(({ ctx }) => {
@@ -55,6 +59,10 @@ export const chatRouter = createTRPCRouter({
         organizationId: organization.id,
         userId,
         tier: resolveChatTier(organization, ctx.config.selfHosted),
+        budgetMicros: chatMonthlyBudgetMicros(
+          resolveChatTier(organization, ctx.config.selfHosted),
+          organization.subscriptionPeriodEventsLimit
+        ),
       });
       if (limited) {
         throw new TRPCError({
@@ -67,6 +75,7 @@ export const chatRouter = createTRPCRouter({
         projectId: input.projectId,
         timezone: settings.timezone || 'UTC',
         userId,
+        organizationId: organization.id,
       });
     }),
 });

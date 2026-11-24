@@ -243,7 +243,41 @@ export const CHAT_TIER_EVENT_BANDS = {
 /** Per-user burst guard on every tier, so a stuck client or script cannot loop. */
 export const CHAT_BURST_LIMIT = { max: 6, windowMs: 60_000 } as const;
 
-export const CHAT_LIMIT_REASONS = ['daily', 'burst', 'blocked'] as const;
+export const CHAT_LIMIT_REASONS = [
+  'daily',
+  'burst',
+  'blocked',
+  'monthly',
+] as const;
+
+/**
+ * List prices in USD per 1M tokens (input, output), standard rates as the
+ * providers published them on 2026-11-24 (developers.openai.com/api/docs/
+ * pricing, platform.claude.com/docs/en/about-claude/pricing). Cached input is
+ * cheaper; it is not credited here, and Haiku is charged its rate for long
+ * prompts, so spend is never under-counted. A model missing here is charged
+ * as the most expensive one.
+ */
+export const CHAT_MODEL_PRICES: Record<
+  string,
+  { input: number; output: number }
+> = {
+  'gpt-6.1-sol': { input: 2, output: 10 },
+  'gpt-5.5': { input: 5, output: 30 },
+  'gpt-5.4-mini': { input: 0.75, output: 4.5 },
+  'gpt-5.4-nano': { input: 0.2, output: 1.25 },
+  'claude-opus-5-5': { input: 4, output: 20 },
+  'claude-sonnet-5-5': { input: 2, output: 10 },
+  'claude-haiku-5-5': { input: 0.5, output: 2.5 },
+};
+
+/**
+ * Hosted: a workspace's AI spend a calendar month (UTC) may reach this share
+ * of its plan's price, and at least the minimum (trials get the minimum).
+ * Self-hosted installs use their own provider key and have no budget.
+ */
+export const CHAT_MONTHLY_BUDGET_SHARE = 0.1;
+export const CHAT_MONTHLY_BUDGET_MIN_USD = 1;
 
 /** Body of the 429 the chat route answers with. */
 export const zChatLimitError = z.object({

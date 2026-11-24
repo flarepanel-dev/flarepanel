@@ -5,6 +5,7 @@ import { ZodError, z } from 'zod';
 import type { IpHeaderConfig } from '../config';
 import type { HttpCtx, Session } from '../context';
 import type { Logger } from '../logger';
+import { AnalyticsPausedError } from '../modules/subscription/analytics-pause';
 import { runWithAlsSession } from '../shared/als-session';
 import { type CookieOptions, serializeCookie } from '../shared/cookie';
 import { classifyDriverError } from '../shared/driver-errors';
@@ -108,6 +109,10 @@ const mapCallerErrors = t.middleware(async ({ next }) => {
   const cause = result.error.cause;
   if (cause instanceof BadRequestError) {
     throw new TRPCError({ code: 'BAD_REQUEST', message: cause.message, cause });
+  }
+  // Over the plan's events: the dashboard shows the upgrade prompt instead.
+  if (cause instanceof AnalyticsPausedError) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: cause.message, cause });
   }
   const failure = classifyDriverError(cause);
   if (!failure) {
