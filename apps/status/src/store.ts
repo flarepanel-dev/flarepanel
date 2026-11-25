@@ -21,11 +21,18 @@ const newId = () =>
   `${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
 
 /** Stores one round of checks and opens or resolves automatic incidents. */
+/** Incidents a round opened or resolved, for email updates. */
+export interface RoundChanges {
+  opened: string[];
+  resolved: string[];
+}
+
 export async function recordRound(
   db: D1Database,
   results: CheckResult[],
   now: number
-): Promise<void> {
+): Promise<RoundChanges> {
+  const changes: RoundChanges = { opened: [], resolved: [] };
   const states = await db
     .prepare('SELECT monitor, fails, oks, incident_id FROM monitor_state')
     .all<{
@@ -83,6 +90,7 @@ export async function recordRound(
     const name = monitorById.get(result.monitor)?.name ?? result.monitor;
     if (action?.type === 'open') {
       incidentId = newId();
+      changes.opened.push(incidentId);
       statements.push(
         db
           .prepare(
@@ -108,6 +116,7 @@ export async function recordRound(
       );
     }
     if (action?.type === 'resolve') {
+      changes.resolved.push(action.incidentId);
       statements.push(
         db
           .prepare(
@@ -137,6 +146,7 @@ export async function recordRound(
     );
   }
   await db.batch(statements);
+  return changes;
 }
 
 export async function prune(db: D1Database, now: number): Promise<void> {
@@ -145,6 +155,13 @@ export async function prune(db: D1Database, now: number): Promise<void> {
     db
       .prepare('DELETE FROM daily WHERE day < ?')
       .bind(dayOf(now - (HISTORY_DAYS + 1) * DAY)),
+    db.prepare('DELETE FROM subscribe_attempts WHERE at < ?').bind(now - DAY),
+    // Never confirmed within a week: forget the address.
+    db
+      .prepare(
+        'DELETE FROM subscribers WHERE confirmed_at IS NULL AND created_at < ?'
+      )
+      .bind(now - 7 * DAY),
   ]);
 }
 

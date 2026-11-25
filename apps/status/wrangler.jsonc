@@ -21,6 +21,10 @@
       "migrations_dir": "migrations"
     }
   ],
+  // Email updates to subscribers (Cloudflare Email Service; the sender domain
+  // flarepanel.dev is already onboarded for the API's account emails). Counts
+  // toward the same 3,000 included emails a month.
+  "send_email": [{ "name": "EMAIL" }],
   // Fonts and the icon; every other path runs the Worker.
   "assets": { "directory": "./public", "binding": "ASSETS" },
   "observability": { "enabled": true, "head_sampling_rate": 0.1 }

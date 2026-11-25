@@ -14,6 +14,19 @@ bun run migrate     # apply migrations to the remote database
 bun run deploy
 ```
 
+## Email updates
+
+`/subscribe` takes an address (double opt-in: nothing is sent until the
+confirmation link is clicked), optionally limited to some services. Incident
+openings, updates, resolutions and maintenance starts/ends email confirmed
+subscribers through the `EMAIL` binding (Cloudflare Email Service, same
+3,000/month allowance as the API). Unsubscribe links are signed with
+`STATUS_SIGNING_KEY` (falls back to `STATUS_ADMIN_TOKEN`; changing it breaks
+old links). Limits: 5 subscribe attempts per IP and hour, one confirmation
+email per address and hour, unconfirmed addresses deleted after 7 days.
+Without `EMAIL` the email option is hidden. Before deploying: `bun run
+migrate` (adds `0002_subscribers.sql`).
+
 ## Posting incidents and maintenance
 
 Operator only, with the `STATUS_ADMIN_TOKEN` secret (kept outside the repo;

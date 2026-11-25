@@ -2,7 +2,7 @@
 // to load when everything else is on fire. Colours and type follow DESIGN.md.
 
 import { type Impact, type IncidentStatus, STATUS_LABEL } from './incidents';
-import { monitorById } from './monitors';
+import { MONITORS, monitorById } from './monitors';
 import type { Incident } from './store';
 import {
   type DisplayState,
@@ -99,6 +99,8 @@ const STYLE = `
 @font-face{font-family:Geist;src:url(/fonts/Geist-Variable.woff2) format("woff2");font-weight:100 900;font-display:swap}
 @font-face{font-family:"Geist Mono";src:url(/fonts/GeistMono-Variable.woff2) format("woff2");font-weight:100 900;font-display:swap}
 :root{--ink:#0d0d10;--panel:#111114;--raised:#18181b;--hover:#1c1c20;--rule:#27272a;--rule-strong:#3f3f43;--faint:#727276;--muted:#a1a1a5;--soft:#d4d4d8;--paper:#f9fafe;--coral:#ff496b;--up:#3ccb7f;--minor:#e9ab2b;--major:#f0605d;--maint:#4cb0e5;--none:#27272a;color-scheme:dark}
+:root[data-theme=light]{--ink:#f6f6f7;--panel:#ffffff;--raised:#f1f1f3;--hover:#f6f6f8;--rule:#e4e4e7;--rule-strong:#d0d0d5;--faint:#6b6b72;--muted:#4f4f56;--soft:#33333a;--paper:#0d0d10;--up:#15803d;--minor:#b45309;--major:#dc2626;--maint:#0369a1;--none:#e4e4e7;color-scheme:light}
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]){--ink:#f6f6f7;--panel:#ffffff;--raised:#f1f1f3;--hover:#f6f6f8;--rule:#e4e4e7;--rule-strong:#d0d0d5;--faint:#6b6b72;--muted:#4f4f56;--soft:#33333a;--paper:#0d0d10;--up:#15803d;--minor:#b45309;--major:#dc2626;--maint:#0369a1;--none:#e4e4e7;color-scheme:light}}
 *{box-sizing:border-box}
 html{background:var(--ink)}
 body{margin:0;background:var(--ink);color:var(--soft);font:400 15.5px/1.6 Geist,ui-sans-serif,system-ui,sans-serif;font-feature-settings:"ss01","cv11";-webkit-font-smoothing:antialiased}
@@ -136,7 +138,7 @@ h2{margin:0 0 12px;font-size:13px;font-weight:500;letter-spacing:.06em;text-tran
 details[open] .chev{transform:rotate(90deg)}
 .bars{display:flex;gap:2px;height:30px;margin-top:12px}
 .bars span{flex:1;border-radius:2px;background:var(--none);position:relative}
-.bars .b-up{background:var(--up)}.bars .b-minor{background:var(--minor)}.bars .b-major{background:var(--major)}
+.bars .b-up{background:#3ccb7f}.bars .b-minor{background:#e9ab2b}.bars .b-major{background:#f0605d}
 .bars span:hover{opacity:.75}
 .bars span:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--raised);border:1px solid var(--rule-strong);color:var(--paper);font-size:12px;padding:5px 8px;border-radius:7px;z-index:2;pointer-events:none}
 .bars span:nth-child(-n+12):hover::after{left:0;transform:none}
@@ -174,6 +176,29 @@ footer a{color:var(--muted)}
 .back{display:inline-block;margin-bottom:18px;font-size:14px;color:var(--muted);text-decoration:none}
 .back:hover{color:var(--paper)}
 .title{margin:0;font-size:28px;line-height:1.15;font-weight:700;letter-spacing:-.03em;color:var(--paper)}
+.theme{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer}
+.theme:hover{background:var(--raised);color:var(--paper)}
+.theme svg{width:16px;height:16px}
+.tabs{display:flex;gap:4px;margin:22px 0 0}
+.tabs a{color:var(--muted);text-decoration:none;font-size:14px;padding:6px 12px;border-radius:8px;border:1px solid var(--rule)}
+.tabs a[aria-current=page]{color:var(--paper);background:var(--raised);border-color:var(--rule-strong)}
+.opt{padding:22px 24px;border-top:1px solid var(--rule)}
+.opt:first-child{border-top:0}
+.opt h2{margin:0 0 4px;font-size:16px;font-weight:600;letter-spacing:-.01em;text-transform:none;color:var(--paper)}
+.opt p{margin:0 0 12px;color:var(--muted);font-size:14px}
+form .field{display:flex;gap:8px;flex-wrap:wrap}
+input[type=email]{flex:1;min-width:220px;height:40px;padding:0 12px;border-radius:9px;border:1px solid var(--rule-strong);background:var(--ink);color:var(--paper);font:inherit;font-size:15px}
+input[type=email]:focus-visible{outline:2px solid var(--coral);outline-offset:1px}
+button.primary{height:40px;padding:0 16px;border-radius:9px;border:0;background:var(--paper);color:var(--ink);font:inherit;font-weight:600;font-size:14.5px;cursor:pointer}
+button.primary:hover{opacity:.9}
+fieldset{border:0;margin:14px 0 0;padding:0}
+legend{font-size:13px;color:var(--faint);margin-bottom:8px}
+.checks{display:flex;flex-wrap:wrap;gap:6px 16px}
+.checks label{display:inline-flex;gap:7px;align-items:center;font-size:14px;color:var(--soft)}
+code{font-family:"Geist Mono",ui-monospace,monospace;font-size:13px;background:var(--raised);border:1px solid var(--rule);padding:2px 6px;border-radius:6px;color:var(--paper)}
+.msg{padding:28px 24px}
+.msg h1{margin:0 0 8px;font-size:22px;color:var(--paper);letter-spacing:-.02em}
+.msg p{margin:0;color:var(--muted)}
 @media (max-width:640px){
   header.top{flex-direction:column;align-items:flex-start;padding-bottom:24px}
   .bars span:nth-child(-n+60){display:none}
@@ -184,6 +209,21 @@ footer a{color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 `;
 
+/**
+ * The only script: remembers the light/dark choice and shows times in the
+ * visitor's own time zone. Allowed by its hash in the CSP (SCRIPT_HASH), so
+ * no other inline script can run. The page works without it (UTC, system
+ * theme).
+ */
+export const SCRIPT = `(function(){var d=document.documentElement,k='fp-status-theme';try{var t=localStorage.getItem(k);if(t==='light'||t==='dark')d.setAttribute('data-theme',t)}catch(e){}document.addEventListener('DOMContentLoaded',function(){var f=new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'});var n=document.querySelectorAll('time[datetime]');for(var i=0;i<n.length;i++){var v=new Date(n[i].getAttribute('datetime'));if(!isNaN(v.getTime())){n[i].title=n[i].textContent;n[i].textContent=f.format(v)}}var z=document.getElementById('tz');if(z){try{z.textContent='Times in your time zone ('+Intl.DateTimeFormat().resolvedOptions().timeZone+').'}catch(e){}}var b=document.getElementById('theme');if(b){b.hidden=false;b.addEventListener('click',function(){var c=d.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');var x=c==='light'?'dark':'light';d.setAttribute('data-theme',x);try{localStorage.setItem(k,x)}catch(e){}})}})})();`;
+
+/** `sha256-…` of SCRIPT; a test keeps them in step. */
+export const SCRIPT_HASH =
+  'sha256-6GNDEFpFqLYvbfdmcoT4VPXOpQgw/PDa5F9x+lzO5Rk=';
+
+const THEME_ICON =
+  '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor"/></svg>';
+
 const CHEVRON =
   '<svg class="chev" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
@@ -192,7 +232,7 @@ function layout(opts: {
   description: string;
   path: string;
   body: string;
-  current: 'status' | 'history' | 'none';
+  current: 'status' | 'history' | 'updates' | 'none';
 }): string {
   const nav = (href: string, label: string, key: string) =>
     `<a href="${href}"${opts.current === key ? ' aria-current="page"' : ''}>${label}</a>`;
@@ -211,18 +251,19 @@ function layout(opts: {
 <meta property="og:title" content="${escape(opts.title)}">
 <meta property="og:description" content="${escape(opts.description)}">
 <style>${STYLE}</style>
+<script>${SCRIPT}</script>
 </head>
 <body>
 <div class="wrap">
 <header class="top">
 <a class="brand" href="/"><img src="/icon.svg" alt="" width="26" height="26">FlarePanel <span>Status</span></a>
-<nav aria-label="Status pages">${nav('/', 'Status', 'status')}${nav('/history', 'Incident history', 'history')}<a href="/feed.atom">Subscribe (RSS)</a><a href="https://flarepanel.dev">flarepanel.dev</a></nav>
+<nav aria-label="Status pages">${nav('/', 'Status', 'status')}${nav('/history', 'History', 'history')}${nav('/subscribe', 'Get updates', 'updates')}<a href="https://flarepanel.dev">flarepanel.dev</a><button class="theme" id="theme" type="button" hidden aria-label="Switch between light and dark">${THEME_ICON}</button></nav>
 </header>
 <main>
 ${opts.body}
 </main>
 <footer>
-<span>Checked every minute from Cloudflare, by a Worker separate from the services it watches. Times in UTC.</span>
+<span>Checked every minute from Cloudflare, by a Worker separate from the services it watches. <span id="tz">Times in UTC.</span></span>
 <span><a href="/api/status.json">JSON</a> · <a href="/feed.atom">Atom feed</a> · <a href="https://docs.flarepanel.dev/status">About this page</a></span>
 </footer>
 </div>
@@ -348,7 +389,18 @@ ${scheduled}
   });
 }
 
-export function renderHistoryPage(incidents: Incident[], now: number): string {
+export type HistoryTab = 'incidents' | 'maintenance';
+
+export function renderHistoryPage(
+  all: Incident[],
+  now: number,
+  tab: HistoryTab = 'incidents'
+): string {
+  const incidents = all.filter((i) =>
+    tab === 'maintenance'
+      ? i.impact === 'maintenance'
+      : i.impact !== 'maintenance'
+  );
   const byMonth = new Map<string, Incident[]>();
   for (const incident of incidents) {
     const d = new Date(incident.startedAt);
@@ -361,16 +413,63 @@ export function renderHistoryPage(incidents: Incident[], now: number): string {
         `<div class="month"><h3>${month}</h3><div class="card">${list.map((i) => incidentCard(i, now)).join('')}</div></div>`
     )
     .join('');
-  const body = `<h1 class="title">Incident history</h1>
-<p style="color:var(--faint);margin:8px 0 0">Every incident and maintenance window of the last 90 days.</p>
-${months || '<div class="card" style="margin-top:28px"><p class="empty">No incidents in the last 90 days.</p></div>'}`;
+  const tabLink = (key: HistoryTab, label: string, href: string) =>
+    `<a href="${href}"${tab === key ? ' aria-current="page"' : ''}>${label}</a>`;
+  const empty =
+    tab === 'maintenance'
+      ? 'No maintenance in the last 90 days.'
+      : 'No incidents in the last 90 days.';
+  const body = `<h1 class="title">History</h1>
+<p style="color:var(--faint);margin:8px 0 0">The last 90 days.</p>
+<nav class="tabs" aria-label="History">${tabLink('incidents', 'Incidents', '/history')}${tabLink('maintenance', 'Maintenance', '/history?type=maintenance')}</nav>
+${months || `<div class="card" style="margin-top:28px"><p class="empty">${empty}</p></div>`}`;
   return layout({
-    title: 'Incident history · FlarePanel Status',
+    title: `${tab === 'maintenance' ? 'Maintenance' : 'Incident'} history · FlarePanel Status`,
     description:
       'Incidents and maintenance of FlarePanel over the last 90 days.',
-    path: '/history',
+    path: tab === 'maintenance' ? '/history?type=maintenance' : '/history',
     body,
     current: 'history',
+  });
+}
+
+export function renderSubscribePage(emailEnabled: boolean): string {
+  const checks = MONITORS.map(
+    (m) =>
+      `<label><input type="checkbox" name="monitors" value="${m.id}"> ${escape(m.name)}</label>`
+  ).join('');
+  const email = emailEnabled
+    ? `<div class="opt"><h2>Email</h2><p>An email when an incident or maintenance starts, changes or ends. We send nothing else, and every email has an unsubscribe link.</p>
+<form method="post" action="/subscribe">
+<div class="field"><input type="email" name="email" required autocomplete="email" placeholder="you@example.com" aria-label="Email address"><button class="primary" type="submit">Subscribe</button></div>
+<fieldset><legend>Only some services? Leave all unticked for everything.</legend><div class="checks">${checks}</div></fieldset>
+</form></div>`
+    : '';
+  const body = `<h1 class="title">Get updates</h1>
+<p style="color:var(--faint);margin:8px 0 24px">Hear about incidents and maintenance as they happen.</p>
+<div class="card">
+${email}
+<div class="opt"><h2>RSS or Atom</h2><p>Add the feed to any feed reader.</p><a href="/feed.atom">${SITE}/feed.atom</a></div>
+<div class="opt"><h2>Slack</h2><p>With Slack's RSS app, type in any channel:</p><code>/feed subscribe ${SITE}/feed.atom</code></div>
+<div class="opt"><h2>JSON</h2><p>The current state of every service, for your own tools and badges.</p><a href="/api/status.json">${SITE}/api/status.json</a></div>
+</div>`;
+  return layout({
+    title: 'Get updates · FlarePanel Status',
+    description:
+      'Get FlarePanel incident and maintenance updates by email, RSS, Slack or JSON.',
+    path: '/subscribe',
+    body,
+    current: 'updates',
+  });
+}
+
+export function renderMessage(title: string, text: string): string {
+  return layout({
+    title: `${title} · FlarePanel Status`,
+    description: text,
+    path: '/subscribe',
+    body: `<div class="card msg"><h1>${escape(title)}</h1><p>${escape(text)}</p><p style="margin-top:14px"><a href="/">Back to the status page</a></p></div>`,
+    current: 'updates',
   });
 }
 

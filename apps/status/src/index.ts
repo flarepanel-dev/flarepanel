@@ -12,8 +12,12 @@ import {
   renderFeed,
   renderHistoryPage,
   renderIncidentPage,
+  renderMessage,
   renderNotFound,
   renderStatusPage,
+  renderSubscribePage,
+  SCRIPT_HASH,
+  SITE,
 } from './render';
 import {
   addIncidentUpdate,
@@ -24,6 +28,13 @@ import {
   prune,
   recordRound,
 } from './store';
+import {
+  confirm,
+  type EmailSender,
+  notifySubscribers,
+  subscribe,
+  unsubscribe,
+} from './subscribers';
 import { buildView, OVERALL_TEXT } from './view';
 
 export interface Env {
@@ -31,14 +42,19 @@ export interface Env {
   ASSETS: Fetcher;
   /** Secret: lets the operator post incidents and maintenance. Unset: off. */
   STATUS_ADMIN_TOKEN?: string;
+  /** Cloudflare Email Service: email updates. Unset: the email option hides. */
+  EMAIL?: SendEmail;
+  /** Sender of status emails; defaults to hello@flarepanel.dev. */
+  STATUS_EMAIL_FROM?: string;
+  /** Secret signing unsubscribe links; falls back to STATUS_ADMIN_TOKEN. */
+  STATUS_SIGNING_KEY?: string;
 }
 
 const DAY = 24 * 60 * 60 * 1000;
 const PAGE_TTL_SECONDS = 30;
 
 const SECURITY_HEADERS: Record<string, string> = {
-  'content-security-policy':
-    "default-src 'none'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  'content-security-policy': `default-src 'none'; script-src '${SCRIPT_HASH}'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`,
   'strict-transport-security': 'max-age=31536000; includeSubDomains',
   'x-content-type-options': 'nosniff',
   'referrer-policy': 'strict-origin-when-cross-origin',
@@ -100,10 +116,39 @@ const timeOf = (v: unknown) => {
   return Number.isFinite(at) ? at : null;
 };
 
+const emailSender = (env: Env): EmailSender | undefined =>
+  env.EMAIL ? (env.EMAIL as unknown as EmailSender) : undefined;
+const signingKey = (env: Env) =>
+  env.STATUS_SIGNING_KEY ?? env.STATUS_ADMIN_TOKEN;
+const emailFrom = (env: Env) => env.STATUS_EMAIL_FROM ?? 'hello@flarepanel.dev';
+const emailEnabled = (env: Env) => Boolean(env.EMAIL && signingKey(env));
+
+/** Emails subscribers about these incidents; never fails the caller. */
+async function notify(env: Env, ids: string[]) {
+  for (const id of ids) {
+    try {
+      const incident = await loadIncident(env.DB, id);
+      if (incident) {
+        await notifySubscribers(
+          env.DB,
+          emailSender(env),
+          signingKey(env),
+          incident,
+          SITE,
+          emailFrom(env)
+        );
+      }
+    } catch (error) {
+      console.error('Could not email subscribers', id, error);
+    }
+  }
+}
+
 /** Operator API: POST /api/admin/incidents and /api/admin/incidents/:id. */
 async function admin(
   request: Request,
   env: Env,
+  ctx: ExecutionContext,
   path: string
 ): Promise<Response> {
   const token = env.STATUS_ADMIN_TOKEN;
@@ -138,12 +183,16 @@ async function admin(
 
   const match = /^\/api\/admin\/incidents\/([^/]+)$/.exec(path);
   if (match?.[1]) {
+    const incidentId = decodeURIComponent(match[1]);
     const ok = await addIncidentUpdate(
       env.DB,
-      decodeURIComponent(match[1]),
+      incidentId,
       { status: body.status, message },
       now
     );
+    if (ok) {
+      ctx.waitUntil(notify(env, [incidentId]));
+    }
     return ok ? json({ ok: true }) : json({ error: 'Incident not found' }, 404);
   }
   if (path !== '/api/admin/incidents') {
@@ -180,11 +229,28 @@ async function admin(
     },
     now
   );
+  // Planned maintenance is announced when it is scheduled, and again when it
+  // starts and ends (advanceMaintenance).
+  ctx.waitUntil(notify(env, [id]));
   return json({ ok: true, id }, 201);
 }
 
 /** Planned maintenance starts and ends on its own schedule. */
-async function advanceMaintenance(db: D1Database, now: number) {
+async function advanceMaintenance(
+  db: D1Database,
+  now: number
+): Promise<string[]> {
+  const due = await db
+    .prepare(
+      `SELECT id FROM incidents
+       WHERE (status = 'scheduled' AND started_at <= ?1)
+          OR (status = 'in_progress' AND scheduled_until IS NOT NULL AND scheduled_until <= ?1)`
+    )
+    .bind(now)
+    .all<{ id: string }>();
+  if (due.results.length === 0) {
+    return [];
+  }
   await db.batch([
     db
       .prepare(
@@ -212,6 +278,91 @@ async function advanceMaintenance(db: D1Database, now: number) {
       )
       .bind(now),
   ]);
+  return due.results.map((row) => row.id);
+}
+
+/** Email subscription routes; never cached. */
+async function updates(
+  request: Request,
+  env: Env,
+  url: URL,
+  path: string
+): Promise<Response | null> {
+  const page = (title: string, text: string, status = 200) =>
+    respond(renderMessage(title, text), 'text/html; charset=utf-8', { status });
+  const now = Date.now();
+
+  if (path === '/subscribe' && request.method === 'POST') {
+    const form = await request.formData().catch(() => null);
+    const result = await subscribe(
+      env.DB,
+      emailEnabled(env) ? emailSender(env) : undefined,
+      {
+        email: form?.get('email'),
+        monitors: (form?.getAll('monitors') ?? []).map(String),
+        clientIp: request.headers.get('cf-connecting-ip') ?? 'unknown',
+      },
+      SITE,
+      emailFrom(env),
+      now
+    );
+    if (result === 'sent') {
+      return page(
+        'Check your inbox',
+        'If this address is not subscribed yet, we have sent it a link to confirm. Nothing is sent until you click it.'
+      );
+    }
+    if (result === 'invalid') {
+      return page(
+        'That address looks wrong',
+        'Go back and check the email address.',
+        400
+      );
+    }
+    if (result === 'rate-limited') {
+      return page('Too many attempts', 'Please try again in an hour.', 429);
+    }
+    return page(
+      'Email updates are not available',
+      'Use the RSS feed instead.',
+      503
+    );
+  }
+  if (path === '/subscribe/confirm') {
+    const ok = await confirm(env.DB, url.searchParams.get('token') ?? '', now);
+    return ok
+      ? page(
+          'You are subscribed',
+          'We will email you when an incident or maintenance affects FlarePanel.'
+        )
+      : page(
+          'This link does not work',
+          'It may have expired. Subscribe again from the Get updates page.',
+          400
+        );
+  }
+  if (path === '/unsubscribe') {
+    const key = signingKey(env);
+    const ok = key
+      ? await unsubscribe(
+          env.DB,
+          key,
+          url.searchParams.get('id') ?? '',
+          url.searchParams.get('token') ?? ''
+        )
+      : false;
+    if (request.method === 'POST') {
+      // One-click unsubscribe from the mail client (RFC 8058).
+      return new Response(null, { status: ok ? 200 : 400 });
+    }
+    return ok
+      ? page(
+          'You are unsubscribed',
+          'You will not get status emails from FlarePanel any more.'
+        )
+      : page('Already unsubscribed', 'This address gets no status emails.');
+  }
+  return null;
 }
 
 async function cached(
@@ -272,7 +423,11 @@ export default {
       });
 
     if (path.startsWith('/api/admin/')) {
-      return admin(request, env, path);
+      return admin(request, env, ctx, path);
+    }
+    const update = await updates(request, env, url, path);
+    if (update) {
+      return update;
     }
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return json({ error: 'Method not allowed' }, 405);
@@ -315,8 +470,17 @@ export default {
       }
       if (path === '/history') {
         return html(
-          renderHistoryPage(await loadIncidents(env.DB, now - 90 * DAY), now)
+          renderHistoryPage(
+            await loadIncidents(env.DB, now - 90 * DAY),
+            now,
+            url.searchParams.get('type') === 'maintenance'
+              ? 'maintenance'
+              : 'incidents'
+          )
         );
+      }
+      if (path === '/subscribe') {
+        return html(renderSubscribePage(emailEnabled(env)));
       }
       if (path === '/feed.atom' || path === '/feed.xml' || path === '/rss') {
         return respond(
@@ -342,8 +506,9 @@ export default {
   async scheduled(controller: ScheduledController, env: Env) {
     const now = controller.scheduledTime;
     const results = await Promise.all(MONITORS.map((m) => runCheck(m)));
-    await recordRound(env.DB, results, now);
-    await advanceMaintenance(env.DB, now);
+    const changes = await recordRound(env.DB, results, now);
+    const maintenance = await advanceMaintenance(env.DB, now);
+    await notify(env, [...changes.opened, ...changes.resolved, ...maintenance]);
     if (new Date(now).getUTCMinutes() === 0) {
       await prune(env.DB, now);
     }

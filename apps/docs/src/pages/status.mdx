@@ -23,11 +23,16 @@ The checks run from a separate Cloudflare Worker that shares no database, bindin
 
 - Two failed checks in a row (two minutes) open an incident automatically; three good checks in a row resolve it.
 - The FlarePanel team posts other incidents and planned maintenance by hand, with updates.
+- The history page has separate tabs for incidents and maintenance. Times show in your own time zone, and the page follows your light or dark setting (the button in the header switches it).
 - The bars show one day each: green with no downtime, amber with a little downtime or an incident, red below 99% uptime. The percentage is the share of successful checks over 90 days.
 
 ## Get updates
 
-- **RSS / Atom:** subscribe to [status.flarepanel.dev/feed.atom](https://status.flarepanel.dev/feed.atom) in any feed reader, or in Slack with the RSS app.
+All options are on [status.flarepanel.dev/subscribe](https://status.flarepanel.dev/subscribe):
+
+- **Email:** enter your address, optionally pick the services you care about, and click the link in the confirmation email. You get one email when an incident or maintenance starts, changes or ends; every email has a one-click unsubscribe link. Unconfirmed addresses are forgotten after a week.
+- **RSS / Atom:** subscribe to [status.flarepanel.dev/feed.atom](https://status.flarepanel.dev/feed.atom) in any feed reader.
+- **Slack:** with Slack's RSS app, type `/feed subscribe https://status.flarepanel.dev/feed.atom` in a channel.
 - **JSON:** [status.flarepanel.dev/api/status.json](https://status.flarepanel.dev/api/status.json) gives the overall state, each service with its 90-day uptime, and open incidents. It allows cross-origin requests.
 
 ## Self-hosting
