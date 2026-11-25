@@ -225,9 +225,13 @@ test('the import queue carries the import module job', () => {
 });
 
 // No cron fragment: notifications are triggered by a rule match. legacyCompat.notification
-// discriminates on this name (jobs/compat.ts).
-test('the notification queue carries the notification module job', () => {
-  expect(Object.keys(queues.notification.jobs)).toEqual(['sendNotification']);
+// discriminates on `sendNotification` (jobs/compat.ts); `checkSessionFunnel`
+// is Workers-only and never had a legacy payload, so compat leaves it out.
+test('the notification queue carries the notification module jobs', () => {
+  expect(Object.keys(queues.notification.jobs).sort()).toEqual([
+    'checkSessionFunnel',
+    'sendNotification',
+  ]);
   expect(queues.notification.jobs.sendNotification).toMatchObject({
     queue: 'notification',
     name: 'sendNotification',

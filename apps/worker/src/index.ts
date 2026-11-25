@@ -80,6 +80,7 @@ import {
   reportFailedJob,
 } from './ops-alerts';
 import { handleOps, isOpsPath } from './ops-routes';
+import { checkEdgeRateLimit } from './rate-limits';
 import { unavailableOnWorkers } from './unavailable-deps';
 import { isUptimeMinute, runUptimeCheck } from './uptime';
 
@@ -100,6 +101,7 @@ export interface Env {
   EVENTS_ARCHIVE?: R2Bucket;
   /** Per-IP limit on ingest requests, checked before any Durable Object. */
   TRACK_LIMITER?: RateLimit;
+  MCP_LIMITER?: RateLimit;
   FLAREPANEL_EVENT_RETENTION_DAYS?: string;
   /** Cloudflare Email Service; account emails go out through it when bound. */
   EMAIL?: SendEmail;
@@ -129,9 +131,6 @@ export interface Env {
   /** Basin Pipelines stream the project Durable Objects send events to. */
   EVENTS_STREAM?: { send(records: Record<string, unknown>[]): Promise<void> };
 }
-
-const INGEST_PATHS = new Set(['/track', '/event']);
-const TOO_MANY_REQUESTS = 429;
 
 /** The three cookies the GSC OAuth flow signs (same as apps/api). */
 const SIGNED_COOKIE_NAMES = [
@@ -304,18 +303,9 @@ async function getBooted(env: Env): Promise<Booted> {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    if (
-      env.TRACK_LIMITER &&
-      request.method === 'POST' &&
-      INGEST_PATHS.has(url.pathname)
-    ) {
-      const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
-      const { success } = await env.TRACK_LIMITER.limit({ key: ip });
-      if (!success) {
-        return new Response('Too Many Requests', {
-          status: TOO_MANY_REQUESTS,
-        });
-      }
+    const limited = await checkEdgeRateLimit(request, url.pathname, env);
+    if (limited) {
+      return limited;
     }
 
     if (isOpsPath(url.pathname)) {

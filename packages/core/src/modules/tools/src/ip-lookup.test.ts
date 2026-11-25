@@ -13,7 +13,11 @@ const GEO = {
 };
 
 const getGeoLocation = mock((_ip?: string) => Promise.resolve(GEO));
-mock.module('../../../clients/geo', () => ({ getGeoLocation }));
+// No DB-IP table here: `hasGeoLookup` is false, as on a box without GEO_DB.
+mock.module('../../../clients/geo', () => ({
+  getGeoLocation,
+  hasGeoLookup: () => false,
+}));
 
 let runIpLookup: typeof import('./ip-lookup').runIpLookup;
 beforeAll(async () => {

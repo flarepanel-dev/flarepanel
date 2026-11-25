@@ -1,11 +1,10 @@
 // MCP's stateless POST transport, mounted at `/mcp`.
 //
-// OPEN GAP: this route has no rate limit, and it IS live — `apps/api/src/main.ts`
-// mounts `dashboardRoutes` for every non-worker role. So an unauthenticated
-// caller can drive one argon2 verify per request: `src/auth.ts` caches a
-// *correct* secret for 5 minutes under a key containing that secret's hash,
-// which a wrong secret misses every time. Adding a limiter is a task for
-// whoever owns the HTTP surface; nothing in this module can do it.
+// Rate limit: every wrong secret costs one password-hash verify (`src/auth.ts`
+// caches only a *correct* secret, for 5 minutes). On Workers the edge caps
+// POST /mcp per IP before this route runs (`MCP_LIMITER`,
+// apps/worker/src/rate-limits.ts). The Bun API (`apps/api`) still has no cap;
+// put one in front of it before running that build in production.
 //
 // The JSON-RPC body comes off the CONTEXT, not from `request.json`: Elysia has
 // already consumed the stream by the time the handler runs, and reading it
