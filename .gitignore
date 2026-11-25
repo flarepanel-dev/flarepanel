@@ -222,3 +222,4 @@ test-results/
 .dev.vars
 .wrangler/
 apps/worker/dist/
+security-isolation-report.md

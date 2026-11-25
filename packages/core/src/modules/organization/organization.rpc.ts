@@ -187,6 +187,14 @@ export const organizationRouter = createTRPCRouter({
       if (!input.inviteId) {
         throw new TRPCBadRequestError('Invite ID is required');
       }
-      return ctx.services.organization.getInvite(input.inviteId);
+      // Public: whoever holds the invite link sees it. Return only what the
+      // invite page shows, not the inviter, role or project access.
+      const invite = await ctx.services.organization.getInvite(input.inviteId);
+      return {
+        id: invite.id,
+        email: invite.email,
+        isExpired: invite.isExpired,
+        organization: { name: invite.organization?.name ?? null },
+      };
     }),
 });
