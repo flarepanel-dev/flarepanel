@@ -63,6 +63,7 @@ import {
   maybeStartGeoipRefresh,
   runGeoipRefreshStep,
 } from './geoip';
+import { httpsRedirect } from './https-redirect';
 import {
   createPauseCheck,
   guardAnalyticsPause,
@@ -306,6 +307,10 @@ async function getBooted(env: Env): Promise<Booted> {
 
 const handlers = {
   async fetch(incoming: Request, env: Env): Promise<Response> {
+    const insecure = httpsRedirect(incoming);
+    if (insecure) {
+      return insecure;
+    }
     const url = new URL(incoming.url);
     const limited = await checkEdgeRateLimit(incoming, url.pathname, env);
     if (limited) {
