@@ -15,7 +15,10 @@ import { TABLE_NAMES } from '../../shared/ch-tables';
 import { hashClientSecret, newClientSecret } from '../../shared/client-secret';
 import { HttpError } from '../../shared/errors';
 import { getId } from '../../slug-id';
-import { getClientByIdCached } from '../client/client.service';
+import {
+  clearClientCaches,
+  getClientByIdCached,
+} from '../client/client.service';
 import type { IProjectFilters } from './project.constants';
 
 // `getLastEventPerProject` sends session_timezone=UTC; `getProjectEventsCount` is a
@@ -466,7 +469,10 @@ export function createProjectService(
       },
     });
 
-    await getProjectByIdCached.clear(deps, id);
+    await Promise.all([
+      getProjectByIdCached.clear(deps, id),
+      clearClientCaches(deps, { projectId: id }),
+    ]);
 
     return true;
   }
@@ -479,6 +485,7 @@ export function createProjectService(
       where: { id },
       data: { deleteAt: new Date(Date.now() + DELETE_GRACE_PERIOD_MS) },
     });
+    await clearClientCaches(deps, { projectId: id });
   }
 
   async function cancelProjectDeletion(id: string): Promise<void> {
@@ -504,6 +511,7 @@ export function createProjectService(
       where: { id },
       data: { deleteAt: null },
     });
+    await clearClientCaches(deps, { projectId: id });
   }
 
   return {

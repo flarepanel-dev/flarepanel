@@ -22,6 +22,7 @@ import {
   TRPCNotFoundError,
 } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
+import { clearClientCaches } from '../client/client.service';
 
 type MembershipDeps = Pick<ServiceDeps, 'db' | 'config'>;
 
@@ -945,6 +946,7 @@ export async function scheduleOrganizationDeletion(
       },
     }),
   ]);
+  await clearClientCaches(deps, { organizationId });
 }
 
 export async function cancelOrganizationDeletion(
@@ -970,6 +972,7 @@ export async function cancelOrganizationDeletion(
       },
     }),
   ]);
+  await clearClientCaches(deps, { organizationId });
 }
 
 export type InviteUserResult =

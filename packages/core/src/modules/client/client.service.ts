@@ -61,16 +61,43 @@ export async function getClientsByProjectId(
   });
 }
 
+/**
+ * The client an API key, MCP token or SDK names, or null. A key whose project
+ * or workspace is scheduled for deletion answers like an unknown one: whoever
+ * deleted it expects it dead now, not when the cron purges it a day later.
+ * Restoring the project or workspace brings the key back (see
+ * `clearClientCaches`).
+ */
 export async function getClientById(
   deps: DbScope,
   id: string
 ): Promise<IServiceClientWithProject | null> {
-  return deps.db.client.findUnique({
+  const found = await deps.db.client.findUnique({
     where: { id },
     include: {
       project: true,
+      organization: { select: { deleteAt: true } },
     },
   });
+  if (!found || found.organization?.deleteAt || found.project?.deleteAt) {
+    return null;
+  }
+  const { organization: _organization, ...client } = found;
+  return client;
+}
+
+/** Drops the cached keys of a project or workspace whose state just changed. */
+export async function clearClientCaches(
+  deps: DbScope,
+  where: { projectId: string } | { organizationId: string }
+): Promise<void> {
+  const clients = await deps.db.client.findMany({
+    where,
+    select: { id: true },
+  });
+  await Promise.all(
+    clients.map((client) => getClientByIdCached.clear(deps, client.id))
+  );
 }
 
 /**
