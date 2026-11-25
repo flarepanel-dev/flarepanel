@@ -5,4 +5,10 @@
   <url><loc>https://flarepanel.dev/tools</loc></url>
   <url><loc>https://flarepanel.dev/tools/url-checker</loc></url>
   <url><loc>https://flarepanel.dev/tools/ip-lookup</loc></url>
+  <url><loc>https://flarepanel.dev/compare</loc></url>
+  <url><loc>https://flarepanel.dev/compare/posthog</loc></url>
+  <url><loc>https://flarepanel.dev/compare/plausible</loc></url>
+  <url><loc>https://flarepanel.dev/compare/google-analytics</loc></url>
+  <url><loc>https://flarepanel.dev/compare/umami</loc></url>
+  <url><loc>https://flarepanel.dev/compare/mixpanel</loc></url>
 </urlset>
