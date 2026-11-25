@@ -41,7 +41,10 @@ import {
 } from '@flarepanel/core/jobs/cloudflare';
 // Aliased to prisma-client.workerd.ts in wrangler.jsonc.
 import { db, Prisma } from '@flarepanel/db/src/prisma-client';
-import { bindD1Database } from '@flarepanel/db/src/prisma-client.workerd';
+import {
+  bindD1Database,
+  withRequestDb,
+} from '@flarepanel/db/src/prisma-client.workerd';
 import { configurePlatformStores } from '@flarepanel/platform';
 import {
   CoordinatorDurableObject,
@@ -300,7 +303,7 @@ async function getBooted(env: Env): Promise<Booted> {
   return booted;
 }
 
-export default {
+const handlers = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const limited = await checkEdgeRateLimit(request, url.pathname, env);
@@ -407,4 +410,15 @@ export default {
       logger: deps.logger,
     });
   },
+};
+
+// Every invocation runs with its own Prisma client (see `withRequestDb`):
+// sharing one across concurrent requests let Prisma merge their lookups and
+// the runtime cancel one of them as hung.
+export default {
+  fetch: (request, env) => withRequestDb(() => handlers.fetch(request, env)),
+  queue: (batch, env, ctx) =>
+    withRequestDb(() => handlers.queue(batch, env, ctx)),
+  scheduled: (controller, env, ctx) =>
+    withRequestDb(() => handlers.scheduled(controller, env, ctx)),
 } satisfies ExportedHandler<Env>;
