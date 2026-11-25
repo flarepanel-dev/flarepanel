@@ -15,6 +15,11 @@ import type { Logger } from '../../../logger';
 import { getClientIpFromHeaders } from '../../../shared/get-client-ip';
 import { checkRateLimit } from './rate-limit';
 
+/** Cloudflare Workers have no raw TCP/TLS sockets through node:net/tls. */
+const RAW_SOCKETS =
+  typeof navigator === 'undefined' ||
+  navigator.userAgent !== 'Cloudflare-Workers';
+
 const TIMEOUT_MS = 10_000;
 const MAX_REDIRECTS = 10;
 const MAX_HTML_BYTES = 5_000_000;
@@ -202,6 +207,11 @@ async function getSSLInfo(
     return null;
   }
 
+  // Raw sockets are Node-only: on Workers `tls.connect` throws, and the
+  // certificate details are left out instead of failing the whole check.
+  if (!RAW_SOCKETS) {
+    return null;
+  }
   return new Promise((resolve) => {
     const socket = tls.connect(
       {
@@ -305,6 +315,9 @@ async function measureConnectionTime(
     return { connectTime: 0, tlsTime: 0 };
   }
 
+  if (!RAW_SOCKETS) {
+    return { connectTime: 0, tlsTime: 0 };
+  }
   return new Promise((resolve) => {
     const start = Date.now();
     let connectTime = 0;
