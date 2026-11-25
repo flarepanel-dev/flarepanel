@@ -1,17 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import { Elysia } from 'elysia';
-import { testCoreConfig } from '../../test/config-fixture';
-import type { AppDeps } from '../context';
+import { stubAppDeps } from '../../test/http-fixtures';
 import { errorHandler } from './errors';
 
-const silent = {
-  child: () => silent,
-  error() {},
-  warn() {},
-  info() {},
-  debug() {},
-};
-const deps = { config: testCoreConfig(), logger: silent } as unknown as AppDeps;
+const { deps } = stubAppDeps();
 
 describe('errorHandler', () => {
   const app = new Elysia()
@@ -32,5 +24,29 @@ describe('errorHandler', () => {
       error: 'Error',
       message: 'body Invalid JSON',
     });
+  });
+  test('the raw SyntaxError Workers raise answers 400 too', async () => {
+    // On Workers `request.json()` fails unwrapped; this is the same error.
+    const workersLike = new Elysia()
+      .use(errorHandler(deps, { production: true }))
+      .post('/track', () => JSON.parse('{not json'));
+    const response = await workersLike.handle(
+      new Request('http://localhost/track', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{}',
+      })
+    );
+    expect(response.status).toBe(400);
+  });
+
+  test('a server-side failure still answers 500', async () => {
+    const broken = new Elysia()
+      .use(errorHandler(deps, { production: true }))
+      .get('/x', () => {
+        throw new Error('boom');
+      });
+    const response = await broken.handle(new Request('http://localhost/x'));
+    expect(response.status).toBe(500);
   });
 });

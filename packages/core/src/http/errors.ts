@@ -44,7 +44,10 @@ export function errorHandler(deps: AppDeps, options: ErrorHandlerOptions) {
     .use(requestContext(deps))
     .onError({ as: 'global' }, ({ code, error, set, request, path, ctx }) => {
       // A body that is not valid JSON is the caller's mistake: 400, not 500.
-      const isUnparsable = code === 'PARSE';
+      // Elysia wraps it as PARSE under Bun; on Workers the raw SyntaxError
+      // from `request.json()` arrives as UNKNOWN.
+      const isUnparsable =
+        code === 'PARSE' || isJsonBodySyntaxError(error, request);
       const isValidation = code === 'VALIDATION' || isUnparsable;
       const normalized = normalizeError(error);
       const status = isValidation ? VALIDATION_STATUS : normalized.status;
@@ -102,6 +105,14 @@ export function errorHandler(deps: AppDeps, options: ErrorHandlerOptions) {
         message,
       };
     });
+}
+
+function isJsonBodySyntaxError(error: unknown, request: Request): boolean {
+  return (
+    error instanceof SyntaxError &&
+    /json/i.test(request.headers.get('content-type') ?? '') &&
+    /JSON|Unexpected (token|end)/.test(error.message)
+  );
 }
 
 /**
