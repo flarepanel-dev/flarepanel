@@ -3,7 +3,7 @@
   // Self-hosting template: set the values marked "yours" and deploy with
   // `bun run deploy`. flarepanel.dev itself deploys from wrangler.hosted.jsonc.
   "name": "flarepanel-dashboard",
-  "compatibility_date": "2026-03-10",
+  "compatibility_date": "2026-11-25",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
   // Yours: the dashboard's custom domain.
@@ -24,6 +24,7 @@
       "enabled": true,
       "head_sampling_rate": 0.1,
       "invocation_logs": true
-    }
+    },
+    "traces": { "enabled": true, "head_sampling_rate": 0.1 }
   }
 }

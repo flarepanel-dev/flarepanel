@@ -3,7 +3,7 @@
   // Static-assets-only Worker: Vocs builds plain files (renderStrategy
   // "full-static"), served without running Worker code.
   "name": "flarepanel-docs",
-  "compatibility_date": "2026-03-10",
+  "compatibility_date": "2026-11-25",
   "assets": {
     "directory": "./dist/public",
     "html_handling": "drop-trailing-slash",

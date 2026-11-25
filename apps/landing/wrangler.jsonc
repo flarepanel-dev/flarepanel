@@ -3,7 +3,7 @@
   // Static-assets-only Worker: no `main`, so every request is served from
   // `out/` without running Worker code (static asset requests are free).
   "name": "flarepanel-landing",
-  "compatibility_date": "2026-03-10",
+  "compatibility_date": "2026-11-25",
   "assets": {
     "directory": "./out",
     "html_handling": "drop-trailing-slash",

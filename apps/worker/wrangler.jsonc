@@ -5,7 +5,7 @@
   // flarepanel.dev itself deploys from wrangler.hosted.jsonc.
   "name": "flarepanel-api",
   "main": "src/index.ts",
-  "compatibility_date": "2026-03-10",
+  "compatibility_date": "2026-11-25",
   "compatibility_flags": ["nodejs_compat"],
   // Production: api.flarepanel.dev. Local: `bun run dev` with .dev.vars
   // overriding the vars below (Miniflare, free).
@@ -128,5 +128,11 @@
     // Checked every 5 minutes by the cron; failures email OPS_ALERT_EMAIL.
     "UPTIME_URLS": "https://analytics.example.com/login"
   },
-  "observability": { "enabled": true, "head_sampling_rate": 0.1 }
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1,
+    // Traces: request timelines. 10% keeps a small install inside the
+    // account's free Observability allowance (50 GB/month on Workers Paid).
+    "traces": { "enabled": true, "head_sampling_rate": 0.1 }
+  }
 }

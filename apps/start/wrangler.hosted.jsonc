@@ -4,7 +4,7 @@
   // Self-hosting starts from wrangler.jsonc next to this file instead.
   "account_id": "cb2d46c65b7c8fe69cb77e78b36d3c9e",
   "name": "flarepanel-dashboard",
-  "compatibility_date": "2026-03-10",
+  "compatibility_date": "2026-11-25",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
   "routes": [{ "pattern": "dashboard.flarepanel.dev", "custom_domain": true }],

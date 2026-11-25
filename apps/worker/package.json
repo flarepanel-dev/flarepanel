@@ -10,7 +10,8 @@
     "deploy:hosted": "wrangler deploy -c wrangler.hosted.jsonc",
     "migrate:hosted": "wrangler d1 migrations apply flarepanel --remote -c wrangler.hosted.jsonc",
     "db:migrate:local": "wrangler d1 migrations apply flarepanel --local",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "cf-typegen": "bun scripts/cf-typegen.ts"
   },
   "dependencies": {
     "@clickhouse/client-web": "1.18.5",
@@ -27,7 +28,7 @@
     "@cloudflare/workers-types": "5.20261121.1",
     "@flarepanel/tsconfig": "workspace:*",
     "typescript": "catalog:",
-    "wrangler": "4.85.0",
+    "wrangler": "4.168.0",
     "bun-types": "1.4.4"
   }
 }
