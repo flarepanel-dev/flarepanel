@@ -305,6 +305,8 @@ async function getBooted(env: Env): Promise<Booted> {
   return booted;
 }
 
+const OPERATOR_ONLY_PATHS = new Set(['/metrics', '/misc/stats']);
+
 const handlers = {
   async fetch(incoming: Request, env: Env): Promise<Response> {
     const insecure = httpsRedirect(incoming);
@@ -322,9 +324,13 @@ const handlers = {
     }
     const request = bounded.request;
 
-    // Prometheus scrape output: per-isolate counters that mean little on
-    // Workers and describe internals. Operator token only.
-    if (url.pathname === '/metrics' && !(await hasOpsToken(request, env))) {
+    // Operator token only: Prometheus scrape output (per-isolate counters
+    // that describe internals) and the install-wide totals (project and
+    // event counts are business numbers, not public information).
+    if (
+      OPERATOR_ONLY_PATHS.has(url.pathname) &&
+      !(await hasOpsToken(request, env))
+    ) {
       return Response.json({ error: 'Not found' }, { status: 404 });
     }
 

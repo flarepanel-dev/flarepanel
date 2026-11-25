@@ -43,12 +43,16 @@ export function errorHandler(deps: AppDeps, options: ErrorHandlerOptions) {
   return new Elysia({ name: 'core/http/error-handler' })
     .use(requestContext(deps))
     .onError({ as: 'global' }, ({ code, error, set, request, path, ctx }) => {
-      const isValidation = code === 'VALIDATION';
+      // A body that is not valid JSON is the caller's mistake: 400, not 500.
+      const isUnparsable = code === 'PARSE';
+      const isValidation = code === 'VALIDATION' || isUnparsable;
       const normalized = normalizeError(error);
       const status = isValidation ? VALIDATION_STATUS : normalized.status;
-      const message = isValidation
-        ? validationMessage(error)
-        : normalized.message;
+      const message = isUnparsable
+        ? 'body Invalid JSON'
+        : isValidation
+          ? validationMessage(error)
+          : normalized.message;
       const logger = ctx?.logger ?? deps.logger;
 
       if (status === RATE_LIMITED_STATUS) {

@@ -13,6 +13,7 @@ import { getMemberProjectGrants } from '../../shared/access-lookups';
 import { convertClickhouseDateToJs } from '../../shared/ch-dates';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { hashClientSecret, newClientSecret } from '../../shared/client-secret';
+import { HttpError } from '../../shared/errors';
 import { getId } from '../../slug-id';
 import { getClientByIdCached } from '../client/client.service';
 import type { IProjectFilters } from './project.constants';
@@ -214,14 +215,17 @@ export async function resolveClientProjectId(
 ): Promise<string> {
   if (clientType !== 'root') {
     if (!clientProjectId) {
-      throw new Error('Client is not associated with a project');
+      throw new HttpError('Client is not associated with a project', {
+        status: 403,
+      });
     }
     return clientProjectId;
   }
 
   if (!inputProjectId) {
-    throw new Error(
-      'projectId is required when using a root (organization-level) client'
+    throw new HttpError(
+      'projectId is required when using a root (organization-level) client',
+      { status: 400 }
     );
   }
 
@@ -230,9 +234,12 @@ export async function resolveClientProjectId(
     select: { id: true },
   });
 
+  // Another workspace's project answers exactly like a missing one, so the
+  // reply does not confirm that a project ID exists.
   if (!project) {
-    throw new Error(
-      'Project not found or does not belong to your organization'
+    throw new HttpError(
+      'Project not found or does not belong to your organization',
+      { status: 404 }
     );
   }
 

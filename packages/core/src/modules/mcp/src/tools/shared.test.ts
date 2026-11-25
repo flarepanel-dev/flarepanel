@@ -90,6 +90,19 @@ describe('resolveClientProjectId', () => {
     ).resolves.toBe('proj-abc');
   });
 
+  it('answers 404, not 500, for a project outside the organization', async () => {
+    const error = await resolveClientProjectId(
+      { ...deps, db: { project: { findFirst: async () => null } } } as never,
+      {
+        clientType: ROOT_CTX.clientType,
+        clientProjectId: ROOT_CTX.projectId,
+        organizationId: ROOT_CTX.organizationId,
+        inputProjectId: 'someone-elses-project',
+      }
+    ).catch((e: unknown) => e);
+    expect((error as { status?: number }).status).toBe(404);
+  });
+
   it('throws for root clients when no projectId is provided', async () => {
     await expect(
       resolveClientProjectId(deps, {
