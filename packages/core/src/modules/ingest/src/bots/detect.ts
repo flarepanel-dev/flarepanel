@@ -1,8 +1,22 @@
 import { cacheable } from '@flarepanel/redis';
 import bots from './bots';
 
+/**
+ * Automation the generated list (scripts/get-bots.ts, from an upstream
+ * database) does not cover. Kept here so a regeneration cannot drop them.
+ * Headless Chrome is what Playwright, Puppeteer and most scrapers run; it
+ * says so in its user agent, and no person browses with it.
+ */
+const EXTRA_BOTS = [
+  {
+    includes: 'HeadlessChrome',
+    name: 'Headless Chrome',
+    category: 'Headless browser',
+  },
+] as const;
+
 // Pre-compile regex patterns at module load time
-const compiledBots = bots.map((bot) => {
+const compiledBots = [...bots, ...EXTRA_BOTS].map((bot) => {
   if ('regex' in bot) {
     return {
       ...bot,

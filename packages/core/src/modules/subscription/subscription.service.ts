@@ -169,6 +169,11 @@ export async function checkout(
 }
 
 export async function listProducts(deps: ServiceDeps, organizationId: string) {
+  // Without a Polar token every call failed as a 500 ("Status 401"); say what
+  // is missing instead. The payments package reads the same variable.
+  if (!process.env.POLAR_ACCESS_TOKEN) {
+    throw new TRPCBadRequestError('Billing is not set up on this server');
+  }
   const organization = await deps.db.organization.findUniqueOrThrow({
     where: { id: organizationId },
     select: { id: true, subscriptionPeriodEventsCount: true },

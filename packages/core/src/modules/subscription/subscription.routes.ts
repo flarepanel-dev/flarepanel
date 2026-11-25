@@ -9,6 +9,20 @@
 
 import { defineRoutes } from '../../http/define';
 
+/** The Polar SDK's verification errors, matched by name (it loads lazily). */
+export function isSignatureFailure(err: unknown): boolean {
+  if (!(err instanceof Error)) {
+    return false;
+  }
+  return (
+    err.name === 'WebhookVerificationError' ||
+    err.constructor?.name === 'WebhookVerificationError' ||
+    /secret can't be empty|signature|missing required headers|timestamp too (old|new)/i.test(
+      err.message
+    )
+  );
+}
+
 export const subscriptionRoutes = defineRoutes((app) =>
   app.post(
     '/webhook/polar',
@@ -22,7 +36,14 @@ export const subscriptionRoutes = defineRoutes((app) =>
           headers,
           ctx.logger
         );
-      } catch {
+      } catch (err) {
+        // A forged or unsigned request (or no webhook secret configured, which
+        // the SDK refuses to verify against) is the caller's fault, not ours:
+        // 401, so it never looks like an outage. Polar retries real failures
+        // on 5xx only.
+        if (isSignatureFailure(err)) {
+          return status(401, 'Invalid signature');
+        }
         return status(500, 'Error');
       }
 

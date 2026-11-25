@@ -25,8 +25,12 @@ describe('detectBot', () => {
       'got (https://github.com/sindresorhus/got)',
       'PostmanRuntime/7.0',
     ];
+    // A person's Chrome must never match the headless entry.
+    const browsers = [
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    ];
 
-    for (const ua of [...allowlisted, ...backendClients]) {
+    for (const ua of [...allowlisted, ...backendClients, ...browsers]) {
       it(`treats "${ua}" as a real user`, () => {
         expect(detectBot(ua)).toBeNull();
       });
@@ -40,6 +44,8 @@ describe('detectBot', () => {
       // Heuristic patterns (case-sensitive, as upstream defines them).
       'some-crawler/1.0',
       'a-scraper-bot',
+      // Not in the generated list; added in detect.ts.
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/131.0.0.0 Safari/537.36',
     ];
 
     for (const ua of realBots) {

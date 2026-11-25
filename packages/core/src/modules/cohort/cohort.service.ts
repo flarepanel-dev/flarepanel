@@ -4,6 +4,7 @@
 // `TABLE_NAMES`: importing that builds a pino logger, and the SQL builders here
 // are pure functions the shape tests call without a ClickHouse connection.
 
+import { TRPCNotFoundError } from '../../rpc/errors';
 import type { ClickHouseSettings } from '@clickhouse/client';
 import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import type { Cohort } from '@flarepanel/db/src/prisma-client';
@@ -711,7 +712,7 @@ export async function getCohortMembers(
   const cohort = await db.cohort.findUnique({ where: { id: cohortId } });
 
   if (!cohort) {
-    throw new Error('Cohort not found');
+    throw new TRPCNotFoundError('Cohort not found');
   }
   if (deps.eventStore) {
     return storeCohorts<{ profileIds: string[]; total: number }>(
@@ -762,7 +763,7 @@ export async function getCohortCount(
   const cohort = await db.cohort.findUnique({ where: { id: cohortId } });
 
   if (!cohort) {
-    throw new Error('Cohort not found');
+    throw new TRPCNotFoundError('Cohort not found');
   }
 
   if (cohort.lastComputedAt) {

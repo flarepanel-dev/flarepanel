@@ -1,6 +1,7 @@
 // `getSessionsCountCached` is `cacheablePerDeps`: `cacheable` keys on the call's
 // arguments, so deps travel beside the key or the Redis key would change per request.
 
+import { TRPCNotFoundError } from '../../rpc/errors';
 import { getSafeJson, resolveDateRange } from '@flarepanel/shared';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
@@ -466,7 +467,7 @@ export async function getSessionById(
   if (deps.eventStore) {
     const session = await deps.eventStore.getSession(projectId, sessionId);
     if (!session) {
-      throw new Error('Session not found');
+      throw new TRPCNotFoundError('Session not found');
     }
     return {
       ...transformSession(session),
@@ -486,7 +487,7 @@ export async function getSessionById(
   ]);
 
   if (!sessionRows[0]) {
-    throw new Error('Session not found');
+    throw new TRPCNotFoundError('Session not found');
   }
 
   return {
