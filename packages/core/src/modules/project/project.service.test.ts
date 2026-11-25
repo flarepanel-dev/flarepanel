@@ -189,7 +189,8 @@ beforeAll(async () => {
   const { createProjectService } = await import('./project.service');
   subject = createProjectService(
     {
-      db: { project, report, member },
+      // No API keys here: deletion clears each key's cache (none to clear).
+      db: { project, report, member, client: { findMany: async () => [] } },
     } as unknown as import('../../services').ServiceDeps,
     testServices()
   );

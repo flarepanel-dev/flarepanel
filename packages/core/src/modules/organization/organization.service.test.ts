@@ -430,6 +430,8 @@ const deps = {
     user,
     memberProject,
     $transaction,
+    // No API keys here: deletion clears each key's cache (none to clear).
+    client: { findMany: async () => [] },
   },
   ch: { command: chCommand },
   config: testCoreConfig(),
