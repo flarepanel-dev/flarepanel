@@ -21,6 +21,8 @@
       "enabled": true,
       "head_sampling_rate": 0.1,
       "invocation_logs": true
-    }
+    },
+    // 10% of requests traced; tiny at today's traffic (see apps/worker).
+    "traces": { "enabled": true, "head_sampling_rate": 0.1 }
   }
 }

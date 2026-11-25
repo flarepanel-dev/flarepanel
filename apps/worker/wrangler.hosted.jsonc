@@ -121,5 +121,12 @@
     // Checked every 5 minutes by the cron; failures email OPS_ALERT_EMAIL.
     "UPTIME_URLS": "https://dashboard.flarepanel.dev/login,https://docs.flarepanel.dev/,https://flarepanel.dev/"
   },
-  "observability": { "enabled": true, "head_sampling_rate": 0.1 }
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1,
+    // Traces: request timelines (DO calls, D1 queries, fetches). 10% of
+    // requests, which is ~0.1 GB a month at today's traffic, inside the
+    // account's 50 GB Observability allowance (pricing from 2026-12-01).
+    "traces": { "enabled": true, "head_sampling_rate": 0.1 }
+  }
 }
