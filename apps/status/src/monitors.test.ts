@@ -44,6 +44,39 @@ describe('runCheck', () => {
     });
   });
 
+  it('retries a failed answer once and keeps the better result', async () => {
+    let calls = 0;
+    const flaky = (async () => {
+      calls++;
+      return calls === 1
+        ? new Response('', { status: 502 })
+        : new Response('{"ready":true}', { status: 200 });
+    }) as unknown as typeof fetch;
+    const result = await runCheck(monitor, flaky);
+    expect(calls).toBe(2);
+    expect(result.state).toBe('up');
+  });
+
+  it('reports down when the retry fails too', async () => {
+    let calls = 0;
+    const broken = (async () => {
+      calls++;
+      return new Response('', { status: 503 });
+    }) as unknown as typeof fetch;
+    expect((await runCheck(monitor, broken)).state).toBe('down');
+    expect(calls).toBe(2);
+  });
+
+  it('does not retry a good answer', async () => {
+    let calls = 0;
+    const fine = (async () => {
+      calls++;
+      return new Response('{"ready":true}', { status: 200 });
+    }) as unknown as typeof fetch;
+    await runCheck(monitor, fine);
+    expect(calls).toBe(1);
+  });
+
   it('never sends a body that could be stored as data', () => {
     for (const m of MONITORS) {
       expect(m.url.startsWith('https://')).toBe(true);

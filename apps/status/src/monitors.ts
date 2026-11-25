@@ -91,10 +91,32 @@ export const MONITORS: Monitor[] = [
 
 export const monitorById = new Map(MONITORS.map((m) => [m.id, m]));
 
+const RANK: Record<CheckState, number> = { up: 0, degraded: 1, down: 2 };
+
+/**
+ * One check, confirmed: a slow or failed first answer is tried once more and
+ * the better result kept. A Worker starting cold, or one dropped connection,
+ * then does not paint the page amber or red; a real slowdown or outage
+ * repeats and still shows.
+ */
 export async function runCheck(
   monitor: Monitor,
   fetchImpl: typeof fetch = fetch,
   now: () => number = Date.now
+): Promise<CheckResult> {
+  const first = await attempt(monitor, fetchImpl, now);
+  if (first.state === 'up') {
+    return first;
+  }
+  const second = await attempt(monitor, fetchImpl, now);
+  const better = RANK[second.state] < RANK[first.state] ? second : first;
+  return { ...better, at: first.at };
+}
+
+async function attempt(
+  monitor: Monitor,
+  fetchImpl: typeof fetch,
+  now: () => number
 ): Promise<CheckResult> {
   const at = now();
   const started = performance.now();
