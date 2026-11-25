@@ -6,7 +6,11 @@
   "name": "flarepanel-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-11-25",
-  "compatibility_flags": ["nodejs_compat"],
+  // legacy_module_registry: the module registry that is the default from
+  // 2026-11-17 roughly doubles startup CPU for this ~23 MB bundle, and
+  // Cloudflare then refuses the deploy (startup CPU limit). Drop it once
+  // the bundle is smaller; `wrangler check startup` measures it.
+  "compatibility_flags": ["nodejs_compat", "legacy_module_registry"],
   // Production: api.flarepanel.dev. Local: `bun run dev` with .dev.vars
   // overriding the vars below (Miniflare, free).
   // Yours: the API's custom domain.
