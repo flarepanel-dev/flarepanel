@@ -6,7 +6,7 @@
   "name": "flarepanel-dashboard",
   "compatibility_date": "2026-03-10",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry",
+  "main": "src/server.ts",
   "routes": [{ "pattern": "dashboard.flarepanel.dev", "custom_domain": true }],
   // Per-Worker cost cap .
   "limits": { "cpu_ms": 10000 },

@@ -82,5 +82,6 @@ export default defineConfig({
       ],
     },
     { text: 'FAQ', link: '/faq' },
+    { text: 'Security', link: '/security' },
   ],
 });

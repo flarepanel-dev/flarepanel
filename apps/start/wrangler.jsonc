@@ -5,7 +5,7 @@
   "name": "flarepanel-dashboard",
   "compatibility_date": "2026-03-10",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry",
+  "main": "src/server.ts",
   // Yours: the dashboard's custom domain.
   "routes": [{ "pattern": "analytics.example.com", "custom_domain": true }],
   // Per-Worker cost cap .

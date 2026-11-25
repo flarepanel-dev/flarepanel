@@ -1,0 +1,55 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Security
+description: How to report a security issue in FlarePanel, and what to expect.
+---
+
+# Security
+
+We welcome reports of security issues in FlarePanel.
+
+## Report a vulnerability
+
+Email **security@flarepanel.dev**. Please don't report security issues in public GitHub issues, pull requests or community channels. The same contact is in our [security.txt](https://flarepanel.dev/.well-known/security.txt).
+
+To help us triage quickly, include what you can:
+
+- the affected component (API, dashboard, a tracking SDK) and the endpoint or file involved
+- the version or commit you tested, or "flarepanel.dev"
+- what the issue is and its impact
+- steps to reproduce, or a proof of concept
+- a suggested fix, if you have one
+
+## What to expect
+
+- We try to acknowledge reports within 3 business days.
+- We aim to confirm the issue and send an assessment within 7 days, then keep you posted while we fix it.
+- When the fix ships, we tell you so you can confirm it.
+
+## Coordinated disclosure
+
+Please give us a reasonable chance to release a fix and notify self-hosters before any public write-up. If you plan to publish, a short note on timing helps us make sure the patch is live for everyone first.
+
+## Scope
+
+In scope: the FlarePanel code (API, dashboard, the official SDKs) and the hosted service at flarepanel.dev, dashboard.flarepanel.dev and api.flarepanel.dev. For a self-hosted install, please confirm the issue on the latest version first.
+
+Out of scope, unless you can show concrete, exploitable impact:
+
+- denial-of-service or resource-exhaustion attacks
+- social engineering, phishing or physical attacks
+- automated scanner output with no demonstrated impact
+- missing best-practice headers without a working exploit
+- vulnerabilities in third-party dependencies without a proof of concept against FlarePanel
+- issues that need a compromised device or a man-in-the-middle position on the victim's own network
+- self-XSS, and clickjacking on pages with no sensitive actions
+
+## Safe harbor
+
+We treat security research done in good faith under this policy as authorized and won't pursue legal action over accidental, good-faith violations. While you research:
+
+- only touch accounts and data you own or may test; never access, change or delete other users' data
+- use test accounts and avoid anything that degrades the service for others (no denial of service, spam or high-volume automated testing)
+- stop and report once you've confirmed an issue, and keep the details private until a fix ships
