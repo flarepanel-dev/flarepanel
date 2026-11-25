@@ -52,6 +52,20 @@ async function sameSecret(given: string, expected: string): Promise<boolean> {
   return diff === 0;
 }
 
+/**
+ * Whether the request carries the operator token. Without OPS_TOKEN set
+ * nothing does, so operator-only surfaces stay closed by default.
+ */
+export async function hasOpsToken(
+  request: Request,
+  env: { OPS_TOKEN?: string }
+): Promise<boolean> {
+  const token = env.OPS_TOKEN;
+  const given =
+    request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? '';
+  return Boolean(token && given && (await sameSecret(given, token)));
+}
+
 export async function handleOps(
   request: Request,
   env: OpsEnv,

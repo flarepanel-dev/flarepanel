@@ -56,6 +56,7 @@ import { loadConfig } from '../../api/src/config/env';
 import { createAdvancedAnalytics } from './advanced/analytics';
 import { readAdvancedConfig } from './advanced/config';
 import { BasinUsageDurableObject } from './advanced/usage-do';
+import { limitRequestBody } from './body-limit';
 import {
   createGeoipLookup,
   GEOIP_MESSAGE_KIND,
@@ -82,7 +83,7 @@ import {
   keepDeadLetters,
   reportFailedJob,
 } from './ops-alerts';
-import { handleOps, isOpsPath } from './ops-routes';
+import { handleOps, hasOpsToken, isOpsPath } from './ops-routes';
 import { checkEdgeRateLimit } from './rate-limits';
 import { unavailableOnWorkers } from './unavailable-deps';
 import { isUptimeMinute, runUptimeCheck } from './uptime';
@@ -304,11 +305,22 @@ async function getBooted(env: Env): Promise<Booted> {
 }
 
 const handlers = {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
-    const limited = await checkEdgeRateLimit(request, url.pathname, env);
+  async fetch(incoming: Request, env: Env): Promise<Response> {
+    const url = new URL(incoming.url);
+    const limited = await checkEdgeRateLimit(incoming, url.pathname, env);
     if (limited) {
       return limited;
+    }
+    const bounded = limitRequestBody(incoming);
+    if ('response' in bounded) {
+      return bounded.response;
+    }
+    const request = bounded.request;
+
+    // Prometheus scrape output: per-isolate counters that mean little on
+    // Workers and describe internals. Operator token only.
+    if (url.pathname === '/metrics' && !(await hasOpsToken(request, env))) {
+      return Response.json({ error: 'Not found' }, { status: 404 });
     }
 
     if (isOpsPath(url.pathname)) {

@@ -387,7 +387,13 @@ const middlewareMarker = 'middlewareMarker' as 'middlewareMarker' & {
   __brand: 'middlewareMarker';
 };
 
-/** Query response caching, keyed by procedure path and raw input. */
+/**
+ * Query response caching, keyed by procedure path, the signed-in user and raw
+ * input. The user is in the key because a cache hit skips the resolver, and
+ * with it any access check inside it: without the user, a second caller with
+ * the same input would get the first caller's answer. Anonymous calls share
+ * the `anon` bucket.
+ */
 export const createCacheMiddleware =
   ({ cache, serveFromCache }: CacheMiddlewareDeps) =>
   (cbOrTtl: number | ((input: any, opts: { path: string }) => number)) =>
@@ -401,7 +407,9 @@ export const createCacheMiddleware =
       if (type !== 'query') {
         return next();
       }
-      let key = `trpc:${path}:`;
+      const userId = (ctx as { session?: { userId?: string | null } }).session
+        ?.userId;
+      let key = `trpc:${path}:${userId || 'anon'}:`;
       if (rawInput) {
         key += JSON.stringify(rawInput).replace(/"/g, "'");
       }
@@ -422,12 +430,16 @@ export const createCacheMiddleware =
 
       // @ts-expect-error
       if (result.data) {
-        cache.setJson(
-          key,
-          ttl,
-          // @ts-expect-error
-          result.data
-        );
+        // Awaited: on Workers a write left floating can be dropped when the
+        // request ends. A failed write only costs the next call a cache miss.
+        await cache
+          .setJson(
+            key,
+            ttl,
+            // @ts-expect-error
+            result.data
+          )
+          .catch(() => undefined);
       }
       return result;
     });

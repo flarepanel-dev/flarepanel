@@ -231,7 +231,7 @@ function stubCache() {
   };
 }
 
-test('the cache middleware keys on path + raw input and honours the ttl', async () => {
+test('the cache middleware keys on path + user + raw input and honours the ttl', async () => {
   const { cache, reads, writes } = stubCache();
   let hits = 0;
 
@@ -253,7 +253,7 @@ test('the cache middleware keys on path + raw input and honours the ttl', async 
   await mounted.call(new Request(url));
 
   expect(hits).toBe(1);
-  expect(reads[0]).toBe("trpc:overview:{'projectId':'p1'}");
+  expect(reads[0]).toBe("trpc:overview:user_1:{'projectId':'p1'}");
   expect(writes).toHaveLength(1);
   expect(writes[0]?.ttl).toBe(60);
 });
@@ -390,4 +390,42 @@ test('a BadRequestError from below the transport answers BAD_REQUEST with its me
     code: 'BAD_REQUEST',
     message: 'Pick a shorter range.',
   });
+});
+
+test('a cached answer for one user is never served to another', async () => {
+  const { cache, reads } = stubCache();
+  const router = createTRPCRouter({
+    overview: baseModule.publicProcedure
+      .use(
+        baseModule.createCacheMiddleware({ cache, serveFromCache: true })(60)
+      )
+      .input(z.object({ projectId: z.string() }))
+      .query(({ ctx }) => ({ answeredFor: ctx.session.userId })),
+  });
+  const handler = createTrpcFetchHandler({
+    router,
+    logger: stubHttpCtx().logger,
+    cookieOptions: COOKIE_OPTIONS,
+    ipHeaders: testCoreConfig().ipHeaders,
+  });
+  const url =
+    'https://api.flarepanel.dev/trpc/overview?input=' +
+    encodeURIComponent(JSON.stringify({ json: { projectId: 'p1' } }));
+  const other = {
+    ...TEST_SESSION,
+    userId: 'user_2',
+    session: { ...TEST_SESSION.session, userId: 'user_2' },
+  };
+
+  await handler(new Request(url), stubHttpCtx().ctx);
+  const second = await handler(new Request(url), stubHttpCtx({}, other).ctx);
+  const body = (await second.json()) as {
+    result: { data: { json: { answeredFor: string } } };
+  };
+
+  expect(body.result.data.json.answeredFor).toBe('user_2');
+  expect(reads).toEqual([
+    "trpc:overview:user_1:{'projectId':'p1'}",
+    "trpc:overview:user_2:{'projectId':'p1'}",
+  ]);
 });

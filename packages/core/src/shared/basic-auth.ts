@@ -1,7 +1,7 @@
 // HTTP Basic auth for operator-only surfaces. Browsers prompt for the
 // credentials, so such a surface needs no UI of its own.
 
-import { timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 
 export interface BasicAuthCredentials {
   username: string;
@@ -10,11 +10,15 @@ export interface BasicAuthCredentials {
 
 const BASIC_SCHEME = 'basic';
 
+/**
+ * Constant time whatever the inputs: both sides are hashed to 32 bytes first.
+ * Comparing lengths before `timingSafeEqual` returned early on a mismatch and
+ * so told a caller the secret's length (Cloudflare Workers best practices).
+ */
 function safeEqual(a: string, b: string): boolean {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  // timingSafeEqual throws on a length mismatch, so the length is compared first.
-  return left.length === right.length && timingSafeEqual(left, right);
+  const left = createHash('sha256').update(a).digest();
+  const right = createHash('sha256').update(b).digest();
+  return timingSafeEqual(left, right);
 }
 
 /** Whether an `Authorization` header carries exactly these credentials. */
