@@ -64,7 +64,10 @@
   // network, 50 ms CPU). One template is one Dynamic Worker a day.
   "worker_loaders": [{ "binding": "LOADER" }],
   // Per-IP caps enforced before the app or any Durable Object runs:
-  // /track and /event, and /mcp (each unknown secret costs a hash check).
+  // /track and /event, and /mcp. The app also limits /mcp per token (60/min)
+  // and per IP (3000/min); this cheaper edge cap cuts guessing with rotating
+  // fake tokens from one address. It stays high because hosted AI clients
+  // share egress addresses across many users.
   "ratelimits": [
     {
       "name": "TRACK_LIMITER",
@@ -74,7 +77,7 @@
     {
       "name": "MCP_LIMITER",
       "namespace_id": "1002",
-      "simple": { "limit": 120, "period": 60 }
+      "simple": { "limit": 600, "period": 60 }
     }
   ],
   "queues": {

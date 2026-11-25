@@ -14,9 +14,10 @@ export interface EdgeLimiters {
   /** /track and /event. */
   TRACK_LIMITER?: EdgeLimiter;
   /**
-   * /mcp. Every call with an unknown secret costs a password-hash check, and
-   * the old route had no cap, so one caller could guess secrets and burn CPU
-   * without limit.
+   * /mcp. Every call with an unknown secret costs a password-hash check. The
+   * app's own limiter keys /mcp by the client id inside the token, so a
+   * caller rotating fake ids only met its 3000/min per-IP budget; this edge
+   * cap refuses earlier and cheaper, before the app boots.
    */
   MCP_LIMITER?: EdgeLimiter;
 }

@@ -1,10 +1,10 @@
 // MCP's stateless POST transport, mounted at `/mcp`.
 //
-// Rate limit: every wrong secret costs one password-hash verify (`src/auth.ts`
-// caches only a *correct* secret, for 5 minutes). On Workers the edge caps
-// POST /mcp per IP before this route runs (`MCP_LIMITER`,
-// apps/worker/src/rate-limits.ts). The Bun API (`apps/api`) still has no cap;
-// put one in front of it before running that build in production.
+// Rate limits: every wrong secret costs one password-hash verify (`src/auth.ts`
+// caches only a *correct* secret, for 5 minutes). `http/rate-limit.ts` limits
+// /mcp per token client id (60/min) and per IP (3000/min) on every build. On
+// Workers an edge cap (`MCP_LIMITER`, apps/worker/src/rate-limits.ts) also
+// refuses floods per IP before the app boots.
 //
 // The JSON-RPC body comes off the CONTEXT, not from `request.json`: Elysia has
 // already consumed the stream by the time the handler runs, and reading it
