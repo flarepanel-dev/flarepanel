@@ -15,6 +15,7 @@ import { GSC_CLICKS_SERIES } from '@/components/page/gsc-clicks-chart';
 import { GscCtrBenchmark } from '@/components/page/gsc-ctr-benchmark';
 import { GscPositionChart } from '@/components/page/gsc-position-chart';
 import { PagesInsights } from '@/components/page/pages-insights';
+import { sourceLabel } from '@/components/page/source-label';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
@@ -153,30 +154,59 @@ function SeoPage() {
     );
   }
 
+  // Search engines and AI referrals come from FlarePanel's own events, not
+  // from Google, so they show whether or not Search Console is connected.
+  const trafficSources = (
+    <>
+      <SearchEngines
+        engines={searchEnginesQuery.data?.engines ?? []}
+        isLoading={searchEnginesQuery.isLoading}
+        previousTotal={searchEnginesQuery.data?.previousTotal ?? 0}
+        total={searchEnginesQuery.data?.total ?? 0}
+      />
+      <AiEngines
+        engines={aiEnginesQuery.data?.engines ?? []}
+        isLoading={aiEnginesQuery.isLoading}
+        previousTotal={aiEnginesQuery.data?.previousTotal ?? 0}
+        total={aiEnginesQuery.data?.total ?? 0}
+      />
+    </>
+  );
+
   if (!isConnected) {
     return (
       <PageContainer>
         <PageHeader
-          className="mb-8"
-          description="Google Search Console data"
+          actions={
+            <>
+              <OverviewRange />
+              <OverviewInterval />
+            </>
+          }
+          description="Search and AI assistant traffic"
           title="SEO"
         />
-        <EmptyState
-          description="See which queries and pages bring you search traffic, with clicks, impressions and positions next to the rest of your analytics."
-          icon={SearchIcon}
-          title="Connect Google Search Console"
-        >
-          <Button
-            onClick={() =>
-              navigate({
-                to: '/$organizationId/$projectId/settings/gsc',
-                params: { organizationId, projectId },
-              })
-            }
+        <div className="mt-8 space-y-8">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {trafficSources}
+          </div>
+          <EmptyState
+            description="Add clicks, impressions, positions and the queries that bring people in, next to the rest of your analytics."
+            icon={SearchIcon}
+            title="Connect Google Search Console"
           >
-            Connect Google Search Console
-          </Button>
-        </EmptyState>
+            <Button
+              onClick={() =>
+                navigate({
+                  to: '/$organizationId/$projectId/settings/gsc',
+                  params: { organizationId, projectId },
+                })
+              }
+            >
+              Connect Google Search Console
+            </Button>
+          </EmptyState>
+        </div>
       </PageContainer>
     );
   }
@@ -265,18 +295,7 @@ function SeoPage() {
               }}
             />
           </div>
-          <SearchEngines
-            engines={searchEnginesQuery.data?.engines ?? []}
-            isLoading={searchEnginesQuery.isLoading}
-            previousTotal={searchEnginesQuery.data?.previousTotal ?? 0}
-            total={searchEnginesQuery.data?.total ?? 0}
-          />
-          <AiEngines
-            engines={aiEnginesQuery.data?.engines ?? []}
-            isLoading={aiEnginesQuery.isLoading}
-            previousTotal={aiEnginesQuery.data?.previousTotal ?? 0}
-            total={aiEnginesQuery.data?.total ?? 0}
-          />
+          {trafficSources}
         </div>
 
         <GscChart
@@ -446,8 +465,8 @@ function TrafficSourceWidget({
                       name={engine.name}
                     />
                   )}
-                  <span className="min-w-0 flex-1 truncate text-xs capitalize">
-                    {engine.name.replace(/\..+$/, '')}
+                  <span className="min-w-0 flex-1 truncate text-xs">
+                    {sourceLabel(engine.name)}
                   </span>
                   <span className="shrink-0 text-xs tabular-nums tabular-nums">
                     {engine.sessions.toLocaleString()}

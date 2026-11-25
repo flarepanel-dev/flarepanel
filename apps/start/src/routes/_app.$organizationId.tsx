@@ -13,7 +13,6 @@ import { Building2Icon } from 'lucide-react';
 import { EmptyState } from '@/components/empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import FeedbackPrompt from '@/components/organization/feedback-prompt';
-import SupporterPrompt from '@/components/organization/supporter-prompt';
 import YearlySwitchPrompt from '@/components/organization/yearly-switch-prompt';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -205,7 +204,6 @@ function Component() {
           </Alert>
         )}
       <Outlet />
-      <SupporterPrompt />
       <FeedbackPrompt />
     </>
   );

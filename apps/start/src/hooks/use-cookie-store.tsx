@@ -9,7 +9,6 @@ const VALID_COOKIES = [
   'ui-theme',
   'chartType',
   'range',
-  'supporter-prompt-closed',
   'feedback-prompt-seen',
   'last-auth-provider',
 ] as const;
