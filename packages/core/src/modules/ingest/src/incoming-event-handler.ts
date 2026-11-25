@@ -38,7 +38,15 @@ import type { EnqueueSessionEndInput } from '../../session/src/session-end';
 import type { IncomingEventPayload } from './incoming-event';
 import { sessionsStarted } from './ingest.metrics';
 
-const GLOBAL_PROPERTIES = ['__path', '__referrer', '__timestamp', '__revenue'];
+// Read at ingest, never stored: `__ip` is a visitor's address a server SDK
+// passes for geolocation (privacy policy: IPs are not kept with events).
+const GLOBAL_PROPERTIES = [
+  '__path',
+  '__referrer',
+  '__timestamp',
+  '__revenue',
+  '__ip',
+];
 
 /** How far before the event `session_start` is stamped, so it sorts first. */
 const SESSION_START_OFFSET_MS = 100;

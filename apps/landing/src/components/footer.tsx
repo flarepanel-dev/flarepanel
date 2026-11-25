@@ -29,6 +29,15 @@ const COLUMNS = [
       { label: 'Get early access', href: site.signUp },
     ],
   },
+  {
+    title: 'Legal',
+    links: [
+      { label: 'Privacy', href: '/privacy' },
+      { label: 'Terms', href: '/terms' },
+      { label: 'DPA', href: '/dpa' },
+      { label: 'Subprocessors', href: '/subprocessors' },
+    ],
+  },
 ] as const;
 
 export function ClosingCta() {
@@ -59,7 +68,7 @@ export function ClosingCta() {
 export function Footer() {
   return (
     <footer className="border-rule border-t">
-      <Container className="grid gap-12 py-14 md:grid-cols-[minmax(0,1fr)_repeat(3,170px)]">
+      <Container className="grid gap-12 py-14 md:grid-cols-[minmax(0,1fr)_repeat(4,150px)]">
         <div>
           <Logo />
           <p className="mt-4 max-w-[38ch] text-[14px] text-faint leading-[1.6]">

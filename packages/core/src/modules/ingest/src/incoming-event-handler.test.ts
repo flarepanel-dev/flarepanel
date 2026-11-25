@@ -309,6 +309,28 @@ describe('incomingEvent', () => {
     expect(Object.keys(query)).toHaveLength(3);
   });
 
+  test('never stores the __ip a server SDK sends for geolocation', async () => {
+    const { deps, createEvent, ingest } = ctx;
+    ingest.mockResolvedValueOnce({ kind: 'extend', current: makeSession() });
+
+    await incomingEvent(
+      buildJobData({
+        event: {
+          name: 'purchase',
+          timestamp: new Date().toISOString(),
+          isTimestampFromThePast: false,
+          properties: { __ip: '203.0.113.7', plan: 'pro' },
+        },
+      }),
+      deps
+    );
+
+    const event = createdEvents(createEvent).find((a) => a.name === 'purchase');
+    expect(event!.properties).not.toHaveProperty('__ip');
+    expect(JSON.stringify(event)).not.toContain('203.0.113.7');
+    expect(event!.properties).toMatchObject({ plan: 'pro' });
+  });
+
   test('keeps a client-sent __query and lets the URL query win over it', async () => {
     const { deps, createEvent, ingest } = ctx;
     ingest.mockResolvedValueOnce({ kind: 'extend', current: makeSession() });
