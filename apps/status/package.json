@@ -1,0 +1,20 @@
+{
+  "name": "@flarepanel/status",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev --test-scheduled",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "migrate": "wrangler d1 migrations apply flarepanel-status --remote",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261121.1",
+    "@flarepanel/tsconfig": "workspace:*",
+    "bun-types": "1.4.4",
+    "typescript": "catalog:",
+    "wrangler": "4.168.0"
+  }
+}

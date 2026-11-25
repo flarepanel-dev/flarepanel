@@ -1,0 +1,27 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  // status.flarepanel.dev. Hosted only: it watches flarepanel.dev's own
+  // services and shares no binding, database or code with them, so it stays up
+  // (and says so) when they are down.
+  "account_id": "cb2d46c65b7c8fe69cb77e78b36d3c9e",
+  "name": "flarepanel-status",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-25",
+  "routes": [{ "pattern": "status.flarepanel.dev", "custom_domain": true }],
+  "workers_dev": false,
+  "preview_urls": false,
+  // Every minute: about 43,000 runs and 6 checks each per month, well inside
+  // the Workers Paid plan.
+  "triggers": { "crons": ["* * * * *"] },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "flarepanel-status",
+      "database_id": "4bc5d7e5-3c87-4750-8bdc-1b2e50b3dc9a",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // Fonts and the icon; every other path runs the Worker.
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "observability": { "enabled": true, "head_sampling_rate": 0.1 }
+}

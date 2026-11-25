@@ -274,6 +274,17 @@
         "wrangler": "4.168.0",
       },
     },
+    "apps/status": {
+      "name": "@flarepanel/status",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@cloudflare/workers-types": "5.20261121.1",
+        "@flarepanel/tsconfig": "workspace:*",
+        "bun-types": "1.4.4",
+        "typescript": "catalog:",
+        "wrangler": "4.168.0",
+      },
+    },
     "apps/testbed": {
       "name": "@flarepanel/testbed",
       "version": "0.0.0",
@@ -1436,6 +1447,8 @@
     "@flarepanel/seed": ["@flarepanel/seed@workspace:packages/seed"],
 
     "@flarepanel/shared": ["@flarepanel/shared@workspace:packages/shared"],
+
+    "@flarepanel/status": ["@flarepanel/status@workspace:apps/status"],
 
     "@flarepanel/testbed": ["@flarepanel/testbed@workspace:apps/testbed"],
 
@@ -6554,6 +6567,8 @@
     "@flarepanel/seed/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
 
     "@flarepanel/shared/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
+
+    "@flarepanel/status/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
 
     "@flarepanel/testbed/react": ["react@19.2.3", "", {}, "sha512-Ku/hhYbVjOQnXDZFv2+RibmLFGwFdeeKHFcOTlrt7xplBnya5OGn/hIRDsqDiSUcfORsDC7MPxwork8jBwsIWA=="],
 

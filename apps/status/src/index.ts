@@ -1,0 +1,351 @@
+// status.flarepanel.dev: checks FlarePanel every minute and shows the result.
+// Deliberately separate from the API and dashboard Workers, so the page still
+// answers (and says so) when they do not.
+
+import {
+  type Impact,
+  INCIDENT_STATUSES,
+  type IncidentStatus,
+} from './incidents';
+import { MONITORS, monitorById, runCheck } from './monitors';
+import {
+  renderFeed,
+  renderHistoryPage,
+  renderIncidentPage,
+  renderNotFound,
+  renderStatusPage,
+} from './render';
+import {
+  addIncidentUpdate,
+  createIncident,
+  loadIncident,
+  loadIncidents,
+  loadSnapshot,
+  prune,
+  recordRound,
+} from './store';
+import { buildView, OVERALL_TEXT } from './view';
+
+export interface Env {
+  DB: D1Database;
+  ASSETS: Fetcher;
+  /** Secret: lets the operator post incidents and maintenance. Unset: off. */
+  STATUS_ADMIN_TOKEN?: string;
+}
+
+const DAY = 24 * 60 * 60 * 1000;
+const PAGE_TTL_SECONDS = 30;
+
+const SECURITY_HEADERS: Record<string, string> = {
+  'content-security-policy':
+    "default-src 'none'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  'strict-transport-security': 'max-age=31536000; includeSubDomains',
+  'x-content-type-options': 'nosniff',
+  'referrer-policy': 'strict-origin-when-cross-origin',
+  'x-frame-options': 'DENY',
+};
+
+function respond(
+  body: string,
+  type: string,
+  init: { status?: number; ttl?: number; cors?: boolean } = {}
+): Response {
+  const headers = new Headers(SECURITY_HEADERS);
+  headers.set('content-type', type);
+  // Browsers always ask again: the zone's browser-cache setting would
+  // otherwise stretch a short max-age to hours, and a status page must not
+  // show a stale state. The Worker keeps its own 30-second copy (`cached`).
+  headers.set('cache-control', init.ttl ? 'no-cache' : 'no-store');
+  if (init.cors) {
+    headers.set('access-control-allow-origin', '*');
+  }
+  return new Response(body, { status: init.status ?? 200, headers });
+}
+
+const json = (body: unknown, status = 200, ttl?: number) =>
+  respond(JSON.stringify(body), 'application/json; charset=utf-8', {
+    status,
+    ttl,
+    cors: true,
+  });
+
+async function sameSecret(given: string, expected: string): Promise<boolean> {
+  const encoder = new TextEncoder();
+  const [a, b] = await Promise.all([
+    crypto.subtle.digest('SHA-256', encoder.encode(given)),
+    crypto.subtle.digest('SHA-256', encoder.encode(expected)),
+  ]);
+  const left = new Uint8Array(a);
+  const right = new Uint8Array(b);
+  let diff = 0;
+  for (let i = 0; i < left.length; i++) {
+    // biome-ignore lint/suspicious/noBitwiseOperators: constant-time compare.
+    diff |= (left[i] ?? 0) ^ (right[i] ?? 0);
+  }
+  return diff === 0;
+}
+
+const IMPACTS: Impact[] = ['minor', 'major', 'maintenance'];
+const isStatus = (v: unknown): v is IncidentStatus =>
+  typeof v === 'string' && (INCIDENT_STATUSES as readonly string[]).includes(v);
+const text = (v: unknown, max: number) =>
+  typeof v === 'string' && v.trim().length > 0 && v.length <= max
+    ? v.trim()
+    : null;
+const timeOf = (v: unknown) => {
+  if (v === undefined || v === null) {
+    return undefined;
+  }
+  const at = typeof v === 'string' ? Date.parse(v) : Number.NaN;
+  return Number.isFinite(at) ? at : null;
+};
+
+/** Operator API: POST /api/admin/incidents and /api/admin/incidents/:id. */
+async function admin(
+  request: Request,
+  env: Env,
+  path: string
+): Promise<Response> {
+  const token = env.STATUS_ADMIN_TOKEN;
+  const given =
+    request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? '';
+  if (!token) {
+    return json({ error: 'Not found' }, 404);
+  }
+  if (!(given && (await sameSecret(given, token)))) {
+    return json({ error: 'Unauthorized' }, 401);
+  }
+  if (request.method !== 'POST') {
+    return json({ error: 'Method not allowed' }, 405);
+  }
+  const body = (await request.json().catch(() => null)) as Record<
+    string,
+    unknown
+  > | null;
+  if (!body) {
+    return json({ error: 'Send a JSON body' }, 400);
+  }
+  const now = Date.now();
+  const message = text(body.message, 2000);
+  if (!(message && isStatus(body.status))) {
+    return json(
+      {
+        error: `Give "message" and "status" (${INCIDENT_STATUSES.join(', ')})`,
+      },
+      400
+    );
+  }
+
+  const match = /^\/api\/admin\/incidents\/([^/]+)$/.exec(path);
+  if (match?.[1]) {
+    const ok = await addIncidentUpdate(
+      env.DB,
+      decodeURIComponent(match[1]),
+      { status: body.status, message },
+      now
+    );
+    return ok ? json({ ok: true }) : json({ error: 'Incident not found' }, 404);
+  }
+  if (path !== '/api/admin/incidents') {
+    return json({ error: 'Not found' }, 404);
+  }
+
+  const title = text(body.title, 200);
+  const impact = IMPACTS.find((i) => i === body.impact);
+  const monitors = Array.isArray(body.monitors)
+    ? body.monitors.filter(
+        (m): m is string => typeof m === 'string' && monitorById.has(m)
+      )
+    : [];
+  const startsAt = timeOf(body.startsAt);
+  const until = timeOf(body.until);
+  if (!(title && impact) || startsAt === null || until === null) {
+    return json(
+      {
+        error: `Give "title", "impact" (${IMPACTS.join(', ')}), optional "monitors" (${MONITORS.map((m) => m.id).join(', ')}) and ISO "startsAt"/"until"`,
+      },
+      400
+    );
+  }
+  const id = await createIncident(
+    env.DB,
+    {
+      title,
+      impact,
+      status: body.status,
+      monitors,
+      message,
+      startsAt,
+      scheduledUntil: until,
+    },
+    now
+  );
+  return json({ ok: true, id }, 201);
+}
+
+/** Planned maintenance starts and ends on its own schedule. */
+async function advanceMaintenance(db: D1Database, now: number) {
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO incident_updates (incident_id, at, status, message)
+         SELECT id, ?1, 'in_progress', 'Maintenance has started.' FROM incidents
+         WHERE status = 'scheduled' AND started_at <= ?1`
+      )
+      .bind(now),
+    db
+      .prepare(
+        `UPDATE incidents SET status = 'in_progress' WHERE status = 'scheduled' AND started_at <= ?`
+      )
+      .bind(now),
+    db
+      .prepare(
+        `INSERT INTO incident_updates (incident_id, at, status, message)
+         SELECT id, ?1, 'completed', 'Maintenance is complete.' FROM incidents
+         WHERE status = 'in_progress' AND scheduled_until IS NOT NULL AND scheduled_until <= ?1`
+      )
+      .bind(now),
+    db
+      .prepare(
+        `UPDATE incidents SET status = 'completed', resolved_at = ?1
+         WHERE status = 'in_progress' AND scheduled_until IS NOT NULL AND scheduled_until <= ?1`
+      )
+      .bind(now),
+  ]);
+}
+
+async function cached(
+  request: Request,
+  ctx: ExecutionContext,
+  make: () => Promise<Response>
+): Promise<Response> {
+  const cache = (caches as unknown as { default: Cache }).default;
+  const key = new Request(new URL(request.url).toString(), { method: 'GET' });
+  const hit = await cache.match(key);
+  if (hit) {
+    return forBrowser(hit);
+  }
+  const response = await make();
+  if (response.status === 200) {
+    const copy = new Response(response.clone().body, response);
+    copy.headers.set('cache-control', `public, max-age=${PAGE_TTL_SECONDS}`);
+    ctx.waitUntil(cache.put(key, copy));
+  }
+  return response;
+}
+
+/** The Worker cache copy carries a max-age; what leaves for the browser does not. */
+function forBrowser(response: Response): Response {
+  const out = new Response(response.body, response);
+  out.headers.set('cache-control', 'no-cache');
+  return out;
+}
+
+/** Plain-HTTP visits go to HTTPS (`cf-visitor` is set by Cloudflare's edge). */
+function httpsRedirect(request: Request): Response | null {
+  let scheme: unknown;
+  try {
+    scheme = JSON.parse(request.headers.get('cf-visitor') ?? '{}')?.scheme;
+  } catch {
+    return null;
+  }
+  if (scheme !== 'http') {
+    return null;
+  }
+  const url = new URL(request.url);
+  url.protocol = 'https:';
+  return Response.redirect(url.toString(), 301);
+}
+
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    const insecure = httpsRedirect(request);
+    if (insecure) {
+      return insecure;
+    }
+    const url = new URL(request.url);
+    const path = url.pathname.replace(/\/+$/, '') || '/';
+    const html = (body: string, status = 200) =>
+      respond(body, 'text/html; charset=utf-8', {
+        status,
+        ttl: status === 200 ? PAGE_TTL_SECONDS : undefined,
+      });
+
+    if (path.startsWith('/api/admin/')) {
+      return admin(request, env, path);
+    }
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      return json({ error: 'Method not allowed' }, 405);
+    }
+    if (path === '/healthz') {
+      return json({ ok: true });
+    }
+
+    return cached(request, ctx, async () => {
+      const now = Date.now();
+      if (path === '/') {
+        return html(
+          renderStatusPage(buildView(await loadSnapshot(env.DB, now)))
+        );
+      }
+      if (path === '/api/status.json') {
+        const view = buildView(await loadSnapshot(env.DB, now));
+        return json(
+          {
+            status: view.overall,
+            description: OVERALL_TEXT[view.overall],
+            updatedAt: new Date(now).toISOString(),
+            services: view.monitors.map((m) => ({
+              id: m.monitor.id,
+              name: m.monitor.name,
+              state: m.state,
+              uptime90d: m.uptime === null ? null : Number(m.uptime.toFixed(3)),
+            })),
+            incidents: view.active.map((i) => ({
+              id: i.id,
+              title: i.title,
+              impact: i.impact,
+              status: i.status,
+              startedAt: new Date(i.startedAt).toISOString(),
+            })),
+          },
+          200,
+          PAGE_TTL_SECONDS
+        );
+      }
+      if (path === '/history') {
+        return html(
+          renderHistoryPage(await loadIncidents(env.DB, now - 90 * DAY), now)
+        );
+      }
+      if (path === '/feed.atom' || path === '/feed.xml' || path === '/rss') {
+        return respond(
+          renderFeed(await loadIncidents(env.DB, now - 90 * DAY)),
+          'application/atom+xml; charset=utf-8',
+          { ttl: PAGE_TTL_SECONDS }
+        );
+      }
+      const incident = /^\/incidents\/([^/]+)$/.exec(path);
+      if (incident?.[1]) {
+        const found = await loadIncident(
+          env.DB,
+          decodeURIComponent(incident[1])
+        );
+        return found
+          ? html(renderIncidentPage(found, now))
+          : html(renderNotFound(), 404);
+      }
+      return html(renderNotFound(), 404);
+    });
+  },
+
+  async scheduled(controller: ScheduledController, env: Env) {
+    const now = controller.scheduledTime;
+    const results = await Promise.all(MONITORS.map((m) => runCheck(m)));
+    await recordRound(env.DB, results, now);
+    await advanceMaintenance(env.DB, now);
+    if (new Date(now).getUTCMinutes() === 0) {
+      await prune(env.DB, now);
+    }
+  },
+} satisfies ExportedHandler<Env>;

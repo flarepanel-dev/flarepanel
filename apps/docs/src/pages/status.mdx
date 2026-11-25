@@ -1,0 +1,35 @@
+# Status page
+
+[status.flarepanel.dev](https://status.flarepanel.dev) shows whether FlarePanel Cloud is working, and how it has worked over the last 90 days.
+
+## What is checked
+
+Every minute, each service is called the way a customer would reach it:
+
+| Service | Check | Counts as up when |
+|---|---|---|
+| API | `GET api.flarepanel.dev/healthcheck` | `200` and the database answers |
+| Event tracking | `POST api.flarepanel.dev/track` with an empty event | `400`: the tracking route answers and validates (nothing is stored) |
+| Dashboard | `GET dashboard.flarepanel.dev/login` | `200` |
+| MCP server | `POST api.flarepanel.dev/mcp` without a token | `401`: the server answers and refuses strangers |
+| Website | `GET flarepanel.dev` | `200` |
+| Documentation | `GET docs.flarepanel.dev` | `200` |
+
+An answer slower than 2.5 seconds counts as **slow**; no answer within 10 seconds, or a different status, counts as **down**.
+
+The checks run from a separate Cloudflare Worker that shares no database, binding or code with the services it watches, so the page stays up when they are down. It cannot see an outage of Cloudflare itself.
+
+## Incidents
+
+- Two failed checks in a row (two minutes) open an incident automatically; three good checks in a row resolve it.
+- The FlarePanel team posts other incidents and planned maintenance by hand, with updates.
+- The bars show one day each: green with no downtime, amber with a little downtime or an incident, red below 99% uptime. The percentage is the share of successful checks over 90 days.
+
+## Get updates
+
+- **RSS / Atom:** subscribe to [status.flarepanel.dev/feed.atom](https://status.flarepanel.dev/feed.atom) in any feed reader, or in Slack with the RSS app.
+- **JSON:** [status.flarepanel.dev/api/status.json](https://status.flarepanel.dev/api/status.json) gives the overall state, each service with its 90-day uptime, and open incidents. It allows cross-origin requests.
+
+## Self-hosting
+
+The status page is part of FlarePanel Cloud only. When you self-host, point any uptime monitor at your API's `/healthcheck`; the API also checks its own database, storage and the URLs in `UPTIME_URLS` every five minutes and emails `OPS_ALERT_EMAIL` when one fails (see [Deploy](/self-hosting/deploy)).

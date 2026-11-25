@@ -19,6 +19,7 @@ const COLUMNS = [
       { label: 'Install the SDK', href: '/#get-started' },
       { label: 'Source code', href: site.github },
       { label: 'Report an issue', href: site.issues },
+      { label: 'Status', href: 'https://status.flarepanel.dev' },
     ],
   },
   {
