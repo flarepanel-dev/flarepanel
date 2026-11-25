@@ -100,6 +100,15 @@ function ChatMarkdownInner({
               </td>
             );
           },
+          // Never load images the model writes. Its text can be steered by
+          // data anyone can send (event names, properties, page HTML), and an
+          // image URL with that data in it would leak it to another server
+          // the moment the reply renders, without a click.
+          img: ({ alt }) => (
+            <span className="text-muted-foreground">
+              [Image not shown{alt ? `: ${alt}` : ''}]
+            </span>
+          ),
           // Open external links in a new tab; safe defaults.
           a: ({ href, children, ...rest }) => (
             <a

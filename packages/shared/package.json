@@ -22,7 +22,7 @@
     "slugify": "1.6.6",
     "superjson": "2.2.2",
     "ua-parser-js": "2.0.10",
-    "undici": "8.10.0"
+    "undici": "8.13.1"
   },
   "devDependencies": {
     "@flarepanel/tsconfig": "workspace:*",
