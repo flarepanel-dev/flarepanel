@@ -41,6 +41,12 @@ bunx wrangler secret put FEEDBACK_GITHUB_TOKEN
 
 Each message then becomes an issue labelled `feedback` and its type. The sender's email is included only when they allow a reply. Each person can send 5 messages in 10 minutes.
 
+People can attach up to three screenshots (PNG, JPEG or WebP, resized in the browser). They are stored in the `EVENTS_ARCHIVE` R2 bucket under `feedback/`, behind random links that only the issue and the email contain. Delete them automatically after 90 days:
+
+```bash
+bunx wrangler r2 bucket lifecycle add <your-events-bucket> feedback-screenshots-90-days feedback/ --expire-days 90
+```
+
 ## Alerts in your Cloudflare account
 
 These are account settings, not part of the code:

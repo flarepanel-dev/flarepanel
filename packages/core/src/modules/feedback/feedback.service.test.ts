@@ -4,6 +4,7 @@ import {
   deliverFeedback,
   describeUserAgent,
   feedbackEnabled,
+  isImage,
   issueBody,
   issueTitle,
 } from './feedback.service';
@@ -152,5 +153,39 @@ describe('feedback', () => {
     });
     expect(calls.fetch.length).toBe(0);
     expect(r).toEqual({ delivered: true, issueNumber: null, emailed: true });
+  });
+});
+
+describe('feedback screenshots', () => {
+  const png = Uint8Array.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0,
+  ]);
+  const jpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0, 0]);
+  const webp = Uint8Array.from([
+    0x52, 0x49, 0x46, 0x46, 1, 2, 3, 4, 0x57, 0x45, 0x42, 0x50,
+  ]);
+
+  test('only real PNG, JPEG and WebP bytes pass', () => {
+    expect(isImage(png, 'image/png')).toBe(true);
+    expect(isImage(jpeg, 'image/jpeg')).toBe(true);
+    expect(isImage(webp, 'image/webp')).toBe(true);
+    expect(isImage(png, 'image/jpeg')).toBe(false);
+    expect(
+      isImage(new TextEncoder().encode('<svg onload=alert(1)>'), 'image/png')
+    ).toBe(false);
+  });
+
+  test('the issue shows screenshots inline, the email gets their links', async () => {
+    const urls = ['https://api.example.com/feedback/screenshots/a.png'];
+    expect(
+      issueBody({ type: 'bug', message: 'Broken', screenshots: urls })
+    ).toContain(`![Screenshot 1](${urls[0]})`);
+    const { d, calls } = deps();
+    await deliverFeedback(d, {
+      type: 'bug',
+      message: 'Broken',
+      screenshots: urls,
+    });
+    expect(calls.email[0]).toMatchObject({ data: { screenshots: urls } });
   });
 });

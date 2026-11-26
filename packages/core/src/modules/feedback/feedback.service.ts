@@ -25,6 +25,31 @@ export interface FeedbackInput {
   /** Only set when the sender allowed a reply. */
   replyTo?: string;
   userAgent?: string;
+  /** Public URLs of attached screenshots. */
+  screenshots?: string[];
+}
+
+export const MAX_SCREENSHOTS = 3;
+/** Per image, after the dashboard resized it (it aims for well under this). */
+export const MAX_SCREENSHOT_BYTES = 1_500_000;
+export const SCREENSHOT_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+] as const;
+export type ScreenshotType = (typeof SCREENSHOT_TYPES)[number];
+
+/** True when the bytes really are the image type they claim to be. */
+export function isImage(bytes: Uint8Array, type: ScreenshotType): boolean {
+  const at = (i: number, ...v: number[]) =>
+    v.every((b, k) => bytes[i + k] === b);
+  if (type === 'image/png') {
+    return at(0, 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a);
+  }
+  if (type === 'image/jpeg') {
+    return at(0, 0xff, 0xd8, 0xff);
+  }
+  return at(0, 0x52, 0x49, 0x46, 0x46) && at(8, 0x57, 0x45, 0x42, 0x50);
 }
 
 export function feedbackEnabled(config: FeedbackConfig): boolean {
@@ -91,11 +116,15 @@ export function issueBody(input: FeedbackInput): string {
   if (browser) {
     rows.push(['Browser', browser]);
   }
+  const shots = (input.screenshots ?? []).map(
+    (url, i) => `![Screenshot ${i + 1}](${url})`
+  );
   return [
     `**${FEEDBACK_LABEL[input.type]}** sent from the dashboard.`,
     '',
     quoted,
     '',
+    ...(shots.length ? [...shots, ''] : []),
     '| | |',
     '|---|---|',
     ...rows.map(([k, v]) => `| ${k} | ${v.replace(/\|/g, '\\|')} |`),
@@ -116,6 +145,7 @@ export interface DeliveryDeps {
       project?: string;
       userAgent?: string;
       issueUrl?: string;
+      screenshots?: string[];
     };
     replyTo?: string;
   }) => Promise<unknown>;
@@ -192,6 +222,7 @@ export async function deliverFeedback(
           project: input.projectId,
           userAgent: describeUserAgent(input.userAgent),
           issueUrl,
+          screenshots: input.screenshots,
         },
       })
       .catch(() => null);

@@ -57,6 +57,15 @@ export type Session = SessionValidationResult;
 
 export type { CoreConfig } from './config';
 
+/**
+ * Where screenshots attached to in-app feedback are kept. `put` stores one
+ * image and returns its unguessable public URL. Absent where no object
+ * storage is configured; the form then hides the attach button.
+ */
+export interface FeedbackAttachmentStore {
+  put(bytes: Uint8Array, contentType: string): Promise<string>;
+}
+
 /** Boot scope. Built once at startup, closed once in shutdown. */
 export interface AppDeps {
   db: Db;
@@ -80,6 +89,7 @@ export interface AppDeps {
   eventStore?: EventStore;
   /** Basin SQL (opt-in advanced analytics); absent unless turned on. */
   advancedAnalytics?: AdvancedAnalytics;
+  feedbackAttachments?: FeedbackAttachmentStore;
 }
 
 /** Work scope. One per HTTP request, RPC call, job run or Kafka batch. */
@@ -97,6 +107,7 @@ export interface Ctx {
   auth: Auth | null;
   eventStore?: EventStore;
   advancedAnalytics?: AdvancedAnalytics;
+  feedbackAttachments?: FeedbackAttachmentStore;
   services: Services;
   requestId: string;
 }
@@ -145,6 +156,7 @@ export function createCtx(deps: AppDeps, scope: ScopeMeta): Ctx {
     auth: deps.auth,
     eventStore: deps.eventStore,
     advancedAnalytics: deps.advancedAnalytics,
+    feedbackAttachments: deps.feedbackAttachments,
     requestId: scope.requestId,
     services: undefined as unknown as Services,
   };

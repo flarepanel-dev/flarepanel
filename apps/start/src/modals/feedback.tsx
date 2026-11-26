@@ -1,14 +1,23 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useLocation, useRouteContext } from '@tanstack/react-router';
 import {
   BugIcon,
   CheckIcon,
   CircleHelpIcon,
+  ImagePlusIcon,
   LightbulbIcon,
   MessageSquareIcon,
+  XIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { popModal } from '.';
+import {
+  isAcceptedImage,
+  MAX_SCREENSHOTS,
+  prepareScreenshot,
+  type Screenshot,
+} from './feedback-screenshots';
 import { ModalContent, ModalHeader } from './Modal/Container';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -74,6 +83,70 @@ export default function Feedback({
   const [type, setType] = useState<FeedbackType>(defaultType);
   const [message, setMessage] = useState('');
   const [allowReply, setAllowReply] = useState(true);
+  const [shots, setShots] = useState<Screenshot[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const config = useQuery({
+    ...trpc.feedback.config.queryOptions(),
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  const canAttach = config.data?.screenshots === true;
+
+  // Free the preview URLs when the form closes.
+  const shotsRef = useRef(shots);
+  shotsRef.current = shots;
+  useEffect(
+    () => () => {
+      for (const s of shotsRef.current) {
+        URL.revokeObjectURL(s.preview);
+      }
+    },
+    []
+  );
+
+  const addFiles = async (files: File[]) => {
+    if (!canAttach) {
+      return;
+    }
+    const images = files.filter(isAcceptedImage);
+    if (images.length < files.length) {
+      toast.error('Screenshots must be PNG, JPEG or WebP images.');
+    }
+    const room = MAX_SCREENSHOTS - shots.length;
+    if (images.length > room) {
+      toast.error(`You can attach up to ${MAX_SCREENSHOTS} screenshots.`);
+    }
+    if (room <= 0 || images.length === 0) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const prepared: Screenshot[] = [];
+      for (const file of images.slice(0, room)) {
+        try {
+          prepared.push(await prepareScreenshot(file));
+        } catch (error) {
+          toast.error((error as Error).message || 'Could not read that image.');
+        }
+      }
+      setShots((current) =>
+        [...current, ...prepared].slice(0, MAX_SCREENSHOTS)
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeShot = (id: string) => {
+    setShots((current) => {
+      const gone = current.find((s) => s.id === id);
+      if (gone) {
+        URL.revokeObjectURL(gone.preview);
+      }
+      return current.filter((s) => s.id !== id);
+    });
+  };
 
   const mutation = useMutation(
     trpc.feedback.send.mutationOptions({
@@ -83,7 +156,7 @@ export default function Feedback({
   );
 
   const current = TYPES.find((t) => t.id === type) ?? TYPES[0]!;
-  const canSend = message.trim().length >= 3 && !mutation.isPending;
+  const canSend = message.trim().length >= 3 && !mutation.isPending && !busy;
   const send = () => {
     if (!canSend) {
       return;
@@ -95,6 +168,10 @@ export default function Feedback({
       allowReply: Boolean(email) && allowReply,
       organizationId: organizationId || undefined,
       projectId: projectId || undefined,
+      screenshots: shots.map(({ contentType, data }) => ({
+        contentType,
+        data,
+      })),
     });
   };
 
@@ -126,8 +203,39 @@ export default function Feedback({
         text="Ideas, bugs or questions: it goes straight to the team."
         title={topic ? `Feedback on ${topic}` : 'Send feedback'}
       />
+      {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: dropping and pasting images is a shortcut; the Add screenshot button is the keyboard path */}
       <form
-        className="col gap-4"
+        className={cn(
+          'col gap-4 rounded-md transition-shadow',
+          dragging &&
+            'ring-2 ring-ember/60 ring-offset-4 ring-offset-background'
+        )}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+            setDragging(false);
+          }
+        }}
+        onDragOver={(e) => {
+          if (canAttach && e.dataTransfer.types.includes('Files')) {
+            e.preventDefault();
+            setDragging(true);
+          }
+        }}
+        onDrop={(e) => {
+          if (!canAttach) {
+            return;
+          }
+          e.preventDefault();
+          setDragging(false);
+          addFiles(Array.from(e.dataTransfer.files));
+        }}
+        onPaste={(e) => {
+          const files = Array.from(e.clipboardData.files);
+          if (canAttach && files.length > 0) {
+            e.preventDefault();
+            addFiles(files);
+          }
+        }}
         onSubmit={(e) => {
           e.preventDefault();
           send();
@@ -180,13 +288,77 @@ export default function Feedback({
           />
           <div className="row justify-between text-2xs text-muted-foreground">
             <span>
-              Sent with this page and your browser type, nothing else.
+              Sent with this page and your browser type
+              {shots.length ? ' and your screenshots.' : ', nothing else.'}
             </span>
             <span className="tabular-nums">
               {message.length}/{MAX}
             </span>
           </div>
         </div>
+        {canAttach ? (
+          <div className="col gap-2">
+            <div className="row flex-wrap items-center gap-2">
+              {shots.map((shot, i) => (
+                <div
+                  className="group relative size-16 overflow-hidden rounded-md border border-border bg-def-100"
+                  key={shot.id}
+                >
+                  <img
+                    alt={`Screenshot ${i + 1}`}
+                    className="size-full object-cover"
+                    height={64}
+                    src={shot.preview}
+                    width={64}
+                  />
+                  <button
+                    aria-label={`Remove screenshot ${i + 1}`}
+                    className="center-center absolute top-1 right-1 size-5 rounded-full bg-background/90 text-foreground opacity-90 shadow-sm transition-opacity hover:opacity-100"
+                    onClick={() => removeShot(shot.id)}
+                    type="button"
+                  >
+                    <XIcon className="size-3" />
+                  </button>
+                </div>
+              ))}
+              {shots.length < MAX_SCREENSHOTS ? (
+                <Button
+                  className="h-16 gap-2 border-dashed px-3 text-muted-foreground"
+                  disabled={busy}
+                  loading={busy}
+                  onClick={() => fileInput.current?.click()}
+                  type="button"
+                  variant="outline"
+                >
+                  <ImagePlusIcon className="size-4" />
+                  <span className="col items-start text-left leading-tight">
+                    <span className="text-foreground text-sm">
+                      Add screenshot
+                    </span>
+                    <span className="text-2xs">or paste, or drop here</span>
+                  </span>
+                </Button>
+              ) : null}
+              <input
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                multiple
+                onChange={(e) => {
+                  addFiles(Array.from(e.target.files ?? []));
+                  e.target.value = '';
+                }}
+                ref={fileInput}
+                type="file"
+              />
+            </div>
+            {shots.length ? (
+              <p className="text-2xs text-muted-foreground">
+                Screenshots can show your analytics data. Only the FlarePanel
+                team sees them, and they are deleted after 90 days.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         {email ? (
           <label className="row cursor-pointer items-center gap-2 text-sm">
             <Checkbox

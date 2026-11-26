@@ -53,6 +53,10 @@ import {
 } from '@flarepanel/platform/cloudflare';
 import { Elysia } from 'elysia';
 import { loadConfig } from '../../api/src/config/env';
+import {
+  createFeedbackScreenshotStore,
+  serveFeedbackScreenshot,
+} from './feedback-screenshots';
 import { createAdvancedAnalytics } from './advanced/analytics';
 import { readAdvancedConfig } from './advanced/config';
 import { BasinUsageDurableObject } from './advanced/usage-do';
@@ -116,6 +120,8 @@ export interface Env {
   LOADER?: WorkerLoader;
   /** Where failed-job alerts go (one per job and hour). Unset: no email. */
   OPS_ALERT_EMAIL?: string;
+  /** Public API origin; links to feedback screenshots are built on it. */
+  API_URL?: string;
   /** Secret: enables the /__ops recovery endpoints (see ops-routes.ts). */
   OPS_TOKEN?: string;
   /** Comma-separated public URLs the cron checks every 5 minutes. */
@@ -223,6 +229,14 @@ async function boot(env: Env): Promise<Booted> {
   const advanced = readAdvancedConfig(env);
   if (advanced) {
     deps.advancedAnalytics = createAdvancedAnalytics(env, advanced, () => deps);
+  }
+
+  // Screenshots attached to in-app feedback (feedback-screenshots.ts).
+  if (env.EVENTS_ARCHIVE && env.API_URL) {
+    deps.feedbackAttachments = createFeedbackScreenshotStore(
+      env.EVENTS_ARCHIVE,
+      env.API_URL
+    );
   }
 
   const emailBinding = env.EMAIL;
@@ -346,6 +360,15 @@ const handlers = {
             ? S
             : never
       );
+    }
+
+    const screenshot = await serveFeedbackScreenshot(
+      request,
+      url.pathname,
+      env.EVENTS_ARCHIVE
+    );
+    if (screenshot) {
+      return screenshot;
     }
 
     const { fetch } = await getBooted(env);
