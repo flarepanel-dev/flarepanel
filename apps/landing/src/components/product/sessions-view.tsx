@@ -315,7 +315,7 @@ function ReplayPlayer({ running }: { running: boolean }) {
                 ? { scale: [0, 0, 1.6, 0], opacity: [0, 0, 0.5, 0] }
                 : { opacity: 0 }
             }
-            className="absolute -top-3 -left-3 size-6 rounded-full bg-chart-indigo"
+            className="absolute -top-3 -left-3 size-6 rounded-full bg-chart-ember"
             transition={
               running ? { ...loop, times: [0, 0.64, 0.7, 0.8] } : undefined
             }
@@ -337,7 +337,7 @@ function ReplayPlayer({ running }: { running: boolean }) {
         <div className="relative h-1.5 flex-1 rounded-full bg-app-field">
           <motion.div
             animate={running ? { width: ['0%', '100%'] } : { width: '66%' }}
-            className="absolute inset-y-0 left-0 rounded-full bg-chart-indigo"
+            className="absolute inset-y-0 left-0 rounded-full bg-chart-ember"
             transition={
               running
                 ? {
@@ -455,7 +455,7 @@ export function SessionsView({ active = true }: { active?: boolean }) {
             <span className="truncate font-mono text-[11px]">{s.entry}</span>
             <span className="truncate font-mono text-[11px]">{s.exit}</span>
             <span className="font-medium">{s.duration}</span>
-            <span className={s.bounce ? 'text-chart-amber' : 'text-up'}>
+            <span className={s.bounce ? 'text-chart-spark' : 'text-up'}>
               {s.bounce ? 'Yes' : 'No'}
             </span>
             <span className="flex min-w-0 items-center gap-1.5">

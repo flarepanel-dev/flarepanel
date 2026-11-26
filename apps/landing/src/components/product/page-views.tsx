@@ -124,7 +124,7 @@ function Table({
 function Spark({
   seed,
   up = true,
-  color = '#6b79ea',
+  color = '#ff6a4d',
 }: {
   seed: number;
   up?: boolean;
@@ -238,7 +238,7 @@ export function DashboardsView() {
                           key={i}
                           style={{
                             height: `${Math.min(100, (d.value / 620) * 100)}%`,
-                            backgroundColor: ['#6b79ea', '#08b6af', '#e9ab2b'][
+                            backgroundColor: ['#ff6a4d', '#08b6af', '#ffb547'][
                               t
                             ],
                             opacity: 0.85,
@@ -360,7 +360,7 @@ export function InsightsView() {
               <span
                 className={`rounded px-1.5 py-px font-medium ${
                   it.sev === 'High'
-                    ? 'bg-chart-amber/15 text-chart-amber'
+                    ? 'bg-chart-spark/15 text-chart-spark'
                     : 'bg-app-field text-app-nav'
                 }`}
               >
@@ -388,7 +388,7 @@ export function InsightsView() {
                 {it.summary}
               </p>
               <Spark
-                color={it.up ? '#6b79ea' : '#f0605d'}
+                color={it.up ? '#ff6a4d' : '#ef5a5f'}
                 seed={i + 2}
                 up={it.up}
               />
@@ -411,9 +411,9 @@ export function AiView() {
     ['Errors', '0.4%', -1.2],
   ] as const;
   const models = [
-    ['gpt-5.4-mini', 18.4, '#6b79ea'],
+    ['gpt-5.4-mini', 18.4, '#ff6a4d'],
     ['claude-haiku-5-5', 11.9, '#08b6af'],
-    ['gpt-6.1-sol', 7.6, '#e9ab2b'],
+    ['gpt-6.1-sol', 7.6, '#ffb547'],
     ['claude-sonnet-5-5', 3.3, '#a064db'],
   ] as const;
   return (
@@ -455,7 +455,7 @@ export function AiView() {
               key={i}
               style={{
                 height: `${Math.min(100, (d.value / 600) * 100)}%`,
-                backgroundColor: i % 7 === 3 ? '#08b6af' : '#6b79ea',
+                backgroundColor: i % 7 === 3 ? '#08b6af' : '#ff6a4d',
               }}
             />
           ))}
@@ -712,7 +712,7 @@ export function PagesView() {
               </span>
             </span>,
             <Spark
-              color={change >= 0 ? '#6b79ea' : '#f0605d'}
+              color={change >= 0 ? '#ff6a4d' : '#ef5a5f'}
               key="t"
               seed={i}
               up={change >= 0}
@@ -789,7 +789,7 @@ export function SeoView() {
             <span className={label}>Clicks &amp; impressions</span>
             <span className="flex gap-3 text-[11px] text-app-muted">
               <span className="flex items-center gap-1.5">
-                <span className="h-[2px] w-3 rounded bg-chart-indigo" />
+                <span className="h-[2px] w-3 rounded bg-chart-ember" />
                 Clicks
               </span>
               <span className="flex items-center gap-1.5">
@@ -825,7 +825,7 @@ export function SeoView() {
             <path
               d={line(clicks)}
               fill="none"
-              stroke="#6b79ea"
+              stroke="#ff6a4d"
               strokeWidth="2"
               vectorEffect="non-scaling-stroke"
             />
@@ -916,11 +916,11 @@ export function EventsView({ active = true }: { active?: boolean }) {
           <AnimatePresence initial={false}>
             {rows.map((r) => (
               <motion.div
-                animate={{ opacity: 1, backgroundColor: 'rgba(107,121,234,0)' }}
+                animate={{ opacity: 1, backgroundColor: 'rgba(255,106,77,0)' }}
                 className="grid h-[36px] grid-cols-[96px_minmax(0,1fr)_minmax(0,0.8fr)_120px_100px_80px] items-center gap-3 whitespace-nowrap border-app-line border-b px-4 text-[12px]"
                 initial={{
                   opacity: 0,
-                  backgroundColor: 'rgba(107,121,234,0.12)',
+                  backgroundColor: 'rgba(255,106,77,0.12)',
                 }}
                 key={r.id}
                 layout
@@ -1444,7 +1444,7 @@ export function IntegrationsView() {
       name: 'Amazon S3 export',
       body: 'Copy raw events to your bucket every hour.',
       installed: false,
-      tile: '#e9ab2b',
+      tile: '#ffb547',
       mark: 'S3',
     },
     {
@@ -1458,7 +1458,7 @@ export function IntegrationsView() {
       name: 'Email digest',
       body: 'A weekly summary with the week’s insights.',
       installed: true,
-      tile: '#6b79ea',
+      tile: '#ff6a4d',
       mail: true,
     },
   ];
@@ -1579,7 +1579,7 @@ export function WorkspaceView() {
               <div className="flex h-24 w-[55%] items-end gap-[2px]">
                 {VISITORS.slice(p.seed, p.seed + 24).map((d, i) => (
                   <span
-                    className="flex-1 rounded-t-[1px] bg-chart-indigo"
+                    className="flex-1 rounded-t-[1px] bg-data"
                     // biome-ignore lint/suspicious/noArrayIndexKey: fixed series
                     key={i}
                     style={{

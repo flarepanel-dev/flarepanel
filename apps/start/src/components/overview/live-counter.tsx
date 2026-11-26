@@ -29,14 +29,14 @@ export function LiveCounter({ projectId, shareId }: LiveCounterProps) {
         <div className="relative">
           <div
             className={cn(
-              'h-3 w-3 animate-ping rounded-full bg-emerald-500 opacity-100 transition-all',
-              counter.debounced === 0 && 'bg-destructive opacity-0'
+              'h-3 w-3 animate-ping rounded-full bg-live opacity-100 transition-all',
+              counter.debounced === 0 && 'bg-def-400 opacity-0'
             )}
           />
           <div
             className={cn(
-              'absolute top-0 left-0 h-3 w-3 rounded-full bg-emerald-500 transition-all',
-              counter.debounced === 0 && 'bg-destructive'
+              'absolute top-0 left-0 h-3 w-3 rounded-full bg-live transition-all',
+              counter.debounced === 0 && 'bg-def-400'
             )}
           />
         </div>

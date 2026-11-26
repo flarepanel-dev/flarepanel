@@ -146,7 +146,7 @@ export function ComparePage({ comparison }: { comparison: Comparison }) {
             </section>
           </div>
 
-          <div className="mt-14 flex flex-wrap items-center gap-4 rounded-2xl border border-chart-indigo/40 bg-panel p-7">
+          <div className="mt-14 flex flex-wrap items-center gap-4 rounded-2xl border border-chart-ember/40 bg-panel p-7">
             <p className="flex-1 text-[16px] text-soft">
               Try FlarePanel free for 30 days, no card needed, and keep{' '}
               {comparison.name} running side by side while you compare.

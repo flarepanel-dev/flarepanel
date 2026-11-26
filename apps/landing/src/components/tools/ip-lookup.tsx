@@ -88,7 +88,7 @@ export function IpLookup() {
         </label>
         <input
           autoComplete="off"
-          className="h-12 min-w-[240px] flex-1 rounded-[10px] border border-rule-strong bg-panel px-4 font-mono text-[15px] text-paper placeholder:text-faint focus-visible:outline-2 focus-visible:outline-coral"
+          className="h-12 min-w-[240px] flex-1 rounded-[10px] border border-rule-strong bg-panel px-4 font-mono text-[15px] text-paper placeholder:text-faint focus-visible:outline-2 focus-visible:outline-flare"
           id="ip"
           inputMode="text"
           onChange={(e) => setIp(e.target.value)}

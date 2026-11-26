@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "react-grid-layout/css/styles.css";
-@import "@fontsource-variable/inter";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
 
 @import "tw-animate-css";
 
@@ -17,7 +18,7 @@ body {
 
 :root {
   /* Core colors converted from HSL to OKLCH using convert-to-oklch tool */
-  --highlight: #e12251; /* FlarePanel coral 600-link, 4.6:1 on white */
+  --highlight: #d61f55; /* Flare 600, links on white (4.9:1) */
 
   /* def- color scale converted from HSL to OKLCH */
   --def-100: #f3f4f8; /* obsidian 100 */
@@ -42,28 +43,37 @@ body {
   --muted-foreground: #727276; /* obsidian 500 */
   --accent: #f3f4f8; /* obsidian 100 */
   --accent-foreground: #0d0d10; /* obsidian 950 */
-  --destructive: oklch(50% 0.19 28); /* danger crimson #B71A18, never coral */
+  --destructive: oklch(50% 0.19 28); /* danger crimson #B71A18, never a data colour */
   --destructive-foreground: oklch(
     96.9% 0.02 17.4
   ); /* hsl(0, 100%, 97.25%) -> #F8F9FB */
   --border: #e4e4e8; /* obsidian 200 */
   --input: #e4e4e8; /* obsidian 200 */
-  --ring: #ff6b82; /* coral 400 focus ring */
+  --ring: #ff3d6e; /* Flare focus ring */
 
   /* Chart colors converted to OKLCH for consistency */
-  --chart-0: #6b79ea; /* indigo */
-  --chart-1: #08b6af; /* teal */
-  --chart-2: #e9ab2b; /* amber */
-  --chart-3: #a064db; /* violet */
-  --chart-4: #4cb0e5; /* sky */
+  /* Photon data palette: Ember leads, Sky is its complement, Spark third.
+     Keep in sync with chartColors in packages/core report.constants.ts. */
+  --chart-0: #ff6a4d; /* ember */
+  --chart-1: #4cb0e5; /* sky */
+  --chart-2: #ffb547; /* spark */
+  --chart-3: #08b6af; /* teal */
+  --chart-4: #a064db; /* violet */
   --chart-5: #83c758; /* lime */
   --chart-6: #a1a1a5; /* slate */
-  --chart-7: #3ba974; /* green */
-  --chart-8: #ff496b; /* coral */
+  --chart-7: #ff3d6e; /* flare */
+  --chart-8: #5b8cff; /* blue */
   --chart-9: #cb80dc; /* orchid */
   --chart-10: #5cb7af; /* sea */
-  --chart-11: #7856ff; /* purple */
+  --chart-11: #3ba974; /* green */
   --chart-12: #febbb2; /* blush */
+
+  /* Brand roles: Flare is interaction (links, focus, selection), Ember is
+     data, Spark is live. */
+  --flare: #ff3d6e;
+  --ember: #ff6a4d;
+  --spark: #ffb547;
+  --live: #f59e0b; /* spark, darkened for light surfaces */
 
   --radius: 0.5rem;
 
@@ -107,44 +117,45 @@ body {
 }
 
 .dark {
-  /* Core colors converted from HSL to OKLCH for dark mode using convert-to-oklch tool */
-  --highlight: #ff496b; /* coral 500, 5.9:1 on dark */
+  /* Photon dark: a cool ink ramp taken from the logo's graphite panel. The
+     sidebar and cards sit one step below the page, as before. */
+  --highlight: #ff3d6e; /* Flare, 5.6:1 on the page */
 
-  /* def- color scale converted from HSL to OKLCH for dark mode */
-  --def-100: oklch(19.3% 0 0); /* hsl(0, 0%, 8%) -> #0f0f0f */
-  --def-200: oklch(25% 0 0); /* hsl(0, 0%, 13.12%) -> #212121 */
-  --def-300: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
-  --def-400: oklch(37.3% 0 0); /* hsl(0, 0%, 25.23%) -> #404040 */
+  --def-100: #0e0e11;
+  --def-200: #1c1c22;
+  --def-300: #24242b;
+  --def-400: #3b3b44;
 
-  --foregroundish: oklch(86.3% 0 0); /* #d4d4d4 */
+  --foregroundish: #d6d6dc;
 
-  --background: oklch(23.8% 0 0); /* hsl(0, 0%, 12.02%) -> #1e1e1e */
-  --foreground: oklch(98.5% 0 0); /* hsl(0, 0%, 98%) -> #fafafa */
-  --card: oklch(21.6% 0 0); /* hsl(0, 0%, 10%) -> #1a1a1a */
-  --card-foreground: oklch(98.5% 0 0); /* hsl(0, 0%, 98%) -> #fafafa */
-  --popover: oklch(21.6% 0 0); /* hsl(0, 0%, 10%) -> #1a1a1a */
-  --popover-foreground: oklch(98.5% 0 0); /* hsl(0, 0%, 98%) -> #fafafa */
-  --primary: oklch(98.5% 0 0); /* hsl(0, 0%, 98%) -> #fafafa */
-  --primary-foreground: oklch(22.9% 0 0); /* hsl(0, 0%, 11.2%) -> #1c1c1c */
-  --secondary: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
-  --secondary-foreground: oklch(98.5% 0 0); /* hsl(0, 0%, 98%) -> #fafafa */
-  --muted: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
-  --muted-foreground: oklch(72.4% 0 0); /* hsl(0, 0%, 65%) */
-  --accent: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
-  --accent-foreground: oklch(98.5% 0 0); /* hsl(0, 0%, 98%) -> #fafafa */
-  --destructive: oklch(66% 0.18 28); /* danger crimson (dark) */
-  --destructive-foreground: oklch(
-    96.9% 0.02 17.4
-  ); /* hsl(0, 100%, 97.25%) -> #F8F9FB */
-  --border: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
-  --input: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
-  --ring: #ff6b82; /* coral 400 focus ring */
+  --background: #16161b;
+  --foreground: #f9fafe;
+  --card: #121216;
+  --card-foreground: #f9fafe;
+  --popover: #18181d;
+  --popover-foreground: #f9fafe;
+  --primary: #f9fafe;
+  --primary-foreground: #0d0d10;
+  --secondary: #24242b;
+  --secondary-foreground: #f9fafe;
+  --muted: #24242b;
+  --muted-foreground: #a0a0aa;
+  --accent: #24242b;
+  --accent-foreground: #f9fafe;
+  --destructive: #ef5a5f; /* down / danger: redder and cooler than Ember */
+  --destructive-foreground: #fff5f5;
+  --border: #24242b;
+  --input: #24242b;
+  --ring: #ff3d6e; /* Flare focus ring */
+  --live: #ffb547; /* Spark */
 }
 
 @theme {
   --font-sans:
-    "Inter Variable", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Geist Variable", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono:
+    "Geist Mono Variable", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   /* The dashboard's type scale. `sm` is the default for almost everything
      (body, inputs, buttons); `3xs` is for uppercase micro labels and table
@@ -211,6 +222,10 @@ body {
 
   /* Additional colors */
   --color-highlight: var(--highlight);
+  --color-flare: var(--flare);
+  --color-ember: var(--ember);
+  --color-spark: var(--spark);
+  --color-live: var(--live);
   --color-foregroundish: var(--foregroundish);
 
   /* def color scale - properly defined for all variants */
@@ -244,6 +259,10 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  ::selection {
+    background: oklch(from var(--flare) l c h / 0.32);
   }
 
   /* Monospace reads a step larger than Inter, so code sits one size below body text. */

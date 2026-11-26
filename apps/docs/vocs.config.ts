@@ -12,7 +12,7 @@ export default defineConfig({
   renderStrategy: 'full-static',
   ogImageUrl: 'https://docs.flarepanel.dev/og.png',
   colorScheme: 'dark',
-  accentColor: '#FF496B',
+  accentColor: '#FF3D6E',
   logoUrl: '/wordmark-dark.svg',
   iconUrl: '/icon.svg',
   editLink: {

@@ -45,7 +45,7 @@ export const EventIconRecords: Record<
   },
   link_out: {
     icon: 'ExternalLinkIcon',
-    color: 'indigo',
+    color: 'violet',
   },
   revenue: {
     icon: 'DollarSignIcon',

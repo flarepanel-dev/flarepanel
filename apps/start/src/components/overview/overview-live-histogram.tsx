@@ -18,7 +18,8 @@ interface OverviewLiveHistogramProps {
   shareId?: string;
 }
 
-const PRIMARY_COLOR = 'var(--chart-0)';
+// The live card is the one place data is Spark: it is happening now.
+const PRIMARY_COLOR = 'var(--live)';
 
 interface MinutePoint {
   time: string;
@@ -84,14 +85,14 @@ export function OverviewLiveHistogram({
               className={cn(
                 'absolute inline-flex h-full w-full rounded-full opacity-75',
                 totalSessions > 0
-                  ? 'animate-ping bg-emerald-500'
-                  : 'bg-destructive'
+                  ? 'animate-ping bg-live'
+                  : 'bg-def-400'
               )}
             />
             <span
               className={cn(
                 'relative inline-flex h-2 w-2 rounded-full',
-                totalSessions > 0 ? 'bg-emerald-500' : 'bg-destructive'
+                totalSessions > 0 ? 'bg-live' : 'bg-def-400'
               )}
             />
           </span>

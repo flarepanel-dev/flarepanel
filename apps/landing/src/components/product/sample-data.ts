@@ -150,8 +150,8 @@ export type Flag =
 /** Event names keep one colour across every preview (DESIGN.md, Data Palette Rule). */
 export const EVENT_COLORS: Record<string, string> = {
   screen_view: '#4cb0e5',
-  sign_up: '#6b79ea',
-  checkout_started: '#e9ab2b',
+  sign_up: '#ff6a4d',
+  checkout_started: '#ffb547',
   project_created: '#08b6af',
   invite_sent: '#a064db',
   purchase: '#83c758',

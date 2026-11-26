@@ -115,7 +115,7 @@ export function ChatView({ active = true }: { active?: boolean }) {
                   </span>
                   <span className="relative h-[14px] flex-1 overflow-hidden rounded-[3px] bg-app-field">
                     <span
-                      className="absolute inset-y-0 left-0 rounded-[3px] bg-[#6b79ea] transition-[width] duration-700 ease-out-expo"
+                      className="absolute inset-y-0 left-0 rounded-[3px] bg-[#ff6a4d] transition-[width] duration-700 ease-out-expo"
                       style={{
                         width: `${done || reduce ? (r.value / max) * 100 : Math.min(1, chars / 80) * (r.value / max) * 100}%`,
                       }}

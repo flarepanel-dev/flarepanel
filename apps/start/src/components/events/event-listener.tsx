@@ -43,12 +43,12 @@ export default function EventListener({
           <div className="relative">
             <div
               className={cn(
-                'h-3 w-3 animate-ping rounded-full bg-emerald-500 opacity-100 transition-all'
+                'h-3 w-3 animate-ping rounded-full bg-live opacity-100 transition-all'
               )}
             />
             <div
               className={cn(
-                'absolute top-0 left-0 h-3 w-3 rounded-full bg-emerald-500 transition-all'
+                'absolute top-0 left-0 h-3 w-3 rounded-full bg-live transition-all'
               )}
             />
           </div>

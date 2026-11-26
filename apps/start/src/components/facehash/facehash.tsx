@@ -140,7 +140,7 @@ export const DEFAULT_COLORS = [
   '#d1fae5', // emerald-100
   '#ede9fe', // violet-100
   '#fee2e2', // red-100
-  '#e0e7ff', // indigo-100
+  '#ffe4dc', // ember-100
   '#ccfbf1', // teal-100
 ];
 
@@ -153,7 +153,7 @@ export const DEFAULT_COLORS_DARK = [
   '#059669', // emerald-600
   '#7c3aed', // violet-600
   '#dc2626', // red-600
-  '#4f46e5', // indigo-600
+  '#e8553a', // ember-600
   '#0d9488', // teal-600
 ];
 

@@ -52,7 +52,7 @@ export function HowItWorks() {
             <div className="mt-4 flex flex-wrap gap-1.5 font-mono text-[10.5px]">
               {[
                 ['screen_view', '#4cb0e5'],
-                ['sign_up', '#6b79ea'],
+                ['sign_up', '#ff6a4d'],
                 ['purchase', '#83c758'],
               ].map(([n, c]) => (
                 <span
@@ -81,7 +81,7 @@ export function HowItWorks() {
                   name: 'Workers',
                   role: 'Checks the client, adds country and device, and answers straight away.',
                   tag: 'nearest edge',
-                  hue: '#6b79ea',
+                  hue: '#ff6a4d',
                 },
                 {
                   icon: 'durable-objects' as const,
@@ -95,7 +95,7 @@ export function HowItWorks() {
                   name: 'R2',
                   role: 'Raw events, compressed by the hour, kept for as long as you choose.',
                   tag: 'archive',
-                  hue: '#e9ab2b',
+                  hue: '#ffb547',
                 },
               ].flatMap((s, i) => {
                 const node = (
@@ -209,7 +209,7 @@ export function HowItWorks() {
                   { hue: '#3ccb7f', icons: [] },
                   { hue: '#08b6af', icons: ['durable-objects', 'r2'] },
                   { hue: '#4cb0e5', icons: ['queues'] },
-                  { hue: '#6b79ea', icons: ['workers'] },
+                  { hue: '#ff6a4d', icons: ['workers'] },
                   { hue: '#a064db', icons: ['workers'] },
                 ] as const
               )[i];

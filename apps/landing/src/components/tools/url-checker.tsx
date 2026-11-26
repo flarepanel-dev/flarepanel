@@ -49,7 +49,7 @@ const ICON: Record<Verdict, ReactNode> = {
   warn: (
     <CircleAlert
       aria-hidden
-      className="size-4 text-chart-amber"
+      className="size-4 text-chart-spark"
       strokeWidth={2.25}
     />
   ),
@@ -162,7 +162,7 @@ export function UrlChecker() {
         </label>
         <input
           autoComplete="url"
-          className="h-12 min-w-[260px] flex-1 rounded-[10px] border border-rule-strong bg-panel px-4 text-[15px] text-paper placeholder:text-faint focus-visible:outline-2 focus-visible:outline-coral"
+          className="h-12 min-w-[260px] flex-1 rounded-[10px] border border-rule-strong bg-panel px-4 text-[15px] text-paper placeholder:text-faint focus-visible:outline-2 focus-visible:outline-flare"
           id="url"
           inputMode="url"
           onChange={(e) => setUrl(e.target.value)}

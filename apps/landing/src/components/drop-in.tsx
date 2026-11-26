@@ -132,7 +132,7 @@ export function DropIn() {
                 ],
               ].map(([title, body], i) => (
                 <li className="flex gap-4" key={title}>
-                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-[#6b79ea]/50 bg-[#6b79ea]/15 font-mono text-[#aab3f5] text-[12px]">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-[#ff6a4d]/50 bg-[#ff6a4d]/15 font-mono text-[#ff9e8a] text-[12px]">
                     {i + 1}
                   </span>
                   <div>
@@ -160,8 +160,8 @@ export function DropIn() {
                   api.openpanel.dev
                 </code>
               </div>
-              <div className="flex items-center gap-3 bg-coral/[0.06] px-5 py-4">
-                <span className="font-mono text-[11px] text-coral uppercase tracking-[0.08em]">
+              <div className="flex items-center gap-3 bg-up/[0.06] px-5 py-4">
+                <span className="font-mono text-[11px] text-up uppercase tracking-[0.08em]">
                   After
                 </span>
                 <code className="font-mono text-[13.5px] text-paper">
@@ -191,7 +191,7 @@ export function DropIn() {
                     tabIndex={t.id === active ? 0 : -1}
                     type="button"
                   >
-                    <span className="size-1.5 rounded-full bg-rule-strong group-aria-selected:bg-chart-indigo" />
+                    <span className="size-1.5 rounded-full bg-rule-strong group-aria-selected:bg-chart-ember" />
                     {t.label}
                   </button>
                 ))}
@@ -223,7 +223,7 @@ export function DropIn() {
                   <div
                     className={`grid grid-cols-[22px_1fr] pr-4 sm:grid-cols-[48px_26px_1fr] sm:pr-6 ${
                       line.kind === 'add'
-                        ? 'bg-coral/[0.10] text-paper'
+                        ? 'bg-up/[0.08] text-paper'
                         : line.kind === 'del'
                           ? 'bg-crimson/[0.07] text-muted line-through decoration-crimson/50'
                           : line.kind === 'dim'
@@ -236,7 +236,7 @@ export function DropIn() {
                       {index + 1}
                     </span>
                     <span
-                      className={`select-none pl-3 sm:pl-0 ${line.kind === 'add' ? 'text-coral' : line.kind === 'del' ? 'text-crimson' : ''}`}
+                      className={`select-none pl-3 sm:pl-0 ${line.kind === 'add' ? 'text-up' : line.kind === 'del' ? 'text-crimson' : ''}`}
                     >
                       {line.kind === 'add'
                         ? '+'

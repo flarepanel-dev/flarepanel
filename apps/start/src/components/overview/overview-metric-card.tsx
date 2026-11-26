@@ -11,12 +11,13 @@ import {
 import { PreviousDiffIndicatorPure } from '../report-chart/common/previous-diff-indicator';
 import { Skeleton } from '../skeleton';
 import { formatCost, formatLatency } from '@/components/ai/ai-format';
+import { DATA_BAR_COLOR, DATA_BAR_FILL } from '@/components/brand-defs';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
 import { formatDate as formatAbsoluteDate, timeAgo } from '@/utils/date';
 
-const PRIMARY_COLOR = 'var(--chart-0)';
+const PRIMARY_COLOR = DATA_BAR_COLOR;
 const METRIC_ERROR_LABEL = 'Could not load';
 // A tall card's bars get the report bars' rounding; the 40px sparkline's thin bars only a hint of it.
 const BAR_RADIUS = 4;
@@ -143,8 +144,9 @@ export function OverviewMetricCard({
               animate={false}
               dataKey="current"
               fadedOpacity={0.35}
-              fill={PRIMARY_COLOR}
+              fill={DATA_BAR_FILL}
               lineCap={fill ? BAR_RADIUS : SPARKLINE_BAR_RADIUS}
+              stroke={PRIMARY_COLOR}
             />
           </BarChart>
         </div>

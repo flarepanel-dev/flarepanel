@@ -93,15 +93,15 @@ export function RealtimeView({ active = true }: { active?: boolean }) {
             >
               {hot ? (
                 <span
-                  className="absolute inset-[-10px] animate-ping rounded-full bg-coral/40 motion-reduce:hidden"
+                  className="absolute inset-[-10px] animate-ping rounded-full bg-spark/40 motion-reduce:hidden"
                   key={newest.id}
                 />
               ) : null}
               <span
                 className={`relative block rounded-full transition-all duration-500 ${
                   hot
-                    ? 'size-3 bg-coral shadow-[0_0_0_3px_rgba(255,73,107,0.25)]'
-                    : 'size-2 bg-chart-indigo/80'
+                    ? 'size-3 bg-spark shadow-[0_0_0_3px_rgba(255,181,71,0.25)]'
+                    : 'size-2 bg-chart-ember/80'
                 }`}
               />
             </span>
@@ -160,8 +160,8 @@ export function RealtimeView({ active = true }: { active?: boolean }) {
               <span
                 className={`flex-1 rounded-t-[1px] transition-[height] duration-700 ease-out-expo ${
                   i === bars.length - 1
-                    ? 'bg-chart-indigo'
-                    : 'bg-chart-indigo/35'
+                    ? 'bg-chart-ember'
+                    : 'bg-chart-ember/35'
                 }`}
                 // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length series
                 key={i}
@@ -181,7 +181,7 @@ export function RealtimeView({ active = true }: { active?: boolean }) {
                 animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                 className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[11.5px] backdrop-blur-sm ${
                   i === 0
-                    ? 'border-coral/30 bg-[rgba(255,73,107,0.06)]'
+                    ? 'border-spark/30 bg-[rgba(255,181,71,0.06)]'
                     : 'border-app-line bg-app-card/90'
                 }`}
                 exit={{ opacity: 0 }}

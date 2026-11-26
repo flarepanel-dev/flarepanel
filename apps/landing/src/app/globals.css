@@ -5,42 +5,48 @@
   --font-mono:
     var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
 
+  /* Photon neutrals: a cool ink ramp taken from the logo's graphite panel. */
   --color-ink: #0d0d10;
-  --color-panel: #111114;
-  --color-raised: #18181b;
-  --color-hover: #1c1c20;
-  --color-rule: #27272a;
-  --color-rule-strong: #3f3f43;
-  --color-faint: #727276;
-  --color-muted: #a1a1a5;
-  --color-soft: #d4d4d8;
+  --color-panel: #111115;
+  --color-raised: #18181d;
+  --color-hover: #1d1d23;
+  --color-rule: #24242b;
+  --color-rule-strong: #3b3b44;
+  --color-faint: #7d7d86;
+  --color-muted: #a3a3ab;
+  --color-soft: #d6d6dc;
   --color-paper: #f9fafe;
+  --color-paper-hover: #e6e6eb;
 
-  --color-coral: #ff496b;
-  --color-coral-soft: #ff6b82;
-  --color-coral-past: #3a1420;
-  --color-paper-hover: #e4e4e8;
-  --color-crimson: #f0605d;
+  /* Photon brand: Flare is interaction (links, focus, selection), Ember is
+     data, Spark is live. The three together only in the mark and the one
+     brand gradient. */
+  --color-flare: #ff3d6e;
+  --color-flare-soft: #ff7393;
+  --color-ember: #ff6a4d;
+  --color-spark: #ffb547;
+  --color-crimson: #ef5a5f;
   --color-up: #3ccb7f;
 
-  /* Brand chart palette (brand/tokens.json), used for data only */
-  --color-chart-indigo: #6b79ea;
-  --color-chart-teal: #08b6af;
-  --color-chart-amber: #e9ab2b;
-  --color-chart-violet: #a064db;
+  /* Data palette (brand/tokens.json), used for data only. Ember leads, Sky
+     is its complement, Spark is reserved for live. */
+  --color-chart-ember: #ff6a4d;
   --color-chart-sky: #4cb0e5;
+  --color-chart-spark: #ffb547;
+  --color-chart-teal: #08b6af;
+  --color-chart-violet: #a064db;
   --color-chart-lime: #83c758;
 
   /* The dashboard's own surfaces (apps/start, dark theme), used only inside
      product previews so they read as the real app, not a mockup. */
-  --color-app-bg: #151515;
-  --color-app-card: #1a1a1a;
-  --color-app-line: #272727;
-  --color-app-field: #232323;
-  --color-app-hover: #202020;
-  --color-app-muted: #a6a6a6;
-  --color-app-nav: #d2d2d2;
-  --color-app-text: #fafafa;
+  --color-app-bg: #16161b;
+  --color-app-card: #121216;
+  --color-app-line: #24242b;
+  --color-app-field: #1c1c22;
+  --color-app-hover: #1c1c22;
+  --color-app-muted: #a0a0aa;
+  --color-app-nav: #d6d6dc;
+  --color-app-text: #f9fafe;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -70,12 +76,12 @@
   }
 
   ::selection {
-    background: var(--color-coral);
+    background: var(--color-flare);
     color: var(--color-ink);
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-coral);
+    outline: 2px solid var(--color-flare);
     outline-offset: 3px;
     border-radius: 6px;
   }
@@ -113,6 +119,11 @@
   samp {
     font-family: var(--font-mono);
   }
+}
+
+/* A data bar lit like the logo's panel: Flare at the base, Ember above. */
+@utility bg-data {
+  background-image: linear-gradient(to top, #ff4f62, #ff6a4d 60%, #ff8a4a);
 }
 
 @utility tabular {
@@ -172,7 +183,7 @@
   height: 1px;
   background: repeating-linear-gradient(
     90deg,
-    var(--color-chart-indigo) 0 6px,
+    var(--color-chart-ember) 0 6px,
     transparent 6px 12px
   );
   opacity: 0.8;
@@ -197,14 +208,14 @@
   background: color-mix(in oklab, var(--hue) 5%, var(--color-panel));
 }
 
-/* Pricing: the events slider. Indigo fill up to the thumb, paper thumb. */
+/* Pricing: the events slider. Ember fill up to the thumb, paper thumb. */
 .plan-range {
   appearance: none;
   height: 6px;
   border-radius: 999px;
   background: linear-gradient(
     to right,
-    var(--color-chart-indigo) var(--fill, 0%),
+    var(--color-chart-ember) var(--fill, 0%),
     var(--color-raised) var(--fill, 0%)
   );
   cursor: pointer;
@@ -215,7 +226,7 @@
   height: 22px;
   border-radius: 999px;
   background: var(--color-paper);
-  border: 4px solid var(--color-chart-indigo);
+  border: 4px solid var(--color-chart-ember);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 .plan-range::-moz-range-thumb {
@@ -223,7 +234,7 @@
   height: 14px;
   border-radius: 999px;
   background: var(--color-paper);
-  border: 4px solid var(--color-chart-indigo);
+  border: 4px solid var(--color-chart-ember);
 }
 
 /* Legal pages: long-form reading rhythm (Read mode). */

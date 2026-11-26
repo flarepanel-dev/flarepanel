@@ -4,19 +4,19 @@ interface LogoProps {
   className?: string;
 }
 
-// Dark tile on light surfaces, white (inverted) tile on dark ones: the
-// Obsidian tile would disappear on the dark theme. See brand/README.md.
+// The Photon mark is its own panel, so it needs no tile. Its unlit panel is
+// graphite on dark surfaces and pale grey on light ones. See brand/README.md.
 export function LogoSquare({ className }: LogoProps) {
   return (
     <>
       <img
         alt="FlarePanel logo"
-        className={cn('rounded-md dark:hidden', className)}
+        className={cn('dark:hidden', className)}
         src="/logo.svg"
       />
       <img
         alt="FlarePanel logo"
-        className={cn('hidden rounded-md dark:block', className)}
+        className={cn('hidden dark:block', className)}
         src="/logo-inverted.svg"
       />
     </>
@@ -26,7 +26,10 @@ export function LogoSquare({ className }: LogoProps) {
 export function Logo({ className }: LogoProps) {
   return (
     <div
-      className={cn('flex items-center gap-2 font-medium text-xl', className)}
+      className={cn(
+        'flex items-center gap-2 font-semibold text-xl tracking-[-0.03em]',
+        className
+      )}
     >
       <LogoSquare className="max-h-8" />
       <span>FlarePanel</span>

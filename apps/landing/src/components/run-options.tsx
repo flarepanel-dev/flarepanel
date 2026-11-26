@@ -51,7 +51,7 @@ export function RunOptions() {
             <div className="border-rule border-b p-5 sm:p-7" />
             {OPTIONS.map((option, i) => (
               <div
-                className={`border-rule border-b border-l p-5 sm:p-7 ${i === 0 ? 'bg-[color-mix(in_oklab,#6b79ea_9%,#111114)]' : ''}`}
+                className={`border-rule border-b border-l p-5 sm:p-7 ${i === 0 ? 'bg-[color-mix(in_oklab,#ff6a4d_6%,#111115)]' : ''}`}
                 key={option.name}
               >
                 <div className="flex flex-wrap items-center gap-2">
@@ -62,12 +62,12 @@ export function RunOptions() {
                     className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[12px] ${
                       option.live
                         ? 'border-up/30 bg-up/10 text-paper'
-                        : 'border-chart-amber/30 bg-chart-amber/10 text-soft'
+                        : 'border-chart-spark/30 bg-chart-spark/10 text-soft'
                     }`}
                   >
                     <span
                       aria-hidden
-                      className={`size-1.5 rounded-full ${option.live ? 'bg-up' : 'border border-chart-amber'}`}
+                      className={`size-1.5 rounded-full ${option.live ? 'bg-up' : 'border border-chart-spark'}`}
                     />
                     {option.status}
                   </span>
@@ -98,12 +98,12 @@ export function RunOptions() {
                 {label}
               </div>,
               <div
-                className="flex items-start gap-2.5 border-rule border-b border-l bg-[color-mix(in_oklab,#6b79ea_9%,#111114)] p-5 text-[14.5px] text-paper sm:px-7"
+                className="flex items-start gap-2.5 border-rule border-b border-l bg-[color-mix(in_oklab,#ff6a4d_6%,#111115)] p-5 text-[14.5px] text-paper sm:px-7"
                 key={`${label}-c`}
               >
                 <Check
                   aria-hidden
-                  className="mt-0.5 size-4 shrink-0 text-[#8c97f0]"
+                  className="mt-0.5 size-4 shrink-0 text-[#ff8a6e]"
                   strokeWidth={2.25}
                 />
                 {cloud}
@@ -121,7 +121,7 @@ export function RunOptions() {
               </div>,
             ])}
             <div className="p-5 sm:p-7" />
-            <div className="border-rule border-l bg-[color-mix(in_oklab,#6b79ea_9%,#111114)] p-5 sm:p-7">
+            <div className="border-rule border-l bg-[color-mix(in_oklab,#ff6a4d_6%,#111115)] p-5 sm:p-7">
               <a
                 className="inline-flex h-11 items-center gap-2 rounded-[9px] bg-paper px-[18px] font-medium text-[15px] text-ink transition-colors hover:bg-paper-hover"
                 href={OPTIONS[0].cta.href}

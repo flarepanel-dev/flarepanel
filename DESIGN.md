@@ -2,30 +2,33 @@
 name: FlarePanel
 description: Open-source web and product analytics that runs entirely on Cloudflare.
 colors:
-  coral: "#ff496b"
-  coral-soft: "#ff6b82"
-  chart-rest: "#3a1420"
-  crimson: "#f0605d"
+  flare: "#ff3d6e"
+  flare-soft: "#ff7393"
+  ember: "#ff6a4d"
+  spark: "#ffb547"
+  data-base: "#ff4f62"
+  data-top: "#ff8a4a"
+  crimson: "#ef5a5f"
   up: "#3ccb7f"
   ink: "#0d0d10"
-  panel: "#111114"
-  raised: "#18181b"
-  hover: "#1c1c20"
-  rule: "#27272a"
-  rule-strong: "#3f3f43"
-  faint: "#727276"
-  muted: "#a1a1a5"
-  soft: "#d4d4d8"
+  panel: "#111115"
+  raised: "#18181d"
+  hover: "#1d1d23"
+  rule: "#24242b"
+  rule-strong: "#3b3b44"
+  faint: "#7d7d86"
+  muted: "#a3a3ab"
+  soft: "#d6d6dc"
   paper: "#f9fafe"
-  paper-hover: "#e4e4e8"
-  app-bg: "#151515"
-  app-card: "#1a1a1a"
-  app-line: "#272727"
-  app-field: "#232323"
-  app-hover: "#202020"
-  app-muted: "#a6a6a6"
-  app-nav: "#d2d2d2"
-  app-text: "#fafafa"
+  paper-hover: "#e6e6eb"
+  app-bg: "#16161b"
+  app-card: "#121216"
+  app-line: "#24242b"
+  app-field: "#1c1c22"
+  app-hover: "#1c1c22"
+  app-muted: "#a0a0aa"
+  app-nav: "#d6d6dc"
+  app-text: "#f9fafe"
 typography:
   display-sm:
     fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
@@ -197,7 +200,7 @@ components:
     backgroundColor: "{colors.raised}"
     textColor: "{colors.paper}"
   text-link:
-    textColor: "{colors.coral}"
+    textColor: "{colors.flare}"
   status-pill:
     textColor: "{colors.soft}"
     rounded: "{rounded.full}"
@@ -218,33 +221,33 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Live Instrument"**
+**Creative North Star: "The Live Instrument", in Photon light**
 
-FlarePanel's marketing surface is a dark instrument panel, the same world as the dashboard it sells. The ground is near-black obsidian, structure is drawn with hairline rules instead of fills or shadows, and almost everything sits in a quiet gray ramp. Against that, one hot coral reads as a signal lamp: it lights the thing that is happening now (today's bar, the live count, the newest event) and the places you can go (links, focus). Because the rest of the panel stays dark, a coral pixel always means something.
+FlarePanel's marketing surface is a dark instrument panel, the same world as the dashboard it sells. The ground is near-black ink, structure is drawn with hairline rules instead of fills or shadows, and almost everything sits in a quiet cool-graphite ramp taken from the logo's panel. Against that, three warm lights each do one job, as in the Photon mark (brand/README.md): Ember is data (bars lit from the base, the current-period line), Spark is live (the online-now dot, the live card, the newest event), and Flare is interaction (links, focus, selection). Because the rest of the panel stays dark, a warm pixel always means something.
 
 Type does two clearly separate jobs. Geist at 700 with very tight tracking makes compact, heavy claims; Geist Mono carries every number, code line, path and measurement, the way it would in a terminal or a chart axis. Density is generous at page level (tall sections, wide gutters) and tight inside the instrument (dashboard chips, KPI strips, code rows), so the product reads as dense working UI on a calm stage.
 
 The page is dark because its readers work next to a dark IDE and the dark FlarePanel dashboard; the marketing world is the dashboard's world, not a separate brand expression. Motion is rare and authored: each moment gets at most one, and every one of them stops under reduced motion.
 
 **Key Characteristics:**
-- Obsidian ground with tonal panels and 1px rules; no decorative gradients, glows or textures.
-- Coral is a signal, not a fill: live state, links, focus, the added diff line.
-- Geist 700 at -0.045em for headings; Geist Mono only for data, code and measurements.
-- Up is green, down is crimson, never coral.
+- Ink ground with tonal panels and 1px rules. The only gradients are the logo's light: data bars lit Flare-to-Ember from the base, and one warm stage light behind the hero product frame.
+- One job per warm colour: Ember data, Spark live, Flare interaction. None of them fills a button or a background.
+- Geist 700 at -0.045em for headings; Geist Mono only for data, code and measurements. The dashboard uses the same Geist families.
+- Up is green, down is crimson (its own cooler red), never a data colour.
 - One authored motion per moment, all paused under reduced motion.
 
 ## Colors
 
-A cold, near-monochrome obsidian ramp with a single hot coral signal and two data-only delta hues.
+A cool, near-monochrome ink ramp with three warm Photon lights, each with one job, and two delta hues.
 
 ### Primary
-- **Hot Coral** (coral): the live signal. Today's bar in the chart, the Live now count and its dot, the chart legend swatch for the current day, text links and their underline, the global focus ring, text selection, the `+` marker and wash of an added diff line, and the leading edge of the event-route pulse.
-- **Coral Glow** (coral-soft): text of the newest row in the live event feed, where full coral on a coral-tinted row would vibrate.
-- **Banked Ember** (chart-rest): retired from previews (data is indigo now); kept as a token only.
+- **Ember** (ember): data. The lead chart series in the dashboard (`--chart-0`, first of `chartColors`) and in every preview: KPI bars (painted with the `bg-data` / `fp-data-bar` ramp from Flare at the base to a warm orange at the top), the current-period line and its area, funnel bars, retention, map dots, replay progress, the pricing slider.
+- **Spark** (spark): live. The online-now dot and its ping, the live count, the live card's bars, the newest row in the realtime feed and its city ping, the current step of a progress stepper.
+- **Flare** (flare): interaction and brand. Text links and their underline, the global focus ring, text selection, the event-route pulse. **Flare Soft** (flare-soft) is link hover on dark.
 
 ### Secondary
-- **Delta Crimson** (crimson): negative deltas (bounce rate down-arrow) and the removed line of a diff (marker, strike-through decoration and a faint wash).
-- **Delta Green** (up): positive deltas and the copied-confirmation check.
+- **Delta Crimson** (crimson): negative deltas and the removed line of a diff (marker, strike-through decoration and a faint wash). Cooler and redder than Ember so a falling number never reads as data.
+- **Delta Green** (up): positive deltas, the added line of a diff, success checks and the copied-confirmation check.
 
 ### Neutral
 - **Obsidian** (ink): page ground, theme color, browser chrome, and the fill behind route nodes so the line appears to pass through them.
@@ -252,7 +255,7 @@ A cold, near-monochrome obsidian ramp with a single hot coral signal and two dat
 - **Raised Graphite** (raised): active tab, copy button, sample-data tag, top-pages bar fills, outline-button hover, mobile menu hover.
 - **Hover Graphite** (hover): the selected item in the dashboard sidebar.
 - **Hairline** (rule): every section divider, card and panel border, table row line.
-- **Strong Hairline** (rule-strong): outline-button border, the highlighted card's border, the event-route line, rest-state bullets, link underlines that are not yet coral, the scrollbar thumb, code line numbers.
+- **Strong Hairline** (rule-strong): outline-button border, the highlighted card's border, the event-route line, rest-state bullets, link underlines that are not yet Flare, the scrollbar thumb, code line numbers.
 - **Faint Gray** (faint): metadata, axis labels, footnotes, dim code, footer legal line.
 - **Muted Gray** (muted): body copy and ledes, nav links at rest.
 - **Soft Gray** (soft): secondary emphasis: list points, row headers, inline code, service names.
@@ -260,15 +263,15 @@ A cold, near-monochrome obsidian ramp with a single hot coral signal and two dat
 - **Paper Pressed** (paper-hover): hover fill of paper buttons only.
 
 ### Named Rules
-**The Data Palette Rule.** Inside product previews, categories take the brand chart palette (indigo #6b79ea, teal #08b6af, amber #e9ab2b, violet #a064db, sky #4cb0e5, lime #83c758) and one colour always means one thing: screen_view is sky, sign_up indigo, checkout_started amber, project_created teal. Fills sit at low opacity (about 16%) behind text and at full strength only for the mark itself (dot, line, bar). Chart colours never appear outside a preview: not on buttons, headings, borders or page backgrounds.
+**The Data Palette Rule.** Categories take the Photon chart palette in this order: ember #ff6a4d, sky #4cb0e5, spark #ffb547, teal #08b6af, violet #a064db, lime #83c758, then slate, flare, blue, orchid, sea, green, blush. One colour always means one thing: screen_view is sky, sign_up ember, checkout_started spark, project_created teal. Fills sit at low opacity (about 16%) behind text and at full strength only for the mark itself (dot, line, bar). Chart colours never appear outside data: not on buttons, headings, borders or page backgrounds.
 
-**The Signal Lamp Rule.** Coral marks only what is live (current bar, live count, newest feed row, the city that just fired, route pulse), links, focus, and the diff's added line. If it is not happening now and you cannot click it, it is not coral.
+**The One Job Rule.** Ember is data, Spark is live, Flare is interaction. If it is not data, not happening now and you cannot click it, it is none of the three.
 
-**The Data Is Indigo Rule.** Data series lead with indigo #6b79ea, in the dashboard (first colour of `chartColors` and `--chart-0`) and in every preview: KPI mini bars, the current-period line and its area, funnel bars, the retention curve and heatmap, map dots, replay progress. A chart full of coral reads as an alert; coral sits late in the data palette and red only ever means down.
+**The Lit Bar Rule.** Single-series bars are lit like the logo's panel: Flare at the base to a warm orange at the top (`bg-data` on the website, `url(#fp-data-bar)` from `components/brand-defs.tsx` in the dashboard). Lines and areas stay solid Ember.
 
-**The Crimson Down Rule.** A negative or removed value is crimson, never coral. Coral means "now", not "bad".
+**The Crimson Down Rule.** A negative or removed value is crimson, never a data colour, and always carries an arrow.
 
-**The Paper Button Rule.** The primary action is a paper-white button with ink text, never a coral fill.
+**The Paper Button Rule.** The primary action is a paper-white button with ink text, never a warm fill.
 
 ## Typography
 
@@ -325,13 +328,13 @@ Quiet, compact and solid, with a pressed nudge rather than a glow.
 - **Shape:** gently rounded (9px), 44px tall, 18px side padding, 15px Geist 500, optional 16 to 17px icon at an 8px gap.
 - **Primary:** paper fill with ink text. Hover steps to the paper-pressed gray.
 - **Outline:** transparent with a strong-hairline border and paper text; hover lifts to the raised fill and a faint border, and a trailing arrow nudges 2px right.
-- **Hover / Focus:** 200ms transitions on the expo-out curve; active presses down 1px; focus is the global 2px coral outline at 3px offset.
+- **Hover / Focus:** 200ms transitions on the expo-out curve; active presses down 1px; focus is the global 2px Flare outline at 3px offset.
 - **Compact (nav):** the same paper button at 36px tall, 8px radius, 14px text.
 - **Utility (copy):** 32px tall, 6px radius, raised fill with a hairline border and muted text that turns paper on hover.
 
 ### Chips
 - **Style:** data chips in the dashboard are 7px-radius hairline outlines with mono 11.5px muted text; the SAMPLE DATA tag is a raised fill with faint uppercase mono.
-- **Status pill:** fully round, hairline border, 13px text with a 6px dot. A ready state is a filled soft-gray dot on a strong border; a coming-soon state is a hollow dot on a plain rule. Status is neutral, not coral.
+- **Status pill:** fully round, hairline border, 13px text with a 6px dot. A ready state is a filled soft-gray dot on a strong border; a coming-soon state is a hollow dot on a plain rule. Status is neutral, not a brand colour.
 
 ### Cards / Containers
 - **Corner Style:** 16px for content cards, 12px for panels inside the dashboard.
@@ -349,33 +352,33 @@ Quiet, compact and solid, with a pressed nudge rather than a glow.
 - **Mobile:** a 40px menu toggle opens a full-width panel of 17px soft-gray links with raised hover rows; Escape closes it.
 
 ### Links
-- **Inline:** coral text with a coral underline at 40% opacity (1px, 0.22em offset) that goes to full coral on hover.
-- **Card call to action:** paper 15px text with a strong-hairline underline that turns coral on hover, plus an arrow that nudges right.
+- **Inline:** Flare text with a Flare underline at 40% opacity (1px, 0.22em offset) that goes to full Flare on hover.
+- **Card call to action:** paper 15px text with a strong-hairline underline that turns Flare on hover, plus an arrow that nudges right.
 
 ### Product previews: the app world (signature)
 Product imagery is the dashboard itself, rebuilt as components, never a drawn mockup. Inside a preview the page switches to the dashboard's own world (the `app-*` colours: #151515 ground, #1a1a1a sidebar and cards, #272727 lines, #a6a6a6 muted text) and its type ramp (10px uppercase labels at 0.5px tracking, 12 to 13px rows and controls, 19px mono values, 44px realtime count), set in Geist and Geist Mono. 6px corners inside, the 18px frame and the stage drop outside. Every preview carries the SAMPLE DATA tag (in the sidebar from md, top-right below md). Previews are decorative (`aria-hidden`); the tour's tabs are the keyboard path.
 
 - **App frame** (`components/product/app-frame.tsx`): the project sidebar of apps/start with its exact order and lucide icons; clicking an entry switches the view (in the hero it opens the tour at that view).
-- **Hero: Overview** (`overview-view.tsx`): toolbar (range, arrows, interval, filters, AI filter field, live count, Public), the eight KPI cards with 30 indigo mini bars (the selected card keeps a 2px indigo inset edge), the unique-visitors chart with the previous period in gray, the incomplete day dashed and the spike's referrer pinned on the peak, hover readout, then the referrer and pages tables with source icons, revenue rings and share fills. Every 2.4s while in view the live count moves and today's numbers tick up. Below sm only four KPI cards show so the chart stays visible.
+- **Hero: Overview** (`overview-view.tsx`): toolbar (range, arrows, interval, filters, AI filter field, live count, Public), the eight KPI cards with 30 lit Ember mini bars (the selected card keeps a 2px Ember inset edge), the unique-visitors chart with the previous period in gray, the incomplete day dashed and the spike's referrer pinned on the peak, hover readout, then the referrer and pages tables with source icons, revenue rings and share fills. Every 2.4s while in view the live count moves and today's numbers tick up. Below sm only four KPI cards show so the chart stays visible.
 - **Tour** (`product-tour.tsx`): tabs Realtime, Sessions & replay, Funnels, Retention, Profiles, AI chat, with a two-line caption slot so the frame never shifts. One crossfade (0.35s, expo-out) between views.
 - **Realtime**: the Natural Earth 110m map in the dashboard's Mercator band (static `public/realtime-map.svg` from `scripts/build-map.ts`), cover-fitted with the city dots in the same box; a new event every 1.8s pings its city and enters the feed.
 - **Sessions & replay**: the sessions table and the replay sheet playing a recorded visit to a sample pricing page (cursor path, click ripple, timeline with event markers); below lg the sheet covers the table.
-- **Funnels / Retention**: the report builder (steps on the left), data in indigo; drop-off in crimson with an arrow.
+- **Funnels / Retention**: the report builder (steps on the left), data in Ember; drop-off in crimson with an arrow.
 - **Profiles**: metrics strip, properties, most viewed pages and the activity timeline in event colours.
 - **AI chat**: tool calls, a result chart in the event palette, the answer streaming once, and the model picker with "Your OpenAI key" (bring your own key).
 
 All motion stops under reduced motion: ticks halt, pings hide, the chat answer shows in full.
 
 ### Code Diff (signature)
-A 16px panel-black card with a tab bar and copy button above a mono code body at line-height 1.9 with gutter line numbers in strong hairline. Added lines get a 10% coral wash, paper text and a coral `+`; removed lines get a 7% crimson wash, muted struck-through text and a crimson minus; context lines are soft or faint.
+A 16px panel-black card with a tab bar and copy button above a mono code body at line-height 1.9 with gutter line numbers in strong hairline. Added lines get an 8% green wash, paper text and a green `+`; removed lines get a 7% crimson wash, muted struck-through text and a crimson minus; context lines are soft or faint.
 
 ### Event Route (signature)
-Four stops joined by a 1px strong-hairline line through 11px hollow nodes. One coral-tipped gradient pulse travels the line every 4.8s (`cubic-bezier(0.45, 0, 0.2, 1)`), horizontally on desktop and down the rail on phones, and is removed under reduced motion.
+Four stops joined by a 1px strong-hairline line through 11px hollow nodes. One Flare-tipped gradient pulse travels the line every 4.8s (`cubic-bezier(0.45, 0, 0.2, 1)`), horizontally on desktop and down the rail on phones, and is removed under reduced motion.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep coral to live signal (current bar, live count, newest feed row, route pulse), links, focus and the diff's added line.
+- **Do** keep each warm colour to its job: Ember for data, Spark for live (live count, newest feed row, online dot), Flare for links, focus and selection.
 - **Do** set every display and headline heading in Geist 700 at -0.045em, line-height about 0.98.
 - **Do** put every value, path, event name, date and code line in Geist Mono, with tabular figures for numbers that change.
 - **Do** show positive deltas in green and negative deltas in crimson, each with an arrow, so color is never the only cue.
@@ -384,8 +387,8 @@ Four stops joined by a 1px strong-hairline line through 11px hollow nodes. One c
 - **Do** label any product imagery built from invented numbers as SAMPLE DATA.
 
 ### Don't:
-- **Don't** fill buttons, cards or backgrounds with coral; the primary button is paper on ink.
-- **Don't** use coral for negative, error or removed states; that is crimson.
+- **Don't** fill buttons, cards or backgrounds with a warm colour; the primary button is paper on ink.
+- **Don't** use a data colour for negative, error or removed states; that is crimson.
 - **Don't** set prose, headings, buttons or navigation in Geist Mono.
 - **Don't** add shadows beyond the single stage drop under the product frame.
 - **Don't** put uppercase mono labels above section headings; tracked uppercase mono belongs to data labels inside the product and tables.

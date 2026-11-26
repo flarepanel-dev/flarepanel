@@ -7,14 +7,14 @@ export default function NotFound() {
       <Nav />
       <main id="main">
         <Container className="py-32 sm:py-40">
-          <p className="font-mono text-[13px] text-coral tabular">404</p>
+          <p className="tabular font-mono text-[13px] text-flare">404</p>
           <h1 className="display mt-4 max-w-[16ch] text-[44px] sm:text-[64px]">
             This page is not here.
           </h1>
           <p className="mt-5 max-w-[50ch] text-[16px] text-muted leading-[1.6]">
             The link may be old, or the page may have moved.{' '}
             <a
-              className="text-coral underline decoration-coral/40 underline-offset-[0.22em] hover:decoration-coral"
+              className="text-flare underline decoration-flare/40 underline-offset-[0.22em] hover:decoration-flare"
               href="/"
             >
               Go to the home page

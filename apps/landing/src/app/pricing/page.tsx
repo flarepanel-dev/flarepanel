@@ -128,8 +128,8 @@ export default function PricingPage() {
               The same product either way. Pick who runs the Cloudflare account.
             </p>
             <div className="mt-12 grid gap-4 md:grid-cols-2">
-              <article className="flex flex-col rounded-2xl border border-chart-indigo/40 bg-panel p-7 sm:p-9">
-                <div className="font-mono text-[#aab3f5] text-[11.5px] uppercase tracking-[0.08em]">
+              <article className="flex flex-col rounded-2xl border border-chart-ember/40 bg-panel p-7 sm:p-9">
+                <div className="font-mono text-[#ff9e8a] text-[11.5px] uppercase tracking-[0.08em]">
                   Cloud
                 </div>
                 <h3 className="mt-3 font-semibold text-[26px] tracking-[-0.02em]">
@@ -150,7 +150,7 @@ export default function PricingPage() {
                     <li className="flex items-start gap-2.5" key={point}>
                       <Check
                         aria-hidden
-                        className="mt-0.5 size-4 shrink-0 text-chart-indigo"
+                        className="mt-0.5 size-4 shrink-0 text-chart-ember"
                         strokeWidth={2.25}
                       />
                       {point}
@@ -181,9 +181,9 @@ export default function PricingPage() {
                 <div className="mt-4 flex gap-2">
                   {(
                     [
-                      ['workers', '#6b79ea'],
+                      ['workers', '#ff6a4d'],
                       ['durable-objects', '#08b6af'],
-                      ['r2', '#e9ab2b'],
+                      ['r2', '#ffb547'],
                       ['d1', '#a064db'],
                       ['queues', '#4cb0e5'],
                     ] as const
@@ -332,7 +332,7 @@ export default function PricingPage() {
                           {formatEvents(plan.events)}
                         </span>
                         {plan.popular ? (
-                          <span className="ml-3 rounded-full border border-chart-indigo/40 bg-chart-indigo/10 px-2 py-0.5 text-[#aab3f5] text-[11.5px]">
+                          <span className="ml-3 rounded-full border border-chart-ember/40 bg-chart-ember/10 px-2 py-0.5 text-[#ff9e8a] text-[11.5px]">
                             Popular
                           </span>
                         ) : null}

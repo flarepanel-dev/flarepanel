@@ -64,10 +64,14 @@ the same open-source code runs hosted or on your own Cloudflare account.
 ## Brand Commitments
 
 - Name: FlarePanel (one word, capital F and P); domain flarepanel.dev.
-- Brand kit v1 in `brand/` (guide: `brand/README.md`, values:
-  `brand/tokens.json`): the Bar F mark, Obsidian neutrals with Hot coral
-  `#FF496B` as the accent, Geist wordmark. Coral is an accent, not a fill;
-  down/negative is crimson, never coral; inverted icon on dark.
+- Brand kit v2 "Photon" in `brand/` (guide: `brand/README.md`, values:
+  `brand/tokens.json`, files built by `brand/scripts/build.ts`): a solid
+  panel whose cells rise in a lit staircase while the top step breaks away
+  as the flare. Cool ink neutrals; three warm lights with one job each:
+  Ember `#FF6A4D` data, Spark `#FFB547` live, Flare `#FF3D6E` links and
+  focus. No warm fills on buttons or backgrounds; down/negative is its own
+  crimson. Geist across the website and the dashboard. Chosen on 2026-11-26
+  after four rounds of logo directions.
 - A dark-background marketing site that matches the dark dashboard and looks
   clearly different from openpanel.dev.
 

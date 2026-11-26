@@ -1,4 +1,4 @@
-/* FlarePanel brand on Vocs: Obsidian neutrals, Hot coral accent, Geist. */
+/* FlarePanel brand on Vocs: Obsidian neutrals, Photon palette (Flare accent), Geist. */
 
 @font-face {
   font-family: "Geist";
@@ -21,33 +21,33 @@
   --vocs-font-family-mono:
     "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
 
-  --vocs-color-accent: #ff496b;
+  --vocs-color-accent: #ff3d6e;
 
   --vocs-background-color-primary: #0d0d10;
-  --vocs-background-color-surface: #111114;
-  --vocs-background-color-surfaceMuted: #18181b;
-  --vocs-background-color-surfaceTint: #18181b;
+  --vocs-background-color-surface: #111115;
+  --vocs-background-color-surfaceMuted: #18181d;
+  --vocs-background-color-surfaceTint: #18181d;
 
   --vocs-text-color-primary: #e4e4e8;
-  --vocs-text-color-secondary: #a1a1a5;
-  --vocs-text-color-muted: #727276;
+  --vocs-text-color-secondary: #a3a3ab;
+  --vocs-text-color-muted: #7d7d86;
   --vocs-text-color-heading: #f9fafe;
-  --vocs-text-color-link: #ff496b;
-  --vocs-text-color-link-hover: #ff6b82;
-  --vocs-text-color-quote: #a1a1a5;
+  --vocs-text-color-link: #ff3d6e;
+  --vocs-text-color-link-hover: #ff7393;
+  --vocs-text-color-quote: #a3a3ab;
 
-  --vocs-border-color-primary: #27272a;
-  --vocs-border-color-secondary: #1f1f23;
-  --vocs-border-color-tab-active: #ff496b;
+  --vocs-border-color-primary: #24242b;
+  --vocs-border-color-secondary: #1c1c22;
+  --vocs-border-color-tab-active: #ff3d6e;
 
-  --vocs-background-color-blockquote: #111114;
-  --vocs-background-color-code-block: #111114;
-  --vocs-background-color-code-highlighted: rgba(255, 73, 107, 0.1);
-  --vocs-border-color-code-highlighted: #ff496b;
-  --vocs-background-color-inline-code: #18181b;
+  --vocs-background-color-blockquote: #111115;
+  --vocs-background-color-code-block: #111115;
+  --vocs-background-color-code-highlighted: rgba(255, 61, 110, 0.1);
+  --vocs-border-color-code-highlighted: #ff3d6e;
+  --vocs-background-color-inline-code: #18181d;
 }
 
 ::selection {
-  background: #ff496b;
+  background: #ff3d6e;
   color: #0d0d10;
 }

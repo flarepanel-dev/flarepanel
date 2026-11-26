@@ -69,7 +69,7 @@ export function ToolPage({
               </Link>
             ))}
             <a
-              className="group rounded-2xl border border-chart-indigo/40 bg-panel p-6 transition-colors hover:border-chart-indigo"
+              className="group rounded-2xl border border-chart-ember/40 bg-panel p-6 transition-colors hover:border-chart-ember"
               href={site.signUp}
             >
               <div className="flex items-center gap-2 font-semibold text-[18px] text-paper">

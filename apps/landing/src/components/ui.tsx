@@ -64,7 +64,7 @@ export function TextLink({
   const external = href.startsWith('http');
   return (
     <a
-      className="text-coral underline decoration-coral/40 underline-offset-[0.22em] transition-colors hover:decoration-coral"
+      className="text-flare underline decoration-flare/40 underline-offset-[0.22em] transition-colors hover:decoration-flare"
       href={href}
       rel={external ? 'noopener' : undefined}
     >
@@ -102,14 +102,16 @@ export function SectionHeading({
 export function Logo({ className = '' }: { className?: string }) {
   return (
     <span className={`flex items-center gap-2.5 ${className}`}>
-      <svg aria-hidden className="size-7 shrink-0" viewBox="0 0 48 48">
-        <rect fill="#FFFFFF" height="48" rx="12" width="48" />
-        <rect fill="#0D0D10" height="26" rx="3" width="6" x="12" y="11" />
-        <rect fill="#0D0D10" height="6" rx="3" width="16" x="20.5" y="11" />
-        <rect fill="#0D0D10" height="6" rx="3" width="10.5" x="20.5" y="21" />
-        <circle cx="23.5" cy="34" fill="#FF496B" r="3" />
-      </svg>
-      <span className="font-semibold text-[19px] tracking-[-0.02em]">
+      {/* The Photon mark, built by brand/scripts/build.ts. */}
+      <img
+        alt=""
+        aria-hidden
+        className="size-[30px] shrink-0"
+        height={30}
+        src="/mark.svg"
+        width={30}
+      />
+      <span className="font-semibold text-[19px] tracking-[-0.035em]">
         FlarePanel
       </span>
     </span>

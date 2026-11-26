@@ -641,24 +641,23 @@ export function getCountry(code?: string) {
   return countries[code as keyof typeof countries];
 }
 
-// FlarePanel brand chart palette first (coral, indigo, teal, amber, violet, sky,
-// lime, slate); see brand/README.md. Keep in sync with --chart-0..7 in styles.css.
-// Data series colours. Indigo leads: a chart should read as data, not as an
-// alert. Coral is FlarePanel's brand accent (links, live state), so it sits
-// late in the data palette; red means "down" (crimson), never a series.
+// Data series colours, the Photon palette (brand/README.md). Ember, the
+// logo's lit panel, leads; Sky is its complement for a second series and
+// Spark third. Flare (links, focus) sits late, and "down" is its own red,
+// never a series. Keep in sync with --chart-0..12 in apps/start styles.css.
 export const chartColors = [
-  { main: '#6B79EA', translucent: 'rgba(107, 121, 234, 0.1)' },
-  { main: '#08B6AF', translucent: 'rgba(8, 182, 175, 0.1)' },
-  { main: '#E9AB2B', translucent: 'rgba(233, 171, 43, 0.1)' },
-  { main: '#A064DB', translucent: 'rgba(160, 100, 219, 0.1)' },
+  { main: '#FF6A4D', translucent: 'rgba(255, 106, 77, 0.1)' },
   { main: '#4CB0E5', translucent: 'rgba(76, 176, 229, 0.1)' },
+  { main: '#FFB547', translucent: 'rgba(255, 181, 71, 0.1)' },
+  { main: '#08B6AF', translucent: 'rgba(8, 182, 175, 0.1)' },
+  { main: '#A064DB', translucent: 'rgba(160, 100, 219, 0.1)' },
   { main: '#83C758', translucent: 'rgba(131, 199, 88, 0.1)' },
   { main: '#A1A1A5', translucent: 'rgba(161, 161, 165, 0.1)' },
-  { main: '#3ba974', translucent: 'rgba(59, 169, 116, 0.1)' },
-  { main: '#FF496B', translucent: 'rgba(255, 73, 107, 0.1)' },
+  { main: '#FF3D6E', translucent: 'rgba(255, 61, 110, 0.1)' },
+  { main: '#5B8CFF', translucent: 'rgba(91, 140, 255, 0.1)' },
   { main: '#cb80dc', translucent: 'rgba(203, 128, 220, 0.1)' },
   { main: '#5cb7af', translucent: 'rgba(92, 183, 175, 0.1)' },
-  { main: '#7856ff', translucent: 'rgba(120, 86, 255, 0.1)' },
+  { main: '#3ba974', translucent: 'rgba(59, 169, 116, 0.1)' },
   { main: '#febbb2', translucent: 'rgba(254, 187, 178, 0.1)' },
 ];
 

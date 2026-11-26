@@ -143,13 +143,14 @@ function Sidebar({
   return (
     <div className="hidden w-[212px] shrink-0 flex-col border-app-line border-r bg-app-card md:flex">
       <div className="flex items-center gap-2 p-2.5">
-        <svg aria-hidden className="size-[30px] shrink-0" viewBox="0 0 48 48">
-          <rect fill="#FFFFFF" height="48" rx="11" width="48" />
-          <rect fill="#0D0D10" height="26" rx="3" width="6" x="12" y="11" />
-          <rect fill="#0D0D10" height="6" rx="3" width="16" x="20.5" y="11" />
-          <rect fill="#0D0D10" height="6" rx="3" width="10.5" x="20.5" y="21" />
-          <circle cx="23.5" cy="34" fill="#FF496B" r="3" />
-        </svg>
+        <img
+          alt=""
+          aria-hidden
+          className="size-[30px] shrink-0"
+          height={30}
+          src="/mark.svg"
+          width={30}
+        />
         <div className="flex h-[30px] min-w-0 flex-1 items-center gap-2 rounded-md border border-app-line px-2 text-[12.5px] text-app-text">
           <Building2
             className="size-3.5 shrink-0 text-app-muted"

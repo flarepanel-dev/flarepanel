@@ -15,6 +15,7 @@ import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
 import { LockIcon } from 'lucide-react';
 import appCss from '../styles.css?url';
 import type { ConfigResonse } from './api/config';
+import { BrandDefs } from '@/components/brand-defs';
 import { EmptyState } from '@/components/empty-state';
 import { FeedbackWidgetScripts } from '@/components/feedback-widget-scripts';
 import { FullPageErrorState } from '@/components/full-page-error-state';
@@ -68,7 +69,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         href: appCss,
       },
       { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
-      { rel: 'icon', href: '/logo.svg', type: 'image/svg+xml' },
+      { rel: 'icon', href: '/icon.svg', type: 'image/svg+xml' },
       { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
       { rel: 'manifest', href: '/manifest.json' },
     ],
@@ -160,6 +161,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="grainy min-h-screen bg-def-100 font-sans text-sm antialiased">
+        <BrandDefs />
         <OpIdentify />
         <Providers>{children}</Providers>
         <ThemeScriptOnce />

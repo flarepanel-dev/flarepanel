@@ -69,7 +69,7 @@ export function LegalPage({
           <article className="legal max-w-[72ch]">
             {LEGAL_DRAFT ? (
               <p
-                className="mb-8 rounded-xl border border-[#e9ab2b]/40 bg-[#e9ab2b]/10 px-4 py-3 text-[14.5px] text-soft"
+                className="mb-8 rounded-xl border border-[#ffb547]/40 bg-[#ffb547]/10 px-4 py-3 text-[14.5px] text-soft"
                 role="note"
               >
                 <strong className="text-paper">Draft.</strong> This text has not

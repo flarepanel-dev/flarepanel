@@ -40,7 +40,7 @@ export function PlanPicker() {
             How many events do you track a month?
           </h2>
           {plan.popular ? (
-            <span className="hidden rounded-full border border-chart-indigo/40 bg-chart-indigo/10 px-2.5 py-0.5 text-[#aab3f5] text-[12px] sm:inline">
+            <span className="hidden rounded-full border border-chart-ember/40 bg-chart-ember/10 px-2.5 py-0.5 text-[#ff9e8a] text-[12px] sm:inline">
               Most popular
             </span>
           ) : null}
@@ -91,7 +91,7 @@ export function PlanPicker() {
             <li className="flex items-start gap-2.5" key={item}>
               <Check
                 aria-hidden
-                className="mt-0.5 size-4 shrink-0 text-chart-indigo"
+                className="mt-0.5 size-4 shrink-0 text-chart-ember"
                 strokeWidth={2.25}
               />
               {item}

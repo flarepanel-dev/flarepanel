@@ -63,8 +63,8 @@ export function Toolbar({ live }: { live: number }) {
       <div className="ml-auto flex shrink-0 items-center gap-2 max-sm:hidden">
         <div className={`${control} tabular gap-2 font-mono`}>
           <span className="relative flex size-2">
-            <span className="absolute inset-0 animate-ping rounded-full bg-coral opacity-60 motion-reduce:hidden" />
-            <span className="relative size-2 rounded-full bg-coral" />
+            <span className="absolute inset-0 animate-ping rounded-full bg-spark opacity-60 motion-reduce:hidden" />
+            <span className="relative size-2 rounded-full bg-spark" />
           </span>
           {live}
         </div>
@@ -98,7 +98,7 @@ function MiniBars({ values, live }: { values: number[]; live: boolean }) {
     <div className="flex h-[34px] items-end gap-[2px]">
       {values.map((v, i) => (
         <span
-          className={`flex-1 rounded-t-[1px] bg-chart-indigo transition-[height] duration-700 ease-out-expo ${
+          className={`flex-1 rounded-t-[1px] bg-data transition-[height] duration-700 ease-out-expo ${
             i === values.length - 1 && live ? 'opacity-100' : 'opacity-85'
           }`}
           // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length series
@@ -131,7 +131,7 @@ export function KpiGrid({
             className={`relative flex flex-col gap-0.5 border-app-line bg-app-bg px-3 pt-2.5 pb-0 ${
               i % 2 === 0 ? 'border-r' : 'lg:border-r'
             } ${i < 6 ? 'border-b lg:[&:nth-child(n+5)]:border-b-0' : ''} ${
-              i === 0 ? 'shadow-[inset_2px_0_0_#6b79ea]' : ''
+              i === 0 ? 'shadow-[inset_2px_0_0_#ff6a4d]' : ''
             } ${i >= 4 ? 'max-sm:hidden' : ''} ${i === 2 || i === 3 ? 'max-sm:border-b-0' : ''}`}
             key={kpi.label}
           >
@@ -161,9 +161,9 @@ export function KpiGrid({
           <span className="font-medium text-[10px] text-app-muted uppercase tracking-[0.5px]">
             Live · 30 min
           </span>
-          <span className="size-2 rounded-full bg-coral" />
+          <span className="size-2 rounded-full bg-spark" />
         </div>
-        <span className="tabular font-mono font-semibold text-[19px] text-coral tracking-[-0.5px]">
+        <span className="tabular font-mono font-semibold text-[19px] text-spark tracking-[-0.5px]">
           {live}
         </span>
         <span className="text-[11px] text-app-muted">Last 30 min</span>
@@ -215,7 +215,7 @@ export function VisitorsChart({ todayBump }: { todayBump: number }) {
         </span>
         <span className="flex items-center gap-3 text-[11px] text-app-muted">
           <span className="flex items-center gap-1.5">
-            <span className="h-[2px] w-3 rounded bg-chart-indigo" />
+            <span className="h-[2px] w-3 rounded bg-chart-ember" />
             This period
           </span>
           <span className="flex items-center gap-1.5">
@@ -265,8 +265,8 @@ export function VisitorsChart({ todayBump }: { todayBump: number }) {
           >
             <defs>
               <linearGradient id="ov-area" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0" stopColor="#6b79ea" stopOpacity="0.3" />
-                <stop offset="1" stopColor="#6b79ea" stopOpacity="0" />
+                <stop offset="0" stopColor="#ff6a4d" stopOpacity="0.3" />
+                <stop offset="1" stopColor="#ff6a4d" stopOpacity="0" />
               </linearGradient>
             </defs>
             {ticks.map((t) => (
@@ -292,14 +292,14 @@ export function VisitorsChart({ todayBump }: { todayBump: number }) {
             <path
               d={solid}
               fill="none"
-              stroke="#6b79ea"
+              stroke="#ff6a4d"
               strokeWidth="2"
               vectorEffect="non-scaling-stroke"
             />
             <path
               d={tail}
               fill="none"
-              stroke="#6b79ea"
+              stroke="#ff6a4d"
               strokeDasharray="4 4"
               strokeWidth="2"
               vectorEffect="non-scaling-stroke"
@@ -337,7 +337,7 @@ export function VisitorsChart({ todayBump }: { todayBump: number }) {
               </div>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
-                  <span className="size-1.5 rounded-full bg-chart-indigo" />
+                  <span className="size-1.5 rounded-full bg-chart-ember" />
                   Visitors
                 </span>
                 <span className="tabular font-mono font-semibold">
