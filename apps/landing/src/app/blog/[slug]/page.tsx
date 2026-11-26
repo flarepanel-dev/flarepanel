@@ -135,7 +135,6 @@ export default async function BlogPost({
           ) : null}
         </Container>
         <script
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD from our own post data
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
           type="application/ld+json"
         />

@@ -3,9 +3,12 @@ import type { ReactNode } from 'react';
 import { Container, TextLink } from './ui';
 import { site } from '@/lib/site';
 
-const QUESTIONS: Array<{ q: string; a: ReactNode }> = [
+// `text` is the plain answer for search engines and AI answers (FAQPage
+// structured data); keep it in step with `a`.
+const QUESTIONS: Array<{ q: string; a: ReactNode; text?: string }> = [
   {
     q: 'Can I use FlarePanel today?',
+    text: 'Yes, in early access. Create an account, add the script or an SDK, and events show up in the dashboard within seconds. Early access is free while billing is being set up. You can also self-host it on your own Cloudflare account.',
     a: (
       <>
         Yes, in early access. Create an account, add the script or an SDK, and
@@ -20,6 +23,7 @@ const QUESTIONS: Array<{ q: string; a: ReactNode }> = [
   },
   {
     q: 'How is FlarePanel related to OpenPanel?',
+    text: "FlarePanel is an independent, open-source fork of OpenPanel, rebuilt to run on Cloudflare. It keeps OpenPanel's tracking protocol so its SDKs work. FlarePanel is not affiliated with or endorsed by OpenPanel.",
     a: (
       <>
         FlarePanel is an independent, open-source fork of{' '}
@@ -32,6 +36,7 @@ const QUESTIONS: Array<{ q: string; a: ReactNode }> = [
   },
   {
     q: 'Do my existing OpenPanel SDKs work?',
+    text: "Yes. Set apiUrl to https://api.flarepanel.dev and use your FlarePanel client ID. FlarePanel's own SDK packages are on npm under @flarepanel, with the same API.",
     a: (
       <>
         Yes. Set <code className="text-soft">apiUrl</code> to{' '}
@@ -55,6 +60,7 @@ const QUESTIONS: Array<{ q: string; a: ReactNode }> = [
   },
   {
     q: 'What is the license?',
+    text: 'The platform is AGPL-3.0 and the SDKs are MIT.',
     a: (
       <>
         The platform is <TextLink href={site.license}>AGPL-3.0</TextLink> and
@@ -63,6 +69,20 @@ const QUESTIONS: Array<{ q: string; a: ReactNode }> = [
     ),
   },
 ];
+
+/** FAQPage structured data, so answers can be quoted with their source. */
+const FAQ_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: QUESTIONS.map(({ q, a, text }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: text ?? (typeof a === 'string' ? a : ''),
+    },
+  })),
+};
 
 export function Faq() {
   return (
@@ -102,6 +122,10 @@ export function Faq() {
           ))}
         </div>
       </Container>
+      <script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON_LD) }}
+        type="application/ld+json"
+      />
     </section>
   );
 }

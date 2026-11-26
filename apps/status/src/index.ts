@@ -483,6 +483,27 @@ export default {
     if (path === '/healthz') {
       return json({ ok: true });
     }
+    // Public status pages: search engines and AI crawlers are welcome.
+    if (path === '/robots.txt') {
+      return respond(
+        'User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: https://status.flarepanel.dev/sitemap.xml\n',
+        'text/plain; charset=utf-8',
+        { ttl: 3600 }
+      );
+    }
+    if (path === '/sitemap.xml') {
+      const urls = ['/', '/history']
+        .map(
+          (p) =>
+            `  <url><loc>https://status.flarepanel.dev${p === '/' ? '/' : p}</loc></url>`
+        )
+        .join('\n');
+      return respond(
+        `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
+        'application/xml; charset=utf-8',
+        { ttl: 3600 }
+      );
+    }
 
     return cached(request, ctx, async () => {
       const now = Date.now();
