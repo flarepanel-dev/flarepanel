@@ -22,6 +22,8 @@ const HOUR = 60 * 60 * 1000;
 export const ATTEMPTS_PER_HOUR = 5;
 /** A pending address gets at most one confirmation email per hour. */
 export const RESEND_AFTER_MS = HOUR;
+/** Confirmation emails one unconfirmed address can ever receive. */
+export const MAX_CONFIRMATIONS = 3;
 /** Upper bound of emails one incident update sends. */
 export const MAX_RECIPIENTS = 1000;
 
@@ -130,13 +132,14 @@ export async function subscribe(
   const monitorsJson = monitors.length ? JSON.stringify(monitors) : null;
   const existing = await db
     .prepare(
-      'SELECT id, confirmed_at, last_sent_at FROM subscribers WHERE email = ?'
+      'SELECT id, confirmed_at, last_sent_at, sends FROM subscribers WHERE email = ?'
     )
     .bind(address)
     .first<{
       id: string;
       confirmed_at: number | null;
       last_sent_at: number | null;
+      sends: number;
     }>();
 
   if (existing?.confirmed_at) {
@@ -146,20 +149,25 @@ export async function subscribe(
   if (existing?.last_sent_at && now - existing.last_sent_at < RESEND_AFTER_MS) {
     return 'sent';
   }
+  // However many addresses an attacker rotates through, one inbox gets at
+  // most this many confirmation emails.
+  if ((existing?.sends ?? 0) >= MAX_CONFIRMATIONS) {
+    return 'sent';
+  }
 
   const token = newToken();
   const tokenHash = await sha256(token);
   if (existing) {
     await db
       .prepare(
-        'UPDATE subscribers SET token_hash = ?, monitors = ?, last_sent_at = ? WHERE id = ?'
+        'UPDATE subscribers SET token_hash = ?, monitors = ?, last_sent_at = ?, sends = sends + 1 WHERE id = ?'
       )
       .bind(tokenHash, monitorsJson, now, existing.id)
       .run();
   } else {
     await db
       .prepare(
-        'INSERT INTO subscribers (id, email, token_hash, monitors, created_at, last_sent_at) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO subscribers (id, email, token_hash, monitors, created_at, last_sent_at, sends) VALUES (?, ?, ?, ?, ?, ?, 1)'
       )
       .bind(crypto.randomUUID(), address, tokenHash, monitorsJson, now, now)
       .run();

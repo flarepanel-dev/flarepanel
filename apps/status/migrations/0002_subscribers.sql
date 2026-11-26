@@ -7,7 +7,8 @@ CREATE TABLE subscribers (
   monitors TEXT,                -- JSON array of monitor ids; NULL = all
   created_at INTEGER NOT NULL,
   confirmed_at INTEGER,
-  last_sent_at INTEGER          -- last confirmation email, for resend limits
+  last_sent_at INTEGER,         -- last confirmation email, for resend limits
+  sends INTEGER NOT NULL DEFAULT 0 -- confirmation emails sent; capped
 );
 CREATE INDEX subscribers_confirmed ON subscribers (confirmed_at);
 

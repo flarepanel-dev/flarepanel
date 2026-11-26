@@ -463,6 +463,26 @@ ${email}
   });
 }
 
+/**
+ * A page whose action needs a button press. Mail security scanners open every
+ * link in an email; a link that acted on GET would let them confirm sign-ups
+ * someone else made, or unsubscribe people.
+ */
+export function renderActionPage(
+  title: string,
+  text: string,
+  button: string,
+  action: string
+): string {
+  return layout({
+    title: `${title} · FlarePanel Status`,
+    description: text,
+    path: '/subscribe',
+    body: `<div class="card msg"><h1>${escape(title)}</h1><p>${escape(text)}</p><form method="post" action="${escape(action)}" style="margin-top:18px"><button class="primary" type="submit">${escape(button)}</button></form></div>`,
+    current: 'updates',
+  });
+}
+
 export function renderMessage(title: string, text: string): string {
   return layout({
     title: `${title} · FlarePanel Status`,

@@ -276,7 +276,7 @@ export const COMPARISONS: Comparison[] = [
     chooseUs: [
       'You want analytics without cookies.',
       'You want the code open and the option to run it in your own Cloudflare account.',
-      'You want reports further back than 14 months and session replay in the same tool.',
+      'You want reports further back than the 14 months the free version keeps.',
     ],
     chooseThem: [
       'You need it free at any volume.',

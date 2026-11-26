@@ -9,6 +9,7 @@ import {
 } from './incidents';
 import { MONITORS, monitorById, runCheck } from './monitors';
 import {
+  renderActionPage,
   renderFeed,
   renderHistoryPage,
   renderIncidentPage,
@@ -328,7 +329,20 @@ async function updates(
       503
     );
   }
+  // Links in emails only show a button; the button's POST does the work.
+  const here = `${url.pathname}${url.search}`;
   if (path === '/subscribe/confirm') {
+    if (request.method !== 'POST') {
+      return respond(
+        renderActionPage(
+          'Confirm your subscription',
+          'Press the button to start getting FlarePanel status emails.',
+          'Confirm subscription',
+          here
+        ),
+        'text/html; charset=utf-8'
+      );
+    }
     const ok = await confirm(env.DB, url.searchParams.get('token') ?? '', now);
     return ok
       ? page(
@@ -342,6 +356,19 @@ async function updates(
         );
   }
   if (path === '/unsubscribe') {
+    if (request.method !== 'POST') {
+      return respond(
+        renderActionPage(
+          'Unsubscribe',
+          'Press the button to stop getting FlarePanel status emails.',
+          'Unsubscribe',
+          here
+        ),
+        'text/html; charset=utf-8'
+      );
+    }
+    // Our button and a mail client's one-click unsubscribe (RFC 8058) both
+    // POST here with the signed id and token in the query.
     const key = signingKey(env);
     const ok = key
       ? await unsubscribe(
@@ -351,10 +378,6 @@ async function updates(
           url.searchParams.get('token') ?? ''
         )
       : false;
-    if (request.method === 'POST') {
-      // One-click unsubscribe from the mail client (RFC 8058).
-      return new Response(null, { status: ok ? 200 : 400 });
-    }
     return ok
       ? page(
           'You are unsubscribed',
