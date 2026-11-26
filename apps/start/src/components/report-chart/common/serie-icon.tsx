@@ -256,7 +256,8 @@ const FLAG_CODES = new Set([
 ]);
 
 function faviconPath(url: string): string {
-  return `/misc/favicon?url=${encodeURIComponent(url)}`;
+  // `v` changes when cached icons must be fetched again (brand change).
+  return `/misc/favicon?url=${encodeURIComponent(url)}&v=2`;
 }
 
 function resolveIcon(name: string): ResolvedIcon {

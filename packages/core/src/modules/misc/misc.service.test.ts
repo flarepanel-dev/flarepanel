@@ -36,4 +36,37 @@ describe('getFavicon', () => {
     expect(result.status).toBe(404);
     expect(fetchProviderIcon).not.toHaveBeenCalled();
   });
+
+  test("answers FlarePanel's own sites with the current brand icon", async () => {
+    const fetchProviderIcon = spyOn(providers, 'fetchProviderIcon');
+
+    for (const url of [
+      'https://flarepanel.dev',
+      'https://docs.flarepanel.dev/x',
+    ]) {
+      const result = await getFavicon(testCoreConfig(), url);
+      expect(result.status).toBe(200);
+      if (result.status === 200) {
+        // PNG signature
+        expect([...result.buffer.subarray(0, 4)]).toEqual([
+          0x89, 0x50, 0x4e, 0x47,
+        ]);
+      }
+    }
+    expect(fetchProviderIcon).not.toHaveBeenCalled();
+  });
+
+  test('a look-alike domain is not treated as ours', async () => {
+    const fetchProviderIcon = spyOn(
+      providers,
+      'fetchProviderIcon'
+    ).mockResolvedValue(ICON);
+
+    await getFavicon(
+      testCoreConfig(),
+      `https://${crypto.randomUUID()}-flarepanel.dev`
+    );
+
+    expect(fetchProviderIcon).toHaveBeenCalled();
+  });
 });

@@ -229,7 +229,7 @@ export function GscCannibalization({
                               (e.target as HTMLImageElement).style.display =
                                 'none';
                             }}
-                            src={`${apiUrl}/misc/favicon?url=${origin}`}
+                            src={`${apiUrl}/misc/favicon?url=${origin}&v=2`}
                           />
                           <span className="min-w-0 flex-1 truncate text-xs tabular-nums">
                             {path || page.page}

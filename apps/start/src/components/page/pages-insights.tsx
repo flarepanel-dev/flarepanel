@@ -335,7 +335,7 @@ export function PagesInsights({ projectId }: PagesInsightsProps) {
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
                     }}
-                    src={`${apiUrl}/misc/favicon?url=${insight.origin}`}
+                    src={`${apiUrl}/misc/favicon?url=${insight.origin}&v=2`}
                   />
                   <span className="truncate font-medium text-xs tabular-nums">
                     {insight.path || insight.page}

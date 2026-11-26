@@ -51,7 +51,7 @@ export function useColumns({
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
-                  src={`${apiUrl}/misc/favicon?url=${encodeURIComponent(page.origin)}`}
+                  src={`${apiUrl}/misc/favicon?url=${encodeURIComponent(page.origin)}&v=2`}
                 />
               ) : (
                 <div className="size-4 shrink-0" />
