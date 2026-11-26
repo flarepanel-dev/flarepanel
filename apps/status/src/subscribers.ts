@@ -1,6 +1,13 @@
-// Email updates for status.flarepanel.dev: double opt-in subscriptions, per
-// service if wanted, and one email per incident update to confirmed
-// subscribers. Every email carries a one-click unsubscribe link.
+// Email updates for status.flarepanel.dev.
+//
+// Subscribing: double opt-in (the emailed link opens a page whose button
+// confirms), optional per-service choice, and limits so the form cannot be
+// used against someone's inbox or our shared email allowance.
+//
+// Sending: incident changes are queued in `email_outbox` (one row per
+// subscriber, covering every incident of that round) and the minute cron
+// sends a bounded batch, so a large list is never cut off by a request's
+// time limit, and a flapping service does not mail everyone every few minutes.
 
 import { STATUS_LABEL } from './incidents';
 import { monitorById } from './monitors';
@@ -17,15 +24,25 @@ export interface EmailSender {
   }): Promise<unknown>;
 }
 
-const HOUR = 60 * 60 * 1000;
-/** Subscribe attempts allowed per client address and hour. */
+const MINUTE = 60 * 1000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+/** Subscribe attempts per client network (IPv4 address or IPv6 /64) and hour. */
 export const ATTEMPTS_PER_HOUR = 5;
-/** A pending address gets at most one confirmation email per hour. */
+/** A pending address gets at most one confirmation email per hour… */
 export const RESEND_AFTER_MS = HOUR;
-/** Confirmation emails one unconfirmed address can ever receive. */
+/** …and at most this many in total, however many networks ask. */
 export const MAX_CONFIRMATIONS = 3;
-/** Upper bound of emails one incident update sends. */
-export const MAX_RECIPIENTS = 1000;
+/** Confirmation emails across all addresses, so the allowance stays safe. */
+export const CONFIRMATIONS_PER_HOUR = 30;
+export const CONFIRMATIONS_PER_DAY = 150;
+/** An automatic incident on a service that recovered this recently is not mailed. */
+export const FLAP_COOLDOWN_MS = HOUR;
+/** Emails the cron sends per run (one run a minute). */
+export const OUTBOX_BATCH = 100;
+const OUTBOX_MAX_ATTEMPTS = 5;
+const SUBSCRIBER_PAGE = 500;
 
 const EMAIL_PATTERN = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']{2,}$/;
 
@@ -35,6 +52,30 @@ export function normalizeEmail(raw: unknown): string | null {
   }
   const email = raw.trim().toLowerCase();
   return email.length <= 254 && EMAIL_PATTERN.test(email) ? email : null;
+}
+
+/**
+ * The network a client address belongs to for rate limits: the address for
+ * IPv4, its /64 for IPv6 (one IPv6 customer can use billions of addresses).
+ */
+export function clientNetwork(ip: string): string {
+  if (!ip.includes(':')) {
+    return ip;
+  }
+  const [head = '', tail = ''] = ip.split('::');
+  const left = head ? head.split(':') : [];
+  const right = tail ? tail.split(':') : [];
+  const groups = ip.includes('::')
+    ? [
+        ...left,
+        ...new Array(8 - left.length - right.length).fill('0'),
+        ...right,
+      ]
+    : left;
+  return `${groups
+    .slice(0, 4)
+    .map((g) => g.toLowerCase().replace(/^0+(?=.)/, ''))
+    .join(':')}::/64`;
 }
 
 async function sha256(value: string): Promise<string> {
@@ -87,114 +128,150 @@ function newToken(): string {
   return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+export interface MailDeps {
+  email: EmailSender;
+  /** Secret for unsubscribe links and the rate-limit keys. */
+  key: string;
+  site: string;
+  from: string;
+}
+
 export type SubscribeResult =
   | 'sent'
   | 'invalid'
   | 'rate-limited'
+  | 'busy'
   | 'unavailable';
 
 /**
- * Starts a subscription and emails the confirmation link. The answer never
- * tells whether an address is already subscribed ("sent" either way), so the
- * form cannot be used to look up subscribers.
+ * Starts a subscription and queues the confirmation email on `defer`, so
+ * every outcome answers in about the same time. The answer never tells
+ * whether an address is already subscribed ("sent" either way).
  */
 export async function subscribe(
   db: D1Database,
-  email: EmailSender | undefined,
+  mail: MailDeps | undefined,
   input: { email: unknown; monitors: string[]; clientIp: string },
-  site: string,
-  from: string,
-  now: number
+  now: number,
+  defer: (work: Promise<unknown>) => void
 ): Promise<SubscribeResult> {
-  if (!email) {
+  if (!mail) {
     return 'unavailable';
   }
   const address = normalizeEmail(input.email);
   if (!address) {
     return 'invalid';
   }
-  const ipHash = await sha256(`status-subscribe:${input.clientIp}`);
+  // Keyed, so a stored value cannot be turned back into an address.
+  const network = await hmac(
+    mail.key,
+    `subscribe:${clientNetwork(input.clientIp)}`
+  );
   const attempts = await db
     .prepare(
       'SELECT COUNT(*) AS n FROM subscribe_attempts WHERE ip_hash = ? AND at > ?'
     )
-    .bind(ipHash, now - HOUR)
+    .bind(network, now - HOUR)
     .first<{ n: number }>();
   if ((attempts?.n ?? 0) >= ATTEMPTS_PER_HOUR) {
     return 'rate-limited';
   }
   await db
     .prepare('INSERT INTO subscribe_attempts (ip_hash, at) VALUES (?, ?)')
-    .bind(ipHash, now)
+    .bind(network, now)
     .run();
+
+  const recent = await db
+    .prepare(
+      `SELECT
+         SUM(last_sent_at > ?1) AS hour,
+         SUM(last_sent_at > ?2) AS day
+       FROM subscribers WHERE confirmed_at IS NULL`
+    )
+    .bind(now - HOUR, now - DAY)
+    .first<{ hour: number | null; day: number | null }>();
+  if (
+    (recent?.hour ?? 0) >= CONFIRMATIONS_PER_HOUR ||
+    (recent?.day ?? 0) >= CONFIRMATIONS_PER_DAY
+  ) {
+    return 'busy';
+  }
 
   const monitors = input.monitors.filter((id) => monitorById.has(id));
   const monitorsJson = monitors.length ? JSON.stringify(monitors) : null;
-  const existing = await db
-    .prepare(
-      'SELECT id, confirmed_at, last_sent_at, sends FROM subscribers WHERE email = ?'
-    )
-    .bind(address)
-    .first<{
-      id: string;
-      confirmed_at: number | null;
-      last_sent_at: number | null;
-      sends: number;
-    }>();
-
-  if (existing?.confirmed_at) {
-    // Already confirmed: nothing to send. Same answer as a new address.
-    return 'sent';
-  }
-  if (existing?.last_sent_at && now - existing.last_sent_at < RESEND_AFTER_MS) {
-    return 'sent';
-  }
-  // However many addresses an attacker rotates through, one inbox gets at
-  // most this many confirmation emails.
-  if ((existing?.sends ?? 0) >= MAX_CONFIRMATIONS) {
-    return 'sent';
-  }
-
   const token = newToken();
   const tokenHash = await sha256(token);
-  if (existing) {
+
+  const inserted = await db
+    .prepare(
+      `INSERT INTO subscribers (id, email, token_hash, monitors, created_at, last_sent_at, sends)
+       VALUES (?, ?, ?, ?, ?, ?, 1) ON CONFLICT (email) DO NOTHING`
+    )
+    .bind(crypto.randomUUID(), address, tokenHash, monitorsJson, now, now)
+    .run();
+
+  let scope = monitors;
+  if (inserted.meta.changes === 0) {
+    const existing = await db
+      .prepare(
+        'SELECT id, monitors, confirmed_at, last_sent_at, sends FROM subscribers WHERE email = ?'
+      )
+      .bind(address)
+      .first<{
+        id: string;
+        monitors: string | null;
+        confirmed_at: number | null;
+        last_sent_at: number | null;
+        sends: number;
+      }>();
+    if (
+      !existing ||
+      existing.confirmed_at ||
+      (existing.last_sent_at &&
+        now - existing.last_sent_at < RESEND_AFTER_MS) ||
+      existing.sends >= MAX_CONFIRMATIONS
+    ) {
+      return 'sent';
+    }
+    // A resend keeps the services the address first asked for: someone else
+    // re-submitting it cannot change them.
     await db
       .prepare(
-        'UPDATE subscribers SET token_hash = ?, monitors = ?, last_sent_at = ?, sends = sends + 1 WHERE id = ?'
+        'UPDATE subscribers SET token_hash = ?, last_sent_at = ?, sends = sends + 1 WHERE id = ?'
       )
-      .bind(tokenHash, monitorsJson, now, existing.id)
+      .bind(tokenHash, now, existing.id)
       .run();
-  } else {
-    await db
-      .prepare(
-        'INSERT INTO subscribers (id, email, token_hash, monitors, created_at, last_sent_at, sends) VALUES (?, ?, ?, ?, ?, ?, 1)'
-      )
-      .bind(crypto.randomUUID(), address, tokenHash, monitorsJson, now, now)
-      .run();
+    scope = existing.monitors
+      ? (JSON.parse(existing.monitors) as string[])
+      : [];
   }
 
-  const confirmUrl = `${site}/subscribe/confirm?token=${token}`;
-  const scope = monitors.length
-    ? monitors.map((id) => monitorById.get(id)?.name ?? id).join(', ')
+  const confirmUrl = `${mail.site}/subscribe/confirm?token=${token}`;
+  const scopeText = scope.length
+    ? scope.map((id) => monitorById.get(id)?.name ?? id).join(', ')
     : 'all FlarePanel services';
-  await email.send({
-    from,
-    to: address,
-    subject: 'Confirm your FlarePanel status updates',
-    text: [
-      `Confirm that you want emails when an incident affects ${scope}:`,
-      '',
-      confirmUrl,
-      '',
-      'If you did not ask for this, ignore this email and nothing happens.',
-    ].join('\n'),
-    html: emailHtml(
-      'Confirm your status updates',
-      `<p>Confirm that you want an email when an incident or maintenance affects <strong>${escapeHtml(scope)}</strong>.</p>
+  defer(
+    mail.email
+      .send({
+        from: mail.from,
+        to: address,
+        subject: 'Confirm your FlarePanel status updates',
+        text: [
+          `Confirm that you want emails when an incident affects ${scopeText}:`,
+          '',
+          confirmUrl,
+          '',
+          'If you did not ask for this, ignore this email and nothing happens.',
+        ].join('\n'),
+        html: emailHtml(
+          'Confirm your status updates',
+          `<p>Confirm that you want an email when an incident or maintenance affects <strong>${escapeHtml(scopeText)}</strong>.</p>
 <p><a href="${confirmUrl}" style="display:inline-block;background:#f9fafe;color:#0d0d10;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:600">Confirm subscription</a></p>
 <p style="color:#727276">If you did not ask for this, ignore this email and nothing happens.</p>`
-    ),
-  });
+        ),
+      })
+      .catch((error) => console.error('Confirmation email failed', error))
+  );
   return 'sent';
 }
 
@@ -215,96 +292,271 @@ export async function confirm(
   return result.meta.changes > 0;
 }
 
+export type UnsubscribeResult = 'removed' | 'not-found' | 'invalid';
+
 export async function unsubscribe(
   db: D1Database,
   key: string,
   subscriberId: string,
   token: string
-): Promise<boolean> {
+): Promise<UnsubscribeResult> {
   if (!(/^[0-9a-f-]{36}$/.test(subscriberId) && /^[0-9a-f]{64}$/.test(token))) {
-    return false;
+    return 'invalid';
   }
   if (!sameText(await unsubscribeToken(key, subscriberId), token)) {
-    return false;
+    return 'invalid';
   }
   const result = await db
     .prepare('DELETE FROM subscribers WHERE id = ?')
     .bind(subscriberId)
     .run();
-  return result.meta.changes > 0;
+  return result.meta.changes > 0 ? 'removed' : 'not-found';
 }
 
-export type UpdateKind = 'opened' | 'updated' | 'resolved';
+interface IncidentRow {
+  id: string;
+  auto: number;
+  status: string;
+  monitors: string;
+  notified: number;
+  resolved_at: number | null;
+}
 
-/** Emails confirmed subscribers about an incident update. */
-export async function notifySubscribers(
+/**
+ * Decides which of these changed incidents subscribers hear about, and
+ * queues one email per subscriber covering them. Automatic incidents on a
+ * service that recovered within FLAP_COOLDOWN_MS are not mailed, and their
+ * resolution is only mailed if their opening was.
+ */
+export async function queueNotifications(
   db: D1Database,
-  email: EmailSender | undefined,
-  key: string | undefined,
-  incident: Incident,
-  site: string,
-  from: string
+  incidentIds: string[],
+  now: number
 ): Promise<number> {
-  if (!(email && key)) {
+  const ids = [...new Set(incidentIds)];
+  if (ids.length === 0) {
     return 0;
   }
   const rows = await db
     .prepare(
-      'SELECT id, email, monitors FROM subscribers WHERE confirmed_at IS NOT NULL LIMIT ?'
+      `SELECT id, auto, status, monitors, notified, resolved_at FROM incidents
+       WHERE id IN (${ids.map(() => '?').join(',')})`
     )
-    .bind(MAX_RECIPIENTS)
-    .all<{ id: string; email: string; monitors: string | null }>();
-  const recipients = rows.results.filter((row) => {
-    if (!row.monitors || incident.monitors.length === 0) {
-      return true;
-    }
-    const wanted = JSON.parse(row.monitors) as string[];
-    return incident.monitors.some((m) => wanted.includes(m));
-  });
+    .bind(...ids)
+    .all<IncidentRow>();
 
-  const latest = incident.updates[0];
-  const status = STATUS_LABEL[incident.status];
-  const url = `${site}/incidents/${encodeURIComponent(incident.id)}`;
-  const affected = incident.monitors
-    .map((id) => monitorById.get(id)?.name ?? id)
-    .join(', ');
+  const announce: { id: string; monitors: string[] }[] = [];
+  for (const row of rows.results) {
+    const monitors = JSON.parse(row.monitors) as string[];
+    const closed = row.status === 'resolved' || row.status === 'completed';
+    if (row.auto === 1) {
+      if (closed && row.notified !== 1) {
+        continue;
+      }
+      if (!closed && row.notified !== 1) {
+        const flapped = await db
+          .prepare(
+            `SELECT 1 FROM incidents, json_each(incidents.monitors) m
+             WHERE incidents.auto = 1 AND incidents.id <> ?
+               AND incidents.resolved_at > ?
+               AND m.value IN (${monitors.map(() => '?').join(',') || "''"})
+             LIMIT 1`
+          )
+          .bind(row.id, now - FLAP_COOLDOWN_MS, ...monitors)
+          .first();
+        if (flapped) {
+          continue;
+        }
+      }
+    }
+    announce.push({ id: row.id, monitors });
+  }
+  if (announce.length === 0) {
+    return 0;
+  }
+  await db
+    .prepare(
+      `UPDATE incidents SET notified = 1 WHERE id IN (${announce.map(() => '?').join(',')})`
+    )
+    .bind(...announce.map((a) => a.id))
+    .run();
+
+  let queued = 0;
+  let after = '';
+  for (;;) {
+    const page = await db
+      .prepare(
+        `SELECT id, monitors FROM subscribers
+         WHERE confirmed_at IS NOT NULL AND id > ? ORDER BY id LIMIT ?`
+      )
+      .bind(after, SUBSCRIBER_PAGE)
+      .all<{ id: string; monitors: string | null }>();
+    if (page.results.length === 0) {
+      break;
+    }
+    const statements: D1PreparedStatement[] = [];
+    for (const subscriber of page.results) {
+      const wanted = subscriber.monitors
+        ? (JSON.parse(subscriber.monitors) as string[])
+        : null;
+      const relevant = announce.filter(
+        (a) =>
+          !wanted ||
+          a.monitors.length === 0 ||
+          a.monitors.some((m) => wanted.includes(m))
+      );
+      if (relevant.length > 0) {
+        statements.push(
+          db
+            .prepare(
+              'INSERT INTO email_outbox (subscriber_id, incident_ids, created_at) VALUES (?, ?, ?)'
+            )
+            .bind(subscriber.id, JSON.stringify(relevant.map((a) => a.id)), now)
+        );
+      }
+    }
+    if (statements.length > 0) {
+      await db.batch(statements);
+      queued += statements.length;
+    }
+    after = page.results.at(-1)?.id ?? after;
+    if (page.results.length < SUBSCRIBER_PAGE) {
+      break;
+    }
+  }
+  return queued;
+}
+
+/** Sends up to OUTBOX_BATCH queued emails; called by the minute cron. */
+export async function sendOutbox(
+  db: D1Database,
+  mail: MailDeps | undefined,
+  loadIncident: (id: string) => Promise<Incident | null>
+): Promise<number> {
+  if (!mail) {
+    return 0;
+  }
+  const rows = await db
+    .prepare(
+      `SELECT o.id, o.incident_ids, o.attempts, s.id AS subscriber_id, s.email
+       FROM email_outbox o LEFT JOIN subscribers s ON s.id = o.subscriber_id
+       ORDER BY o.id LIMIT ?`
+    )
+    .bind(OUTBOX_BATCH)
+    .all<{
+      id: number;
+      incident_ids: string;
+      attempts: number;
+      subscriber_id: string | null;
+      email: string | null;
+    }>();
+
+  const incidents = new Map<string, Incident | null>();
+  const incident = async (id: string) => {
+    if (!incidents.has(id)) {
+      incidents.set(id, await loadIncident(id));
+    }
+    return incidents.get(id) ?? null;
+  };
+
   let sent = 0;
-  for (const row of recipients) {
-    const token = await unsubscribeToken(key, row.id);
-    const unsubscribeUrl = `${site}/unsubscribe?id=${row.id}&token=${token}`;
+  for (const row of rows.results) {
+    const done = db
+      .prepare('DELETE FROM email_outbox WHERE id = ?')
+      .bind(row.id);
+    // Unsubscribed since it was queued: drop it.
+    if (!(row.subscriber_id && row.email)) {
+      await done.run();
+      continue;
+    }
+    const list = (
+      await Promise.all(
+        (JSON.parse(row.incident_ids) as string[]).map((id) => incident(id))
+      )
+    ).filter((i): i is Incident => i !== null);
+    if (list.length === 0) {
+      await done.run();
+      continue;
+    }
     try {
-      await email.send({
-        from,
+      const unsubscribeUrl = `${mail.site}/unsubscribe?id=${row.subscriber_id}&token=${await unsubscribeToken(mail.key, row.subscriber_id)}`;
+      await mail.email.send({
+        from: mail.from,
         to: row.email,
-        subject: `[${status}] ${incident.title}`,
         headers: {
           'List-Unsubscribe': `<${unsubscribeUrl}>`,
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
         },
-        text: [
-          `${incident.title}`,
-          `Status: ${status}${affected ? ` · Affects: ${affected}` : ''}`,
-          '',
-          latest?.message ?? '',
-          '',
-          `Details: ${url}`,
-          '',
-          `Stop these emails: ${unsubscribeUrl}`,
-        ].join('\n'),
-        html: emailHtml(
-          incident.title,
-          `<p style="color:#a1a1a5;margin:0 0 12px">${escapeHtml(status)}${affected ? ` · ${escapeHtml(affected)}` : ''}</p>
-<p>${escapeHtml(latest?.message ?? '')}</p>
-<p><a href="${url}" style="color:#f9fafe">See the incident on the status page</a></p>`,
-          unsubscribeUrl
-        ),
+        ...incidentEmail(list, mail.site, unsubscribeUrl),
       });
+      await done.run();
       sent++;
-    } catch {
-      // One failing address must not stop the others.
+    } catch (error) {
+      console.error('Status email failed', row.id, error);
+      await (row.attempts + 1 >= OUTBOX_MAX_ATTEMPTS
+        ? done
+        : db
+            .prepare(
+              'UPDATE email_outbox SET attempts = attempts + 1 WHERE id = ?'
+            )
+            .bind(row.id)
+      ).run();
     }
   }
   return sent;
+}
+
+/** One email for one or more incidents of the same round. */
+export function incidentEmail(
+  incidents: Incident[],
+  site: string,
+  unsubscribeUrl: string
+): { subject: string; text: string; html: string } {
+  const describe = (incident: Incident) => {
+    const status = STATUS_LABEL[incident.status];
+    const affected = incident.monitors
+      .map((id) => monitorById.get(id)?.name ?? id)
+      .join(', ');
+    return {
+      status,
+      affected,
+      url: `${site}/incidents/${encodeURIComponent(incident.id)}`,
+      message: incident.updates[0]?.message ?? '',
+    };
+  };
+  const first = incidents[0] as Incident;
+  const subject =
+    incidents.length === 1
+      ? `[${STATUS_LABEL[first.status]}] ${first.title}`
+      : `FlarePanel status: ${incidents.length} updates`;
+  const text = [
+    ...incidents.flatMap((incident) => {
+      const d = describe(incident);
+      return [
+        incident.title,
+        `Status: ${d.status}${d.affected ? ` · Affects: ${d.affected}` : ''}`,
+        '',
+        d.message,
+        '',
+        `Details: ${d.url}`,
+        '',
+      ];
+    }),
+    `Stop these emails: ${unsubscribeUrl}`,
+  ].join('\n');
+  const html = emailHtml(
+    incidents.length === 1 ? first.title : subject,
+    incidents
+      .map((incident) => {
+        const d = describe(incident);
+        return `${incidents.length > 1 ? `<h2 style="margin:18px 0 6px;color:#f9fafe;font-size:16px">${escapeHtml(incident.title)}</h2>` : ''}<p style="color:#a1a1a5;margin:0 0 12px">${escapeHtml(d.status)}${d.affected ? ` · ${escapeHtml(d.affected)}` : ''}</p>
+<p>${escapeHtml(d.message)}</p>
+<p><a href="${d.url}" style="color:#f9fafe">See it on the status page</a></p>`;
+      })
+      .join(''),
+    unsubscribeUrl
+  );
+  return { subject, text, html };
 }
 
 function escapeHtml(value: string): string {

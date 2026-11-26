@@ -2,7 +2,13 @@ import { describe, expect, it } from 'bun:test';
 import { createHash } from 'node:crypto';
 import { renderHistoryPage, SCRIPT, SCRIPT_HASH } from './render';
 import type { Incident } from './store';
-import { normalizeEmail, unsubscribe, unsubscribeToken } from './subscribers';
+import {
+  clientNetwork,
+  incidentEmail,
+  normalizeEmail,
+  unsubscribe,
+  unsubscribeToken,
+} from './subscribers';
 
 /** Just enough of D1 for a DELETE that reports how many rows it changed. */
 function fakeDb(rowsDeleted: number) {
@@ -39,11 +45,13 @@ describe('email subscriptions', () => {
   it('unsubscribes only with the signed token', async () => {
     const good = await unsubscribeToken('key', ID);
     const ok = fakeDb(1);
-    expect(await unsubscribe(ok.db, 'key', ID, good)).toBe(true);
+    expect(await unsubscribe(ok.db, 'key', ID, good)).toBe('removed');
     expect(ok.calls).toEqual([[ID]]);
 
     const forged = fakeDb(1);
-    expect(await unsubscribe(forged.db, 'key', ID, 'a'.repeat(64))).toBe(false);
+    expect(await unsubscribe(forged.db, 'key', ID, 'a'.repeat(64))).toBe(
+      'invalid'
+    );
     expect(forged.calls).toEqual([]);
 
     const otherId = fakeDb(1);
@@ -54,8 +62,66 @@ describe('email subscriptions', () => {
         '00000000-0000-4000-8000-000000000000',
         good
       )
-    ).toBe(false);
+    ).toBe('invalid');
     expect(otherId.calls).toEqual([]);
+  });
+});
+
+describe('rate-limit networks', () => {
+  it('keys IPv4 by address and IPv6 by its /64', () => {
+    expect(clientNetwork('203.0.113.9')).toBe('203.0.113.9');
+    expect(clientNetwork('2001:db8:aa:1::5')).toBe('2001:db8:aa:1::/64');
+    expect(clientNetwork('2001:db8:aa:1:ffff:1:2:3')).toBe(
+      '2001:db8:aa:1::/64'
+    );
+    expect(clientNetwork('2001:0db8:00aa:0001::9')).toBe('2001:db8:aa:1::/64');
+  });
+
+  it('gives a not-found unsubscribe its own answer', async () => {
+    const good = await unsubscribeToken('key', ID);
+    expect(await unsubscribe(fakeDb(0).db, 'key', ID, good)).toBe('not-found');
+  });
+});
+
+describe('incident emails', () => {
+  const incident = (id: string, title: string): Incident => ({
+    id,
+    title,
+    impact: 'major',
+    status: 'investigating',
+    monitors: ['api'],
+    auto: true,
+    startedAt: 0,
+    resolvedAt: null,
+    scheduledUntil: null,
+    updates: [{ at: 0, status: 'investigating', message: '<b>looking</b>' }],
+  });
+
+  it('puts one round of changes into one email', () => {
+    const one = incidentEmail(
+      [incident('a', 'API down')],
+      'https://s',
+      'https://u'
+    );
+    expect(one.subject).toBe('[Investigating] API down');
+    const two = incidentEmail(
+      [incident('a', 'API down'), incident('b', 'Docs down')],
+      'https://s',
+      'https://u'
+    );
+    expect(two.subject).toBe('FlarePanel status: 2 updates');
+    expect(two.text).toContain('API down');
+    expect(two.text).toContain('Docs down');
+  });
+
+  it('escapes incident text in the HTML', () => {
+    const mail = incidentEmail(
+      [incident('a', '<script>x</script>')],
+      'https://s',
+      'https://u'
+    );
+    expect(mail.html).not.toContain('<script>x');
+    expect(mail.html).not.toContain('<b>looking</b>');
   });
 });
 

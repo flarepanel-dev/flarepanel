@@ -19,3 +19,18 @@ CREATE TABLE subscribe_attempts (
   at INTEGER NOT NULL
 );
 CREATE INDEX subscribe_attempts_ip ON subscribe_attempts (ip_hash, at);
+
+-- Emails waiting to go out: one row per subscriber per round of incident
+-- changes. The minute cron sends a bounded batch, so a large list is never
+-- cut off by a request's time limit.
+CREATE TABLE email_outbox (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  subscriber_id TEXT NOT NULL,
+  incident_ids TEXT NOT NULL,   -- JSON array
+  created_at INTEGER NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0
+);
+
+-- Whether subscribers were told about an incident, so a flapping service's
+-- unannounced incident is not announced as resolved either.
+ALTER TABLE incidents ADD COLUMN notified INTEGER NOT NULL DEFAULT 0;

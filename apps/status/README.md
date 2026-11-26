@@ -16,16 +16,25 @@ bun run deploy
 
 ## Email updates
 
-`/subscribe` takes an address (double opt-in: nothing is sent until the
-confirmation link is clicked), optionally limited to some services. Incident
-openings, updates, resolutions and maintenance starts/ends email confirmed
-subscribers through the `EMAIL` binding (Cloudflare Email Service, same
-3,000/month allowance as the API). Unsubscribe links are signed with
-`STATUS_SIGNING_KEY` (falls back to `STATUS_ADMIN_TOKEN`; changing it breaks
-old links). Limits: 5 subscribe attempts per IP and hour, one confirmation
-email per address and hour, unconfirmed addresses deleted after 7 days.
-Without `EMAIL` the email option is hidden. Before deploying: `bun run
-migrate` (adds `0002_subscribers.sql`).
+`/subscribe` takes an address, optionally limited to some services. The
+emailed link opens a page whose button confirms (mail scanners open links;
+they must not confirm or unsubscribe anyone). Incident changes are queued in
+`email_outbox`, one email per subscriber per round, and the minute cron sends
+up to 100. Automatic incidents on a service that recovered within the last
+hour are not mailed (no storms from a flapping service).
+
+Needs the `EMAIL` binding and the `STATUS_SIGNING_KEY` secret (signs
+unsubscribe links, keys the rate limits; changing it breaks old unsubscribe
+links). Without them the email option is hidden.
+
+Limits: 5 subscribe attempts per IPv4 address or IPv6 /64 per hour; one
+confirmation per address per hour and 3 in total; 30 confirmations per hour
+and 150 per day overall; cross-site form posts refused. Unconfirmed addresses
+are deleted a week after the last confirmation email. Emails share the
+API's Cloudflare Email allowance (3,000 a month included).
+
+Before deploying: `wrangler secret put STATUS_SIGNING_KEY`, then `bun run
+migrate` (adds `0002_subscribers.sql`), then `bun run deploy`.
 
 ## Posting incidents and maintenance
 

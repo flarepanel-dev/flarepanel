@@ -32,7 +32,9 @@ import {
 import {
   confirm,
   type EmailSender,
-  notifySubscribers,
+  type MailDeps,
+  queueNotifications,
+  sendOutbox,
   subscribe,
   unsubscribe,
 } from './subscribers';
@@ -47,7 +49,7 @@ export interface Env {
   EMAIL?: SendEmail;
   /** Sender of status emails; defaults to hello@flarepanel.dev. */
   STATUS_EMAIL_FROM?: string;
-  /** Secret signing unsubscribe links; falls back to STATUS_ADMIN_TOKEN. */
+  /** Secret signing unsubscribe links and keying rate limits. Unset: no email. */
   STATUS_SIGNING_KEY?: string;
 }
 
@@ -117,31 +119,31 @@ const timeOf = (v: unknown) => {
   return Number.isFinite(at) ? at : null;
 };
 
-const emailSender = (env: Env): EmailSender | undefined =>
-  env.EMAIL ? (env.EMAIL as unknown as EmailSender) : undefined;
-const signingKey = (env: Env) =>
-  env.STATUS_SIGNING_KEY ?? env.STATUS_ADMIN_TOKEN;
-const emailFrom = (env: Env) => env.STATUS_EMAIL_FROM ?? 'hello@flarepanel.dev';
-const emailEnabled = (env: Env) => Boolean(env.EMAIL && signingKey(env));
+/**
+ * Email updates are on when the EMAIL binding and the STATUS_SIGNING_KEY
+ * secret (unsubscribe links, rate-limit keys) are both set.
+ */
+function mailDeps(env: Env): MailDeps | undefined {
+  if (!(env.EMAIL && env.STATUS_SIGNING_KEY)) {
+    return;
+  }
+  return {
+    email: env.EMAIL as unknown as EmailSender,
+    key: env.STATUS_SIGNING_KEY,
+    site: SITE,
+    from: env.STATUS_EMAIL_FROM ?? 'hello@flarepanel.dev',
+  };
+}
 
-/** Emails subscribers about these incidents; never fails the caller. */
-async function notify(env: Env, ids: string[]) {
-  for (const id of ids) {
-    try {
-      const incident = await loadIncident(env.DB, id);
-      if (incident) {
-        await notifySubscribers(
-          env.DB,
-          emailSender(env),
-          signingKey(env),
-          incident,
-          SITE,
-          emailFrom(env)
-        );
-      }
-    } catch (error) {
-      console.error('Could not email subscribers', id, error);
-    }
+/** Queues subscriber emails for these incidents; never fails the caller. */
+async function announce(env: Env, ids: string[], now: number) {
+  if (!mailDeps(env)) {
+    return;
+  }
+  try {
+    await queueNotifications(env.DB, ids, now);
+  } catch (error) {
+    console.error('Could not queue status emails', error);
   }
 }
 
@@ -149,7 +151,6 @@ async function notify(env: Env, ids: string[]) {
 async function admin(
   request: Request,
   env: Env,
-  ctx: ExecutionContext,
   path: string
 ): Promise<Response> {
   const token = env.STATUS_ADMIN_TOKEN;
@@ -192,7 +193,7 @@ async function admin(
       now
     );
     if (ok) {
-      ctx.waitUntil(notify(env, [incidentId]));
+      await announce(env, [incidentId], now);
     }
     return ok ? json({ ok: true }) : json({ error: 'Incident not found' }, 404);
   }
@@ -232,7 +233,7 @@ async function admin(
   );
   // Planned maintenance is announced when it is scheduled, and again when it
   // starts and ends (advanceMaintenance).
-  ctx.waitUntil(notify(env, [id]));
+  await announce(env, [id], now);
   return json({ ok: true, id }, 201);
 }
 
@@ -286,6 +287,7 @@ async function advanceMaintenance(
 async function updates(
   request: Request,
   env: Env,
+  ctx: ExecutionContext,
   url: URL,
   path: string
 ): Promise<Response | null> {
@@ -294,18 +296,24 @@ async function updates(
   const now = Date.now();
 
   if (path === '/subscribe' && request.method === 'POST') {
+    // Only our own form: another site must not submit it from its visitors'
+    // browsers.
+    const origin = request.headers.get('origin');
+    const site = request.headers.get('sec-fetch-site');
+    if ((origin && origin !== url.origin) || site === 'cross-site') {
+      return page('Not allowed', 'Subscribe from the Get updates page.', 403);
+    }
     const form = await request.formData().catch(() => null);
     const result = await subscribe(
       env.DB,
-      emailEnabled(env) ? emailSender(env) : undefined,
+      mailDeps(env),
       {
         email: form?.get('email'),
         monitors: (form?.getAll('monitors') ?? []).map(String),
         clientIp: request.headers.get('cf-connecting-ip') ?? 'unknown',
       },
-      SITE,
-      emailFrom(env),
-      now
+      now,
+      (work) => ctx.waitUntil(work)
     );
     if (result === 'sent') {
       return page(
@@ -322,6 +330,13 @@ async function updates(
     }
     if (result === 'rate-limited') {
       return page('Too many attempts', 'Please try again in an hour.', 429);
+    }
+    if (result === 'busy') {
+      return page(
+        'Too many sign-ups right now',
+        'Please try again later, or use the RSS feed.',
+        429
+      );
     }
     return page(
       'Email updates are not available',
@@ -369,16 +384,23 @@ async function updates(
     }
     // Our button and a mail client's one-click unsubscribe (RFC 8058) both
     // POST here with the signed id and token in the query.
-    const key = signingKey(env);
-    const ok = key
+    const key = env.STATUS_SIGNING_KEY;
+    const result = key
       ? await unsubscribe(
           env.DB,
           key,
           url.searchParams.get('id') ?? '',
           url.searchParams.get('token') ?? ''
         )
-      : false;
-    return ok
+      : 'invalid';
+    if (result === 'invalid') {
+      return page(
+        'This link does not work',
+        'Use the unsubscribe link in your most recent status email, or write to hello@flarepanel.dev.',
+        400
+      );
+    }
+    return result === 'removed'
       ? page(
           'You are unsubscribed',
           'You will not get status emails from FlarePanel any more.'
@@ -446,9 +468,9 @@ export default {
       });
 
     if (path.startsWith('/api/admin/')) {
-      return admin(request, env, ctx, path);
+      return admin(request, env, path);
     }
-    const update = await updates(request, env, url, path);
+    const update = await updates(request, env, ctx, url, path);
     if (update) {
       return update;
     }
@@ -503,7 +525,7 @@ export default {
         );
       }
       if (path === '/subscribe') {
-        return html(renderSubscribePage(emailEnabled(env)));
+        return html(renderSubscribePage(Boolean(mailDeps(env))));
       }
       if (path === '/feed.atom' || path === '/feed.xml' || path === '/rss') {
         return respond(
@@ -531,7 +553,16 @@ export default {
     const results = await Promise.all(MONITORS.map((m) => runCheck(m)));
     const changes = await recordRound(env.DB, results, now);
     const maintenance = await advanceMaintenance(env.DB, now);
-    await notify(env, [...changes.opened, ...changes.resolved, ...maintenance]);
+    await announce(
+      env,
+      [...changes.opened, ...changes.resolved, ...maintenance],
+      now
+    );
+    try {
+      await sendOutbox(env.DB, mailDeps(env), (id) => loadIncident(env.DB, id));
+    } catch (error) {
+      console.error('Could not send status emails', error);
+    }
     if (new Date(now).getUTCMinutes() === 0) {
       await prune(env.DB, now);
     }

@@ -159,7 +159,7 @@ export async function prune(db: D1Database, now: number): Promise<void> {
     // Never confirmed within a week: forget the address.
     db
       .prepare(
-        'DELETE FROM subscribers WHERE confirmed_at IS NULL AND created_at < ?'
+        'DELETE FROM subscribers WHERE confirmed_at IS NULL AND COALESCE(last_sent_at, created_at) < ?'
       )
       .bind(now - 7 * DAY),
   ]);
@@ -235,7 +235,7 @@ async function withUpdates(
   const updates = await db
     .prepare(
       `SELECT incident_id, at, status, message FROM incident_updates
-       WHERE incident_id IN (${ids.map(() => '?').join(',')}) ORDER BY at DESC`
+       WHERE incident_id IN (${ids.map(() => '?').join(',')}) ORDER BY at DESC, id DESC`
     )
     .bind(...ids)
     .all<{
