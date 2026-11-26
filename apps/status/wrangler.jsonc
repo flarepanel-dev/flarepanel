@@ -7,6 +7,9 @@
   "name": "flarepanel-status",
   "main": "src/index.ts",
   "compatibility_date": "2026-11-25",
+  // Reports AI crawler visits to the status project (secret set with
+  // `wrangler secret put FLAREPANEL_CLIENT_SECRET`).
+  "vars": { "FLAREPANEL_CLIENT_ID": "069e45a1-5b97-417f-9c4f-fbbbe6a16938" },
   "routes": [{ "pattern": "status.flarepanel.dev", "custom_domain": true }],
   "workers_dev": false,
   "preview_urls": false,

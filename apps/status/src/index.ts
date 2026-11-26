@@ -1,3 +1,7 @@
+import {
+  type CrawlCaptureEnv,
+  reportCrawl,
+} from '../../../tooling/workers/crawl-capture';
 // status.flarepanel.dev: checks FlarePanel every minute and shows the result.
 // Deliberately separate from the API and dashboard Workers, so the page still
 // answers (and says so) when they do not.
@@ -43,7 +47,7 @@ import {
 } from './subscribers';
 import { buildView, OVERALL_TEXT } from './view';
 
-export interface Env {
+export interface Env extends CrawlCaptureEnv {
   DB: D1Database;
   ASSETS: Fetcher;
   /** Secret: lets the operator post incidents and maintenance. Unset: off. */
@@ -462,6 +466,8 @@ export default {
     if (insecure) {
       return insecure;
     }
+    // AI crawlers never run the page script: report them from here.
+    reportCrawl(request, env, ctx);
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/+$/, '') || '/';
     const html = (body: string, status = 200) =>

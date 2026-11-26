@@ -1,10 +1,14 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  // Static-assets-only Worker: no `main`, so every request is served from
-  // `out/` without running Worker code (static asset requests are free).
   "name": "flarepanel-landing",
+  // Pages are served from static assets. Page requests first pass a tiny
+  // Worker that reports AI crawler visits to FlarePanel (worker/index.ts);
+  // scripts, styles, images and fonts skip it and stay free.
+  "main": "worker/index.ts",
   "compatibility_date": "2026-11-25",
   "assets": {
+    "binding": "ASSETS",
+    "run_worker_first": ["/*", "!/_next/*", "!/op1.js", "!/op1-replay.js", "!/*.png", "!/*.svg", "!/*.ico", "!/*.webp", "!/*.jpg", "!/*.woff2", "!/*.css", "!/*.js"],
     "directory": "./out",
     "html_handling": "drop-trailing-slash",
     "not_found_handling": "404-page"
@@ -13,6 +17,7 @@
     { "pattern": "flarepanel.dev", "custom_domain": true },
     { "pattern": "www.flarepanel.dev", "custom_domain": true }
   ],
+  "vars": { "FLAREPANEL_CLIENT_ID": "f7c816f0-bdf1-4b99-9e3f-62d4d187d9ad" },
   "workers_dev": false,
   "preview_urls": false,
   "observability": { "enabled": false }
