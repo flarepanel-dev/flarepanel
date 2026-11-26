@@ -3,11 +3,12 @@ import { defineConfig } from 'vocs/config';
 const GITHUB = 'https://github.com/flarepanel-dev/flarepanel';
 /**
  * The docs report to the website's FlarePanel project (public client ID).
- * Vocs prints head scripts twice, so init runs only once.
+ * Vocs prints head scripts twice and puts external scripts before inline
+ * ones, so one inline script queues, inits once and then loads op1.js.
  */
 const ANALYTICS_CLIENT_ID = 'e0a1d852-11f9-4851-9e16-f2d3783da6fe';
 const ANALYTICS_SNIPPET = `window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:"call"===r||"apply"===r||"bind"===r?t[r]:function(){n.push([r].concat([].slice.call(arguments)))}},has:function(t,r){return"q"===r}})}();
-if(!window.__fpInit){window.__fpInit=1;window.op('init',{clientId:'${ANALYTICS_CLIENT_ID}',trackScreenViews:true,trackOutgoingLinks:true,trackAttributes:true});}`;
+if(!window.__fpInit){window.__fpInit=1;window.op('init',{clientId:'${ANALYTICS_CLIENT_ID}',trackScreenViews:true,trackOutgoingLinks:true,trackAttributes:true});var s=document.createElement('script');s.src='https://flarepanel.dev/op1.js';s.async=true;document.head.appendChild(s);}`;
 
 export default defineConfig({
   title: 'FlarePanel',
@@ -29,7 +30,6 @@ export default defineConfig({
   head: {
     script: [
       { innerHTML: ANALYTICS_SNIPPET },
-      { src: 'https://flarepanel.dev/op1.js', async: true, defer: true },
     ],
   },
   socials: [
