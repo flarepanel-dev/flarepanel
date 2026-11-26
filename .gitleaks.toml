@@ -1,0 +1,10 @@
+# Secret scanning for this public repository: gitleaks' default rules plus
+# allowlists for known false positives. Used by CI and
+# tooling/scripts/public-check.ts.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Metric keys in the AI metrics table are field names, not secrets"
+paths = ['''apps/start/src/components/ai/ai-metrics\.tsx''']
+regexes = ['''key: '[A-Za-z0-9]+''']

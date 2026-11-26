@@ -12,6 +12,27 @@ Thanks for helping. A few things to know first.
 - Keep OpenPanel's tracking protocol working (see `NOTICE`): existing
   OpenPanel SDKs must still be able to send events.
 
+## This repository is public
+
+Everything you push, and every issue, pull request and comment, can be read
+and archived by anyone. Keep these out:
+
+- secrets: API keys, tokens, passwords, `.env` and `.dev.vars` files, keys
+- personal data: private email addresses, names that are not public,
+  absolute paths from your machine (`/Users/<you>/…`)
+- internal notes: plans, prices and margins, account or security setup
+  details, customer or partner names, test reports
+
+`bun run check:public --staged` checks what you are about to commit, and the
+pre-push hook checks every push (install it once with `bunx simple-git-hooks`); CI runs the same
+check with gitleaks. Put private words in your local denylist,
+`$(git rev-parse --git-common-dir)/public-denylist`, one regular expression per
+line; it is never committed. Commit with your GitHub noreply address
+(`git config user.email <id>+<user>@users.noreply.github.com`).
+
+If a secret was pushed, rotate it first: removing it from history does not
+make it secret again.
+
 ## Contributor License Agreement
 
 Every contributor signs the [CLA](CLA.md) once. A bot asks on your first pull

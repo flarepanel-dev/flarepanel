@@ -78,6 +78,7 @@
     "postinstall:workspaces": "bun run --filter @flarepanel/testbed postinstall",
     "dev": "bun run --filter @flarepanel/api testing & bun run --filter start dev & wait",
     "typecheck": "bun tooling/scripts/typecheck-workspaces.ts",
+    "check:public": "bun tooling/scripts/public-check.ts",
     "update-simple-git-hooks": "npx simple-git-hooks",
     "check:workspace": "bunx sherif@1.13.0",
     "check:deps": "depcruise --config .dependency-cruiser.cjs --output-type err apps/start packages",

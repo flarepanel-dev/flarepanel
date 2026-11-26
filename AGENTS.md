@@ -5,6 +5,12 @@
 > (https://docs.flarepanel.dev/self-hosting/architecture) first. The sections below describe the inherited OpenPanel stack, which is what
 > the code still runs today. Keep OpenPanel's tracking protocol compatible (see `NOTICE`).
 
+**This repository is public.** Never commit secrets, personal data, local
+paths or internal notes (plans, prices, account setup, customer names); keep
+those outside the repo. Run `bun run check:public --staged` before committing;
+the pre-push hook and CI run the same check. See "This repository is public"
+in `CONTRIBUTING.md`.
+
 **If `WORKTREE.md` exists in the repo root, read it before anything else.** The tooling
 that created this worktree generates it: URLs, ports, database names, the seeded login
 and client secrets, where the process logs are and how to restart a process. Never guess
