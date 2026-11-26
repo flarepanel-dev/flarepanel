@@ -143,13 +143,9 @@ export function filterExpression(filter: RowFilter): string {
     case 'doesNotContain':
       return `NOT ${any((value) => `${field} LIKE ${quoted(`%${escapeLike(value)}%`)}`)}`;
     case 'startsWith':
-      return any(
-        (value) => `${field} LIKE ${quoted(`${escapeLike(value)}%`)}`
-      );
+      return any((value) => `${field} LIKE ${quoted(`${escapeLike(value)}%`)}`);
     case 'endsWith':
-      return any(
-        (value) => `${field} LIKE ${quoted(`%${escapeLike(value)}`)}`
-      );
+      return any((value) => `${field} LIKE ${quoted(`%${escapeLike(value)}`)}`);
     case 'regex':
       return any((value) => `regexp_like(${field}, ${sqlString(value)})`);
     case 'isNull':

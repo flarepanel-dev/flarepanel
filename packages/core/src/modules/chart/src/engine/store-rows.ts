@@ -17,8 +17,8 @@ import { cohortFilter } from '../../../ingest/cloudflare/cohort-eval';
 import type { RowFilter } from '../../../ingest/cloudflare/filter-eval';
 import {
   buildBuckets,
-  wallClockText,
   wallClockEndMs,
+  wallClockText,
   wallClockToMs,
 } from '../../../ingest/cloudflare/time-buckets';
 import type {

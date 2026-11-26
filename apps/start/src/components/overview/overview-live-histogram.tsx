@@ -84,9 +84,7 @@ export function OverviewLiveHistogram({
             <span
               className={cn(
                 'absolute inline-flex h-full w-full rounded-full opacity-75',
-                totalSessions > 0
-                  ? 'animate-ping bg-live'
-                  : 'bg-def-400'
+                totalSessions > 0 ? 'animate-ping bg-live' : 'bg-def-400'
               )}
             />
             <span

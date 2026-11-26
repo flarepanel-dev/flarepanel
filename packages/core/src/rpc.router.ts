@@ -12,6 +12,7 @@ import { customEventRouter } from './modules/custom-event/custom-event.rpc';
 import { dashboardRouter } from './modules/dashboard/dashboard.rpc';
 import { emailRouter } from './modules/email/email.rpc';
 import { eventRouter } from './modules/event/event.rpc';
+import { feedbackRouter } from './modules/feedback/feedback.rpc';
 import { groupRouter } from './modules/group/group.rpc';
 import { gscRouter } from './modules/gsc/gsc.rpc';
 import { healthRouter } from './modules/health/health.rpc';
@@ -31,7 +32,6 @@ import { sessionRouter } from './modules/session/session.rpc';
 import { shareRouter } from './modules/share/share.rpc';
 import { subscriptionRouter } from './modules/subscription/subscription.rpc';
 import { userRouter } from './modules/user/user.rpc';
-import { feedbackRouter } from './modules/feedback/feedback.rpc';
 import { widgetRouter } from './modules/widget/widget.rpc';
 import { createTRPCRouter } from './rpc/base';
 

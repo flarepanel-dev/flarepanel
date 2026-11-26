@@ -28,9 +28,7 @@ export default defineConfig({
     text: 'Edit this page on GitHub',
   },
   head: {
-    script: [
-      { innerHTML: ANALYTICS_SNIPPET },
-    ],
+    script: [{ innerHTML: ANALYTICS_SNIPPET }],
   },
   socials: [
     { icon: 'github', link: GITHUB },

@@ -175,7 +175,7 @@ describe('bring your own AI key', () => {
   });
 
   it('sends each provider its own auth header', async () => {
-    const seen: { url: string; headers: HeadersInit | undefined }[] = [];
+    const seen: { url: string; headers: RequestInit['headers'] }[] = [];
     const capture = async (url: string, init?: RequestInit) => {
       seen.push({ url, headers: init?.headers });
       return new Response('{}');

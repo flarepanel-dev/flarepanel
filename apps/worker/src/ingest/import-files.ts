@@ -50,7 +50,10 @@ export function createImportFileStore(bucket: R2Bucket): ImportFileStore {
         }
         if (filled > 0) {
           parts.push(
-            await upload.uploadPart(parts.length + 1, buffer.subarray(0, filled))
+            await upload.uploadPart(
+              parts.length + 1,
+              buffer.subarray(0, filled)
+            )
           );
         }
         await upload.complete(parts);

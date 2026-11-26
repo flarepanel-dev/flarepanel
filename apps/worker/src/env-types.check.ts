@@ -29,6 +29,5 @@ type WrongType = {
 export const everyBindingDeclared: [MissingFromEnv] extends [never]
   ? true
   : MissingFromEnv = true;
-export const everyBindingTyped: [WrongType] extends [never]
-  ? true
-  : WrongType = true;
+export const everyBindingTyped: [WrongType] extends [never] ? true : WrongType =
+  true;

@@ -1,10 +1,10 @@
 import { isWorkersRuntime } from '@flarepanel/shared/server';
 import { getGeoLocation, hasGeoLookup } from '../../../clients/geo';
-import { DBIP_ATTRIBUTION } from '../../geo/geoip-dbip';
 import { getGeoFromCf } from '../../../clients/geo-cf';
 import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';
 import { getClientIpFromHeaders } from '../../../shared/get-client-ip';
+import { DBIP_ATTRIBUTION } from '../../geo/geoip-dbip';
 import { checkRateLimit } from './rate-limit';
 
 const IP_LOOKUP_WINDOW_MS = 60 * 1000;

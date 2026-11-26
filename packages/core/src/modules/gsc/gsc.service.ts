@@ -15,10 +15,7 @@ import type { ServiceDeps, Services } from '../../services';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { getAccessChecks, googleGscClient } from '../auth/auth.service';
 import type { RowFilter } from '../ingest/cloudflare/filter-eval';
-import type {
-  GscQuery,
-  GscStoredRow,
-} from '../ingest/cloudflare/gsc-store';
+import type { GscQuery, GscStoredRow } from '../ingest/cloudflare/gsc-store';
 
 const BACKFILL_MONTHS = 6;
 const CHUNK_DAYS = 14;
@@ -281,7 +278,11 @@ async function storeGscRows(
   }
   const column = table === 'pages' ? 'page' : 'query';
   await deps.ch.insert({
-    table: { daily: 'gsc_daily', pages: 'gsc_pages_daily', queries: 'gsc_queries_daily' }[table],
+    table: {
+      daily: 'gsc_daily',
+      pages: 'gsc_pages_daily',
+      queries: 'gsc_queries_daily',
+    }[table],
     values: rows.map((row) => ({
       project_id: projectId,
       date: row.keys[0] ?? '',

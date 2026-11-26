@@ -88,7 +88,9 @@ export function buildImportedSession(
   importedAt: string
 ): ImportedSession | null {
   const ordered = events
-    .filter((event) => event.name !== 'session_start' && event.name !== 'session_end')
+    .filter(
+      (event) => event.name !== 'session_start' && event.name !== 'session_end'
+    )
     .sort((a, b) => eventTimeMs(a.created_at) - eventTimeMs(b.created_at));
   const first = ordered[0];
   const last = ordered.at(-1);

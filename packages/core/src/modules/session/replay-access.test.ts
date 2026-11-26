@@ -58,9 +58,10 @@ describe('self-hosted', () => {
     expect(
       replayAccessFor(org({ replaySessionsLimit: 0 }), selfHosted)
     ).toEqual({ allowed: true, limit: null });
-    expect(replayAccessFor(org({ replayEnabled: false }), selfHosted)).toEqual(
-      { allowed: false, reason: 'off' }
-    );
+    expect(replayAccessFor(org({ replayEnabled: false }), selfHosted)).toEqual({
+      allowed: false,
+      reason: 'off',
+    });
   });
 });
 

@@ -4,12 +4,12 @@
 // `TABLE_NAMES`: importing that builds a pino logger, and the SQL builders here
 // are pure functions the shape tests call without a ClickHouse connection.
 
-import { TRPCNotFoundError } from '../../rpc/errors';
 import type { ClickHouseSettings } from '@clickhouse/client';
 import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import type { Cohort } from '@flarepanel/db/src/prisma-client';
 import { chQuery } from '../../ch-query';
 import type { CoreConfig } from '../../config';
+import { TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { formatClickhouseDate } from '../../shared/ch-dates';
 import { replicatedTarget } from '../../shared/ch-tables';

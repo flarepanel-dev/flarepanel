@@ -97,7 +97,8 @@ export function replayAccessFor(
   }
   // An organization's own limit wins; 0 or less means unlimited.
   const override = organization.replaySessionsLimit;
-  const ownLimit = override === null ? undefined : override > 0 ? override : null;
+  const ownLimit =
+    override === null ? undefined : override > 0 ? override : null;
 
   if (!config.hosted) {
     return {
@@ -111,7 +112,9 @@ export function replayAccessFor(
     return {
       allowed: true,
       limit:
-        ownLimit === undefined ? planReplayLimit(organization, 'active') : ownLimit,
+        ownLimit === undefined
+          ? planReplayLimit(organization, 'active')
+          : ownLimit,
     };
   }
   if (!RECORDING_STATES.has(state)) {
@@ -119,7 +122,8 @@ export function replayAccessFor(
   }
   return {
     allowed: true,
-    limit: ownLimit === undefined ? planReplayLimit(organization, state) : ownLimit,
+    limit:
+      ownLimit === undefined ? planReplayLimit(organization, state) : ownLimit,
   };
 }
 

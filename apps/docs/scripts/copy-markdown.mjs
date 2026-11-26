@@ -9,7 +9,10 @@ const root = path.resolve(import.meta.dirname, '../dist/public');
 const source = path.join(root, 'assets/md');
 
 let copied = 0;
-for (const entry of await readdir(source, { recursive: true, withFileTypes: true })) {
+for (const entry of await readdir(source, {
+  recursive: true,
+  withFileTypes: true,
+})) {
   if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
   const from = path.join(entry.parentPath, entry.name);
   await cp(from, path.join(root, path.relative(source, from)));

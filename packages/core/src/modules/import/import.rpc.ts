@@ -5,11 +5,11 @@ import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCBadRequestError, TRPCNotFoundError } from '../../rpc/errors';
 import { zCreateImport } from './import.constants';
-import { importPrefix } from './src/workers-import';
 import {
   requireMappedProjectsWriteAccess,
   toPublicImport,
 } from './import.service';
+import { importPrefix } from './src/workers-import';
 
 export const importRouter = createTRPCRouter({
   list: protectedProcedure

@@ -54,9 +54,7 @@ export interface ChartRow {
 export type ProfileLookup = ((
   profileId: string
 ) => Record<string, unknown> | null | undefined) & {
-  group?: (
-    groupId: string
-  ) => {
+  group?: (groupId: string) => {
     name: string;
     type: string;
     properties: Record<string, string>;

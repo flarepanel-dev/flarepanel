@@ -3,7 +3,10 @@
 // `sessions` scoped by filters) with different inputs.
 
 import type { ServiceDeps, Services } from '../../services';
-import { wallClockEndMs, wallClockToMs } from '../ingest/cloudflare/time-buckets';
+import {
+  wallClockEndMs,
+  wallClockToMs,
+} from '../ingest/cloudflare/time-buckets';
 import { getSettingsForProject } from '../organization/organization.service';
 import type { IChartEventFilter, IInterval } from '../report/report.constants';
 import {

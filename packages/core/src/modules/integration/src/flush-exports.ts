@@ -340,9 +340,7 @@ async function exportWindows(
   deps: FlushExportsDeps
 ): Promise<void> {
   const source = deps.window;
-  let cursor = source
-    ? null
-    : await loadCursor(projectId, integrationId, deps);
+  let cursor = source ? null : await loadCursor(projectId, integrationId, deps);
   const adapter = deps.createAdapter(config);
   if (!adapter) {
     throw new Error(`Integration ${config.type} has no export adapter`);
@@ -360,8 +358,7 @@ async function exportWindows(
       ? await source.next(projectId, integrationId, batchSize)
       : null;
     const rows =
-      window?.rows ??
-      (await queryWindow(projectId, cursor as Cursor, deps));
+      window?.rows ?? (await queryWindow(projectId, cursor as Cursor, deps));
     if (rows.length === 0) {
       break;
     }

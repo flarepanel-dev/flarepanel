@@ -7,10 +7,7 @@
  * 3. a session new to replay fits the organization's monthly limit, counted
  *    in the shared counter store.
  */
-import type {
-  ProjectReplayAccess,
-  ReplayAccessConfig,
-} from '@flarepanel/core';
+import type { ProjectReplayAccess, ReplayAccessConfig } from '@flarepanel/core';
 import type { CacheStore, CoordinationStore } from '@flarepanel/platform';
 import type { ReplayAdmission, ReplayGate } from './replays';
 

@@ -91,7 +91,11 @@ export function openImportStore(sql: EngineSql) {
     );
   }
 
-  function insertStaged(importId: string, current: ImportState, event: IClickhouseEvent) {
+  function insertStaged(
+    importId: string,
+    current: ImportState,
+    event: IClickhouseEvent
+  ) {
     sql.exec(
       'INSERT INTO import_staging (import_id, seq, device_id, ts, session_id, body) VALUES (?, ?, ?, ?, ?, ?)',
       importId,

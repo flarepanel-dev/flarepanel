@@ -2,7 +2,10 @@ import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
-import { wallClockEndMs, wallClockToMs } from '../ingest/cloudflare/time-buckets';
+import {
+  wallClockEndMs,
+  wallClockToMs,
+} from '../ingest/cloudflare/time-buckets';
 import { getSettingsForProject } from '../organization/organization.service';
 import {
   chartColors,

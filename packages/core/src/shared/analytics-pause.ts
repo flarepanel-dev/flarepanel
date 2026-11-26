@@ -3,7 +3,7 @@
 // billing period starts (the Polar webhook then clears the exceeded mark). The
 // rule matches the dashboard's `isExceeded`; self-hosted installs never pause.
 
-import { HttpError } from '../../shared/errors';
+import { HttpError } from './errors';
 
 export const ANALYTICS_PAUSED_STATUS = 402;
 export const ANALYTICS_PAUSED_MESSAGE =

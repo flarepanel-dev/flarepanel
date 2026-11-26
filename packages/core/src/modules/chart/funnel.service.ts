@@ -4,7 +4,10 @@ import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
 import { expandCustomEvents } from '../custom-event/custom-event.service';
 import type { FunnelScanQuery } from '../ingest/cloudflare/funnel-scan';
-import { wallClockEndMs, wallClockToMs } from '../ingest/cloudflare/time-buckets';
+import {
+  wallClockEndMs,
+  wallClockToMs,
+} from '../ingest/cloudflare/time-buckets';
 import { getSettingsForProject } from '../organization/organization.service';
 import type {
   IChartBreakdown,

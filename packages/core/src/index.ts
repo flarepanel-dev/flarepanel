@@ -372,12 +372,6 @@ export {
   zShareReport,
 } from './modules/share/share.constants';
 export { createShareService } from './modules/share/share.service';
-export {
-  ANALYTICS_PAUSED_MESSAGE,
-  AnalyticsPausedError,
-  isAnalyticsPaused,
-  type PauseOrganization,
-} from './modules/subscription/analytics-pause';
 export { toSubscriptionDiscount } from './modules/subscription/subscription.service';
 export { runIpLookup } from './modules/tools/src/ip-lookup';
 export type { SiteCheckResult } from './modules/tools/src/site-checker';
@@ -434,6 +428,12 @@ export {
   getProjectAccess,
   resolveProjectAccess,
 } from './shared/access-lookups';
+export {
+  ANALYTICS_PAUSED_MESSAGE,
+  AnalyticsPausedError,
+  isAnalyticsPaused,
+  type PauseOrganization,
+} from './shared/analytics-pause';
 export {
   DEFAULT_IP_HEADER_ORDER,
   getClientIpFromHeaders,

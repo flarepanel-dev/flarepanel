@@ -8,7 +8,10 @@
 @custom-variant dark (&:is(.dark *));
 @custom-variant light (&:is(.light *));
 @custom-variant system (&:is(.system *));
-@custom-variant hosted (&:where([data-edition="hosted"], [data-edition="hosted"] *));
+@custom-variant hosted (&:where(
+    [data-edition="hosted"],
+    [data-edition="hosted"] *
+  ));
 
 body {
   @apply m-0;
@@ -43,7 +46,9 @@ body {
   --muted-foreground: #727276; /* obsidian 500 */
   --accent: #f3f4f8; /* obsidian 100 */
   --accent-foreground: #0d0d10; /* obsidian 950 */
-  --destructive: oklch(50% 0.19 28); /* danger crimson #B71A18, never a data colour */
+  --destructive: oklch(
+    50% 0.19 28
+  ); /* danger crimson #B71A18, never a data colour */
   --destructive-foreground: oklch(
     96.9% 0.02 17.4
   ); /* hsl(0, 100%, 97.25%) -> #F8F9FB */

@@ -125,7 +125,13 @@ export function openGscStore(sql: EngineSql) {
   ) {
     const buckets = new Map<
       string,
-      { clicks: number; impressions: number; ctr: number; position: number; n: number }
+      {
+        clicks: number;
+        impressions: number;
+        ctr: number;
+        position: number;
+        n: number;
+      }
     >();
     for (const row of sql.exec(
       `SELECT date, clicks, impressions, ctr, position FROM ${TABLES.daily} WHERE date >= ? AND date <= ? ORDER BY date`,

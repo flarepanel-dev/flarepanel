@@ -46,9 +46,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         {/* We track this site with FlarePanel itself: no cookies, and the
             same script tag the docs tell customers to use. */}
-        <script
-          dangerouslySetInnerHTML={{ __html: ANALYTICS_SNIPPET }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: ANALYTICS_SNIPPET }} />
         <script async defer src="/op1.js" />
       </head>
       <body className="min-h-dvh bg-ink text-paper">
