@@ -289,7 +289,7 @@ h1{position:absolute;left:96px;top:118px;width:760px;font-size:72px;line-height:
 small{position:absolute;left:100px;top:290px;font:400 22px "Geist Mono";color:#A3A3AB;letter-spacing:.01em}
 </style></head><body><div class="glow"></div>
 <div class="mark">${mark({ surface: 'dark', id: 'bn' }).replace('width="512" height="512"', 'width="640" height="640" style="overflow:visible"')}</div>
-<h1>Analytics that runs on Cloudflare.</h1><small>open source · OpenPanel SDKs work · flarepanel.dev</small></body></html>`,
+<h1>Analytics that runs on Cloudflare.</h1><small>open source · no servers to run · flarepanel.dev</small></body></html>`,
   1500,
   500,
   'brand/social/banner.png',
