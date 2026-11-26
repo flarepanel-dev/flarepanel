@@ -23,7 +23,7 @@ export type IPrice = {
 // keeps about $0.44 of each monthly payment, so it is meant to be outgrown.
 // apps/landing/src/lib/pricing.ts mirrors this list for the public page.
 export const PRICING: IPrice[] = [
-  { price: 1, events: 5_000 },
+  { price: 1, events: 5000 },
   { price: 3, events: 10_000 },
   { price: 10, events: 100_000, popular: true },
   { price: 15, events: 250_000 },

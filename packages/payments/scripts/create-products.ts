@@ -49,8 +49,27 @@ async function promptForInput() {
   return answers;
 }
 
+/**
+ * Non-interactive when POLAR_ACCESS_TOKEN is set (an organization token):
+ * `POLAR_ACCESS_TOKEN=... bun scripts/create-products.ts --production`
+ * (or `--sandbox`). Add `--dry` to only print what would be created.
+ */
+async function getInput(): Promise<Answers> {
+  const token = process.env.POLAR_ACCESS_TOKEN;
+  if (token) {
+    const isProduction = process.argv.includes('--production');
+    if (!(isProduction || process.argv.includes('--sandbox'))) {
+      throw new Error(
+        'Pass --production or --sandbox with POLAR_ACCESS_TOKEN.'
+      );
+    }
+    return { isProduction, polarOrganizationId: '', polarApiKey: token };
+  }
+  return promptForInput();
+}
+
 async function main() {
-  const input = await promptForInput();
+  const input = await getInput();
 
   const polar = new Polar({
     accessToken: input.polarApiKey!,

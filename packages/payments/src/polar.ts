@@ -26,12 +26,66 @@ function polarClient(): Promise<Polar> {
   return client;
 }
 
-/** Verifies a webhook's signature over the raw body and parses it. */
+type WebhookHeaders = Parameters<typeof validateEvent>[1];
+
+function headerValue(headers: WebhookHeaders, name: string): string {
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === name) {
+      return Array.isArray(value) ? String(value[0]) : String(value ?? '');
+    }
+  }
+  return '';
+}
+
+/**
+ * Verifies a webhook's signature over the raw body and parses it.
+ *
+ * Polar now issues Standard Webhooks secrets (`whsec_<base64 key>`), but SDK
+ * 0.49's `validateEvent` base64-encodes the whole secret string, so every
+ * signature fails with such a secret. For those we verify with
+ * `standardwebhooks` directly, then hand the already-verified body to the SDK
+ * for parsing, re-signed with a throwaway key in the form the SDK expects.
+ */
 export async function validatePolarEvent(
-  ...args: Parameters<typeof validateEvent>
+  body: Parameters<typeof validateEvent>[0],
+  headers: WebhookHeaders,
+  secret: string
 ): Promise<ReturnType<typeof validateEvent>> {
   const webhooks = await import('@polar-sh/sdk/webhooks');
-  return webhooks.validateEvent(...args);
+  if (!secret.startsWith('whsec_')) {
+    return webhooks.validateEvent(body, headers, secret);
+  }
+  const { Webhook, WebhookVerificationError } = await import(
+    'standardwebhooks'
+  );
+  const payload =
+    typeof body === 'string' ? body : Buffer.from(body).toString('utf-8');
+  const plain = {
+    'webhook-id': headerValue(headers, 'webhook-id'),
+    'webhook-timestamp': headerValue(headers, 'webhook-timestamp'),
+    'webhook-signature': headerValue(headers, 'webhook-signature'),
+  };
+  try {
+    new Webhook(secret).verify(payload, plain);
+  } catch (error) {
+    if (error instanceof WebhookVerificationError) {
+      throw new webhooks.WebhookVerificationError(error.message);
+    }
+    throw error;
+  }
+  const key = crypto.randomUUID();
+  const signature = new Webhook(
+    Buffer.from(key, 'utf-8').toString('base64')
+  ).sign(
+    plain['webhook-id'],
+    new Date(Number(plain['webhook-timestamp']) * 1000),
+    payload
+  );
+  return webhooks.validateEvent(
+    payload,
+    { ...plain, 'webhook-signature': signature },
+    key
+  );
 }
 
 export const getSuccessUrl = (baseUrl: string, organizationId: string) =>

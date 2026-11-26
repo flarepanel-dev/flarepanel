@@ -460,6 +460,7 @@
       "dependencies": {
         "@polar-sh/sdk": "0.49.0",
         "date-fns": "3.3.1",
+        "standardwebhooks": "1.1.1",
       },
       "devDependencies": {
         "@flarepanel/db": "workspace:*",
