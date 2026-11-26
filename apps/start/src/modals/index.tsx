@@ -25,6 +25,7 @@ import EditEvent from './edit-event';
 import EditGroup from './edit-group';
 import EditMember from './edit-member';
 import EditReference from './edit-reference';
+import Feedback from './feedback';
 import EditReport from './edit-report';
 import InsightDetails from './insight-details';
 import MoveReport from './move-report';
@@ -71,6 +72,7 @@ const modals = {
   EditDashboard,
   EditReport,
   EditReference,
+  Feedback,
   ShareOverviewModal,
   ShareDashboardModal,
   ShareReportModal,

@@ -100,6 +100,20 @@ export interface SlackConfig {
   stateSecret: string | undefined;
 }
 
+/**
+ * In-app feedback. Each message becomes a GitHub issue when a token is set,
+ * and an email when an address is set; with neither, the dashboard keeps
+ * its link to GitHub issues.
+ */
+export interface FeedbackConfig {
+  /** FEEDBACK_EMAIL: where feedback is emailed (the team inbox). */
+  email: string | undefined;
+  /** FEEDBACK_GITHUB_TOKEN: a token allowed to create issues in the repo. */
+  githubToken: string | undefined;
+  /** FEEDBACK_GITHUB_REPO: `owner/name`. */
+  githubRepo: string;
+}
+
 export interface PolarConfig {
   saveDiscountId: string | undefined;
   webhookSecret: string | undefined;
@@ -268,6 +282,7 @@ export interface CoreConfig {
   ai: AiConfig;
   selfTracking: SelfTrackingConfig;
   slack: SlackConfig;
+  feedback: FeedbackConfig;
   polar: PolarConfig;
   kafka: KafkaConfig;
   buffers: BuffersConfig;

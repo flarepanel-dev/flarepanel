@@ -467,6 +467,9 @@ const rawSchema = z.object({
   SLACK_CLIENT_SECRET: optionalString,
   SLACK_OAUTH_REDIRECT_URL: optionalString,
   SLACK_STATE_SECRET: optionalString,
+  FEEDBACK_EMAIL: optionalString,
+  FEEDBACK_GITHUB_TOKEN: optionalString,
+  FEEDBACK_GITHUB_REPO: optionalString,
   POLAR_SAVE_DISCOUNT_ID: optionalString,
   POLAR_WEBHOOK_SECRET: optionalString,
   GCS_API_ENDPOINT: optionalString,
@@ -912,6 +915,11 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
       clientSecret: raw.SLACK_CLIENT_SECRET,
       oauthRedirectUrl: raw.SLACK_OAUTH_REDIRECT_URL,
       stateSecret: raw.SLACK_STATE_SECRET,
+    },
+    feedback: {
+      email: raw.FEEDBACK_EMAIL,
+      githubToken: raw.FEEDBACK_GITHUB_TOKEN,
+      githubRepo: raw.FEEDBACK_GITHUB_REPO ?? 'flarepanel-dev/flarepanel',
     },
     polar: {
       saveDiscountId: raw.POLAR_SAVE_DISCOUNT_ID,

@@ -14,6 +14,7 @@ export async function sendEmail<T extends EmailTemplate>(
   options: {
     to: string;
     data: EmailData<T>;
+    replyTo?: string;
   }
 ) {
   const { sendEmail: send } = await import('@flarepanel/email');

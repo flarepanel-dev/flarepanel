@@ -57,6 +57,11 @@ export function testCoreConfig(
         version: undefined,
       },
     },
+    feedback: {
+      email: undefined,
+      githubToken: undefined,
+      githubRepo: 'flarepanel-dev/flarepanel',
+    },
     selfTracking: {
       clientId: undefined,
       clientSecret: undefined,

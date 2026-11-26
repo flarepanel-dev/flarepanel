@@ -23,17 +23,16 @@ export function OnboardingFeatureRequest({
         anything you expected FlarePanel to do that it doesn't?
       </Text>
       <Text>
-        Just reply to this email. If you'd rather post publicly, the feedback
-        board is at{' '}
+        Just reply to this email, or use Give feedback in the{' '}
         <Link
           href={withUtm(
-            'https://feedback.flarepanel.dev',
+            'https://dashboard.flarepanel.dev',
             'onboarding-feature-request'
           )}
         >
-          feedback.flarepanel.dev
+          dashboard
         </Link>
-        .
+        . Every message reaches the team.
       </Text>
       {!hasData && (
         <Text>

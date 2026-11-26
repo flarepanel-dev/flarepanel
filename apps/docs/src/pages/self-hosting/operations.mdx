@@ -26,6 +26,21 @@ It needs the `send_email` binding from [Deploy](/self-hosting/deploy#email). The
 
 The API Worker cannot report itself being down. Point an external monitor (any free uptime service) at `https://api.example.com/healthcheck`, which answers `{"ready":true,...}`.
 
+## Feedback from your users
+
+"Give feedback" in the dashboard opens a short form (idea, bug, question or other). Where it goes is up to you; with neither setting, the button stays a link to FlarePanel's GitHub issues.
+
+- **Email**: set `FEEDBACK_EMAIL` in `apps/worker/wrangler.jsonc` to an inbox. It needs the `send_email` binding from [Deploy](/self-hosting/deploy#email). When the sender allows it, replying answers them directly.
+- **GitHub issues**: add a token that may create issues (a fine-grained token with Issues: read and write on one repository), and name the repository:
+
+```bash
+cd apps/worker
+bunx wrangler secret put FEEDBACK_GITHUB_TOKEN
+# and in wrangler.jsonc vars: "FEEDBACK_GITHUB_REPO": "your-org/your-repo"
+```
+
+Each message then becomes an issue labelled `feedback` and its type. The sender's email is included only when they allow a reply. Each person can send 5 messages in 10 minutes.
+
 ## Alerts in your Cloudflare account
 
 These are account settings, not part of the code:

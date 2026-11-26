@@ -237,6 +237,7 @@ async function boot(env: Env): Promise<Booted> {
         html: email.html,
         text: email.text,
         headers: email.headers,
+        ...(email.replyTo ? { replyTo: email.replyTo } : {}),
       })
     );
   }

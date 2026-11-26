@@ -1,5 +1,10 @@
 import { useLocation } from '@tanstack/react-router';
 import { useEffect, useMemo } from 'react';
+import {
+  openFeedback,
+  PUBLIC_FEEDBACK_URL,
+  useInAppFeedback,
+} from '@/components/feedback-button';
 import { PromptCard } from '@/components/organization/prompt-card';
 import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
@@ -12,6 +17,7 @@ export default function FeedbackPrompt() {
   const { isSelfHosted, isDemo } = useAppContext();
   // The chat page owns the bottom of the screen; the card would cover the composer.
   const onChatPage = useLocation().pathname.endsWith('/chat');
+  const inApp = useInAppFeedback();
   const [feedbackPromptSeen, setFeedbackPromptSeen] = useCookieStore(
     'feedback-prompt-seen',
     '',
@@ -45,13 +51,10 @@ export default function FeedbackPrompt() {
   }, [isDemo, isSelfHosted, onChatPage, feedbackPromptSeen]);
 
   const handleGiveFeedback = () => {
-    // Feedback goes to GitHub issues.
-    if (typeof window !== 'undefined') {
-      window.open(
-        'https://github.com/flarepanel-dev/flarepanel/issues/new/choose',
-        '_blank',
-        'noopener,noreferrer'
-      );
+    if (inApp) {
+      openFeedback();
+    } else if (typeof window !== 'undefined') {
+      window.open(PUBLIC_FEEDBACK_URL, '_blank', 'noopener,noreferrer');
     }
     // Set cookie with current timestamp
     setFeedbackPromptSeen(new Date().toISOString());
@@ -71,7 +74,7 @@ export default function FeedbackPrompt() {
 
   return (
     <PromptCard
-      gradientColor="rgb(59 130 246)"
+      gradientColor="rgb(255 106 77)"
       onClose={handleClose}
       show={shouldShow}
       subtitle="Help us improve FlarePanel with your insights"

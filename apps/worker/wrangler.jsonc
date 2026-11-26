@@ -130,7 +130,11 @@
     // Hot events kept in each project's Durable Object; R2 keeps them all.
     "FLAREPANEL_EVENT_RETENTION_DAYS": "90",
     // Checked every 5 minutes by the cron; failures email OPS_ALERT_EMAIL.
-    "UPTIME_URLS": "https://analytics.example.com/login"
+    "UPTIME_URLS": "https://analytics.example.com/login",
+    // "Give feedback" in the dashboard: an inbox to email it to (and/or the
+    // FEEDBACK_GITHUB_TOKEN secret to open GitHub issues). Empty keeps the
+    // button as a link to the FlarePanel repository's issues.
+    "FEEDBACK_EMAIL": ""
   },
   "observability": {
     "enabled": true,

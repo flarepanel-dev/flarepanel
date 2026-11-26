@@ -31,6 +31,7 @@ import { sessionRouter } from './modules/session/session.rpc';
 import { shareRouter } from './modules/share/share.rpc';
 import { subscriptionRouter } from './modules/subscription/subscription.rpc';
 import { userRouter } from './modules/user/user.rpc';
+import { feedbackRouter } from './modules/feedback/feedback.rpc';
 import { widgetRouter } from './modules/widget/widget.rpc';
 import { createTRPCRouter } from './rpc/base';
 
@@ -44,6 +45,7 @@ export const appRouter = createTRPCRouter({
   conversation: conversationRouter,
   organization: organizationRouter,
   user: userRouter,
+  feedback: feedbackRouter,
   project: projectRouter,
   client: clientRouter,
   auth: authRouter,

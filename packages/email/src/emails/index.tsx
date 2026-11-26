@@ -6,6 +6,7 @@ import { EmailInvite, zEmailInvite } from './email-invite';
 import EmailResetPassword, {
   zEmailResetPassword,
 } from './email-reset-password';
+import Feedback, { FEEDBACK_LABELS, zFeedback } from './feedback';
 import NotificationRule, { zNotificationRule } from './notification-rule';
 import OnboardingDashboards, {
   zOnboardingDashboards,
@@ -39,6 +40,12 @@ import WindDownStoppingSoon, {
 } from './wind-down-stopping-soon';
 
 export const templates = {
+  feedback: {
+    subject: (data: z.infer<typeof zFeedback>) =>
+      `[${FEEDBACK_LABELS[data.type]}] ${data.message.replace(/\s+/g, ' ').slice(0, 70)}`,
+    Component: Feedback,
+    schema: zFeedback,
+  },
   invite: {
     subject: (data: z.infer<typeof zEmailInvite>) =>
       `Invite to join ${data.organizationName}`,

@@ -30,6 +30,8 @@ export interface OutgoingEmail {
   html: string;
   text: string;
   headers: Record<string, string>;
+  /** Where a reply goes, when it should not go to the sender. */
+  replyTo?: string;
 }
 
 /**
@@ -82,9 +84,10 @@ export async function sendEmail<T extends TemplateKey>(
   options: {
     to: string;
     data: z.infer<Templates[T]['schema']>;
+    replyTo?: string;
   }
 ) {
-  const { to, data } = options;
+  const { to, data, replyTo } = options;
   const template = templates[templateKey];
   const props = template.schema.safeParse(data);
 
@@ -135,6 +138,7 @@ export async function sendEmail<T extends TemplateKey>(
         html,
         text,
         headers,
+        ...(replyTo ? { replyTo } : {}),
       });
     } catch (error) {
       console.error(
@@ -157,6 +161,7 @@ export async function sendEmail<T extends TemplateKey>(
         subject,
         html,
         headers,
+        replyTo,
       });
       return res;
     } catch (error) {
@@ -183,6 +188,7 @@ export async function sendEmail<T extends TemplateKey>(
       to,
       subject,
       react: <template.Component {...(props.data as any)} />,
+      ...(replyTo ? { replyTo } : {}),
       headers: Object.keys(headers).length > 0 ? headers : undefined,
     });
     if (res.error) {

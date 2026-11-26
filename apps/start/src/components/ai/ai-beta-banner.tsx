@@ -29,7 +29,7 @@ export function AiBetaBanner({ className }: { className?: string }) {
           learn about your AI features and what is missing.
         </p>
         <div className="row flex-wrap gap-2">
-          <FeedbackButton className={ACTION_CLASS}>
+          <FeedbackButton className={ACTION_CLASS} topic="AI observability">
             <MessageSquareIcon className="size-3.5" />
             Give feedback
           </FeedbackButton>
