@@ -8,7 +8,7 @@
   "main": "src/server.ts",
   // Yours: the dashboard's custom domain.
   "routes": [{ "pattern": "analytics.example.com", "custom_domain": true }],
-  // Per-Worker cost cap .
+  // Per-Worker cost cap.
   "limits": { "cpu_ms": 10000 },
   "vars": {
     // Yours: the same two addresses as the API's.

@@ -15,7 +15,7 @@
   // overriding the vars below (Miniflare, free).
   // Yours: the API's custom domain.
   "routes": [{ "pattern": "api.example.com", "custom_domain": true }],
-  // Per-Worker cost cap : at most 10 s CPU per invocation.
+  // Per-Worker cost cap: at most 10 s CPU per invocation.
   "limits": { "cpu_ms": 10000 },
   "d1_databases": [
     {

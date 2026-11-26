@@ -4,11 +4,11 @@ Thanks for helping. A few things to know first.
 
 ## Before you start
 
-- Read `docs/adr/0001-architecture-and-product-strategy.md`. FlarePanel is
-  moving from OpenPanel's Postgres/ClickHouse/Redis/Kafka stack to Cloudflare
-  (Workers, D1, Durable Objects, R2). New code should target the Cloudflare
-  side, not the services being replaced.
-- `docs/project-plan.md` lists the phases. Open an issue before large changes.
+- Read the [architecture page](https://docs.flarepanel.dev/self-hosting/architecture).
+  FlarePanel is moving from OpenPanel's Postgres/ClickHouse/Redis/Kafka stack
+  to Cloudflare (Workers, D1, Durable Objects, R2). New code should target the
+  Cloudflare side, not the services being replaced.
+- Open an issue before large changes.
 - Keep OpenPanel's tracking protocol working (see `NOTICE`): existing
   OpenPanel SDKs must still be able to send events.
 

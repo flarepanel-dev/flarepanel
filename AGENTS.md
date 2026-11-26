@@ -1,9 +1,8 @@
 # FlarePanel — agent guide
 
 > **FlarePanel port in progress.** This repo is a fork of OpenPanel being moved to
-> Cloudflare (Workers, D1, Durable Objects, R2). Read
-> `docs/adr/0001-architecture-and-product-strategy.md` and `docs/project-plan.md`
-> first. The sections below describe the inherited OpenPanel stack, which is what
+> Cloudflare (Workers, D1, Durable Objects, R2). Read the architecture page
+> (https://docs.flarepanel.dev/self-hosting/architecture) first. The sections below describe the inherited OpenPanel stack, which is what
 > the code still runs today. Keep OpenPanel's tracking protocol compatible (see `NOTICE`).
 
 **If `WORKTREE.md` exists in the repo root, read it before anything else.** The tooling

@@ -37,7 +37,7 @@ pub/sub ordering, fan-out, channel isolation and unsubscribe.
   `*.workers.dev`; use a custom domain.
 - The Worker that hosts the API must export `CoordinatorDurableObject` and
   `PubSubHubDurableObject` and bind them as `COORDINATOR` and `PUBSUB_HUB`
-  (see `test/cloudflare/wrangler.jsonc` and `docs/cloudflare-runtime.md`).
+  (see `test/cloudflare/wrangler.jsonc`).
 
 ## Not here yet
 

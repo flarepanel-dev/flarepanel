@@ -4,7 +4,7 @@ We welcome reports of security issues in FlarePanel.
 
 ## Reporting a vulnerability
 
-Please don't report security issues through public GitHub issues, pull requests, or our Discord. Report it privately instead, either by email to security@flarepanel.dev or through the repository's GitHub Security Advisories at https://github.com/flarepanel-dev/flarepanel/security/advisories/new ("Report a vulnerability"). Our contact details are also in our [security.txt](https://flarepanel.dev/.well-known/security.txt).
+Please don't report security issues through public GitHub issues or pull requests. Report it privately instead, either by email to security@flarepanel.dev or through the repository's GitHub Security Advisories at https://github.com/flarepanel-dev/flarepanel/security/advisories/new ("Report a vulnerability"). Our contact details are also in our [security.txt](https://flarepanel.dev/.well-known/security.txt).
 
 To help us triage quickly, please include what you can:
 

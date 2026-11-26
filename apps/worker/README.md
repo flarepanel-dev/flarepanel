@@ -2,7 +2,7 @@
 
 FlarePanel's API on Cloudflare Workers: sign-in, organizations, projects,
 clients, the public API and `/trpc`, on D1 with the Cloudflare platform stores
-and job queue. Phase 2c of `docs/project-plan.md`.
+and job queue.
 
 ## Run it locally (free, nothing leaves your machine)
 
@@ -131,8 +131,6 @@ To redeploy:
 cd apps/worker && wrangler d1 migrations apply flarepanel --remote && wrangler deploy
 cd apps/start && bun run deploy
 ```
-
-Limits and expected usage: `docs/cloudflare-runtime.md`.
 
 ## Configs: self-hosting template and flarepanel.dev
 

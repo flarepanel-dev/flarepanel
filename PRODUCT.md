@@ -78,8 +78,7 @@ the same open-source code runs hosted or on your own Cloudflare account.
 ## Evidence on Hand
 
 - Real: the product itself, the open-source repository, the brand kit, the
-  architecture and cost model (`docs/adr/0001-architecture-and-product-strategy.md`,
-  `docs/cloudflare-runtime.md`).
+  architecture (https://docs.flarepanel.dev/self-hosting/architecture).
 - Absent and must not be fabricated: customers, logos, testimonials, usage
   numbers, benchmarks, press, pricing.
 

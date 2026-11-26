@@ -1,8 +1,10 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="brand/wordmark-dark.svg">
-    <img alt="FlarePanel" src="brand/wordmark-light.svg" width="340">
-  </picture>
+  <a href="https://flarepanel.dev">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="brand/wordmark-dark.svg">
+      <img alt="FlarePanel" src="brand/wordmark-light.svg" width="340">
+    </picture>
+  </a>
 </p>
 
 <p align="center">
@@ -10,45 +12,58 @@
 </p>
 
 <p align="center">
-  <a href="LICENSE.md">AGPL-3.0</a> ·
-  <a href="docs/adr/0001-architecture-and-product-strategy.md">Architecture</a> ·
-  <a href="docs/project-plan.md">Roadmap</a> ·
-  <a href="CONTRIBUTING.md">Contributing</a>
+  <a href="https://flarepanel.dev">Website</a> ·
+  <a href="https://docs.flarepanel.dev">Docs</a> ·
+  <a href="https://dashboard.flarepanel.dev/onboarding">Get early access</a> ·
+  <a href="https://flarepanel.dev/blog">Blog</a> ·
+  <a href="https://status.flarepanel.dev">Status</a> ·
+  <a href="https://x.com/FlarePanel">X</a>
 </p>
 
 ---
 
-> **Status: early development.** FlarePanel is being ported from OpenPanel's
-> Postgres/ClickHouse/Redis/Kafka stack to Cloudflare. It is not ready to
-> deploy yet. Follow the [roadmap](docs/project-plan.md).
-
-## What it is
-
-FlarePanel is a fork of [OpenPanel](https://github.com/Openpanel-dev/openpanel)
-rebuilt on Cloudflare's own services, so you can deploy it to your Cloudflare
-account with no servers or databases to run:
+FlarePanel gives you realtime dashboards, sessions and session replay, funnels,
+retention, user profiles and an AI analyst, with no servers or databases to
+run. Every part runs on Cloudflare's developer platform:
 
 | Part | Runs on |
 |---|---|
-| Dashboard and API | Cloudflare Workers |
-| Accounts, projects, settings | D1 |
-| Live counters, rollups, realtime | Durable Objects |
-| Raw event archive | R2 |
-| Scheduled jobs | Cron Triggers |
+| Event intake, dashboard API, auth | Cloudflare Workers |
+| Each project's events, sessions and rollups | One Durable Object per project |
+| Raw event archive, session replay | R2 |
+| Accounts, projects and settings | D1 |
+| Background work (exports, insights, notifications) | Queues and Cron Triggers |
 
-Planned:
+> **Early access.** Tracking, the dashboards, sessions and replay work today on
+> the hosted service. Some reports are still being moved over; see
+> [what works today](https://docs.flarepanel.dev/getting-started/status).
 
-- **Self-hosted:** free, one-click deploy to your own Cloudflare account, with
-  a free-plan "lite" mode for small sites.
-- **FlarePanel Cloud:** hosted by us, priced per event.
-- **Data region choice:** keep data in the EU or US.
-- **Works with OpenPanel SDKs:** point an existing OpenPanel SDK at your
-  FlarePanel URL and keep tracking.
+## Use it
 
-## Features (inherited from OpenPanel)
+- **Hosted:** create an account at
+  [dashboard.flarepanel.dev](https://dashboard.flarepanel.dev/onboarding), add a
+  project and paste the snippet. Early access is free while billing is set up.
+- **Self-hosted:** deploy the same code to your own Cloudflare account. It
+  needs the Workers Paid plan. Follow the
+  [deploy guide](https://docs.flarepanel.dev/self-hosting/deploy).
 
-Web analytics, product analytics, funnels, retention, user profiles,
-sessions, live visitors, dashboards, an AI assistant and AI observability.
+```html
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:"call"===r||"apply"===r||"bind"===r?t[r]:function(){n.push([r].concat([].slice.call(arguments)))}},has:function(t,r){return"q"===r}})}();
+  window.op('init', { clientId: 'YOUR_CLIENT_ID', trackScreenViews: true });
+</script>
+<script src="https://flarepanel.dev/op1.js" defer async></script>
+```
+
+SDKs for the browser, React, Next.js and servers are on npm under
+[`@flarepanel`](https://www.npmjs.com/org/flarepanel).
+
+## Coming from OpenPanel
+
+FlarePanel is a fork of [OpenPanel](https://github.com/Openpanel-dev/openpanel)
+and speaks the same tracking protocol, so an existing OpenPanel SDK keeps
+working when you point its `apiUrl` at your FlarePanel API. See
+[Coming from OpenPanel](https://docs.flarepanel.dev/getting-started/openpanel).
 
 ## Development
 
@@ -56,13 +71,17 @@ sessions, live visitors, dashboards, an AI assistant and AI observability.
 bun install
 bun run codegen
 bun run typecheck
+bun run test
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full setup.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full setup and
+[SECURITY.md](SECURITY.md) to report a vulnerability.
 
 ## License
 
-AGPL-3.0, like OpenPanel. The client SDKs in `packages/sdks` are MIT. See
-[NOTICE.md](NOTICE.md) for attribution and what changed from OpenPanel.
+The platform is [AGPL-3.0](LICENSE.md), like OpenPanel. The client SDKs in
+`packages/sdks` are MIT. See [NOTICE.md](NOTICE.md) for attribution and what
+changed from OpenPanel.
 
-FlarePanel is not affiliated with OpenPanel or Cloudflare.
+FlarePanel is an independent project. It is not affiliated with or endorsed by
+OpenPanel or Cloudflare.

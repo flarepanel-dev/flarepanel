@@ -15,7 +15,7 @@ concurrency:
 
 # Inherited from the OpenPanel import: the suite still needs Redis and
 # ClickHouse (metadata is SQLite/D1 now). These services go away as each part moves to D1, Durable Objects
-# and R2 (see docs/adr/0001-architecture-and-product-strategy.md).
+# and R2 (see https://docs.flarepanel.dev/self-hosting/architecture).
 jobs:
   check:
     runs-on: ubuntu-latest

@@ -6,7 +6,7 @@ Database access for FlarePanel.
   **SQLite**. Production uses **Cloudflare D1**; local development and tests use
   a SQLite file.
 - **Events**: ClickHouse, until events move to Durable Objects and R2
-  (see `docs/adr/0001-architecture-and-product-strategy.md`).
+  (see https://docs.flarepanel.dev/self-hosting/architecture).
 
 ## Configuration
 

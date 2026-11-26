@@ -8,7 +8,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
   "routes": [{ "pattern": "dashboard.flarepanel.dev", "custom_domain": true }],
-  // Per-Worker cost cap .
+  // Per-Worker cost cap.
   "limits": { "cpu_ms": 10000 },
   "vars": {
     "API_URL": "https://api.flarepanel.dev",

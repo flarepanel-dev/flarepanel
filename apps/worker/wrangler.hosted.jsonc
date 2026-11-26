@@ -14,7 +14,7 @@
   // Production: api.flarepanel.dev. Local: `bun run dev` with .dev.vars
   // overriding the vars below (Miniflare, free).
   "routes": [{ "pattern": "api.flarepanel.dev", "custom_domain": true }],
-  // Per-Worker cost cap : at most 10 s CPU per invocation.
+  // Per-Worker cost cap: at most 10 s CPU per invocation.
   "limits": { "cpu_ms": 10000 },
   "d1_databases": [
     {
