@@ -57,7 +57,7 @@ export function ComparePage({ comparison }: { comparison: Comparison }) {
   ];
   const others = COMPARISONS.filter((c) => c.slug !== comparison.slug);
   return (
-    <>
+    <div>
       <Nav />
       <main className="border-rule border-t" id="main">
         <Container className="py-16 sm:py-20">
@@ -200,6 +200,6 @@ export function ComparePage({ comparison }: { comparison: Comparison }) {
         </Container>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

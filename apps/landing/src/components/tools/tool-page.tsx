@@ -38,7 +38,7 @@ export function ToolPage({
 }) {
   const others = TOOLS.filter((tool) => tool.href !== path);
   return (
-    <>
+    <div>
       <Nav />
       <main className="border-rule border-t" id="main">
         <Container className="py-16 sm:py-20">
@@ -88,6 +88,6 @@ export function ToolPage({
         </Container>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

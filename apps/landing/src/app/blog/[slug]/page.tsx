@@ -71,7 +71,7 @@ export default async function BlogPost({
   };
 
   return (
-    <>
+    <div>
       <Nav />
       <main className="border-rule border-t" id="main">
         <Container className="py-14 sm:py-20">
@@ -141,6 +141,6 @@ export default async function BlogPost({
         />
       </main>
       <Footer />
-    </>
+    </div>
   );
 }
