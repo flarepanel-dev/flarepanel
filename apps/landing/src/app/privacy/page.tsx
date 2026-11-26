@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { COMPANY, LEGAL_DRAFT, LegalPage } from '@/components/legal';
+import { COMPANY, LegalPage } from '@/components/legal';
+import { LEGAL_DRAFT } from '@/lib/legal';
 import { site } from '@/lib/site';
 
 export const metadata: Metadata = {
@@ -121,13 +122,35 @@ export default function PrivacyPage() {
         then dropped: it is not stored with events.
       </p>
 
-      <h2>3. Cookies on our own sites</h2>
+      <h2>3. Cookies and tracking on our own sites</h2>
       <p>
         flarepanel.dev, docs.flarepanel.dev and status.flarepanel.dev set no
-        cookies and do not track visitors. The dashboard sets two cookies only
-        when you sign in: a session cookie that keeps you signed in, and one
-        that remembers which sign-in method you used last. Both are needed for
-        the service; neither is used for advertising.
+        cookies and run no analytics. The status page remembers a light or dark
+        choice in your browser's local storage, which never leaves your device.
+      </p>
+      <p>
+        The dashboard sets a session cookie that keeps you signed in, one that
+        remembers which sign-in method you used last, and a few that remember
+        your display choices (theme, chart type, date range, and whether you
+        have seen a prompt). They are needed for the service or remember what
+        you chose; none is used for advertising, and the dashboard runs no
+        analytics on you.
+      </p>
+
+      <h3>Status emails</h3>
+      <p>
+        If you subscribe to status emails, we keep your address and the services
+        you chose until you unsubscribe (an address that is never confirmed is
+        deleted after a week). To stop the form being abused we keep, for up to
+        a day, a keyed hash of the network you subscribed from; it cannot be
+        turned back into an address without our secret key.
+      </p>
+
+      <h3>Free tools</h3>
+      <p>
+        The URL checker and IP lookup on flarepanel.dev/tools do not keep what
+        you enter. Requests can appear for a few days in our service logs, which
+        we use only to run and secure the service.
       </p>
 
       <h2>4. Where data is stored</h2>
@@ -169,6 +192,14 @@ export default function PrivacyPage() {
           <tr>
             <td>Session replays and AI prompt/response text</td>
             <td>30 days</td>
+          </tr>
+          <tr>
+            <td>Status email subscriptions</td>
+            <td>Until you unsubscribe; unconfirmed ones a week</td>
+          </tr>
+          <tr>
+            <td>Service logs</td>
+            <td>A few days</td>
           </tr>
           <tr>
             <td>Point-in-time backups</td>

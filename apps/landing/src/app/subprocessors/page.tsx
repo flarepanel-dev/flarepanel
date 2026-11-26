@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { LEGAL_DRAFT, LegalPage } from '@/components/legal';
+import { LegalPage } from '@/components/legal';
+import { LEGAL_DRAFT } from '@/lib/legal';
 
 export const metadata: Metadata = {
   title: 'Subprocessors: FlarePanel',

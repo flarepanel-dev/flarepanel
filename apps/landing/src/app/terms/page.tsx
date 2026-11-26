@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { COMPANY, LEGAL_DRAFT, LegalPage } from '@/components/legal';
+import { COMPANY, LegalPage } from '@/components/legal';
+import { LEGAL_DRAFT } from '@/lib/legal';
 import { formatEvents, TRIAL_DAYS, TRIAL_EVENTS } from '@/lib/pricing';
 import { site } from '@/lib/site';
 

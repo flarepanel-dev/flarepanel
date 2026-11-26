@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function IpLookupPage() {
   return (
     <ToolPage
-      lede="See roughly where an IP address is: country, region and city. Leave the field empty to look up your own connection. Nothing you enter is stored."
+      lede="See roughly where an IP address is: country, region and city. Leave the field empty to look up your own connection. We don't keep what you look up."
       path="/tools/ip-lookup"
       title="IP address lookup"
     >

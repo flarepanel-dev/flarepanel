@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { COMPANY, LEGAL_DRAFT, LegalPage } from '@/components/legal';
+import { COMPANY, LegalPage } from '@/components/legal';
+import { LEGAL_DRAFT } from '@/lib/legal';
 
 export const metadata: Metadata = {
   title: 'Data processing agreement: FlarePanel',

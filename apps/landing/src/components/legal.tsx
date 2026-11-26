@@ -9,9 +9,7 @@ import type { ReactNode } from 'react';
 import { Footer } from './footer';
 import { Nav } from './nav';
 import { Container } from './ui';
-
-export const LEGAL_DRAFT = true;
-export const LEGAL_UPDATED = '2026-11-26';
+import { LEGAL_DRAFT, LEGAL_UPDATED } from '@/lib/legal';
 
 /** Company details the owner fills in before publishing. */
 export const COMPANY = {

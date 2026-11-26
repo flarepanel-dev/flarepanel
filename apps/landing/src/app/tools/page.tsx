@@ -23,7 +23,8 @@ export default function ToolsPage() {
             Free website tools
           </h1>
           <p className="mt-4 max-w-[56ch] text-[16px] text-muted leading-[1.6] sm:text-[17px]">
-            Quick checks we use ourselves. Free, no sign-up, nothing stored.
+            Quick checks we use ourselves. Free, no sign-up, and we don't keep
+            what you enter.
           </p>
           <div className="mt-12 grid gap-4 md:grid-cols-2">
             {TOOLS.map((tool) => (

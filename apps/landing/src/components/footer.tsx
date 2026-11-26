@@ -1,4 +1,5 @@
 import { Container, EarlyAccessButton, GitHubButton, Logo } from './ui';
+import { LEGAL_DRAFT } from '@/lib/legal';
 import { site } from '@/lib/site';
 
 const COLUMNS = [
@@ -31,6 +32,7 @@ const COLUMNS = [
       { label: 'Get early access', href: site.signUp },
     ],
   },
+  // Shown once the legal texts are reviewed (LEGAL_DRAFT in legal.tsx).
   {
     title: 'Legal',
     links: [
@@ -78,7 +80,9 @@ export function Footer() {
             fork of OpenPanel, not affiliated with OpenPanel or Cloudflare.
           </p>
         </div>
-        {COLUMNS.map((column) => (
+        {COLUMNS.filter(
+          (column) => !(LEGAL_DRAFT && column.title === 'Legal')
+        ).map((column) => (
           <nav aria-label={column.title} key={column.title}>
             <h2 className="font-medium text-[13px] text-soft">
               {column.title}
