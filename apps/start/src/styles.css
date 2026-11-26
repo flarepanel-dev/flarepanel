@@ -18,7 +18,7 @@ body {
 
 :root {
   /* Core colors converted from HSL to OKLCH using convert-to-oklch tool */
-  --highlight: #d61f55; /* Flare 600, links on white (4.9:1) */
+  --highlight: #c2410c; /* Ember 700, links on white (5.2:1) */
 
   /* def- color scale converted from HSL to OKLCH */
   --def-100: #f3f4f8; /* obsidian 100 */
@@ -49,7 +49,7 @@ body {
   ); /* hsl(0, 100%, 97.25%) -> #F8F9FB */
   --border: #e4e4e8; /* obsidian 200 */
   --input: #e4e4e8; /* obsidian 200 */
-  --ring: #ff3d6e; /* Flare focus ring */
+  --ring: #ff6a4d; /* Ember focus ring */
 
   /* Chart colors converted to OKLCH for consistency */
   /* Photon data palette: Ember leads, Sky is its complement, Spark third.
@@ -119,7 +119,7 @@ body {
 .dark {
   /* Photon dark: a cool ink ramp taken from the logo's graphite panel. The
      sidebar and cards sit one step below the page, as before. */
-  --highlight: #ff3d6e; /* Flare, 5.6:1 on the page */
+  --highlight: #ff6a4d; /* Ember, 6.4:1 on the page */
 
   --def-100: #0e0e11;
   --def-200: #1c1c22;
@@ -146,7 +146,7 @@ body {
   --destructive-foreground: #fff5f5;
   --border: #24242b;
   --input: #24242b;
-  --ring: #ff3d6e; /* Flare focus ring */
+  --ring: #ff6a4d; /* Ember focus ring */
   --live: #ffb547; /* Spark */
 }
 
@@ -262,7 +262,7 @@ body {
   }
 
   ::selection {
-    background: oklch(from var(--flare) l c h / 0.32);
+    background: oklch(from var(--ember) l c h / 0.32);
   }
 
   /* Monospace reads a step larger than Inter, so code sits one size below body text. */

@@ -68,8 +68,8 @@ the same open-source code runs hosted or on your own Cloudflare account.
   `brand/tokens.json`, files built by `brand/scripts/build.ts`): a solid
   panel whose cells rise in a lit staircase while the top step breaks away
   as the flare. Cool ink neutrals; three warm lights with one job each:
-  Ember `#FF6A4D` data, Spark `#FFB547` live, Flare `#FF3D6E` links and
-  focus. No warm fills on buttons or backgrounds; down/negative is its own
+  Ember `#FF6A4D` data, links and focus; Spark `#FFB547` live; Flare
+  `#FF3D6E` only inside the logo and data-bar gradient. No warm fills on buttons or backgrounds; down/negative is its own
   crimson. Geist across the website and the dashboard. Chosen on 2026-11-26
   after four rounds of logo directions.
 - A dark-background marketing site that matches the dark dashboard and looks

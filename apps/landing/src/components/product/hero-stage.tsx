@@ -16,7 +16,7 @@ export function HeroStage() {
     <div className="relative">
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-24 left-1/2 h-[420px] w-[min(1100px,100%)] -translate-x-1/2 bg-[radial-gradient(50%_60%_at_50%_45%,rgba(255,106,77,0.16),rgba(255,61,110,0.06)_45%,transparent_75%)] blur-2xl"
+        className="pointer-events-none absolute -top-24 left-1/2 h-[420px] w-[min(1100px,100%)] -translate-x-1/2 bg-[radial-gradient(50%_60%_at_50%_45%,rgba(255,106,77,0.16),rgba(255,154,74,0.06)_45%,transparent_75%)] blur-2xl"
       />
       <AppFrame
         className="[mask-image:linear-gradient(to_bottom,black_80%,transparent)]"

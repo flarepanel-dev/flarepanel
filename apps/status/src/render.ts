@@ -98,7 +98,7 @@ const IMPACT_TONE: Record<Impact, string> = {
 const STYLE = `
 @font-face{font-family:Geist;src:url(/fonts/Geist-Variable.woff2) format("woff2");font-weight:100 900;font-display:swap}
 @font-face{font-family:"Geist Mono";src:url(/fonts/GeistMono-Variable.woff2) format("woff2");font-weight:100 900;font-display:swap}
-:root{--ink:#0d0d10;--panel:#111115;--raised:#18181d;--hover:#1d1d23;--rule:#24242b;--rule-strong:#3b3b44;--faint:#7d7d86;--muted:#a3a3ab;--soft:#d6d6dc;--paper:#f9fafe;--flare:#ff3d6e;--up:#3ccb7f;--minor:#ffb547;--major:#ef5a5f;--maint:#4cb0e5;--none:#24242b;color-scheme:dark}
+:root{--ink:#0d0d10;--panel:#111115;--raised:#18181d;--hover:#1d1d23;--rule:#24242b;--rule-strong:#3b3b44;--faint:#7d7d86;--muted:#a3a3ab;--soft:#d6d6dc;--paper:#f9fafe;--accent:#ff6a4d;--up:#3ccb7f;--minor:#ffb547;--major:#ef5a5f;--maint:#4cb0e5;--none:#24242b;color-scheme:dark}
 :root[data-theme=light]{--ink:#f6f6f7;--panel:#ffffff;--raised:#f1f1f3;--hover:#f6f6f8;--rule:#e4e4e7;--rule-strong:#d0d0d5;--faint:#6b6b72;--muted:#4f4f56;--soft:#33333a;--paper:#0d0d10;--up:#15803d;--minor:#b45309;--major:#dc2626;--maint:#0369a1;--none:#e4e4e7;color-scheme:light}
 @media (prefers-color-scheme:light){:root:not([data-theme=dark]){--ink:#f6f6f7;--panel:#ffffff;--raised:#f1f1f3;--hover:#f6f6f8;--rule:#e4e4e7;--rule-strong:#d0d0d5;--faint:#6b6b72;--muted:#4f4f56;--soft:#33333a;--paper:#0d0d10;--up:#15803d;--minor:#b45309;--major:#dc2626;--maint:#0369a1;--none:#e4e4e7;color-scheme:light}}
 *{box-sizing:border-box}
@@ -106,7 +106,7 @@ html{background:var(--ink)}
 body{margin:0;background:var(--ink);color:var(--soft);font:400 15.5px/1.6 Geist,ui-sans-serif,system-ui,sans-serif;font-feature-settings:"ss01","cv11";-webkit-font-smoothing:antialiased}
 a{color:var(--paper);text-decoration-color:var(--rule-strong);text-underline-offset:3px}
 a:hover{text-decoration-color:var(--paper)}
-a:focus-visible,summary:focus-visible{outline:2px solid var(--flare);outline-offset:3px;border-radius:6px}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
 .wrap{max-width:780px;margin:0 auto;padding:0 20px}
 header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:28px 0 36px}
 .brand{display:flex;align-items:center;gap:10px;color:var(--paper);text-decoration:none;font-weight:600;letter-spacing:-.015em;font-size:17px}
@@ -188,7 +188,7 @@ footer a{color:var(--muted)}
 .opt p{margin:0 0 12px;color:var(--muted);font-size:14px}
 form .field{display:flex;gap:8px;flex-wrap:wrap}
 input[type=email]{flex:1;min-width:220px;height:40px;padding:0 12px;border-radius:9px;border:1px solid var(--rule-strong);background:var(--ink);color:var(--paper);font:inherit;font-size:15px}
-input[type=email]:focus-visible{outline:2px solid var(--flare);outline-offset:1px}
+input[type=email]:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 button.primary{height:40px;padding:0 16px;border-radius:9px;border:0;background:var(--paper);color:var(--ink);font:inherit;font-weight:600;font-size:14.5px;cursor:pointer}
 button.primary:hover{opacity:.9}
 fieldset{border:0;margin:14px 0 0;padding:0}

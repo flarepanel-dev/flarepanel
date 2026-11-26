@@ -3,7 +3,6 @@ name: FlarePanel
 description: Open-source web and product analytics that runs entirely on Cloudflare.
 colors:
   flare: "#ff3d6e"
-  flare-soft: "#ff7393"
   ember: "#ff6a4d"
   spark: "#ffb547"
   data-base: "#ff4f62"
@@ -200,7 +199,7 @@ components:
     backgroundColor: "{colors.raised}"
     textColor: "{colors.paper}"
   text-link:
-    textColor: "{colors.flare}"
+    textColor: "{colors.ember}"
   status-pill:
     textColor: "{colors.soft}"
     rounded: "{rounded.full}"
@@ -223,7 +222,7 @@ components:
 
 **Creative North Star: "The Live Instrument", in Photon light**
 
-FlarePanel's marketing surface is a dark instrument panel, the same world as the dashboard it sells. The ground is near-black ink, structure is drawn with hairline rules instead of fills or shadows, and almost everything sits in a quiet cool-graphite ramp taken from the logo's panel. Against that, three warm lights each do one job, as in the Photon mark (brand/README.md): Ember is data (bars lit from the base, the current-period line), Spark is live (the online-now dot, the live card, the newest event), and Flare is interaction (links, focus, selection). Because the rest of the panel stays dark, a warm pixel always means something.
+FlarePanel's marketing surface is a dark instrument panel, the same world as the dashboard it sells. The ground is near-black ink, structure is drawn with hairline rules instead of fills or shadows, and almost everything sits in a quiet cool-graphite ramp taken from the logo's panel. Against that, three warm lights each do one job, as in the Photon mark (brand/README.md): Ember is the accent: data (bars lit from the base, the current-period line) and interaction (links, focus, selection); Spark is live (the online-now dot, the live card, the newest event); Flare only lives inside the light, at the base of the logo's panel and of each data bar. Because the rest of the panel stays dark, a warm pixel always means something.
 
 Type does two clearly separate jobs. Geist at 700 with very tight tracking makes compact, heavy claims; Geist Mono carries every number, code line, path and measurement, the way it would in a terminal or a chart axis. Density is generous at page level (tall sections, wide gutters) and tight inside the instrument (dashboard chips, KPI strips, code rows), so the product reads as dense working UI on a calm stage.
 
@@ -231,7 +230,7 @@ The page is dark because its readers work next to a dark IDE and the dark FlareP
 
 **Key Characteristics:**
 - Ink ground with tonal panels and 1px rules. The only gradients are the logo's light: data bars lit Flare-to-Ember from the base, and one warm stage light behind the hero product frame.
-- One job per warm colour: Ember data, Spark live, Flare interaction. None of them fills a button or a background.
+- One job per warm colour: Ember data and interaction, Spark live, Flare only inside the gradient. None of them fills a button or a background.
 - Geist 700 at -0.045em for headings; Geist Mono only for data, code and measurements. The dashboard uses the same Geist families.
 - Up is green, down is crimson (its own cooler red), never a data colour.
 - One authored motion per moment, all paused under reduced motion.
@@ -243,7 +242,8 @@ A cool, near-monochrome ink ramp with three warm Photon lights, each with one jo
 ### Primary
 - **Ember** (ember): data. The lead chart series in the dashboard (`--chart-0`, first of `chartColors`) and in every preview: KPI bars (painted with the `bg-data` / `fp-data-bar` ramp from Flare at the base to a warm orange at the top), the current-period line and its area, funnel bars, retention, map dots, replay progress, the pricing slider.
 - **Spark** (spark): live. The online-now dot and its ping, the live count, the live card's bars, the newest row in the realtime feed and its city ping, the current step of a progress stepper.
-- **Flare** (flare): interaction and brand. Text links and their underline, the global focus ring, text selection, the event-route pulse. **Flare Soft** (flare-soft) is link hover on dark.
+- **Ember** also carries interaction: text links and their underline, the global focus ring, text selection (`#c2410c` for links on white in the dashboard's light theme).
+- **Flare** (flare): only inside the light, as the base of the logo's lit panel and of each data bar. Never a flat UI colour: on its own it reads as the retired v1 coral.
 
 ### Secondary
 - **Delta Crimson** (crimson): negative deltas and the removed line of a diff (marker, strike-through decoration and a faint wash). Cooler and redder than Ember so a falling number never reads as data.
@@ -255,7 +255,7 @@ A cool, near-monochrome ink ramp with three warm Photon lights, each with one jo
 - **Raised Graphite** (raised): active tab, copy button, sample-data tag, top-pages bar fills, outline-button hover, mobile menu hover.
 - **Hover Graphite** (hover): the selected item in the dashboard sidebar.
 - **Hairline** (rule): every section divider, card and panel border, table row line.
-- **Strong Hairline** (rule-strong): outline-button border, the highlighted card's border, the event-route line, rest-state bullets, link underlines that are not yet Flare, the scrollbar thumb, code line numbers.
+- **Strong Hairline** (rule-strong): outline-button border, the highlighted card's border, the event-route line, rest-state bullets, link underlines that are not yet Ember, the scrollbar thumb, code line numbers.
 - **Faint Gray** (faint): metadata, axis labels, footnotes, dim code, footer legal line.
 - **Muted Gray** (muted): body copy and ledes, nav links at rest.
 - **Soft Gray** (soft): secondary emphasis: list points, row headers, inline code, service names.
@@ -265,7 +265,7 @@ A cool, near-monochrome ink ramp with three warm Photon lights, each with one jo
 ### Named Rules
 **The Data Palette Rule.** Categories take the Photon chart palette in this order: ember #ff6a4d, sky #4cb0e5, spark #ffb547, teal #08b6af, violet #a064db, lime #83c758, then slate, flare, blue, orchid, sea, green, blush. One colour always means one thing: screen_view is sky, sign_up ember, checkout_started spark, project_created teal. Fills sit at low opacity (about 16%) behind text and at full strength only for the mark itself (dot, line, bar). Chart colours never appear outside data: not on buttons, headings, borders or page backgrounds.
 
-**The One Job Rule.** Ember is data, Spark is live, Flare is interaction. If it is not data, not happening now and you cannot click it, it is none of the three.
+**The One Job Rule.** Ember is data and interaction, Spark is live, Flare stays inside the gradient. If it is not data, not happening now and you cannot click it, it is not warm.
 
 **The Lit Bar Rule.** Single-series bars are lit like the logo's panel: Flare at the base to a warm orange at the top (`bg-data` on the website, `url(#fp-data-bar)` from `components/brand-defs.tsx` in the dashboard). Lines and areas stay solid Ember.
 
@@ -328,7 +328,7 @@ Quiet, compact and solid, with a pressed nudge rather than a glow.
 - **Shape:** gently rounded (9px), 44px tall, 18px side padding, 15px Geist 500, optional 16 to 17px icon at an 8px gap.
 - **Primary:** paper fill with ink text. Hover steps to the paper-pressed gray.
 - **Outline:** transparent with a strong-hairline border and paper text; hover lifts to the raised fill and a faint border, and a trailing arrow nudges 2px right.
-- **Hover / Focus:** 200ms transitions on the expo-out curve; active presses down 1px; focus is the global 2px Flare outline at 3px offset.
+- **Hover / Focus:** 200ms transitions on the expo-out curve; active presses down 1px; focus is the global 2px Ember outline at 3px offset.
 - **Compact (nav):** the same paper button at 36px tall, 8px radius, 14px text.
 - **Utility (copy):** 32px tall, 6px radius, raised fill with a hairline border and muted text that turns paper on hover.
 
@@ -352,8 +352,8 @@ Quiet, compact and solid, with a pressed nudge rather than a glow.
 - **Mobile:** a 40px menu toggle opens a full-width panel of 17px soft-gray links with raised hover rows; Escape closes it.
 
 ### Links
-- **Inline:** Flare text with a Flare underline at 40% opacity (1px, 0.22em offset) that goes to full Flare on hover.
-- **Card call to action:** paper 15px text with a strong-hairline underline that turns Flare on hover, plus an arrow that nudges right.
+- **Inline:** Ember text with an Ember underline at 40% opacity (1px, 0.22em offset) that goes to full Ember on hover.
+- **Card call to action:** paper 15px text with a strong-hairline underline that turns Ember on hover, plus an arrow that nudges right.
 
 ### Product previews: the app world (signature)
 Product imagery is the dashboard itself, rebuilt as components, never a drawn mockup. Inside a preview the page switches to the dashboard's own world (the `app-*` colours: #151515 ground, #1a1a1a sidebar and cards, #272727 lines, #a6a6a6 muted text) and its type ramp (10px uppercase labels at 0.5px tracking, 12 to 13px rows and controls, 19px mono values, 44px realtime count), set in Geist and Geist Mono. 6px corners inside, the 18px frame and the stage drop outside. Every preview carries the SAMPLE DATA tag (in the sidebar from md, top-right below md). Previews are decorative (`aria-hidden`); the tour's tabs are the keyboard path.
@@ -378,7 +378,7 @@ Four stops joined by a 1px strong-hairline line through 11px hollow nodes. One F
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep each warm colour to its job: Ember for data, Spark for live (live count, newest feed row, online dot), Flare for links, focus and selection.
+- **Do** keep each warm colour to its job: Ember for data, Spark for live (live count, newest feed row, online dot), and Ember again for links, focus and selection.
 - **Do** set every display and headline heading in Geist 700 at -0.045em, line-height about 0.98.
 - **Do** put every value, path, event name, date and code line in Geist Mono, with tabular figures for numbers that change.
 - **Do** show positive deltas in green and negative deltas in crimson, each with an arrow, so color is never the only cue.

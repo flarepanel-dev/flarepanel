@@ -64,7 +64,7 @@ export function TextLink({
   const external = href.startsWith('http');
   return (
     <a
-      className="text-flare underline decoration-flare/40 underline-offset-[0.22em] transition-colors hover:decoration-flare"
+      className="text-ember underline decoration-ember/40 underline-offset-[0.22em] transition-colors hover:decoration-ember"
       href={href}
       rel={external ? 'noopener' : undefined}
     >

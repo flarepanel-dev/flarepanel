@@ -22,7 +22,6 @@
      data, Spark is live. The three together only in the mark and the one
      brand gradient. */
   --color-flare: #ff3d6e;
-  --color-flare-soft: #ff7393;
   --color-ember: #ff6a4d;
   --color-spark: #ffb547;
   --color-crimson: #ef5a5f;
@@ -76,12 +75,12 @@
   }
 
   ::selection {
-    background: var(--color-flare);
+    background: var(--color-ember);
     color: var(--color-ink);
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-flare);
+    outline: 2px solid var(--color-ember);
     outline-offset: 3px;
     border-radius: 6px;
   }

@@ -45,8 +45,8 @@ and the 1200 × 630 social images for the website and docs.
 
 | Role | Value | Use |
 |---|---|---|
-| Flare | `#FF3D6E` | Interaction: links, focus rings, selection, the active marker |
-| Ember | `#FF6A4D` | Data: the lead chart series, KPI bars, the current-period line |
+| Ember | `#FF6A4D` | The brand accent: data (lead chart series, KPI bars, current-period line) and interaction (links, focus rings, selection). `#C2410C` for links on white |
+| Flare | `#FF3D6E` | Only inside the light: the logo's lit panel and the base of data bars. Never as a flat UI colour (it reads as the retired v1 coral) |
 | Spark | `#FFB547` | Live: online-now dots, the live card, the newest event |
 | Ink | `#0D0D10` | Page ground on dark, text and primary buttons on light |
 | Paper | `#F9FAFE` | Text and primary buttons on dark |
@@ -58,8 +58,8 @@ blue, orchid, sea, green, blush. Mirrored in `apps/start/src/styles.css`
 
 ### Rules
 
-1. **One job per colour.** Flare is for things you can click or that have
-   focus, Ember is data, Spark is live. Do not swap them.
+1. **One job per colour.** Ember is the accent (data, links, focus), Spark
+   is live, Flare lives only in the gradient. Do not swap them.
 2. **The gradient belongs to the light.** The Flare → Ember ramp appears in the
    mark, in data bars (lit from the base like the logo's panel) and in one
    warm stage light behind the product. Not on buttons, text or borders.
