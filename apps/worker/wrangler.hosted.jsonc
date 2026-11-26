@@ -115,6 +115,8 @@
   "vars": {
     "NODE_ENV": "production",
     "SELF_HOSTED": "true",
+    // Sign-ups closed until launch; invited users can still join.
+    "ALLOW_REGISTRATION": "false",
     "API_URL": "https://api.flarepanel.dev",
     "DASHBOARD_URL": "https://dashboard.flarepanel.dev",
     "CUSTOM_COOKIE_DOMAIN": ".flarepanel.dev",

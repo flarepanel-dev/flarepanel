@@ -64,7 +64,8 @@ function shape(config: Record<string, unknown>) {
   return {
     ...rest,
     varNames: Object.keys(vars ?? {})
-      .filter((name) => name !== 'SELF_HOSTED')
+      // Deployment switches: billing and whether sign-ups are open.
+      .filter((name) => name !== 'SELF_HOSTED' && name !== 'ALLOW_REGISTRATION')
       .sort(),
     d1: (d1_databases ?? []).map(({ database_id: _id, ...db }) => db),
   };
