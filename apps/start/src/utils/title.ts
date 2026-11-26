@@ -62,6 +62,7 @@ export const PAGE_TITLES = {
   EVENTS: 'Events',
   SESSIONS: 'Sessions',
   PAGES: 'Pages',
+  BOTS: 'Bots & AI crawlers',
   REPORTS: 'Reports',
   NOTIFICATIONS: 'Notifications',
   SETTINGS: 'Settings',

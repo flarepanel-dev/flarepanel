@@ -11,6 +11,7 @@ import {
   GridIcon,
   LayersIcon,
   LayoutPanelTopIcon,
+  RadarIcon,
   SearchIcon,
   SparklesIcon,
   TargetIcon,
@@ -59,6 +60,7 @@ export default function SidebarProjectMenu({
       <SidebarLink exact={false} href={'/ai'} icon={BotIcon} label="AI" />
       <SidebarLink href={'/pages'} icon={LayersIcon} label="Pages" />
       <SidebarLink href={'/seo'} icon={SearchIcon} label="SEO" />
+      <SidebarLink href={'/bots'} icon={RadarIcon} label="Bots & AI crawlers" />
       <SidebarLink href={'/realtime'} icon={Globe2Icon} label="Realtime" />
       <SidebarLink href={'/events'} icon={GanttChartIcon} label="Events" />
       <SidebarLink href={'/sessions'} icon={UsersIcon} label="Sessions" />

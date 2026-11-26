@@ -37,6 +37,7 @@ export {
   BOT_EVENTS_PER_DAY,
   BOT_EVENTS_TTL_MS,
   type BotEventRow,
+  type BotStatsQuery,
   type BotStore,
   openBotStore,
 } from './bot-store';

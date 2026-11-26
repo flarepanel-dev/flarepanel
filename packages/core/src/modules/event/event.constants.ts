@@ -94,3 +94,52 @@ export const TOP_PAGES_SORT_COLUMNS = [
   'avg_duration',
 ] as const;
 export type TopPagesSortColumn = (typeof TOP_PAGES_SORT_COLUMNS)[number];
+
+/**
+ * How the bots page groups the detector's categories (`bots.ts`): AI crawlers,
+ * assistants and agents; search engines; everything else.
+ */
+export const BOT_CATEGORY_GROUPS = ['ai', 'search', 'other'] as const;
+export type BotCategoryGroup = (typeof BOT_CATEGORY_GROUPS)[number];
+
+export function botCategoryGroup(category: string): BotCategoryGroup {
+  if (category.startsWith('AI ')) {
+    return 'ai';
+  }
+  if (category === 'Search bot') {
+    return 'search';
+  }
+  return 'other';
+}
+
+/** Rows `event.botStats` returns per table. */
+export const BOT_STATS_TOP_LIMIT = 50;
+/** Bots listed per crawled path. */
+export const BOT_STATS_BOTS_PER_PATH = 5;
+
+export interface IBotStatsTotals {
+  total: number;
+  ai: number;
+  search: number;
+  other: number;
+}
+
+export interface IBotStats {
+  totals: IBotStatsTotals;
+  /** One row per UTC day in the window, `YYYY-MM-DD`, zero-filled. */
+  series: (IBotStatsTotals & { date: string })[];
+  topBots: {
+    name: string;
+    category: string;
+    group: BotCategoryGroup;
+    hits: number;
+    /** Milliseconds since the epoch. */
+    lastSeen: number;
+  }[];
+  topPaths: {
+    path: string;
+    hits: number;
+    lastSeen: number;
+    bots: { name: string; category: string; hits: number }[];
+  }[];
+}

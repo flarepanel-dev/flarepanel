@@ -55,6 +55,7 @@ import { Route as AppOrganizationIdProjectIdGroupsRouteImport } from './routes/_
 import { Route as AppOrganizationIdProjectIdDashboardsRouteImport } from './routes/_app.$organizationId.$projectId.dashboards'
 import { Route as AppOrganizationIdProjectIdCohortsRouteImport } from './routes/_app.$organizationId.$projectId.cohorts'
 import { Route as AppOrganizationIdProjectIdChatRouteImport } from './routes/_app.$organizationId.$projectId.chat'
+import { Route as AppOrganizationIdProjectIdBotsRouteImport } from './routes/_app.$organizationId.$projectId.bots'
 import { Route as AppOrganizationIdMembersTabsIndexRouteImport } from './routes/_app.$organizationId.members._tabs.index'
 import { Route as AppOrganizationIdAccountTabsIndexRouteImport } from './routes/_app.$organizationId.account._tabs.index'
 import { Route as AppOrganizationIdMembersTabsMembersRouteImport } from './routes/_app.$organizationId.members._tabs.members'
@@ -426,6 +427,12 @@ const AppOrganizationIdProjectIdChatRoute =
     path: '/chat',
     getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
+const AppOrganizationIdProjectIdBotsRoute =
+  AppOrganizationIdProjectIdBotsRouteImport.update({
+    id: '/bots',
+    path: '/bots',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
+  } as any)
 const AppOrganizationIdProjectIdProfilesProfileIdRoute =
   AppOrganizationIdProjectIdProfilesProfileIdRouteImport.update({
     id: '/$profileId',
@@ -791,6 +798,7 @@ export interface FileRoutesByFullPath {
   '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
   '/share/report/$shareId': typeof ShareReportShareIdRoute
   '/$organizationId/': typeof AppOrganizationIdIndexRoute
+  '/$organizationId/$projectId/bots': typeof AppOrganizationIdProjectIdBotsRoute
   '/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
   '/$organizationId/$projectId/cohorts': typeof AppOrganizationIdProjectIdCohortsRoute
   '/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
@@ -886,6 +894,7 @@ export interface FileRoutesByTo {
   '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
   '/share/report/$shareId': typeof ShareReportShareIdRoute
   '/$organizationId': typeof AppOrganizationIdIndexRoute
+  '/$organizationId/$projectId/bots': typeof AppOrganizationIdProjectIdBotsRoute
   '/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
   '/$organizationId/$projectId/cohorts': typeof AppOrganizationIdProjectIdCohortsRoute
   '/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
@@ -977,6 +986,7 @@ export interface FileRoutesById {
   '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
   '/share/report/$shareId': typeof ShareReportShareIdRoute
   '/_app/$organizationId/': typeof AppOrganizationIdIndexRoute
+  '/_app/$organizationId/$projectId/bots': typeof AppOrganizationIdProjectIdBotsRoute
   '/_app/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
   '/_app/$organizationId/$projectId/cohorts': typeof AppOrganizationIdProjectIdCohortsRoute
   '/_app/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
@@ -1087,6 +1097,7 @@ export interface FileRouteTypes {
     | '/share/overview/$shareId'
     | '/share/report/$shareId'
     | '/$organizationId/'
+    | '/$organizationId/$projectId/bots'
     | '/$organizationId/$projectId/chat'
     | '/$organizationId/$projectId/cohorts'
     | '/$organizationId/$projectId/dashboards'
@@ -1182,6 +1193,7 @@ export interface FileRouteTypes {
     | '/share/overview/$shareId'
     | '/share/report/$shareId'
     | '/$organizationId'
+    | '/$organizationId/$projectId/bots'
     | '/$organizationId/$projectId/chat'
     | '/$organizationId/$projectId/cohorts'
     | '/$organizationId/$projectId/dashboards'
@@ -1272,6 +1284,7 @@ export interface FileRouteTypes {
     | '/share/overview/$shareId'
     | '/share/report/$shareId'
     | '/_app/$organizationId/'
+    | '/_app/$organizationId/$projectId/bots'
     | '/_app/$organizationId/$projectId/chat'
     | '/_app/$organizationId/$projectId/cohorts'
     | '/_app/$organizationId/$projectId/dashboards'
@@ -1738,6 +1751,13 @@ declare module '@tanstack/react-router' {
       path: '/chat'
       fullPath: '/$organizationId/$projectId/chat'
       preLoaderRoute: typeof AppOrganizationIdProjectIdChatRouteImport
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
+    }
+    '/_app/$organizationId/$projectId/bots': {
+      id: '/_app/$organizationId/$projectId/bots'
+      path: '/bots'
+      fullPath: '/$organizationId/$projectId/bots'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdBotsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
     '/_app/$organizationId/$projectId/profiles/$profileId': {
@@ -2504,6 +2524,7 @@ const AppOrganizationIdProjectIdGroupsGroupIdRouteWithChildren =
   )
 
 interface AppOrganizationIdProjectIdRouteChildren {
+  AppOrganizationIdProjectIdBotsRoute: typeof AppOrganizationIdProjectIdBotsRoute
   AppOrganizationIdProjectIdChatRoute: typeof AppOrganizationIdProjectIdChatRoute
   AppOrganizationIdProjectIdCohortsRoute: typeof AppOrganizationIdProjectIdCohortsRoute
   AppOrganizationIdProjectIdDashboardsRoute: typeof AppOrganizationIdProjectIdDashboardsRoute
@@ -2532,6 +2553,7 @@ interface AppOrganizationIdProjectIdRouteChildren {
 
 const AppOrganizationIdProjectIdRouteChildren: AppOrganizationIdProjectIdRouteChildren =
   {
+    AppOrganizationIdProjectIdBotsRoute: AppOrganizationIdProjectIdBotsRoute,
     AppOrganizationIdProjectIdChatRoute: AppOrganizationIdProjectIdChatRoute,
     AppOrganizationIdProjectIdCohortsRoute:
       AppOrganizationIdProjectIdCohortsRoute,

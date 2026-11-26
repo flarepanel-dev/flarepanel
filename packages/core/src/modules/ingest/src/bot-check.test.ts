@@ -13,6 +13,7 @@ const isBot = mock(async (_ua: string): Promise<BotMatch | null> => null);
 const recordBot = mock(async (_payload: unknown) => undefined);
 
 let checkIngestBot: typeof import('../ingest.service').checkIngestBot;
+let recordCrawlHit: typeof import('../ingest.service').recordCrawlHit;
 
 // The bot row goes through the ingest backend, so a recording double stands
 // in for it — nothing here reads a client.
@@ -24,7 +25,7 @@ const backend = { recordBot };
 beforeAll(async () => {
   const detect = await import('./bots/detect');
   mock.module('./bots/detect', () => ({ ...detect, isBot }));
-  ({ checkIngestBot } = await import('../ingest.service'));
+  ({ checkIngestBot, recordCrawlHit } = await import('../ingest.service'));
 });
 
 const baseRequest = {
@@ -75,6 +76,66 @@ describe('checkIngestBot', () => {
       backend
     );
 
+    expect(recordBot).not.toHaveBeenCalled();
+    expect(bot).toBeNull();
+  });
+});
+
+describe('recordCrawlHit', () => {
+  const NOW = new Date('2026-11-24T10:00:00Z');
+  const crawl = (payload: { path: string; userAgent: string; host?: string }) =>
+    recordCrawlHit({ projectId: 'proj-1', payload, now: NOW }, backend);
+
+  it('records a known crawler with its category and path', async () => {
+    isBot.mockResolvedValue({ name: 'GPTBot', type: 'AI Data Scraper' });
+
+    const bot = await crawl({
+      path: '/pricing',
+      userAgent: 'Mozilla/5.0; compatible; GPTBot/1.2',
+    });
+
+    expect(isBot).toHaveBeenCalledWith('Mozilla/5.0; compatible; GPTBot/1.2');
+    expect(recordBot).toHaveBeenCalledTimes(1);
+    expect(recordBot.mock.calls[0]?.[0]).toEqual({
+      name: 'GPTBot',
+      type: 'AI Data Scraper',
+      projectId: 'proj-1',
+      path: '/pricing',
+      createdAt: NOW,
+    });
+    expect(bot).toEqual({ name: 'GPTBot', type: 'AI Data Scraper' });
+  });
+
+  it('prefixes the host, as the browser bot rows store full URLs', async () => {
+    isBot.mockResolvedValue({ name: 'ClaudeBot', type: 'AI Data Scraper' });
+
+    await crawl({ path: '/docs', userAgent: 'ClaudeBot', host: 'Example.com' });
+    await crawl({
+      path: 'https://a.io/x',
+      userAgent: 'ClaudeBot',
+      host: 'b.io',
+    });
+    await crawl({ path: '/y', userAgent: 'ClaudeBot', host: 'not a host/' });
+
+    expect(
+      recordBot.mock.calls.map((call) => (call[0] as { path: string }).path)
+    ).toEqual(['https://example.com/docs', 'https://a.io/x', '/y']);
+  });
+
+  it('ignores a user agent that is not a known bot', async () => {
+    isBot.mockResolvedValue(null);
+
+    const bot = await crawl({ path: '/', userAgent: 'Mozilla/5.0 Safari' });
+
+    expect(isBot).toHaveBeenCalledTimes(1);
+    expect(recordBot).not.toHaveBeenCalled();
+    expect(bot).toBeNull();
+  });
+
+  it('skips detection for an empty user agent', async () => {
+    const bot = await crawl({ path: '/', userAgent: '  ' });
+
+    expect(isBot).not.toHaveBeenCalled();
     expect(recordBot).not.toHaveBeenCalled();
     expect(bot).toBeNull();
   });

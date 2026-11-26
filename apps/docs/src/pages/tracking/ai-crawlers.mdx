@@ -1,0 +1,190 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: AI crawlers and bots
+description: See which AI crawlers, assistants and search bots fetch your pages.
+---
+
+# AI crawlers and bots
+
+The **Bots & AI crawlers** page in your project shows which crawlers fetch your site (GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, Googlebot, Bingbot and hundreds more), how often, and which pages they read.
+
+## Why the script cannot see them
+
+AI crawlers, AI assistants fetching a page for a user, and search engine bots download your HTML and leave. They do not run JavaScript, so the FlarePanel script (`op1.js`) never loads and nothing reaches FlarePanel. To see them, report page requests from the place that serves them: your server, your Cloudflare Worker or your framework's middleware.
+
+What you report is matched against FlarePanel's bot list (several hundred user agents, each with a category such as *AI Search Crawler*, *AI Assistant*, *AI Agent*, *AI Data Scraper* or *Search bot*). A known bot is kept with its name, category, path and time. Anything else, including every human visitor, is dropped.
+
+Bot hits are **never** analytics events: they do not appear in your reports, do not count towards your event quota and are not billed. They are kept for 30 days. The *Latest hits* list keeps up to 5,000 hits a day; the totals, charts and tables count every hit.
+
+## The endpoint
+
+```
+POST https://api.flarepanel.dev/track/crawl
+```
+
+Self-hosting? Use your own API URL instead of `https://api.flarepanel.dev`.
+
+| Header | Value |
+|---|---|
+| `openpanel-client-id` | Your client ID |
+| `openpanel-client-secret` | Your client secret. Required: this endpoint only accepts server-side calls. |
+| `Content-Type` | `application/json` |
+
+Body:
+
+| Field | Type | |
+|---|---|---|
+| `path` | string, up to 2,048 characters | The requested path (`/pricing`) or full URL. Required. |
+| `userAgent` | string, up to 1,024 characters | The request's `User-Agent` header. Required. |
+| `host` | string | The site's host (`example.com`). Optional; useful when one project tracks several sites. |
+| `referrer` | string | The request's `Referer` header. Optional. |
+
+Responses:
+
+| Status | Body | Meaning |
+|---|---|---|
+| `202` | `{"bot":{"name":"GPTBot","type":"AI Data Scraper"}}` | A known bot; the hit was recorded. |
+| `202` | `{"bot":null}` | Not a known bot; nothing was stored. |
+| `401` | text | Missing or wrong client ID or secret. |
+| `400` | JSON | The body is missing a field or a field is too long. |
+
+The endpoint is not rate limited per IP address, because many sites call it from shared Cloudflare or hosting addresses.
+
+:::warning
+The client secret must stay on the server. Keep it in an environment variable or a secret binding, never in code or in anything a browser loads.
+:::
+
+## Cloudflare Worker
+
+If your site runs behind Cloudflare, a Worker on the site's route can report bot requests without touching the response. The regular expression is a cheap first filter: requests from people do not match it, so they never cost an extra request. FlarePanel makes the final decision against its full bot list.
+
+```ts
+// A Worker on your site's route, for example example.com/*.
+interface Env {
+  FLAREPANEL_CLIENT_ID: string;
+  FLAREPANEL_CLIENT_SECRET: string;
+}
+
+const FLAREPANEL_CRAWL_URL = 'https://api.flarepanel.dev/track/crawl';
+// Cheap pre-filter. Anything it lets through is checked by FlarePanel.
+const BOT_HINT =
+  /bot|crawl|spider|slurp|scrape|archiver|preview|fetch|GPT|Claude|anthropic|Perplexity|Google-|cohere|MistralAI|meta-external|facebookexternalhit/i;
+// Assets are noise; robots.txt, sitemaps and pages are not.
+const ASSET = /\.(?:css|js|mjs|map|png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf)$/i;
+
+export default {
+  async fetch(request, env, ctx): Promise<Response> {
+    // Serve the page first: the report never delays it.
+    const response = await fetch(request);
+
+    const userAgent = request.headers.get('user-agent') ?? '';
+    const url = new URL(request.url);
+    if (
+      request.method === 'GET' &&
+      BOT_HINT.test(userAgent) &&
+      !ASSET.test(url.pathname)
+    ) {
+      ctx.waitUntil(
+        fetch(FLAREPANEL_CRAWL_URL, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'openpanel-client-id': env.FLAREPANEL_CLIENT_ID,
+            'openpanel-client-secret': env.FLAREPANEL_CLIENT_SECRET,
+          },
+          body: JSON.stringify({
+            path: url.pathname,
+            host: url.host,
+            userAgent,
+            referrer: request.headers.get('referer') ?? undefined,
+          }),
+        }).catch(() => undefined)
+      );
+    }
+
+    return response;
+  },
+} satisfies ExportedHandler<Env>;
+```
+
+Set the two values on the Worker, the secret as a secret:
+
+```bash
+npx wrangler secret put FLAREPANEL_CLIENT_SECRET
+```
+
+```jsonc
+// wrangler.jsonc
+{
+  "vars": { "FLAREPANEL_CLIENT_ID": "YOUR_CLIENT_ID" }
+}
+```
+
+If the Worker serves the site itself (static assets or a framework), replace `fetch(request)` with what it already returns, for example `env.ASSETS.fetch(request)`, and keep the rest.
+
+## Next.js middleware
+
+```ts
+// middleware.ts. On Next.js 16: proxy.ts, with the function named `proxy`.
+import {
+  type NextFetchEvent,
+  type NextRequest,
+  NextResponse,
+} from 'next/server';
+
+const FLAREPANEL_CRAWL_URL = 'https://api.flarepanel.dev/track/crawl';
+const BOT_HINT =
+  /bot|crawl|spider|slurp|scrape|archiver|preview|fetch|GPT|Claude|anthropic|Perplexity|Google-|cohere|MistralAI|meta-external|facebookexternalhit/i;
+
+export function middleware(request: NextRequest, event: NextFetchEvent) {
+  const userAgent = request.headers.get('user-agent') ?? '';
+  if (request.method === 'GET' && BOT_HINT.test(userAgent)) {
+    event.waitUntil(
+      fetch(FLAREPANEL_CRAWL_URL, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'openpanel-client-id': process.env.FLAREPANEL_CLIENT_ID ?? '',
+          'openpanel-client-secret': process.env.FLAREPANEL_CLIENT_SECRET ?? '',
+        },
+        body: JSON.stringify({
+          path: request.nextUrl.pathname,
+          host: request.nextUrl.host,
+          userAgent,
+          referrer: request.headers.get('referer') ?? undefined,
+        }),
+      }).catch(() => undefined)
+    );
+  }
+  return NextResponse.next();
+}
+
+export const config = {
+  // Pages only: skip Next.js internals and static files.
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:css|js|png|jpe?g|gif|webp|avif|svg|ico|woff2?)$).*)',
+  ],
+};
+```
+
+Put `FLAREPANEL_CLIENT_ID` and `FLAREPANEL_CLIENT_SECRET` in your environment (for example `.env.local` locally and your host's environment settings in production). Never prefix them with `NEXT_PUBLIC_`.
+
+## Any server: curl
+
+Send one request per page request whose user agent looks like a bot, after the response is on its way:
+
+```bash
+curl -X POST https://api.flarepanel.dev/track/crawl \
+  -H "Content-Type: application/json" \
+  -H "openpanel-client-id: $FLAREPANEL_CLIENT_ID" \
+  -H "openpanel-client-secret: $FLAREPANEL_CLIENT_SECRET" \
+  -d '{"path":"/pricing","host":"example.com","userAgent":"Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)"}'
+```
+
+The answer is `{"bot":{"name":"GPTBot","type":"AI Data Scraper"}}`, and the hit shows up on the **Bots & AI crawlers** page within seconds.
+
+## Bots that run JavaScript
+
+Some automation (headless browsers, a few monitoring tools) does run JavaScript. When the script sees a known bot user agent it records the hit on the same page instead of counting an event, so those appear without any setup.

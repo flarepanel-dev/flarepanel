@@ -14,7 +14,7 @@ import type { AppDeps, HttpCtx } from '../../context';
 import { defineRoutes } from '../../http/define';
 import { toIngestHeaders } from '../../shared/headers';
 import type { DeprecatedPostEventPayload } from './ingest.constants';
-import { zTrackHandlerPayload } from './ingest.constants';
+import { zCrawlPayload, zTrackHandlerPayload } from './ingest.constants';
 import {
   checkIngestBot,
   createBunIngestBackend,
@@ -24,6 +24,7 @@ import {
   ingestTrack,
   isDuplicateIngestRequest,
   isIngestionWoundDown,
+  recordCrawlHit,
   type TrackOutcome,
 } from './ingest.service';
 import { validateIngestRequest } from './src/client-auth';
@@ -36,6 +37,9 @@ const LEGACY_EVENT_TAGS = ['Event'];
  *  `isIngestionWoundDown`. */
 const WIND_DOWN_STATUS = 202;
 const ACCEPTED_STATUS = 202;
+const UNAUTHORIZED_STATUS = 401;
+const CRAWL_SECRET_REQUIRED =
+  'Ingestion: /track/crawl requires the openpanel-client-secret header';
 
 type StatusFn = (code: number, body?: unknown) => unknown;
 
@@ -183,145 +187,178 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
   const blockWhenWoundDown = windDownGuard(deps);
   const blockBots = botGuard(deps);
 
-  return app.guard(
-    {
-      // Answers before the client is ever authenticated. A guard hook runs
-      // ahead of the `clientAuth` macro's resolve and is scoped to the two
-      // routes below: derive -> guard beforeHandle -> macro resolve -> route
-      // beforeHandle.
-      async beforeHandle({ body, ctx, request, status }) {
-        if (
-          await isDuplicateIngestRequest(
-            {
-              method: request.method,
-              clientIp: ctx.ip,
-              headers: toIngestHeaders(ctx.headers),
-              body,
-            },
-            ingestBackend(deps, ctx)
-          )
-        ) {
-          return status(200, { duplicate: true });
+  return app
+    .post(
+      '/track/crawl',
+      async ({ body, client, ctx, status }) => {
+        // A crawl report comes from the customer's server or edge, and a
+        // browser could forge one: only a verified secret may write.
+        if (!client.secretVerified) {
+          return status(UNAUTHORIZED_STATUS, CRAWL_SECRET_REQUIRED);
         }
+        if (!client.projectId) {
+          return status(400, { status: 400, message: 'Missing projectId' });
+        }
+        const bot = await recordCrawlHit(
+          { projectId: client.projectId, payload: body },
+          ingestBackend(deps, ctx)
+        );
+        return status(ACCEPTED_STATUS, { bot });
       },
-    },
-    (routes) =>
-      routes
-        .post(
-          '/track',
-          async ({ body, client, ctx, request, status, timestamp }) => {
-            const outcome = await ingestTrack(
+      {
+        clientAuth: { ingest: validateIngestRequest },
+        body: zCrawlPayload,
+        beforeHandle: [blockWhenWoundDown],
+        detail: {
+          tags: TAGS,
+          description:
+            'Report one page request your server saw (path and user agent). Known bots and AI crawlers are kept for the bots page; other requests are ignored. Requires the client secret. Never counted as an event.',
+        },
+      }
+    )
+    .guard(
+      {
+        // Answers before the client is ever authenticated. A guard hook runs
+        // ahead of the `clientAuth` macro's resolve and is scoped to the two
+        // routes below: derive -> guard beforeHandle -> macro resolve -> route
+        // beforeHandle.
+        async beforeHandle({ body, ctx, request, status }) {
+          if (
+            await isDuplicateIngestRequest(
               {
-                projectId: client.projectId,
+                method: request.method,
                 clientIp: ctx.ip,
                 headers: toIngestHeaders(ctx.headers),
-                clientSecretAuth: client.secretVerified,
-                timestamp,
                 body,
-                cf: cfProperties(request),
               },
-              {
-                buffers: ctx.buffers,
-                backend: ingestBackend(deps, ctx),
-                deps: ctx,
-              }
-            );
-
-            return respondToOutcome(outcome, status);
-          },
-          {
-            clientAuth: { ingest: validateIngestRequest },
-            body: zTrackHandlerPayload,
-            beforeHandle: [refuseOversizedBody, blockBots, blockWhenWoundDown],
-            detail: {
-              tags: TAGS,
-              description:
-                'Ingest a tracking event (track, identify, group, increment, decrement, replay).',
-            },
+              ingestBackend(deps, ctx)
+            )
+          ) {
+            return status(200, { duplicate: true });
           }
-        )
-        .get(
-          '/track/device-id',
-          async ({ client, ctx, status }) => {
-            const identity = await fetchDeviceIdentity(
-              ctx,
-              {
-                projectId: client.projectId,
-                clientIp: ctx.ip,
-                headers: toIngestHeaders(ctx.headers),
-              },
-              ctx.buffers,
-              ctx.logger
-            );
+        },
+      },
+      (routes) =>
+        routes
+          .post(
+            '/track',
+            async ({ body, client, ctx, request, status, timestamp }) => {
+              const outcome = await ingestTrack(
+                {
+                  projectId: client.projectId,
+                  clientIp: ctx.ip,
+                  headers: toIngestHeaders(ctx.headers),
+                  clientSecretAuth: client.secretVerified,
+                  timestamp,
+                  body,
+                  cf: cfProperties(request),
+                },
+                {
+                  buffers: ctx.buffers,
+                  backend: ingestBackend(deps, ctx),
+                  deps: ctx,
+                }
+              );
 
-            switch (identity.status) {
-              case 'missing-project-id':
-                return status(400, 'No projectId');
-              case 'missing-ip':
-                return status(400, 'Missing ip address');
-              case 'missing-user-agent':
-                return status(400, 'Missing header: user-agent');
-              default:
-                return {
-                  deviceId: identity.deviceId,
-                  sessionId: identity.sessionId,
-                  message: identity.message,
-                };
+              return respondToOutcome(outcome, status);
+            },
+            {
+              clientAuth: { ingest: validateIngestRequest },
+              body: zTrackHandlerPayload,
+              beforeHandle: [
+                refuseOversizedBody,
+                blockBots,
+                blockWhenWoundDown,
+              ],
+              detail: {
+                tags: TAGS,
+                description:
+                  'Ingest a tracking event (track, identify, group, increment, decrement, replay).',
+              },
             }
-          },
-          {
-            clientAuth: { ingest: validateIngestRequest },
-            beforeHandle: [blockBots, blockWhenWoundDown],
-            detail: {
-              tags: TAGS,
-              description:
-                'Get or generate a stable device ID and session ID for the current visitor.',
-            },
-          }
-        )
-        .post(
-          '/event',
-          async ({ body, client, ctx, request, status, timestamp }) => {
-            const outcome = await ingestLegacyEvent(
-              {
-                projectId: client.projectId,
-                clientIp: ctx.ip,
-                headers: toIngestHeaders(ctx.headers),
-                clientSecretAuth: client.secretVerified,
-                timestamp,
-                body: body as DeprecatedPostEventPayload | null,
-                cf: cfProperties(request),
-              },
-              {
-                buffers: ctx.buffers,
-                backend: ingestBackend(deps, ctx),
-                deps: ctx,
+          )
+          .get(
+            '/track/device-id',
+            async ({ client, ctx, status }) => {
+              const identity = await fetchDeviceIdentity(
+                ctx,
+                {
+                  projectId: client.projectId,
+                  clientIp: ctx.ip,
+                  headers: toIngestHeaders(ctx.headers),
+                },
+                ctx.buffers,
+                ctx.logger
+              );
+
+              switch (identity.status) {
+                case 'missing-project-id':
+                  return status(400, 'No projectId');
+                case 'missing-ip':
+                  return status(400, 'Missing ip address');
+                case 'missing-user-agent':
+                  return status(400, 'Missing header: user-agent');
+                default:
+                  return {
+                    deviceId: identity.deviceId,
+                    sessionId: identity.sessionId,
+                    message: identity.message,
+                  };
               }
-            );
-
-            if (outcome.status === 'missing-project-id') {
-              return status(400, 'missing origin');
-            }
-
-            return status(ACCEPTED_STATUS, 'ok');
-          },
-          {
-            clientAuth: { ingest: validateIngestRequest },
-            // Recorded after `clientAuth` resolves the client and before the
-            // hooks that can short-circuit, so a dropped event still counts.
-            beforeHandle: [
-              ({ client }: { client: { id: string } }) => {
-                recordLegacyEventRequest(client.id);
-              },
-              blockBots,
-              blockWhenWoundDown,
-            ],
-            detail: {
-              tags: LEGACY_EVENT_TAGS,
-              description:
-                'Deprecated direct event ingestion endpoint. Use /track instead.',
             },
-          }
-        )
-  );
+            {
+              clientAuth: { ingest: validateIngestRequest },
+              beforeHandle: [blockBots, blockWhenWoundDown],
+              detail: {
+                tags: TAGS,
+                description:
+                  'Get or generate a stable device ID and session ID for the current visitor.',
+              },
+            }
+          )
+          .post(
+            '/event',
+            async ({ body, client, ctx, request, status, timestamp }) => {
+              const outcome = await ingestLegacyEvent(
+                {
+                  projectId: client.projectId,
+                  clientIp: ctx.ip,
+                  headers: toIngestHeaders(ctx.headers),
+                  clientSecretAuth: client.secretVerified,
+                  timestamp,
+                  body: body as DeprecatedPostEventPayload | null,
+                  cf: cfProperties(request),
+                },
+                {
+                  buffers: ctx.buffers,
+                  backend: ingestBackend(deps, ctx),
+                  deps: ctx,
+                }
+              );
+
+              if (outcome.status === 'missing-project-id') {
+                return status(400, 'missing origin');
+              }
+
+              return status(ACCEPTED_STATUS, 'ok');
+            },
+            {
+              clientAuth: { ingest: validateIngestRequest },
+              // Recorded after `clientAuth` resolves the client and before the
+              // hooks that can short-circuit, so a dropped event still counts.
+              beforeHandle: [
+                ({ client }: { client: { id: string } }) => {
+                  recordLegacyEventRequest(client.id);
+                },
+                blockBots,
+                blockWhenWoundDown,
+              ],
+              detail: {
+                tags: LEGACY_EVENT_TAGS,
+                description:
+                  'Deprecated direct event ingestion endpoint. Use /track instead.',
+              },
+            }
+          )
+    );
 });

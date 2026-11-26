@@ -382,6 +382,24 @@ export const zTrackHandlerPayload = z.discriminatedUnion('type', [
     .meta({ title: 'AI' }),
 ]) satisfies z.ZodType<ITrackHandlerPayload>;
 
+export const CRAWL_PATH_MAX_LENGTH = 2048;
+export const CRAWL_USER_AGENT_MAX_LENGTH = 1024;
+export const CRAWL_HOST_MAX_LENGTH = 253;
+
+/**
+ * `POST /track/crawl`: one page request a customer's server or edge saw. Only
+ * user agents the bot list knows are kept; nothing becomes an analytics event.
+ */
+export const zCrawlPayload = z.object({
+  /** The requested path (`/pricing`), or the full URL. */
+  path: z.string().min(1).max(CRAWL_PATH_MAX_LENGTH),
+  userAgent: z.string().max(CRAWL_USER_AGENT_MAX_LENGTH),
+  referrer: z.string().max(CRAWL_PATH_MAX_LENGTH).optional(),
+  /** The site's host, when one project tracks several. */
+  host: z.string().max(CRAWL_HOST_MAX_LENGTH).optional(),
+});
+export type ICrawlPayload = z.infer<typeof zCrawlPayload>;
+
 // Deprecated types for beta version of the SDKs
 
 export interface DeprecatedOpenpanelEventOptions {

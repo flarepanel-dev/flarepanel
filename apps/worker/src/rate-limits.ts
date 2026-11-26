@@ -3,6 +3,9 @@
 // eventually consistent: it stops floods and guessing, not one extra request.
 
 const TOO_MANY_REQUESTS = 429;
+// Not `/track/crawl`: it is called from customers' servers and Workers, which
+// share egress addresses, so a per-IP cap would throttle them together. It
+// needs the client secret, and the project's bot store caps what it keeps.
 const INGEST_PATHS = new Set(['/track', '/event']);
 
 /** The part of the Workers `RateLimit` binding used here. */

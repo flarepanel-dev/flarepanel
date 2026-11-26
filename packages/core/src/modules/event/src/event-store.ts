@@ -5,7 +5,10 @@
 
 import type { ImportFileStore } from '../../import/src/workers-import';
 import type { AiQuery } from '../../ingest/cloudflare/ai-query';
-import type { BotEventRow as IClickhouseBotEvent } from '../../ingest/cloudflare/bot-store';
+import type {
+  BotStatsQuery,
+  BotEventRow as IClickhouseBotEvent,
+} from '../../ingest/cloudflare/bot-store';
 import type {
   ChartRow,
   ChartScanQuery,
@@ -67,6 +70,7 @@ import type {
 } from '../../ingest/cloudflare/sankey-scan';
 import type { ToolQuery } from '../../ingest/cloudflare/tool-scans';
 import type { IClickhouseSession } from '../../session/session.service';
+import type { IBotStats } from '../event.constants';
 
 export interface EventStore {
   /** Newest first; `cursor` is opaque and comes from the previous page. */
@@ -237,6 +241,8 @@ export interface EventStore {
     projectId: string,
     page: { limit: number; offset: number }
   ): Promise<{ rows: IClickhouseBotEvent[]; count: number }>;
+  /** Bot hit totals per UTC day, bot and path (every hit, not only listed). */
+  botStats?(projectId: string, query: BotStatsQuery): Promise<IBotStats>;
   /**
    * A page of a session's replay chunks in playback order (started, ended,
    * index), each with its rrweb events as JSON text. `offset` counts chunks.

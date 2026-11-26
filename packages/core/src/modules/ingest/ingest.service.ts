@@ -27,6 +27,7 @@ import { convertClickhouseDateToJs } from '../session/src/dates';
 import {
   type DeprecatedPostEventPayload,
   type IAssignGroupPayload,
+  type ICrawlPayload,
   type IDecrementPayload,
   type IGroupPayload,
   type IIdentifyPayload,
@@ -1020,6 +1021,45 @@ function getBotEventPath(body: unknown): string | undefined {
     return (properties?.__path || properties?.path) as string | undefined;
   }
   return undefined;
+}
+
+const ABSOLUTE_URL = /^https?:\/\//i;
+const HOST_PATTERN = /^[a-z0-9.-]+(?::\d{1,5})?$/i;
+
+/** The full URL when a host is given, as the browser's bot rows store. */
+function crawlPath(payload: ICrawlPayload): string {
+  const path = payload.path.trim();
+  if (ABSOLUTE_URL.test(path) || !payload.host) {
+    return path;
+  }
+  const host = payload.host.trim().toLowerCase();
+  if (!HOST_PATTERN.test(host)) {
+    return path;
+  }
+  return `https://${host}${path.startsWith('/') ? '' : '/'}${path}`;
+}
+
+/**
+ * `POST /track/crawl`: a page request a customer's server or edge saw. A known
+ * bot's hit is kept for the bots page; anything else is dropped. Never an
+ * analytics event, never billed. The caller has proven the client secret.
+ */
+export async function recordCrawlHit(
+  request: { projectId: string; payload: ICrawlPayload; now?: Date },
+  backend: Pick<IngestBackend, 'recordBot'>
+): Promise<BotVerdict> {
+  const userAgent = request.payload.userAgent.trim();
+  const bot = userAgent ? await isBot(userAgent) : null;
+  if (!bot) {
+    return null;
+  }
+  await backend.recordBot({
+    ...bot,
+    projectId: request.projectId,
+    path: crawlPath(request.payload),
+    createdAt: request.now ?? new Date(),
+  });
+  return bot;
 }
 
 function isLiveSession(

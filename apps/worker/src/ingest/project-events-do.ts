@@ -22,6 +22,7 @@ import {
   archivePrefix,
   BOT_EVENTS_TTL_MS,
   type BotEventRow,
+  type BotStatsQuery,
   type BotStore,
   buildArchiveObjects,
   type ChartScanQuery,
@@ -1085,6 +1086,12 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       rows: bots.page(this.projectId ?? '', page.limit, page.offset),
       count: bots.count(),
     };
+  }
+
+  /** Bot hit totals for the bots page (every hit, listed or not). */
+  async botStats(query: BotStatsQuery) {
+    const { bots } = await this.state;
+    return bots.stats(query);
   }
 
   /** Whether a session is unknown, already recorded, or new to replay. */

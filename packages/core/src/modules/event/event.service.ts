@@ -25,6 +25,7 @@ import type { IClickhouseSession } from '../session/session.service';
 import {
   EVENT_COLUMNS,
   type EventListColumn,
+  type IBotStats,
   type QueryEventsEqualityColumn,
 } from './event.constants';
 import { buildClickhouseEvent } from './src/clickhouse-event';
@@ -1451,6 +1452,30 @@ export async function getBotEventsPage(
       createdAt: convertClickhouseDateToJs(item.created_at),
     })),
     count: counts[0]?.count ?? 0,
+  };
+}
+
+/**
+ * Bot and AI crawler totals for `fromDay`..`toDay` (UTC, `YYYY-MM-DD`). Only
+ * the Durable Object store keeps the per-day counts; without it (ClickHouse
+ * on Bun) the stats are empty and the recent list still works.
+ */
+export async function getBotStats(
+  deps: ServiceDeps,
+  query: { projectId: string; fromDay: string; toDay: string; limit?: number }
+): Promise<IBotStats> {
+  if (deps.eventStore?.botStats) {
+    return await deps.eventStore.botStats(query.projectId, {
+      fromDay: query.fromDay,
+      toDay: query.toDay,
+      limit: query.limit,
+    });
+  }
+  return {
+    totals: { total: 0, ai: 0, search: 0, other: 0 },
+    series: [],
+    topBots: [],
+    topPaths: [],
   };
 }
 

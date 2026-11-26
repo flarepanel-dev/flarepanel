@@ -40,4 +40,5 @@ Successful requests answer `200` with the visitor's `deviceId` and `sessionId`. 
 ## Limits
 
 - 600 tracking requests per minute per IP address; above that, `429`.
+- `POST /track/crawl`, which reports crawler and bot requests from your server, has no per-IP limit. See [AI crawlers and bots](/tracking/ai-crawlers).
 - Identical request bodies inside one second count once.

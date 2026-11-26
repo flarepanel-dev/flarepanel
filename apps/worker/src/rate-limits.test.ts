@@ -61,6 +61,16 @@ describe('checkEdgeRateLimit', () => {
     expect(mcp.seen).toHaveLength(1);
   });
 
+  it('leaves /track/crawl off the per-IP ingest cap', async () => {
+    const track = limiter(0);
+    const env = { TRACK_LIMITER: track.binding };
+
+    expect(
+      await checkEdgeRateLimit(post('/track/crawl'), '/track/crawl', env)
+    ).toBeNull();
+    expect(track.seen).toHaveLength(0);
+  });
+
   it('lets through other paths, other methods and a missing binding', async () => {
     const mcp = limiter(0);
     const env = { MCP_LIMITER: mcp.binding };

@@ -92,8 +92,8 @@ export function createCloudflareIngestBackend({
       return false;
     },
 
-    // Bot hits stay out of analytics; the project's Durable Object lists
-    // them (5,000 a day at most, 30 days).
+    // Bot hits stay out of analytics; the project's Durable Object counts
+    // every one per day and lists them (5,000 a day at most, 30 days).
     recordBot: async (bot) => {
       await projectEventsStub(env, bot.projectId).addBotEvent({
         id: crypto.randomUUID(),
@@ -285,6 +285,8 @@ export function createWorkerEventStore(
       projectEventsStub(env, projectId).getSession(sessionId),
     botEvents: (projectId, page) =>
       projectEventsStub(env, projectId).botEvents(page),
+    botStats: (projectId, query) =>
+      projectEventsStub(env, projectId).botStats(query),
     replayChunks: env.EVENTS_ARCHIVE
       ? (projectId, sessionId, page) =>
           readReplayChunks(

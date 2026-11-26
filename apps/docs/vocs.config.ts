@@ -72,6 +72,7 @@ export default defineConfig({
         { text: 'Events and properties', link: '/tracking/events' },
         { text: 'Identify users', link: '/tracking/identify' },
         { text: 'Revenue', link: '/tracking/revenue' },
+        { text: 'AI crawlers and bots', link: '/tracking/ai-crawlers' },
         { text: 'SDK options', link: '/tracking/options' },
       ],
     },

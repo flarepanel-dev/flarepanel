@@ -16,6 +16,7 @@ import { getChartStartEndDate } from '../report/src/chart-dates';
 import { TOP_PAGES_SORT_COLUMNS } from './event.constants';
 import {
   getBotEventsPage,
+  getBotStats,
   getConversionEventNames,
   getConversionListPage,
   getEventById,
@@ -26,6 +27,7 @@ import {
 } from './event.service';
 
 const DEFAULT_BOTS_LIMIT = 8;
+const ISO_DAY_LENGTH = 10;
 const DEFAULT_PAGES_TAKE = 50;
 const MAX_PAGES_TAKE = 1000;
 
@@ -179,6 +181,31 @@ export const eventRouter = createTRPCRouter({
       });
 
       return getBotEventsPage(ctx, input);
+    }),
+
+  botStats: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        range: zRange.default('30d'),
+        startDate: z.string().nullish(),
+        endDate: z.string().nullish(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
+
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
+      const { startDate, endDate } = getChartStartEndDate(input, timezone);
+      return getBotStats(ctx, {
+        projectId: input.projectId,
+        fromDay: startDate.slice(0, ISO_DAY_LENGTH),
+        toDay: endDate.slice(0, ISO_DAY_LENGTH),
+      });
     }),
 
   pages: protectedProcedure
