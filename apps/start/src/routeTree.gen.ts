@@ -24,6 +24,7 @@ import { Route as WidgetBadgeRouteImport } from './routes/widget/badge'
 import { Route as ApiHealthcheckRouteImport } from './routes/api/healthcheck'
 import { Route as ApiConfigRouteImport } from './routes/api/config'
 import { Route as PublicOnboardingRouteImport } from './routes/_public.onboarding'
+import { Route as LoginVerifyEmailRouteImport } from './routes/_login.verify-email'
 import { Route as LoginVerifyRouteImport } from './routes/_login.verify'
 import { Route as LoginResetPasswordRouteImport } from './routes/_login.reset-password'
 import { Route as LoginLoginRouteImport } from './routes/_login.login'
@@ -204,6 +205,11 @@ const PublicOnboardingRoute = PublicOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
   getParentRoute: () => PublicRoute,
+} as any)
+const LoginVerifyEmailRoute = LoginVerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => LoginRoute,
 } as any)
 const LoginVerifyRoute = LoginVerifyRouteImport.update({
   id: '/verify',
@@ -768,6 +774,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginLoginRoute
   '/reset-password': typeof LoginResetPasswordRoute
   '/verify': typeof LoginVerifyRoute
+  '/verify-email': typeof LoginVerifyEmailRoute
   '/onboarding': typeof PublicOnboardingRoute
   '/api/config': typeof ApiConfigRoute
   '/api/healthcheck': typeof ApiHealthcheckRoute
@@ -863,6 +870,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginLoginRoute
   '/reset-password': typeof LoginResetPasswordRoute
   '/verify': typeof LoginVerifyRoute
+  '/verify-email': typeof LoginVerifyEmailRoute
   '/onboarding': typeof PublicOnboardingRoute
   '/api/config': typeof ApiConfigRoute
   '/api/healthcheck': typeof ApiHealthcheckRoute
@@ -952,6 +960,7 @@ export interface FileRoutesById {
   '/_login/login': typeof LoginLoginRoute
   '/_login/reset-password': typeof LoginResetPasswordRoute
   '/_login/verify': typeof LoginVerifyRoute
+  '/_login/verify-email': typeof LoginVerifyEmailRoute
   '/_public/onboarding': typeof PublicOnboardingRoute
   '/api/config': typeof ApiConfigRoute
   '/api/healthcheck': typeof ApiHealthcheckRoute
@@ -1061,6 +1070,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/verify'
+    | '/verify-email'
     | '/onboarding'
     | '/api/config'
     | '/api/healthcheck'
@@ -1156,6 +1166,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/verify'
+    | '/verify-email'
     | '/onboarding'
     | '/api/config'
     | '/api/healthcheck'
@@ -1244,6 +1255,7 @@ export interface FileRouteTypes {
     | '/_login/login'
     | '/_login/reset-password'
     | '/_login/verify'
+    | '/_login/verify-email'
     | '/_public/onboarding'
     | '/api/config'
     | '/api/healthcheck'
@@ -1454,6 +1466,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboarding'
       preLoaderRoute: typeof PublicOnboardingRouteImport
       parentRoute: typeof PublicRoute
+    }
+    '/_login/verify-email': {
+      id: '/_login/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof LoginVerifyEmailRouteImport
+      parentRoute: typeof LoginRoute
     }
     '/_login/verify': {
       id: '/_login/verify'
@@ -2673,12 +2692,14 @@ interface LoginRouteChildren {
   LoginLoginRoute: typeof LoginLoginRoute
   LoginResetPasswordRoute: typeof LoginResetPasswordRoute
   LoginVerifyRoute: typeof LoginVerifyRoute
+  LoginVerifyEmailRoute: typeof LoginVerifyEmailRoute
 }
 
 const LoginRouteChildren: LoginRouteChildren = {
   LoginLoginRoute: LoginLoginRoute,
   LoginResetPasswordRoute: LoginResetPasswordRoute,
   LoginVerifyRoute: LoginVerifyRoute,
+  LoginVerifyEmailRoute: LoginVerifyEmailRoute,
 }
 
 const LoginRouteWithChildren = LoginRoute._addFileChildren(LoginRouteChildren)

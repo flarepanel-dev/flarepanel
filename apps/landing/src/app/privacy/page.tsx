@@ -125,16 +125,29 @@ export default function PrivacyPage() {
       <h2>3. Cookies and tracking on our own sites</h2>
       <p>
         flarepanel.dev, docs.flarepanel.dev and status.flarepanel.dev set no
-        cookies and run no analytics. The status page remembers a light or dark
+        cookies. We measure them with FlarePanel itself, in the same cookieless
+        way described in section 2: page views, clicks on outgoing links and on
+        buttons we mark, the referrer, and the browser, device and country
+        derived from the request. The status page also remembers a light or dark
         choice in your browser's local storage, which never leaves your device.
+      </p>
+      <p>
+        The website shows public widgets with the aggregate numbers of its own
+        project (visitors now, top countries, referrers and pages). They never
+        show an individual visitor.
       </p>
       <p>
         The dashboard sets a session cookie that keeps you signed in, one that
         remembers which sign-in method you used last, and a few that remember
         your display choices (theme, chart type, date range, and whether you
         have seen a prompt). They are needed for the service or remember what
-        you chose; none is used for advertising, and the dashboard runs no
-        analytics on you.
+        you chose; none is used for advertising.
+      </p>
+      <p>
+        We measure how the dashboard is used with FlarePanel itself, without
+        cookies: page views, and product events such as finishing a sign-up step
+        or creating a project. They are linked to your account id, never to your
+        name or email address.
       </p>
 
       <h3>Status emails</h3>

@@ -6,6 +6,7 @@ import { EmailInvite, zEmailInvite } from './email-invite';
 import EmailResetPassword, {
   zEmailResetPassword,
 } from './email-reset-password';
+import EmailVerify, { zEmailVerify } from './email-verify';
 import Feedback, { FEEDBACK_LABELS, zFeedback } from './feedback';
 import NotificationRule, { zNotificationRule } from './notification-rule';
 import OnboardingDashboards, {
@@ -57,6 +58,13 @@ export const templates = {
       'Reset your password',
     Component: EmailResetPassword,
     schema: zEmailResetPassword,
+  },
+  // Uncategorised, so transactional: an earlier opt-out must not stop
+  // someone from finishing their own sign-up.
+  'email-verify': {
+    subject: () => 'Verify your email address',
+    Component: EmailVerify,
+    schema: zEmailVerify,
   },
   'onboarding-welcome': {
     subject: () => 'Welcome to FlarePanel',

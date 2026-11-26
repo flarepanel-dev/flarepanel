@@ -71,7 +71,16 @@ export function OverviewMap({ projectId, shareId }: OverviewMapProps) {
   }
 
   return (
-    <div className="h-full w-full" style={{ minHeight: 300 }}>
+    <div className="relative h-full w-full" style={{ minHeight: 300 }}>
+      {/* CC BY 4.0 attribution for the geolocation data (see NOTICE.md). */}
+      <a
+        className="absolute right-1 bottom-0 z-10 text-3xs text-muted-foreground/70 hover:text-muted-foreground"
+        href="https://db-ip.com"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        IP Geolocation by DB-IP
+      </a>
       <AutoSizer disableHeight>
         {({ width }) => (
           <WorldMap

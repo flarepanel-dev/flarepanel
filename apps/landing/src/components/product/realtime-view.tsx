@@ -159,9 +159,7 @@ export function RealtimeView({ active = true }: { active?: boolean }) {
             {bars.map((v, i) => (
               <span
                 className={`flex-1 rounded-t-[1px] transition-[height] duration-700 ease-out-expo ${
-                  i === bars.length - 1
-                    ? 'bg-chart-ember'
-                    : 'bg-chart-ember/35'
+                  i === bars.length - 1 ? 'bg-chart-ember' : 'bg-chart-ember/35'
                 }`}
                 // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length series
                 key={i}

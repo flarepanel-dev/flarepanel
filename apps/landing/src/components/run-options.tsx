@@ -9,23 +9,26 @@ const OPTIONS = [
     live: true,
     body: 'We run it for you. Create an account, add a project, paste the SDK snippet.',
     points: [
-      'Sign-up and projects work today',
-      'Choose where your data lives: EU, US or unrestricted',
+      'Tracking, dashboards and replay work today',
+      'Nothing to install or keep running',
       'Priced per event, from $1 a month',
     ],
     cta: { label: 'Get early access', href: site.signUp },
   },
   {
     name: 'Your own Cloudflare account',
-    status: 'Coming soon',
-    live: false,
+    status: 'Manual deploy',
+    live: true,
     body: 'Deploy the same code to your own Workers, D1, Durable Objects and R2.',
     points: [
       'Your data never leaves your account',
       'You pay Cloudflare directly, per use',
       'Same open-source code as the hosted version',
     ],
-    cta: { label: 'Watch the repository', href: site.github },
+    cta: {
+      label: 'Read the deploy guide',
+      href: `${site.docs}/self-hosting/deploy`,
+    },
   },
 ] as const;
 
@@ -81,7 +84,7 @@ export function RunOptions() {
               ['Who runs it', 'We do', 'You do, on your Cloudflare account'],
               [
                 'Where data lives',
-                'EU, US or unrestricted, your choice',
+                'Our Cloudflare account',
                 'Never leaves your account',
               ],
               [

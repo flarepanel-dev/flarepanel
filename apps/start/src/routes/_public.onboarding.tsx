@@ -1,9 +1,10 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { AlertCircleIcon, MailOpenIcon } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { AuthHeading } from '@/components/auth/auth-shell';
+import { CheckEmail } from '@/components/auth/check-email';
 import { Or } from '@/components/auth/or';
 import { SignInOAuth } from '@/components/auth/sign-in-oauth';
 import { SignUpEmailForm } from '@/components/auth/sign-up-email-form';
@@ -73,6 +74,8 @@ function Component() {
     trpc.auth.providers.queryOptions()
   );
   const hasOAuthProviders = providers.google || providers.github;
+  // Set once an email sign-up is waiting for its verification link.
+  const [sentTo, setSentTo] = useState<string | null>(null);
   const { data: invite } = useQuery(
     trpc.organization.getInvite.queryOptions(
       {
@@ -99,6 +102,20 @@ function Component() {
   const description = isSelfHosted
     ? 'Set up your account on this FlarePanel instance.'
     : 'Start your 30-day free trial. No credit card required.';
+
+  if (sentTo) {
+    return (
+      <CheckEmail
+        email={sentTo}
+        onBack={() => setSentTo(null)}
+        organizationName={
+          invite && !invite.isExpired ? invite.organization?.name : undefined
+        }
+        reason="sign-up"
+        signInHref={signInHref}
+      />
+    );
+  }
 
   return (
     <div className="col w-full gap-8">
@@ -157,29 +174,10 @@ function Component() {
         </>
       )}
 
-      <SignUpEmailForm inviteId={inviteId} />
+      <SignUpEmailForm inviteId={inviteId} onVerificationSent={setSentTo} />
 
-      <p className="text-center text-muted-foreground text-xs leading-relaxed">
-        By creating an account you agree to the{' '}
-        <a
-          className="underline hover:text-foreground"
-          href="https://flarepanel.dev/terms"
-          rel="noreferrer"
-          target="_blank"
-        >
-          Terms of Service
-        </a>{' '}
-        and{' '}
-        <a
-          className="underline hover:text-foreground"
-          href="https://flarepanel.dev/privacy"
-          rel="noreferrer"
-          target="_blank"
-        >
-          Privacy Policy
-        </a>
-        .
-      </p>
+      {/* The Terms and Privacy line returns once the legal texts are final
+          (LEGAL_DRAFT in apps/landing/src/lib/legal.ts). */}
 
       <p className="text-center text-muted-foreground text-sm">
         Already have an account?{' '}

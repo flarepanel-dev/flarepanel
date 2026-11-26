@@ -145,7 +145,7 @@ export function DropIn() {
               ))}
             </ol>
             <p className="mt-7 text-[14px] text-faint leading-[1.6]">
-              Event ingestion is rolling out during early access.{' '}
+              Starting fresh? Use the script tag or the @flarepanel packages.{' '}
               <TextLink href={site.docs}>Read the docs</TextLink>
             </p>
           </div>

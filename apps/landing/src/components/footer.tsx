@@ -21,6 +21,7 @@ const COLUMNS = [
       { label: 'Install the SDK', href: '/#get-started' },
       { label: 'Source code', href: site.github },
       { label: 'Report an issue', href: site.issues },
+      { label: 'Follow on X', href: site.x },
       { label: 'Status', href: 'https://status.flarepanel.dev' },
       { label: 'Free tools', href: '/tools' },
     ],
@@ -104,7 +105,16 @@ export function Footer() {
         ))}
       </Container>
       <Container className="flex flex-wrap justify-between gap-3 border-rule border-t py-6 text-[13px] text-faint">
-        <span>© 2026 FlarePanel contributors · AGPL-3.0</span>
+        <span>
+          © 2026 FlarePanel contributors · AGPL-3.0 ·{' '}
+          <a
+            className="transition-colors hover:text-paper"
+            href={`${site.github}/blob/main/NOTICE.md`}
+            rel="noopener"
+          >
+            Notices
+          </a>
+        </span>
         <span>Served from Cloudflare Workers</span>
         <p className="w-full text-[12px] text-faint/80">
           Cloudflare, the Cloudflare logo, Cloudflare Workers, Durable Objects,

@@ -1,12 +1,16 @@
 // The policies we hang on better-auth, run through its real handler against the
-// test database: who may register, where invites are consumed, what stays
-// unmounted.
+// test database: who may register, who must verify their email first, where
+// invites are consumed, what stays unmounted.
 
-import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
+import { afterAll, afterEach, beforeAll, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../../test/config-fixture';
 import { testServiceDeps } from '../../../../test/service-deps';
 import type { ServiceDeps } from '../../../services';
-import { INVITE_HEADER, PASSWORD_RESET_REQUIRED } from '../auth.constants';
+import {
+  EMAIL_NOT_VERIFIED,
+  INVITE_HEADER,
+  PASSWORD_RESET_REQUIRED,
+} from '../auth.constants';
 
 const sentEmails: { template: string; to: string; url: string }[] = [];
 const sendEmail = mock(
@@ -15,7 +19,10 @@ const sendEmail = mock(
     return Promise.resolve();
   }
 );
-mock.module('../../../clients/email', () => ({ sendEmail }));
+/** Whether the install has an email transport; read once per auth instance. */
+let emailConfigured = true;
+const canSendEmail = mock(() => Promise.resolve(emailConfigured));
+mock.module('../../../clients/email', () => ({ sendEmail, canSendEmail }));
 
 let createAuth: typeof import('./better-auth').createAuth;
 let hashPassword: typeof import('./password').hashPassword;
@@ -31,6 +38,9 @@ const EXISTING_EMAIL = `${PREFIX}-existing@openpanel.test`;
 const EXISTING_ID = `${PREFIX}-existing`;
 const TWO_FACTOR_EMAIL = `${PREFIX}-2fa@openpanel.test`;
 const TWO_FACTOR_ID = `${PREFIX}-2fa`;
+/** A password user from before verification existed: never verified. */
+const UNVERIFIED_EMAIL = `${PREFIX}-unverified@openpanel.test`;
+const UNVERIFIED_ID = `${PREFIX}-unverified`;
 /** `PASSWORD` as Clerk exported it: bcrypt `$2a$`. */
 const CLERK_BCRYPT_HASH =
   '$2a$04$GTCSUMj3dKSUbyUzA8PLBuNObwhyLwsAqCh1m32rIKhhfbKJd3Hxa';
@@ -38,11 +48,14 @@ const CLERK_BCRYPT_HASH =
 let deps: ServiceDeps;
 let ipCounter = 0;
 
-function authWith(auth: Partial<ServiceDeps['config']['auth']> = {}) {
+function authWith(
+  auth: Partial<ServiceDeps['config']['auth']> = {},
+  logger: ServiceDeps['logger'] = deps.logger
+) {
   const config = testCoreConfig({ dashboardUrl: DASHBOARD_URL });
   const instance = createAuth({
     db: deps.db,
-    logger: deps.logger,
+    logger,
     coordination: deps.stores.coordination,
     config: {
       ...config,
@@ -79,6 +92,44 @@ function call(
       },
       body: JSON.stringify(body),
     })
+  );
+}
+
+/** A link opened in the browser: a GET with no cookies. */
+function open(
+  auth: ReturnType<typeof authWith>,
+  url: string,
+  headers: Record<string, string> = {}
+): Promise<Response> {
+  ipCounter += 1;
+  return auth.handler(
+    new Request(url, {
+      headers: {
+        origin: DASHBOARD_URL,
+        [constants.TRUSTED_IP_HEADER]: `10.0.0.${ipCounter}`,
+        ...headers,
+      },
+    })
+  );
+}
+
+/** The newest verification email sent to `to`. */
+function verificationEmail(to: string) {
+  return sentEmails.findLast(
+    (email) => email.template === 'email-verify' && email.to === to
+  );
+}
+
+/**
+ * What the dashboard's `/verify-email` page does with the emailed link: hand
+ * its token to the API.
+ */
+function verify(auth: ReturnType<typeof authWith>, to: string) {
+  const link = new URL(verificationEmail(to)?.url ?? '');
+  const token = link.searchParams.get('token') ?? '';
+  return open(
+    auth,
+    `http://api.test${constants.AUTH_BASE_PATH}/verify-email?token=${encodeURIComponent(token)}`
   );
 }
 
@@ -135,9 +186,10 @@ beforeAll(async () => {
   deps = await testServiceDeps();
   await cleanUp();
   const hash = await hashPassword(PASSWORD);
-  for (const [id, email, twoFactorEnabled] of [
-    [EXISTING_ID, EXISTING_EMAIL, false],
-    [TWO_FACTOR_ID, TWO_FACTOR_EMAIL, true],
+  for (const [id, email, twoFactorEnabled, emailVerified] of [
+    [EXISTING_ID, EXISTING_EMAIL, false, true],
+    [TWO_FACTOR_ID, TWO_FACTOR_EMAIL, true, true],
+    [UNVERIFIED_ID, UNVERIFIED_EMAIL, false, false],
   ] as const) {
     await deps.db.user.create({
       data: {
@@ -145,6 +197,7 @@ beforeAll(async () => {
         email,
         name: 'Ada',
         twoFactorEnabled,
+        emailVerified,
         accounts: {
           create: { provider: 'credential', accountId: id, password: hash },
         },
@@ -165,6 +218,10 @@ beforeAll(async () => {
 
 afterAll(cleanUp);
 
+afterEach(() => {
+  emailConfigured = true;
+});
+
 test('sign-up creates a credential user with our hash and a joined name', async () => {
   const email = `${PREFIX}-new@openpanel.test`;
   const response = await call(authWith(), '/sign-up/email', {
@@ -176,7 +233,6 @@ test('sign-up creates a credential user with our hash and a joined name', async 
   });
 
   expect(response.status).toBe(200);
-  expect(cookieNames(response)).toContain(constants.AUTH_SESSION_COOKIE);
   const user = await deps.db.user.findUniqueOrThrow({
     where: { email },
     include: { accounts: true },
@@ -184,6 +240,163 @@ test('sign-up creates a credential user with our hash and a joined name', async 
   expect(user.name).toBe('Grace Hopper');
   expect(user.accounts[0]?.provider).toBe('credential');
   expect(user.accounts[0]?.password?.startsWith('$argon2')).toBe(true);
+});
+
+test('sign-up sends a verification link to the dashboard and starts no session', async () => {
+  const email = `${PREFIX}-verify-new@openpanel.test`;
+  sentEmails.length = 0;
+  const response = await call(authWith(), '/sign-up/email', {
+    email,
+    password: PASSWORD,
+    name: 'Verify',
+  });
+
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ token: null });
+  expect(cookieNames(response)).not.toContain(constants.AUTH_SESSION_COOKIE);
+  const user = await deps.db.user.findUniqueOrThrow({ where: { email } });
+  expect(user.emailVerified).toBe(false);
+  expect(await deps.db.session.count({ where: { userId: user.id } })).toBe(0);
+  const link = new URL(verificationEmail(email)?.url ?? '');
+  expect(link.origin + link.pathname).toBe(`${DASHBOARD_URL}/verify-email`);
+  expect(link.searchParams.get('token')).toBeTruthy();
+});
+
+test('a repeat sign-up answers like a new one and resends the link', async () => {
+  const email = `${PREFIX}-verify-repeat@openpanel.test`;
+  const auth = authWith();
+  await call(auth, '/sign-up/email', { email, password: PASSWORD, name: 'A' });
+  sentEmails.length = 0;
+
+  const again = await call(auth, '/sign-up/email', {
+    email,
+    password: 'another password',
+    name: 'B',
+  });
+
+  expect(again.status).toBe(200);
+  expect(await again.json()).toMatchObject({ token: null });
+  expect(verificationEmail(email)).toBeDefined();
+  expect(await deps.db.user.count({ where: { email } })).toBe(1);
+});
+
+test('the verification link signs the user in and verifies the address', async () => {
+  const email = `${PREFIX}-verify-link@openpanel.test`;
+  const auth = authWith();
+  await call(auth, '/sign-up/email', { email, password: PASSWORD, name: 'L' });
+
+  const response = await verify(auth, email);
+
+  expect(response.status).toBe(200);
+  expect(cookieNames(response)).toContain(constants.AUTH_SESSION_COOKIE);
+  expect(lastLoginCookie(response)).toBe('email');
+  const user = await deps.db.user.findUniqueOrThrow({ where: { email } });
+  expect(user.emailVerified).toBe(true);
+  const signIn = await call(auth, '/sign-in/email', {
+    email,
+    password: PASSWORD,
+  });
+  expect(signIn.status).toBe(200);
+});
+
+test('a forged or garbled verification token is refused', async () => {
+  const response = await open(
+    authWith(),
+    `http://api.test${constants.AUTH_BASE_PATH}/verify-email?token=not-a-token`
+  );
+
+  expect(response.status).toBe(401);
+  expect(await response.json()).toMatchObject({ code: 'INVALID_TOKEN' });
+  expect(cookieNames(response)).not.toContain(constants.AUTH_SESSION_COOKIE);
+});
+
+test('an unverified sign-in is refused and sends a fresh link', async () => {
+  const auth = authWith();
+  sentEmails.length = 0;
+
+  const wrongPassword = await call(auth, '/sign-in/email', {
+    email: UNVERIFIED_EMAIL,
+    password: 'not the password',
+  });
+  expect(wrongPassword.status).toBe(401);
+  expect(verificationEmail(UNVERIFIED_EMAIL)).toBeUndefined();
+
+  const response = await call(auth, '/sign-in/email', {
+    email: UNVERIFIED_EMAIL,
+    password: PASSWORD,
+  });
+
+  expect(response.status).toBe(403);
+  expect(await response.json()).toMatchObject({ code: EMAIL_NOT_VERIFIED });
+  expect(cookieNames(response)).not.toContain(constants.AUTH_SESSION_COOKIE);
+  expect(verificationEmail(UNVERIFIED_EMAIL)).toBeDefined();
+});
+
+test('resending from the dashboard sends a link only to an unverified account', async () => {
+  const auth = authWith();
+  sentEmails.length = 0;
+
+  for (const email of [UNVERIFIED_EMAIL, EXISTING_EMAIL]) {
+    const response = await call(auth, '/send-verification-email', { email });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: true });
+  }
+
+  expect(verificationEmail(UNVERIFIED_EMAIL)).toBeDefined();
+  expect(verificationEmail(EXISTING_EMAIL)).toBeUndefined();
+});
+
+test('resending is limited per caller', async () => {
+  const auth = authWith();
+  const ip = { [constants.TRUSTED_IP_HEADER]: '10.2.0.1' };
+  const statuses: number[] = [];
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const response = await call(
+      auth,
+      '/send-verification-email',
+      { email: `${PREFIX}-nobody@openpanel.test` },
+      ip
+    );
+    statuses.push(response.status);
+  }
+
+  expect(statuses).toEqual([200, 200, 200, 429]);
+});
+
+test('an install without email signs people straight in and says so once', async () => {
+  emailConfigured = false;
+  const warn = mock(() => undefined);
+  const logger = Object.assign(Object.create(deps.logger), { warn });
+  const auth = authWith({}, logger);
+  const email = `${PREFIX}-no-email@openpanel.test`;
+  sentEmails.length = 0;
+
+  const signUp = await call(auth, '/sign-up/email', {
+    email,
+    password: PASSWORD,
+    name: 'No email',
+  });
+  const unverified = await call(auth, '/sign-in/email', {
+    email: UNVERIFIED_EMAIL,
+    password: PASSWORD,
+  });
+
+  expect(signUp.status).toBe(200);
+  expect(cookieNames(signUp)).toContain(constants.AUTH_SESSION_COOKIE);
+  expect(unverified.status).toBe(200);
+  expect(cookieNames(unverified)).toContain(constants.AUTH_SESSION_COOKIE);
+  expect(sentEmails.filter((sent) => sent.template === 'email-verify')).toEqual(
+    []
+  );
+  // Existing users are not marked verified behind anyone's back.
+  const user = await deps.db.user.findUniqueOrThrow({
+    where: { id: UNVERIFIED_ID },
+  });
+  expect(user.emailVerified).toBe(false);
+  const warnings = warn.mock.calls.filter((args: unknown[]) =>
+    String(args[0]).includes('No email provider')
+  );
+  expect(warnings).toHaveLength(1);
 });
 
 test('sign-up is refused when registration is closed and there is no invite', async () => {
@@ -201,25 +414,113 @@ test('sign-up is refused when registration is closed and there is no invite', as
   expect(await deps.db.user.findUnique({ where: { email } })).toBeNull();
 });
 
-test('an invite opens closed registration and is consumed by the new user', async () => {
+test('an invite opens closed registration and is consumed once the new user verifies', async () => {
   const email = `${PREFIX}-invited@openpanel.test`;
-  await createInvite(`${PREFIX}-invite-signup`, email);
+  const inviteId = `${PREFIX}-invite-signup`;
+  await createInvite(inviteId, email);
+  const auth = authWith({ allowRegistration: false, allowInvitation: true });
+
+  const response = await call(
+    auth,
+    '/sign-up/email',
+    { email, password: PASSWORD, name: 'Invited' },
+    { [INVITE_HEADER]: inviteId }
+  );
+
+  expect(response.status).toBe(200);
+  const user = await deps.db.user.findUniqueOrThrow({ where: { email } });
+  expect(await membership(user.id)).toBeNull();
+  expect(
+    await deps.db.invite.findUnique({ where: { id: inviteId } })
+  ).not.toBeNull();
+
+  // Opened later, in a browser that never saw the invite.
+  const verified = await verify(auth, email);
+
+  expect(verified.status).toBe(200);
+  expect(await membership(user.id)).toEqual({ role: 'viewer' });
+  expect(
+    await deps.db.invite.findUnique({ where: { id: inviteId } })
+  ).toBeNull();
+  // Taken once: opening the link again joins nothing twice and fails nothing.
+  expect((await verify(auth, email)).status).toBe(200);
+});
+
+test('without email an invited sign-up joins straight away, as before', async () => {
+  emailConfigured = false;
+  const email = `${PREFIX}-invited-no-email@openpanel.test`;
+  const inviteId = `${PREFIX}-invite-no-email`;
+  await createInvite(inviteId, email);
 
   const response = await call(
     authWith({ allowRegistration: false, allowInvitation: true }),
     '/sign-up/email',
     { email, password: PASSWORD, name: 'Invited' },
-    { [INVITE_HEADER]: `${PREFIX}-invite-signup` }
+    { [INVITE_HEADER]: inviteId }
   );
 
   expect(response.status).toBe(200);
+  expect(cookieNames(response)).toContain(constants.AUTH_SESSION_COOKIE);
   const user = await deps.db.user.findUniqueOrThrow({ where: { email } });
   expect(await membership(user.id)).toEqual({ role: 'viewer' });
-  expect(
-    await deps.db.invite.findUnique({
-      where: { id: `${PREFIX}-invite-signup` },
-    })
-  ).toBeNull();
+});
+
+test('an invite brought to an unverified sign-in waits for the link', async () => {
+  const email = `${PREFIX}-unverified-invited@openpanel.test`;
+  const inviteId = `${PREFIX}-invite-unverified`;
+  const user = await deps.db.user.create({
+    data: {
+      email,
+      name: 'Late',
+      accounts: {
+        create: {
+          provider: 'credential',
+          password: await hashPassword(PASSWORD),
+        },
+      },
+    },
+  });
+  await deps.db.account.updateMany({
+    where: { userId: user.id },
+    data: { accountId: user.id },
+  });
+  await createInvite(inviteId, email);
+  const auth = authWith();
+
+  const signIn = await call(
+    auth,
+    '/sign-in/email',
+    { email, password: PASSWORD },
+    { [INVITE_HEADER]: inviteId }
+  );
+  expect(signIn.status).toBe(403);
+  expect(cookieNames(signIn)).not.toContain('inviteId');
+  expect(await membership(user.id)).toBeNull();
+
+  await verify(auth, email);
+
+  expect(await membership(user.id)).toEqual({ role: 'viewer' });
+});
+
+test('a sign-up never holds an invite for an account it did not create', async () => {
+  const inviteId = `${PREFIX}-invite-squat`;
+  await createInvite(inviteId, UNVERIFIED_EMAIL);
+  const auth = authWith();
+
+  // Someone else signs up with the unverified user's address and an invite.
+  await call(
+    auth,
+    '/sign-up/email',
+    { email: UNVERIFIED_EMAIL, password: 'attacker password', name: 'X' },
+    { [INVITE_HEADER]: inviteId }
+  );
+  await verify(auth, UNVERIFIED_EMAIL);
+
+  expect(await membership(UNVERIFIED_ID)).toBeNull();
+  await deps.db.user.update({
+    where: { id: UNVERIFIED_ID },
+    data: { emailVerified: false },
+  });
 });
 
 test('signing in with an invite joins the organization', async () => {
@@ -238,6 +539,8 @@ test('signing in with an invite joins the organization', async () => {
 
 test('a password with edge whitespace signs in exactly as it was set', async () => {
   const email = `${PREFIX}-spaces@openpanel.test`;
+  // Signed in straight after sign-up, as on an install without email.
+  emailConfigured = false;
   const auth = authWith();
   await call(auth, '/sign-up/email', {
     email,
@@ -260,6 +563,8 @@ test('a password with edge whitespace signs in exactly as it was set', async () 
 
 test('a Clerk password is refused with a reset prompt until the user resets it', async () => {
   const email = `${PREFIX}-clerk@openpanel.test`;
+  // Needs the session sign-up hands out on an install without email.
+  emailConfigured = false;
   const auth = authWith();
   const signUp = await call(auth, '/sign-up/email', {
     email,
@@ -363,7 +668,12 @@ test('a reset link goes to the dashboard and its token sets the new password', a
 
 test('endpoints the dashboard does not use stay unmounted', async () => {
   const auth = authWith();
-  for (const path of ['/list-sessions', '/update-user', '/delete-user']) {
+  for (const path of [
+    '/list-sessions',
+    '/update-user',
+    '/delete-user',
+    '/change-email',
+  ]) {
     expect((await call(auth, path, {})).status).toBe(404);
   }
 });
@@ -489,19 +799,39 @@ test('a bulk-imported oauth user signing in with Google gets the account linked'
   expect(google?.accountId).toBe('google-imported');
 });
 
-test('a password-only user is not joined by a Google sign-in with the same email', async () => {
+test('an unverified password user is not joined by a Google sign-in with the same email', async () => {
   const { location } = await googleSignIn(authWith({ google: GOOGLE }), {
-    sub: 'google-existing',
-    email: EXISTING_EMAIL,
+    sub: 'google-unverified-password',
+    email: UNVERIFIED_EMAIL,
   });
 
   expect(location.pathname).toBe('/login');
   expect(location.searchParams.get('error')).toBe('account_not_linked');
   expect(
     await deps.db.account.count({
-      where: { userId: EXISTING_ID, provider: 'google' },
+      where: { userId: UNVERIFIED_ID, provider: 'google' },
     })
   ).toBe(0);
+});
+
+test('a password user who verified their email is joined by Google', async () => {
+  const email = `${PREFIX}-verified-password@openpanel.test`;
+  const auth = authWith({ google: GOOGLE });
+  await call(auth, '/sign-up/email', { email, password: PASSWORD, name: 'V' });
+  await verify(auth, email);
+
+  const { location } = await googleSignIn(auth, {
+    sub: 'google-verified-password',
+    email,
+  });
+
+  expect(location.toString()).toBe(`${DASHBOARD_URL}/`);
+  const user = await deps.db.user.findUniqueOrThrow({ where: { email } });
+  expect(
+    await deps.db.account.count({
+      where: { userId: user.id, provider: 'google' },
+    })
+  ).toBe(1);
 });
 
 test('a new Google user is refused when registration is closed', async () => {

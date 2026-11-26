@@ -3,9 +3,19 @@
 // better-auth's cookie on the way out, until PR 4 drops them.
 
 import type { Session, User } from '@flarepanel/db/src/prisma-client';
-import { APIError, type BetterAuthPlugin, betterAuth } from 'better-auth';
+import {
+  APIError,
+  type AuthContext,
+  type BetterAuthPlugin,
+  betterAuth,
+} from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { createAuthMiddleware, getOAuthState } from 'better-auth/api';
+import {
+  createAuthMiddleware,
+  createEmailVerificationToken,
+  getOAuthState,
+  isAPIError,
+} from 'better-auth/api';
 import { parseSetCookieHeader } from 'better-auth/cookies';
 import { makeSignature } from 'better-auth/crypto';
 import type { OAuth2Tokens } from 'better-auth/oauth2';
@@ -14,13 +24,18 @@ import {
   github as githubProvider,
   google as googleProvider,
 } from 'better-auth/social-providers';
-import { sendEmail } from '../../../clients/email';
+import { canSendEmail, sendEmail } from '../../../clients/email';
 import type { CoreConfig } from '../../../config';
 import type { Db, PlatformStores } from '../../../context';
 import type { Logger } from '../../../logger';
 import type { ISetCookie } from '../../../shared/cookie';
 import { connectUserToOrganization } from '../../organization/organization.service';
-import { INVITE_HEADER, PASSWORD_RESET_REQUIRED } from '../auth.constants';
+import {
+  EMAIL_NOT_VERIFIED,
+  INVITE_HEADER,
+  PASSWORD_RESET_REQUIRED,
+  VERIFY_EMAIL_PATH,
+} from '../auth.constants';
 import { cookieOptions } from './constants';
 import { isOAuthClientConfigured } from './oauth';
 import { hashPassword, verifyPasswordHash } from './password';
@@ -36,13 +51,28 @@ export const TRUSTED_IP_HEADER = 'x-openpanel-trusted-ip';
 /** Holds the invite while a two-factor challenge is pending. */
 const INVITE_COOKIE = 'inviteId';
 /** Where a session can start, so where an invite is consumed. */
-const SIGN_IN_PATHS = ['/sign-in/', '/sign-up/', '/callback/', '/two-factor/'];
+const SIGN_IN_PATHS = [
+  '/sign-in/',
+  '/sign-up/',
+  '/callback/',
+  '/two-factor/',
+  '/verify-email',
+];
+/**
+ * `pending-invite:<userId>` in the verification table: the invite a password
+ * sign-up (or unverified sign-in) brought, held until the address is verified.
+ */
+const PENDING_INVITE_PREFIX = 'pending-invite:';
 const LAST_LOGIN_METHOD_COOKIE = 'last-auth-provider';
 
 const SESSION_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 30;
 const SESSION_UPDATE_AGE_SECONDS = 60 * 60 * 24 * 15;
 const RESET_PASSWORD_TOKEN_SECONDS = 60 * 10;
 const TWO_FACTOR_CHALLENGE_SECONDS = 60 * 10;
+/** The verification link signs in, so it does not live for long. */
+export const EMAIL_VERIFICATION_SECONDS = 60 * 60 * 24;
+/** Per address and IP: the dashboard waits a minute between resends anyway. */
+const SEND_VERIFICATION_LIMIT = { window: 60, max: 3 };
 const LAST_LOGIN_METHOD_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 const RATE_LIMIT_WINDOW_SECONDS = 60;
 const RATE_LIMIT_MAX = 100;
@@ -62,6 +92,8 @@ const EXPOSED_PATHS = new Set([
   '/sign-out',
   '/request-password-reset',
   '/reset-password',
+  '/send-verification-email',
+  '/verify-email',
 ]);
 const EXPOSED_PREFIXES = ['/callback/', '/two-factor/'];
 
@@ -110,6 +142,113 @@ async function readInviteId(ctx: InviteSource): Promise<string | undefined> {
   return ctx.getCookie(INVITE_COOKIE) ?? undefined;
 }
 
+type InternalAdapter = AuthContext['internalAdapter'];
+
+/**
+ * Holds an invite for a user who cannot sign in until their address is
+ * verified. Only a session started by their verification link takes it (see
+ * `takeHeldInvite`), and it lapses with the invite.
+ */
+async function holdInvite(
+  deps: AuthDeps,
+  adapter: InternalAdapter,
+  userId: string,
+  inviteId: string
+): Promise<void> {
+  const invite = await deps.db.invite.findUnique({
+    where: { id: inviteId },
+    select: { expiresAt: true },
+  });
+  if (!invite || invite.expiresAt < new Date()) {
+    return;
+  }
+  await adapter.createVerificationValue({
+    identifier: `${PENDING_INVITE_PREFIX}${userId}`,
+    value: inviteId,
+    expiresAt: invite.expiresAt,
+  });
+}
+
+/** Consumed atomically, so two tabs opening the link join once. */
+async function takeHeldInvite(
+  adapter: InternalAdapter,
+  userId: string
+): Promise<string | undefined> {
+  const held = await adapter.consumeVerificationValue(
+    `${PENDING_INVITE_PREFIX}${userId}`
+  );
+  return held?.value;
+}
+
+/** The user a sign-up returned. A repeat sign-up returns a made-up one. */
+function returnedUserId(returned: unknown): string | undefined {
+  if (!(returned && typeof returned === 'object' && 'user' in returned)) {
+    return;
+  }
+  const { user } = returned as { user?: { id?: unknown } };
+  return typeof user?.id === 'string' ? user.id : undefined;
+}
+
+function isEmailNotVerified(returned: unknown): boolean {
+  return isAPIError(returned) && returned.body?.code === EMAIL_NOT_VERIFIED;
+}
+
+interface PendingInviteContext extends InviteSource {
+  path?: string;
+  body?: unknown;
+  context: { returned?: unknown; internalAdapter: InternalAdapter };
+  setCookie: (
+    name: string,
+    value: string,
+    options?: ReturnType<typeof cookieOptions> & { maxAge?: number }
+  ) => unknown;
+}
+
+/** No session yet: keep the invite for the step that will start one. */
+async function keepInvite(
+  deps: AuthDeps,
+  ctx: PendingInviteContext,
+  inviteId: string
+): Promise<void> {
+  const adapter = ctx.context.internalAdapter;
+  if (ctx.path === '/sign-up/email') {
+    // Waits for the verification link, which may be opened days later or in
+    // another browser, so it is held server-side rather than in a cookie.
+    const userId = returnedUserId(ctx.context.returned);
+    const created =
+      userId &&
+      (await deps.db.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      }));
+    if (created) {
+      await holdInvite(deps, adapter, created.id, inviteId);
+    }
+    return;
+  }
+  if (ctx.path !== '/sign-in/email') {
+    return;
+  }
+  if (isEmailNotVerified(ctx.context.returned)) {
+    // The password was right and a new link is on its way; the invite waits
+    // for it.
+    const { email } = (ctx.body ?? {}) as { email?: unknown };
+    const found =
+      typeof email === 'string'
+        ? await adapter.findUserByEmail(email.toLowerCase())
+        : null;
+    if (found) {
+      await holdInvite(deps, adapter, found.user.id, inviteId);
+    }
+    return;
+  }
+  // A password sign-in that now waits for a second factor.
+  ctx.setCookie(INVITE_COOKIE, inviteId, {
+    ...cookieOptions(deps.config),
+    maxAge: TWO_FACTOR_CHALLENGE_SECONDS,
+  });
+}
+
 function invitePlugin(deps: AuthDeps) {
   return {
     id: 'openpanel-invite',
@@ -120,35 +259,125 @@ function invitePlugin(deps: AuthDeps) {
             SIGN_IN_PATHS.some((prefix) => ctx.path?.startsWith(prefix)),
           handler: createAuthMiddleware(async (ctx) => {
             const inviteId = await readInviteId(ctx);
-            if (!inviteId) {
-              return;
-            }
             const signedIn = ctx.context.newSession;
             if (!signedIn) {
-              // A password sign-in that now waits for a second factor.
-              if (ctx.path === '/sign-in/email') {
-                ctx.setCookie(INVITE_COOKIE, inviteId, {
-                  ...cookieOptions(deps.config),
-                  maxAge: TWO_FACTOR_CHALLENGE_SECONDS,
-                });
+              if (inviteId) {
+                await keepInvite(deps, ctx, inviteId).catch(
+                  (error: unknown) => {
+                    deps.logger.error(
+                      { err: error, inviteId },
+                      'Failed to keep invite for a sign-in that has no session yet'
+                    );
+                  }
+                );
               }
               return;
             }
-            // Best effort: an expired invite must not undo the sign-in.
-            await connectUserToOrganization(deps, {
-              user: signedIn.user,
-              inviteId,
-            }).catch((error: unknown) => {
-              deps.logger.error(
-                { err: error, userId: signedIn.user.id, inviteId },
-                'Failed to connect user to organization via invite'
-              );
-            });
+            const held =
+              ctx.path === '/verify-email'
+                ? await takeHeldInvite(
+                    ctx.context.internalAdapter,
+                    signedIn.user.id
+                  )
+                : undefined;
+            for (const id of new Set([inviteId, held])) {
+              if (!id) {
+                continue;
+              }
+              // Best effort: an expired invite must not undo the sign-in.
+              await connectUserToOrganization(deps, {
+                user: signedIn.user,
+                inviteId: id,
+              }).catch((error: unknown) => {
+                deps.logger.error(
+                  { err: error, userId: signedIn.user.id, inviteId: id },
+                  'Failed to connect user to organization via invite'
+                );
+              });
+            }
             if (ctx.getCookie(INVITE_COOKIE)) {
               ctx.setCookie(INVITE_COOKIE, '', {
                 ...cookieOptions(deps.config),
                 maxAge: 0,
               });
+            }
+          }),
+        },
+      ],
+    },
+  } satisfies BetterAuthPlugin;
+}
+
+async function assertRegistrationAllowed(
+  deps: AuthDeps,
+  ctx: InviteSource | null
+): Promise<void> {
+  const inviteId = ctx ? await readInviteId(ctx) : undefined;
+  if (!(await getIsRegistrationAllowed(deps, inviteId))) {
+    throw new APIError('FORBIDDEN', {
+      code: 'REGISTRATION_NOT_ALLOWED',
+      message: 'Registrations are not allowed',
+    });
+  }
+}
+
+/**
+ * A closed install refuses an email sign-up before better-auth looks the
+ * address up. Once verification is required, better-auth answers a refusal
+ * from the user-create hook with its made-up "check your inbox" user, and the
+ * visitor would wait for an email that never comes. The answer is the same
+ * for every address, so it reveals no account. The create hook still guards
+ * Google and GitHub sign-ups.
+ */
+function registrationPlugin(deps: AuthDeps) {
+  return {
+    id: 'openpanel-registration',
+    hooks: {
+      before: [
+        {
+          matcher: (ctx: { path?: string }) => ctx.path === '/sign-up/email',
+          handler: createAuthMiddleware(async (ctx) => {
+            await assertRegistrationAllowed(deps, ctx);
+          }),
+        },
+      ],
+    },
+  } satisfies BetterAuthPlugin;
+}
+
+/**
+ * Email verification is required only where an email can arrive: an install
+ * without SMTP, Resend or a `send_email` binding keeps signing people straight
+ * in, or nobody could ever finish a sign-up. Decided on the first call rather
+ * than in `createAuth`, because Workers hand `@flarepanel/email` its sender
+ * after the auth instance is built.
+ */
+function emailVerificationGate(logger: Logger) {
+  // The answer, never the promise: on Workers a request must not await a
+  // promise that another request created.
+  let canSend: boolean | undefined;
+  return {
+    id: 'openpanel-email-verification',
+    hooks: {
+      before: [
+        {
+          matcher: () => true,
+          handler: createAuthMiddleware(async (ctx) => {
+            if (canSend === undefined) {
+              const resolved = await canSendEmail().catch(() => false);
+              if (canSend === undefined && !resolved) {
+                logger.warn(
+                  'No email provider is configured (send_email binding, SMTP_HOST or RESEND_API_KEY); email sign-ups are not verified'
+                );
+              }
+              canSend = resolved;
+            }
+            const { emailAndPassword, emailVerification } = ctx.context.options;
+            if (emailAndPassword) {
+              emailAndPassword.requireEmailVerification = canSend;
+            }
+            if (emailVerification) {
+              emailVerification.sendOnSignUp = canSend;
             }
           }),
         },
@@ -243,6 +472,16 @@ function socialProviders(config: CoreConfig) {
 
 function buildAuth(deps: AuthDeps, secret: string) {
   const { db, config, logger, coordination } = deps;
+  // The link opens the dashboard, which calls `/verify-email` itself, as the
+  // reset link does; better-auth's own link would land on the API.
+  const sendVerificationLink = async (email: string, token: string) => {
+    const url = new URL(VERIFY_EMAIL_PATH, config.dashboardUrl);
+    url.searchParams.set('token', token);
+    await sendEmail('email-verify', {
+      to: email,
+      data: { url: url.toString() },
+    });
+  };
   return betterAuth({
     secret,
     basePath: AUTH_BASE_PATH,
@@ -270,8 +509,8 @@ function buildAuth(deps: AuthDeps, secret: string) {
       fields: { providerId: 'provider' },
       // A Google or GitHub sign-in (verified email only, see
       // `requireVerifiedEmail`) joins the user who owns that email if that
-      // user is verified too. Password-only users are never verified, so never
-      // joined this way.
+      // user is verified too. A password user is verified only by opening
+      // their verification link, so an unverified sign-up is never joined.
       accountLinking: { enabled: true },
     },
     session: {
@@ -279,8 +518,35 @@ function buildAuth(deps: AuthDeps, secret: string) {
       updateAge: SESSION_UPDATE_AGE_SECONDS,
     },
     socialProviders: socialProviders(config),
+    emailVerification: {
+      // `sendOnSignUp` is switched on with `requireEmailVerification` by
+      // `emailVerificationGate`, once the install is known to send email.
+      sendOnSignUp: false,
+      // An unverified password user gets a fresh link at every refused
+      // sign-in, accounts from before verification existed included.
+      sendOnSignIn: true,
+      autoSignInAfterVerification: true,
+      expiresIn: EMAIL_VERIFICATION_SECONDS,
+      sendVerificationEmail: ({ user, token }) =>
+        sendVerificationLink(user.email, token),
+    },
     emailAndPassword: {
       enabled: true,
+      requireEmailVerification: false,
+      // A repeat sign-up answers exactly like a new one, so it reveals no
+      // account; one still waiting on its link is sent a fresh one.
+      onExistingUserSignUp: async ({ user }) => {
+        if (user.emailVerified) {
+          return;
+        }
+        const token = await createEmailVerificationToken(
+          secret,
+          user.email,
+          undefined,
+          EMAIL_VERIFICATION_SECONDS
+        );
+        await sendVerificationLink(user.email, token);
+      },
       minPasswordLength: MIN_PASSWORD_LENGTH,
       maxPasswordLength: MAX_PASSWORD_LENGTH,
       resetPasswordTokenExpiresIn: RESET_PASSWORD_TOKEN_SECONDS,
@@ -310,13 +576,7 @@ function buildAuth(deps: AuthDeps, secret: string) {
       user: {
         create: {
           before: async (user, ctx) => {
-            const inviteId = ctx ? await readInviteId(ctx) : undefined;
-            if (!(await getIsRegistrationAllowed(deps, inviteId))) {
-              throw new APIError('FORBIDDEN', {
-                code: 'REGISTRATION_NOT_ALLOWED',
-                message: 'Registrations are not allowed',
-              });
-            }
+            await assertRegistrationAllowed(deps, ctx);
             const name = [user.firstName, user.lastName]
               .filter(Boolean)
               .join(' ')
@@ -331,6 +591,8 @@ function buildAuth(deps: AuthDeps, secret: string) {
       window: RATE_LIMIT_WINDOW_SECONDS,
       max: RATE_LIMIT_MAX,
       customStorage: rateLimitStorage(coordination),
+      // Every allowed call sends an email.
+      customRules: { '/send-verification-email': SEND_VERIFICATION_LIMIT },
     },
     advanced: {
       cookiePrefix: COOKIE_PREFIX,
@@ -342,6 +604,9 @@ function buildAuth(deps: AuthDeps, secret: string) {
     },
     plugins: [
       exposedPathsPlugin,
+      // First, so every endpoint sees whether verification is required.
+      emailVerificationGate(logger),
+      registrationPlugin(deps),
       twoFactor({
         issuer: 'FlarePanel',
         twoFactorCookieMaxAge: TWO_FACTOR_CHALLENGE_SECONDS,
@@ -350,7 +615,9 @@ function buildAuth(deps: AuthDeps, secret: string) {
         cookieName: LAST_LOGIN_METHOD_COOKIE,
         maxAge: LAST_LOGIN_METHOD_MAX_AGE_SECONDS,
         customResolveMethod: (ctx) =>
-          ctx.path.startsWith('/two-factor/') ? 'email' : null,
+          ctx.path.startsWith('/two-factor/') || ctx.path === '/verify-email'
+            ? 'email'
+            : null,
       }),
       // After `twoFactor`, so a sign-in still waiting for its second factor
       // has no session yet and keeps the invite for later.

@@ -50,7 +50,7 @@ const events: [IClickhouseEvent, number][] = [
   view(0, 'a', '/', 'Home'),
   view(2, 'a', '/explore', 'Explore'),
   event('session_start', 3, 'b'),
-  view(3, 'b', '/', 'Example'),
+  view(3, 'b', '/', 'Example Shop'),
   event('session_start', 4, 'c'),
   view(4, 'c', '/explore'),
   event('link_out', 5, 'c', {
@@ -73,7 +73,7 @@ describe('pages scan', () => {
       {
         origin: ORIGIN,
         path: '/',
-        title: 'Example',
+        title: 'Example Shop',
         sessions: 2,
         pageviews: 2,
         avg_duration: 1,

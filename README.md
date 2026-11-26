@@ -63,6 +63,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full setup.
 ## License
 
 AGPL-3.0, like OpenPanel. The client SDKs in `packages/sdks` are MIT. See
-[NOTICE](NOTICE) for attribution.
+[NOTICE.md](NOTICE.md) for attribution and what changed from OpenPanel.
 
 FlarePanel is not affiliated with OpenPanel or Cloudflare.

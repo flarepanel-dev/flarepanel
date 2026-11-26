@@ -12,6 +12,15 @@ export const zProvider = z.enum(['email', 'google', 'github']);
 /** A password hash we no longer verify (Clerk's bcrypt); only a reset fixes it. */
 export const PASSWORD_RESET_REQUIRED = 'PASSWORD_RESET_REQUIRED';
 
+/**
+ * better-auth's code for a correct password on an address not verified yet.
+ * A fresh verification link has already been sent when it comes back.
+ */
+export const EMAIL_NOT_VERIFIED = 'EMAIL_NOT_VERIFIED';
+
+/** Where the verification link lands on the dashboard, with `?token=`. */
+export const VERIFY_EMAIL_PATH = '/verify-email';
+
 /** Carries an invite through an email sign-in or sign-up to `/api/auth`. */
 export const INVITE_HEADER = 'x-openpanel-invite';
 

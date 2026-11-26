@@ -1,6 +1,13 @@
 import { defineConfig } from 'vocs/config';
 
 const GITHUB = 'https://github.com/flarepanel-dev/flarepanel';
+/**
+ * The docs report to the website's FlarePanel project (public client ID).
+ * Vocs prints head scripts twice, so init runs only once.
+ */
+const ANALYTICS_CLIENT_ID = 'e0a1d852-11f9-4851-9e16-f2d3783da6fe';
+const ANALYTICS_SNIPPET = `window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:"call"===r||"apply"===r||"bind"===r?t[r]:function(){n.push([r].concat([].slice.call(arguments)))}},has:function(t,r){return"q"===r}})}();
+if(!window.__fpInit){window.__fpInit=1;window.op('init',{clientId:'${ANALYTICS_CLIENT_ID}',trackScreenViews:true,trackOutgoingLinks:true,trackAttributes:true});}`;
 
 export default defineConfig({
   title: 'FlarePanel',
@@ -19,7 +26,16 @@ export default defineConfig({
     link: `${GITHUB}/edit/main/apps/docs/src/pages/:path`,
     text: 'Edit this page on GitHub',
   },
-  socials: [{ icon: 'github', link: GITHUB }],
+  head: {
+    script: [
+      { innerHTML: ANALYTICS_SNIPPET },
+      { src: 'https://flarepanel.dev/op1.js', async: true, defer: true },
+    ],
+  },
+  socials: [
+    { icon: 'github', link: GITHUB },
+    { icon: 'x', link: 'https://x.com/FlarePanel' },
+  ],
   topNav: [
     { text: 'Docs', link: '/getting-started/quickstart', match: '/' },
     { text: 'Website', link: 'https://flarepanel.dev', external: true },
@@ -66,6 +82,7 @@ export default defineConfig({
       items: [
         { text: 'AI and your own key', link: '/features/ai-keys' },
         { text: 'MCP server', link: '/features/mcp' },
+        { text: 'Public widgets', link: '/features/widgets' },
       ],
     },
     {

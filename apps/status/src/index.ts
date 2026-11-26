@@ -9,6 +9,9 @@ import {
 } from './incidents';
 import { MONITORS, monitorById, runCheck } from './monitors';
 import {
+  ANALYTICS_API,
+  ANALYTICS_SCRIPT_HASH,
+  ANALYTICS_SRC,
   renderActionPage,
   renderFeed,
   renderHistoryPage,
@@ -57,7 +60,7 @@ const DAY = 24 * 60 * 60 * 1000;
 const PAGE_TTL_SECONDS = 30;
 
 const SECURITY_HEADERS: Record<string, string> = {
-  'content-security-policy': `default-src 'none'; script-src '${SCRIPT_HASH}'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`,
+  'content-security-policy': `default-src 'none'; script-src '${SCRIPT_HASH}' '${ANALYTICS_SCRIPT_HASH}' ${ANALYTICS_SRC}; connect-src ${ANALYTICS_API}; style-src 'unsafe-inline'; font-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`,
   'strict-transport-security': 'max-age=31536000; includeSubDomains',
   'x-content-type-options': 'nosniff',
   'referrer-policy': 'strict-origin-when-cross-origin',

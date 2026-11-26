@@ -8,17 +8,17 @@ const ROTATE_EVERY_MS = 7000;
 const TESTIMONIALS: { quote: string; author: string; site?: string }[] = [
   {
     quote:
-      'Web and product analytics that run entirely on your own Cloudflare account. No servers, no databases to babysit.',
-    author: 'Self-hosted on Cloudflare',
+      'Web and product analytics built on Cloudflare. Add one script and see visitors, pages and sources within seconds.',
+    author: 'Built on Cloudflare',
   },
   {
     quote:
-      'Events land at the edge closest to your visitors, and your data stays in the region you choose.',
+      'Events are taken at the Cloudflare location closest to your visitors. No cookies by default, and session replay masks what people type.',
     author: 'Fast and private',
   },
   {
     quote:
-      'Open source under AGPL-3.0, and compatible with existing OpenPanel SDKs.',
+      'Open source under AGPL-3.0. Use it here, or run the same code on your own Cloudflare account.',
     author: 'Open source',
     site: 'github.com/flarepanel-dev',
   },

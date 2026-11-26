@@ -223,3 +223,9 @@ test-results/
 .wrangler/
 apps/worker/dist/
 security-isolation-report.md
+
+# Internal planning notes live outside the public repository.
+docs/roadmap/
+
+# Local design-tool state
+.impeccable/

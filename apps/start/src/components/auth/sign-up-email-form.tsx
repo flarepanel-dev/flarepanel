@@ -22,8 +22,11 @@ type IForm = z.infer<typeof validator>;
 
 export function SignUpEmailForm({
   inviteId,
+  onVerificationSent,
 }: {
   inviteId: string | undefined;
+  /** No session yet: the address must be verified through the emailed link. */
+  onVerificationSent: (email: string) => void;
 }) {
   const authClient = useAuthClient();
   const mutation = useMutation({
@@ -40,11 +43,19 @@ export function SignUpEmailForm({
           { headers: inviteId ? { [INVITE_HEADER]: inviteId } : undefined }
         )
       ),
-    onSuccess() {
+    onSuccess(data, variables) {
+      // No token: this install verifies email first. (An address that is
+      // already registered gets the same answer, so it reveals no account.)
+      const verificationRequired = !data.token;
       trackFunnel('auth_signup_succeeded', {
         provider: 'email',
         hasInvite: Boolean(inviteId),
+        verificationRequired,
       });
+      if (verificationRequired) {
+        onVerificationSent(variables.email);
+        return;
+      }
       toast.success('Successfully signed up');
       window.location.href = '/';
     },

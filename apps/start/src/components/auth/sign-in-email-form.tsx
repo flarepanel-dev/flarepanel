@@ -1,4 +1,5 @@
 import {
+  EMAIL_NOT_VERIFIED,
   INVITE_HEADER,
   zSignInEmail,
 } from '@flarepanel/core/modules/auth/auth.constants';
@@ -15,7 +16,7 @@ import { InputWithLabel } from '../forms/input-with-label';
 import { Button } from '../ui/button';
 import { LastUsedBadge } from './last-used-badge';
 import { PasswordInput } from './password-input';
-import { unwrap, useAuthClient } from '@/integrations/auth/client';
+import { AuthError, unwrap, useAuthClient } from '@/integrations/auth/client';
 import { toastAuthError } from '@/integrations/auth/toast-auth-error';
 import { pushModal } from '@/modals';
 import { failureReason, trackFunnel } from '@/utils/funnel-tracking';
@@ -26,9 +27,12 @@ type IForm = z.infer<typeof validator>;
 export function SignInEmailForm({
   isLastUsed,
   inviteId,
+  onUnverified,
 }: {
   isLastUsed?: boolean;
   inviteId?: string;
+  /** The password was right but the address is unverified; a link was sent. */
+  onUnverified?: (email: string) => void;
 }) {
   const authClient = useAuthClient();
   const mutation = useMutation({
@@ -49,10 +53,16 @@ export function SignInEmailForm({
       window.location.href = '/';
     },
     onError(error, variables) {
+      const unverified =
+        error instanceof AuthError && error.code === EMAIL_NOT_VERIFIED;
       trackFunnel('auth_signin_failed', {
         provider: 'email',
-        reason: failureReason(error),
+        reason: unverified ? EMAIL_NOT_VERIFIED : failureReason(error),
       });
+      if (unverified && onUnverified) {
+        onUnverified(variables.email);
+        return;
+      }
       toastAuthError(error, variables.email);
     },
   });

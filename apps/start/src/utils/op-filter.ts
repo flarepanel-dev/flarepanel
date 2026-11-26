@@ -1,7 +1,12 @@
 import type { TrackHandlerPayload } from '@flarepanel/web';
 
-// These pages carry a credential (reset token, unsubscribe token) in the URL.
-const PATHS_WITH_URL_CREDENTIALS = new Set(['/reset-password', '/unsubscribe']);
+// These pages carry a credential in the URL: a reset token, an unsubscribe
+// token, or an email verification token (which signs in).
+const PATHS_WITH_URL_CREDENTIALS = new Set([
+  '/reset-password',
+  '/unsubscribe',
+  '/verify-email',
+]);
 
 // Outgoing-link events carry their destination in `href`.
 const URL_PROPERTIES = ['__path', '__referrer', 'href'] as const;

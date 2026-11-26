@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vocs dev --port 3200",
-    "build": "vocs build",
+    "build": "vocs build && node scripts/copy-markdown.mjs",
     "preview": "vocs preview",
-    "deploy": "vocs build && wrangler deploy"
+    "deploy": "bun run build && wrangler deploy"
   },
   "dependencies": {
     "react": "19.3.1",

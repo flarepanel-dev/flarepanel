@@ -16,8 +16,8 @@ export function Hero() {
           <div className="lg:pb-2">
             <p className="max-w-[52ch] text-[16px] text-muted leading-[1.6] sm:text-[17px]">
               Open-source web and product analytics that runs entirely on
-              Cloudflare. No servers, no ClickHouse, and the OpenPanel SDKs you
-              already ship keep working.
+              Cloudflare. Realtime dashboards, session replay, funnels and an AI
+              analyst, with no servers or databases to run.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <GitHubButton />

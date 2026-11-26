@@ -221,6 +221,17 @@ export const SCRIPT = `(function(){var d=document.documentElement,k='fp-status-t
 export const SCRIPT_HASH =
   'sha256-6GNDEFpFqLYvbfdmcoT4VPXOpQgw/PDa5F9x+lzO5Rk=';
 
+/**
+ * This page's own FlarePanel tracking (status project, public client ID): the
+ * standard queue snippet, then op1.js from flarepanel.dev. No cookies.
+ * Allowed by ANALYTICS_SCRIPT_HASH; a test keeps them in step.
+ */
+export const ANALYTICS_SCRIPT = `window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:"call"===r||"apply"===r||"bind"===r?t[r]:function(){n.push([r].concat([].slice.call(arguments)))}},has:function(t,r){return"q"===r}})}();window.op('init',{clientId:'9cd44d9d-c1c1-49cd-a68d-f469c29121e2',trackScreenViews:true,trackOutgoingLinks:true});`;
+export const ANALYTICS_SCRIPT_HASH =
+  'sha256-nOpL+uya62xXTNaRmZl/7AjMdFdUfKB3REiYcELU43w=';
+export const ANALYTICS_SRC = 'https://flarepanel.dev/op1.js';
+export const ANALYTICS_API = 'https://api.flarepanel.dev';
+
 const THEME_ICON =
   '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor"/></svg>';
 
@@ -252,6 +263,8 @@ function layout(opts: {
 <meta property="og:description" content="${escape(opts.description)}">
 <style>${STYLE}</style>
 <script>${SCRIPT}</script>
+<script>${ANALYTICS_SCRIPT}</script>
+<script src="${ANALYTICS_SRC}" async defer></script>
 </head>
 <body>
 <div class="wrap">

@@ -80,7 +80,7 @@ cd ../start && bun run deploy
 
 ### Check it
 
-Open `https://api.example.com/healthcheck` (it answers `{"ready":true,...}`), then sign up on your dashboard domain and create a project.
+Open `https://api.example.com/healthcheck` (it answers `{"ready":true,...}`), then sign up on your dashboard domain and create a project. If email is set up ([Email](#email)), open the verification link it sends you first.
 
 ::::
 
@@ -152,3 +152,8 @@ Idle projects cost nothing: no alarms run once their sessions have ended. Each t
 ## Email
 
 To send account emails, onboard your domain under **Compute → Email Service → Email Sending** (or `wrangler email sending enable your-domain.com`) and keep the `send_email` binding in `apps/worker/wrangler.jsonc`. Workers Paid includes 3,000 emails a month.
+
+Email also decides how email and password sign-ups work:
+
+- **With email** (the `send_email` binding, or `SMTP_HOST` or `RESEND_API_KEY`): a new account must open the verification link it is sent before it can sign in. The link is valid for 24 hours, and opening it signs the person in. An invite they signed up with is accepted at that moment. An account that has not verified its address yet, including one created before email was set up, gets a new link each time it signs in, and cannot sign in until it opens one. Google and GitHub sign-ups are verified by the provider and skip this step.
+- **Without email**: sign-ups are not verified and sign in straight away, as before. The API logs the warning `No email provider is configured` once, on the first auth request.

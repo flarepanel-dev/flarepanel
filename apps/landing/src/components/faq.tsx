@@ -8,10 +8,13 @@ const QUESTIONS: Array<{ q: string; a: ReactNode }> = [
     q: 'Can I use FlarePanel today?',
     a: (
       <>
-        It is in early access. Sign-up, projects and client IDs work on the
-        hosted dashboard; event tracking is rolling out now, and one-command
-        self-hosting on your own Cloudflare account is next. Follow progress on{' '}
-        <TextLink href={site.github}>GitHub</TextLink>.
+        Yes, in early access. Create an account, add the script or an SDK, and
+        events show up in the dashboard within seconds. Early access is free
+        while billing is being set up. You can also{' '}
+        <TextLink href={`${site.docs}/self-hosting`}>self-host</TextLink> it on
+        your own Cloudflare account. Follow progress on{' '}
+        <TextLink href={site.github}>GitHub</TextLink> and{' '}
+        <TextLink href={site.x}>X</TextLink>.
       </>
     ),
   },
@@ -33,14 +36,14 @@ const QUESTIONS: Array<{ q: string; a: ReactNode }> = [
       <>
         Yes. Set <code className="text-soft">apiUrl</code> to{' '}
         <code className="text-soft">{site.api}</code> and use your FlarePanel
-        client ID. FlarePanel’s own SDK packages will be published to npm under
-        the same API.
+        client ID. FlarePanel’s own SDK packages are on npm under{' '}
+        <code className="text-soft">@flarepanel</code>, with the same API.
       </>
     ),
   },
   {
     q: 'Where is my data stored?',
-    a: 'On Cloudflare: accounts and settings in D1, events in a Durable Object per project, and the raw archive in R2. You choose the data region, EU, US or unrestricted, for hosted and self-hosted installs.',
+    a: 'On Cloudflare: accounts and settings in D1, events in a Durable Object per project, and the raw archive in R2. Self-hosted installs keep everything in your own Cloudflare account.',
   },
   {
     q: 'What will it cost?',

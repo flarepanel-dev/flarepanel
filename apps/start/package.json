@@ -6,7 +6,7 @@
     "dev": "bun run with-env vite dev --port ${WEB_PORT:-3000}",
     "preview": "vite preview",
     "deploy": "bun ../../scripts/guard-template-deploy.ts && bun run build && bunx wrangler deploy",
-    "deploy:hosted": "WRANGLER_CONFIG=wrangler.hosted.jsonc bun run build && bunx wrangler deploy",
+    "deploy:hosted": "WRANGLER_CONFIG=wrangler.hosted.jsonc VITE_OP_CLIENT_ID=92ec1a18-7795-4eb3-b7e9-07bb180beb9b bun run build && bunx wrangler deploy",
     "cf-typegen": "wrangler types",
     "build": "bun run with-env vite build",
     "serve": "vite preview",

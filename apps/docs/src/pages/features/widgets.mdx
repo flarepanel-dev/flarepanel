@@ -1,0 +1,46 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Public widgets
+description: Show live visitors and traffic on your own site with one iframe.
+---
+
+# Public widgets
+
+Widgets put your numbers on your own site: a status page, a "build in public" page, or a footer. Each one is a public link that you embed with an `<iframe>`; there is no script to install.
+
+You can see them working on [flarepanel.dev](https://flarepanel.dev/#live), which shows the widgets of our own project.
+
+| Widget | Shows |
+|---|---|
+| Realtime | Visitors in the last 30 minutes with a per-minute chart, their countries, referrers and pages. Updates live. |
+| Traffic | Visitors and pageviews over 7 or 30 days, with top pages and sources. |
+| Live counter | One line with a live dot and the number of people on the site now. |
+| Visitors badge | Visitors over the last 30 days, as a badge. Shares its link with the live counter. |
+
+## Turn one on
+
+1. Open your project, then **Settings → Widgets**.
+2. Switch the widget on. The dashboard shows its public link and the embed code.
+3. Paste the embed code into your site.
+
+Switch a widget off and its link stops working.
+
+## Options
+
+Add these to the widget URL:
+
+| Parameter | Values | Effect |
+|---|---|---|
+| `theme` | `light`, `dark` | Pins the theme. Without it the widget follows the visitor's system theme. |
+| `color` | a hex colour, URL-encoded (`%23FF6A4D`) | Accent colour of the visitors badge. |
+
+```html
+<iframe
+  src="https://dashboard.flarepanel.dev/widget/realtime?shareId=YOUR_ID&theme=dark"
+  width="100%" height="420" frameborder="0"
+  style="border-radius: 12px;" title="Live visitors"></iframe>
+```
+
+Widgets show counts and top lists only, never individual visitors.

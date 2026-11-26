@@ -42,7 +42,7 @@ Limits exist so that nobody's bill grows by surprise: on Cloudflare every reques
 | Durable Objects | One per project: events, sessions, rollups, live sockets; plus rate limits and locks |
 | R2 bucket | Raw event archive, AI prompt text, import copies (optional; without it events are kept 30 days and imports are unavailable) |
 | Queues | Background jobs and their dead-letter queue |
-| Email Service binding | Account emails (optional) |
+| Email Service binding | Account emails and sign-up verification (optional) |
 | Worker Loader binding | Runs JavaScript webhook templates in a sandboxed Dynamic Worker: no network, 50 ms CPU. One template counts as one Dynamic Worker a day (1,000 a month included) |
 
 A one-command setup is planned. Until then, follow [Deploy to Cloudflare](/self-hosting/deploy).

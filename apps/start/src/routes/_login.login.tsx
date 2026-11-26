@@ -1,9 +1,10 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { AlertCircle } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { AuthHeading } from '@/components/auth/auth-shell';
+import { CheckEmail } from '@/components/auth/check-email';
 import { Or } from '@/components/auth/or';
 import { SignInDev } from '@/components/auth/sign-in-dev';
 import { SignInEmailForm } from '@/components/auth/sign-in-email-form';
@@ -76,6 +77,8 @@ function LoginPage() {
     trpc.auth.registrationAllowed.queryOptions({ inviteId })
   );
   const hasOAuthProviders = providers.google || providers.github;
+  // Set when the password was right but the address still needs its link.
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [lastProvider] = useCookieStore<null | string>(
     'last-auth-provider',
     null
@@ -94,6 +97,16 @@ function LoginPage() {
   const signUpHref = inviteId
     ? `/onboarding?inviteId=${encodeURIComponent(inviteId)}`
     : '/onboarding';
+
+  if (unverifiedEmail) {
+    return (
+      <CheckEmail
+        email={unverifiedEmail}
+        onBack={() => setUnverifiedEmail(null)}
+        reason="sign-in"
+      />
+    );
+  }
 
   return (
     <div className="col w-full gap-8">
@@ -151,6 +164,7 @@ function LoginPage() {
       <SignInEmailForm
         inviteId={inviteId}
         isLastUsed={lastProvider === 'email'}
+        onUnverified={setUnverifiedEmail}
       />
 
       {providers.devLogin && (

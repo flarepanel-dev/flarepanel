@@ -116,6 +116,7 @@ export const PAGE_TITLES = {
   // Auth
   LOGIN: 'Login',
   RESET_PASSWORD: 'Reset Password',
+  VERIFY_EMAIL: 'Verify Email',
 
   // Share
   SHARE: 'Shared Dashboard',

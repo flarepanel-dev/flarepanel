@@ -78,9 +78,9 @@ export function ProductTour() {
           title="Every screen, the real dashboard."
         >
           <p>
-            The full OpenPanel feature set, rebuilt on Cloudflare’s own building
-            blocks. What you see below is FlarePanel’s own interface, filled
-            with sample data. Click around.
+            Every feature, rebuilt on Cloudflare’s own building blocks. What you
+            see below is FlarePanel’s own interface, filled with sample data.
+            Click around.
           </p>
         </SectionHeading>
 

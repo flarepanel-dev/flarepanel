@@ -31,6 +31,27 @@ describe('shouldSendAnalyticsEvent', () => {
     ).toBe(false);
   });
 
+  it('drops a page view of the email verification page', () => {
+    expect(
+      shouldSendAnalyticsEvent(
+        screenView({
+          __path: `${window.location.origin}/verify-email?token=secret`,
+        })
+      )
+    ).toBe(false);
+  });
+
+  it('drops events whose referrer is the email verification page', () => {
+    expect(
+      shouldSendAnalyticsEvent(
+        screenView({
+          __path: `${window.location.origin}/onboarding/project`,
+          __referrer: `${window.location.origin}/verify-email?token=secret`,
+        })
+      )
+    ).toBe(false);
+  });
+
   it('drops events whose referrer is the unsubscribe page', () => {
     expect(
       shouldSendAnalyticsEvent(

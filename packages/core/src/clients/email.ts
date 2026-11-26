@@ -20,3 +20,9 @@ export async function sendEmail<T extends EmailTemplate>(
   const { sendEmail: send } = await import('@flarepanel/email');
   return send(templateKey, options);
 }
+
+/** Whether this install has an email transport (runtime sender, SMTP or Resend). */
+export async function canSendEmail(): Promise<boolean> {
+  const { canSendEmail: check } = await import('@flarepanel/email');
+  return check();
+}

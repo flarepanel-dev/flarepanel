@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'bun:test';
 import { createHash } from 'node:crypto';
-import { renderHistoryPage, SCRIPT, SCRIPT_HASH } from './render';
+import {
+  ANALYTICS_SCRIPT,
+  ANALYTICS_SCRIPT_HASH,
+  renderHistoryPage,
+  SCRIPT,
+  SCRIPT_HASH,
+} from './render';
 import type { Incident } from './store';
 import {
   clientNetwork,
@@ -129,6 +135,10 @@ describe('page script', () => {
   it('matches the hash the CSP allows', () => {
     const hash = createHash('sha256').update(SCRIPT).digest('base64');
     expect(SCRIPT_HASH).toBe(`sha256-${hash}`);
+    const analytics = createHash('sha256')
+      .update(ANALYTICS_SCRIPT)
+      .digest('base64');
+    expect(ANALYTICS_SCRIPT_HASH).toBe(`sha256-${analytics}`);
   });
 });
 

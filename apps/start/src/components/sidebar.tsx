@@ -1,7 +1,7 @@
 import type { IServiceOrganization } from '@flarepanel/core';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from '@tanstack/react-router';
-import { BookOpenIcon, MenuIcon, XIcon } from 'lucide-react';
+import { BookOpenIcon, CodeIcon, MenuIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FeedbackButton } from './feedback-button';
 import { LogoSquare } from './logo';
@@ -137,6 +137,17 @@ export function SidebarContainer({
             >
               <BookOpenIcon className="size-4" />
               Docs
+            </a>
+            {/* AGPL-3.0 section 13: users of the hosted service get the source. */}
+            <a
+              aria-label="Source code (AGPL-3.0)"
+              className={cn(SIDEBAR_FOOTER_BUTTON, 'size-8 justify-center')}
+              href="https://github.com/flarepanel-dev/flarepanel"
+              rel="noopener noreferrer"
+              target="_blank"
+              title="Source code (AGPL-3.0)"
+            >
+              <CodeIcon className="size-4" />
             </a>
             <div className="flex-1" />
             <ProfileToggle className={cn(SIDEBAR_FOOTER_BUTTON, 'size-8')} />

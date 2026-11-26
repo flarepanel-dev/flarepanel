@@ -46,6 +46,19 @@ export function setEmailSender(sender: EmailSender | null): void {
   customSender = sender;
 }
 
+/**
+ * Whether `sendEmail` has a transport at all: a runtime sender, SMTP or
+ * Resend. Without one every email is logged and dropped, so nothing that
+ * waits on an email (sign-up verification) may be required.
+ */
+export function canSendEmail(): boolean {
+  return (
+    customSender !== null ||
+    Boolean(process.env.SMTP_HOST) ||
+    Boolean(process.env.RESEND_API_KEY)
+  );
+}
+
 /** `Name <addr@x>` or `addr@x` from EMAIL_SENDER. */
 function parseSender(value: string): { email: string; name: string } {
   const match = /^\s*(.*?)\s*<([^>]+)>\s*$/.exec(value);

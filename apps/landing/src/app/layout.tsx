@@ -7,6 +7,9 @@ import './globals.css';
 
 const title = 'FlarePanel: open-source analytics that runs on Cloudflare';
 
+const ANALYTICS_SNIPPET = `window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:"call"===r||"apply"===r||"bind"===r?t[r]:function(){n.push([r].concat([].slice.call(arguments)))}},has:function(t,r){return"q"===r}})}();
+window.op('init',{clientId:'${site.analyticsClientId}',trackScreenViews:true,trackOutgoingLinks:true,trackAttributes:true});`;
+
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title,
@@ -40,6 +43,14 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html className={`${GeistSans.variable} ${GeistMono.variable}`} lang="en">
+      <head>
+        {/* We track this site with FlarePanel itself: no cookies, and the
+            same script tag the docs tell customers to use. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: ANALYTICS_SNIPPET }}
+        />
+        <script async defer src="/op1.js" />
+      </head>
       <body className="min-h-dvh bg-ink text-paper">
         <a
           className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-paper focus:px-4 focus:py-2 focus:font-medium focus:text-ink"

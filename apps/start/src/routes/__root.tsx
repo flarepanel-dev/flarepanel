@@ -141,15 +141,12 @@ function OpIdentify() {
   const user = context.session?.user;
 
   useEffect(() => {
+    // The account id only: our own product analytics never store a name or
+    // email address (privacy policy, section 3).
     if (user?.id) {
-      op.identify({
-        profileId: user.id,
-        email: user.email,
-        firstName: user.firstName ?? undefined,
-        lastName: user.lastName ?? undefined,
-      });
+      op.identify({ profileId: user.id });
     }
-  }, [user?.id, user?.email, user?.firstName, user?.lastName]);
+  }, [user?.id]);
 
   return null;
 }
