@@ -271,6 +271,30 @@ await png(
   'apps/docs/public/og.png',
   true
 );
+// Social profiles (X and others). The avatar is cropped to a circle, so the
+// mark sits well inside it; the banner keeps its lower left clear because
+// the avatar overlaps that corner.
+await png(
+  icon(COLORS.ink, 'dark', { rx: 0, scale: 0.64 }),
+  1000,
+  1000,
+  'brand/social/avatar.png'
+);
+await png(
+  `<!doctype html><html><head><style>${fonts}
+*{margin:0;box-sizing:border-box} body{width:1500px;height:500px;background:${COLORS.ink};font-family:Geist;overflow:hidden;position:relative;color:${COLORS.paper}}
+.glow{position:absolute;right:-120px;top:-260px;width:1000px;height:1000px;background:radial-gradient(closest-side,rgba(255,106,77,.17),rgba(255,154,74,.05) 55%,transparent)}
+.mark{position:absolute;right:40px;top:-95px;width:640px;height:640px}
+h1{position:absolute;left:96px;top:118px;width:760px;font-size:72px;line-height:.98;font-weight:700;letter-spacing:-.045em}
+small{position:absolute;left:100px;top:290px;font:400 22px "Geist Mono";color:#A3A3AB;letter-spacing:.01em}
+</style></head><body><div class="glow"></div>
+<div class="mark">${mark({ surface: 'dark', id: 'bn' }).replace('width="512" height="512"', 'width="640" height="640" style="overflow:visible"')}</div>
+<h1>Analytics that runs on Cloudflare.</h1><small>open source · OpenPanel SDKs work · flarepanel.dev</small></body></html>`,
+  1500,
+  500,
+  'brand/social/banner.png',
+  true
+);
 await browser.close();
 
 execFileSync('magick', [
