@@ -107,7 +107,10 @@ function CounterView({
   return (
     <div className="flex h-8 items-center gap-2 px-2 text-foreground">
       <Ping className={pingClassName} />
-      <AnimatedNumber suffix=" unique visitors" value={value} />
+      <AnimatedNumber
+        suffix={value === 1 ? ' visitor now' : ' visitors now'}
+        value={value}
+      />
     </div>
   );
 }
