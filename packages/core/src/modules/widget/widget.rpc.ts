@@ -53,7 +53,10 @@ export function topByName(
       totals.set(row.name, (totals.get(row.name) ?? 0) + row[field]);
     }
   }
+  // A referrer seen only after a session began (an internal link) has no
+  // sessions of its own: leave it out rather than list it with 0.
   return [...totals.entries()]
+    .filter(([, count]) => count > 0)
     .sort((a, b) => b[1] - a[1])
     .slice(0, TRAFFIC_TOP_LIST_LIMIT);
 }

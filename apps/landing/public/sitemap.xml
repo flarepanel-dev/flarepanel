@@ -11,4 +11,9 @@
   <url><loc>https://flarepanel.dev/compare/google-analytics</loc></url>
   <url><loc>https://flarepanel.dev/compare/umami</loc></url>
   <url><loc>https://flarepanel.dev/compare/mixpanel</loc></url>
+  <url><loc>https://flarepanel.dev/blog</loc></url>
+  <url><loc>https://flarepanel.dev/blog/introducing-flarepanel</loc></url>
+  <url><loc>https://flarepanel.dev/blog/how-flarepanel-runs-on-cloudflare</loc></url>
+  <url><loc>https://flarepanel.dev/blog/cookieless-visitor-counting</loc></url>
+  <url><loc>https://flarepanel.dev/blog/moving-from-openpanel</loc></url>
 </urlset>

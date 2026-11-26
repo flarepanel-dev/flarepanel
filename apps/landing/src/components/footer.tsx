@@ -11,6 +11,7 @@ const COLUMNS = [
       { label: 'Pricing', href: '/pricing' },
       { label: 'Hosted or self-hosted', href: '/#run' },
       { label: 'Compare', href: '/compare' },
+      { label: 'Blog', href: '/blog' },
       { label: 'FAQ', href: '/#faq' },
     ],
   },

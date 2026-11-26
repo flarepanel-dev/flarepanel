@@ -318,3 +318,68 @@
     overflow-x: auto;
   }
 }
+
+/* Blog posts: the legal reading rhythm plus code, quotes and notes. */
+.blog-body p,
+.blog-body li {
+  font-size: 17px;
+  line-height: 1.75;
+}
+.blog-body h2:first-child {
+  margin-top: 0;
+}
+.blog-body a:hover {
+  text-decoration-color: var(--color-ember);
+}
+.blog-body em {
+  color: var(--color-paper);
+}
+.blog-body blockquote {
+  margin: 1.4em 0;
+  border-left: 2px solid var(--color-ember);
+  padding-left: 1.1em;
+  color: var(--color-paper);
+}
+.blog-code {
+  border: 1px solid var(--color-rule);
+  border-radius: 6px;
+  background: var(--color-panel);
+  padding: 0.1em 0.35em;
+  color: var(--color-paper);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.88em;
+}
+.blog-pre {
+  margin: 1.5em 0;
+  overflow: hidden;
+  border: 1px solid var(--color-rule);
+  border-radius: 14px;
+  background: var(--color-panel);
+}
+.blog-pre figcaption {
+  border-bottom: 1px solid var(--color-rule);
+  padding: 8px 16px;
+  color: var(--color-faint);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.blog-pre pre {
+  overflow-x: auto;
+  padding: 16px;
+  color: var(--color-soft);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+.blog-callout {
+  margin: 1.5em 0;
+  border: 1px solid color-mix(in oklab, var(--color-spark) 35%, transparent);
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--color-spark) 8%, transparent);
+  padding: 14px 18px;
+}
+.blog-callout p {
+  font-size: 15.5px;
+}

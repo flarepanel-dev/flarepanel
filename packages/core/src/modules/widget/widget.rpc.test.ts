@@ -37,4 +37,9 @@ describe('topByName', () => {
       'e',
     ]);
   });
+
+  test('leaves out a source with no sessions', () => {
+    const rows = [row('flarepanel.dev', 0, 0), row('Google', 0, 3)];
+    expect(topByName(rows, 'sessions')).toEqual([['Google', 3]]);
+  });
 });
