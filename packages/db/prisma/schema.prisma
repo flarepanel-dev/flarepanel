@@ -1032,3 +1032,13 @@ model AiAnswerResult {
   @@index([projectId, day])
   @@map("ai_answer_results")
 }
+
+// One free trial per email address. The key is a SHA-256 of the normalised
+// address (lower case, no +tag, Gmail dots removed), so a deleted account
+// cannot start a second trial and no address is kept in clear.
+model TrialClaim {
+  emailKey  String   @id
+  createdAt DateTime @default(now())
+
+  @@map("trial_claims")
+}

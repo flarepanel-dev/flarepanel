@@ -32,8 +32,7 @@ export function WindDownFinalWarning({
     <Layout unsubscribeUrl={unsubscribeUrl}>
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
       <Text>
-        Your trial ended six weeks ago. This is my fourth and last email about
-        it.
+        Your trial ended a month ago. This is my fourth and last email about it.
       </Text>
       <Text>
         <strong>

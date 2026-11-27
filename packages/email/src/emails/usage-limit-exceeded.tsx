@@ -9,6 +9,8 @@ export const zUsageLimitExceeded = z.object({
   organizationName: z.string(),
   billingUrl: z.string(),
   eventsLimit: z.number(),
+  /** A free trial stops collecting at its limit; a paid plan does not. */
+  isTrial: z.boolean().optional(),
 });
 
 const formatNumber = (count: number) =>
@@ -21,8 +23,33 @@ export function UsageLimitExceeded({
   organizationName,
   billingUrl = 'https://dashboard.flarepanel.dev',
   eventsLimit,
+  isTrial,
   unsubscribeUrl,
 }: Props & { unsubscribeUrl?: string }) {
+  if (isTrial) {
+    return (
+      <Layout unsubscribeUrl={unsubscribeUrl}>
+        <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
+        <Text>
+          {organizationName} has used all {formatNumber(eventsLimit)} events of
+          its free trial.
+        </Text>
+        <Text>
+          We have stopped recording new events. Everything collected so far is
+          kept, and choosing a plan starts recording again straight away.
+        </Text>
+        <Text>
+          <Button href={withUtm(billingUrl, 'usage-limit-exceeded')}>
+            Choose a plan
+          </Button>
+        </Text>
+        <Text>
+          Not sure which plan fits? Reply to this email and I'll help.
+        </Text>
+        <Text>The FlarePanel team</Text>
+      </Layout>
+    );
+  }
   return (
     <Layout unsubscribeUrl={unsubscribeUrl}>
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>

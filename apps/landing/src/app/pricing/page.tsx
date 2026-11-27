@@ -34,7 +34,7 @@ const PROMISES = [
   },
   {
     title: 'No overage bills',
-    body: 'We email you at 80% and at 100% of your plan. Go over and we keep collecting every event; charts wait for an upgrade or your next period. We never charge extra.',
+    body: 'We email you at 80% and at 100% of your plan. Go over on a paid plan and we keep collecting every event; charts wait for an upgrade or your next period. We never charge extra.',
   },
   {
     title: 'No lock-in',
@@ -49,11 +49,11 @@ const QUESTIONS = [
   },
   {
     q: 'Is there a free plan?',
-    a: `No, there is a ${TRIAL_DAYS}-day free trial instead, with every feature and up to ${formatEvents(TRIAL_EVENTS)} events. No credit card needed. After that, plans start at $1 a month.`,
+    a: `No, there is a ${TRIAL_DAYS}-day free trial instead, with every feature and up to ${formatEvents(TRIAL_EVENTS)} events. No credit card needed, one trial per person. After that, plans start at $1 a month.`,
   },
   {
     q: 'What happens if I go over my plan?',
-    a: 'Nothing is lost and nothing extra is charged. We keep collecting every event, and pause the charts until you move to a bigger plan or your next billing period starts. Then everything, including the events from those days, shows up again.',
+    a: 'On a paid plan nothing is lost and nothing extra is charged. We keep collecting every event, and pause the charts until you move to a bigger plan or your next billing period starts. Then everything, including the events from those days, shows up again. The free trial is different: it stops recording new events once it reaches its limit, until you choose a plan.',
   },
   {
     q: 'Can I change or cancel my plan?',

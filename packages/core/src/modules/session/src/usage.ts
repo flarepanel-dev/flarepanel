@@ -163,6 +163,9 @@ async function sendUsageAlerts(
       }
     }
 
+    const isTrial =
+      organization.subscriptionStatus === 'trialing' &&
+      !organization.subscriptionProductId;
     let failedRecipients = 0;
     for (const [email, firstName] of recipients) {
       // One bad address must not abort the loop or roll back the claim —
@@ -176,6 +179,7 @@ async function sendUsageAlerts(
               organizationName: organization.name,
               billingUrl,
               eventsLimit: limit,
+              isTrial,
             },
           });
         } else {
@@ -187,6 +191,7 @@ async function sendUsageAlerts(
               billingUrl,
               eventsCount: count,
               eventsLimit: limit,
+              isTrial,
             },
           });
         }

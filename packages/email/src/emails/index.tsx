@@ -162,7 +162,10 @@ export const templates = {
     category: 'product_alerts' as const,
   },
   'usage-limit-exceeded': {
-    subject: () => 'Event limit reached — charts paused, data still collected',
+    subject: (data: z.infer<typeof zUsageLimitExceeded>) =>
+      data.isTrial
+        ? 'Your free trial has used all its events'
+        : 'Event limit reached — charts paused, data still collected',
     Component: UsageLimitExceeded,
     schema: zUsageLimitExceeded,
     category: 'product_alerts' as const,

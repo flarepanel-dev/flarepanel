@@ -19,6 +19,19 @@ const dbMock = {
   member: { create: mock(async () => ({})) },
   project: { create: mock(async ({ data }: CreateArgs) => ({ ...data })) },
   client: { create: clientCreate },
+  trialClaim: {
+    claimed: new Set<string>(),
+    findUnique: mock(async ({ where }: { where: { emailKey: string } }) =>
+      dbMock.trialClaim.claimed.has(where.emailKey)
+        ? { emailKey: where.emailKey }
+        : null
+    ),
+    create: mock(async ({ data }: { data: { emailKey: string } }) => {
+      dbMock.trialClaim.claimed.add(data.emailKey);
+      return data;
+    }),
+    deleteMany: mock(async () => ({ count: 0 })),
+  },
   // Both Prisma forms: the array of operations the organization uses, and
   // the callback the project and its clients run in.
   $transaction: mock(
@@ -133,4 +146,64 @@ test('resolves the referrer from utm_source and drops an empty first touch', asy
   );
   expect(toStoredAttribution({})).toBeUndefined();
   expect(toStoredAttribution(undefined)).toBeUndefined();
+});
+
+test('gives one free trial per email address; later workspaces start without one', async () => {
+  dbMock.trialClaim.claimed.clear();
+  dbMock.organization.create.mockClear();
+  const input = (name: string) => ({
+    organization: name,
+    project: `${name} site`,
+    domain: 'https://acme.com',
+    cors: [],
+    website: true,
+    app: false,
+    backend: false,
+  });
+
+  await createOnboardingProject(deps, input('First'), 'user_1');
+  await createOnboardingProject(deps, input('Second'), 'user_1');
+
+  const [first, second] = dbMock.organization.create.mock.calls.map(
+    ([call]) => call.data
+  );
+  expect(first?.subscriptionPeriodEventsLimit).toBe(1_000_000);
+  expect(
+    (first?.subscriptionEndsAt as Date).getTime() - Date.now()
+  ).toBeGreaterThan(29 * 24 * 60 * 60 * 1000);
+  expect(second?.subscriptionPeriodEventsLimit).toBe(0);
+  expect((second?.subscriptionEndsAt as Date).getTime()).toBeLessThanOrEqual(
+    Date.now()
+  );
+  expect(dbMock.trialClaim.claimed.size).toBe(1);
+});
+
+test('self-hosting keeps a trial for every workspace and records no claim', async () => {
+  dbMock.trialClaim.claimed.clear();
+  dbMock.trialClaim.create.mockClear();
+  dbMock.organization.create.mockClear();
+  const selfHosted = {
+    ...deps,
+    config: testCoreConfig({ selfHosted: true }),
+  } as typeof deps;
+  for (const name of ['One', 'Two']) {
+    await createOnboardingProject(
+      selfHosted,
+      {
+        organization: name,
+        project: `${name} site`,
+        domain: 'https://acme.com',
+        cors: [],
+        website: true,
+        app: false,
+        backend: false,
+      },
+      'user_1'
+    );
+  }
+  const limits = dbMock.organization.create.mock.calls.map(
+    ([call]) => call.data.subscriptionPeriodEventsLimit
+  );
+  expect(limits).toEqual([1_000_000, 1_000_000]);
+  expect(dbMock.trialClaim.create).not.toHaveBeenCalled();
 });

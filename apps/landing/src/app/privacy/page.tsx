@@ -225,6 +225,12 @@ export default function PrivacyPage() {
             <td>30 days</td>
           </tr>
           <tr>
+            <td>
+              A one-way hash of the email address that started a free trial
+            </td>
+            <td>Two years, so the same address cannot start a second trial</td>
+          </tr>
+          <tr>
             <td>Crawler and bot hits</td>
             <td>30 days</td>
           </tr>

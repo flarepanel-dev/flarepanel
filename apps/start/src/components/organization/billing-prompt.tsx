@@ -46,7 +46,7 @@ const COPY: Record<
     dateLabel: 'Trial ended',
     action: 'checkout',
     cta: (plan, price) => `Continue with ${plan} for ${price}/month`,
-    note: 'We keep collecting your incoming events for now, so nothing is lost while you decide.',
+    note: 'We keep collecting your incoming events for 7 days after the trial ends, so nothing is lost while you decide.',
   },
   expired: {
     badge: { label: 'Subscription ended', variant: 'info' },
@@ -100,6 +100,15 @@ const COPY: Record<
   },
 };
 
+const NO_TRIAL_COPY: CopyVariant = {
+  ...COPY.trialEnded,
+  badge: { label: 'Choose a plan', variant: 'secondary' },
+  title: 'This workspace starts on a plan',
+  lead: 'Each email address gets one free trial, and yours was used on an earlier workspace. Choose a plan to start collecting events here.',
+  dateLabel: 'Created',
+  note: null,
+};
+
 export default function BillingPrompt({
   organization,
   type,
@@ -109,7 +118,12 @@ export default function BillingPrompt({
 }) {
   const number = useNumber();
   const trpc = useTRPC();
-  const copy = COPY[type];
+  // A workspace created after the email's one free trial starts with no
+  // allowance (limit 0) and an already-ended trial.
+  const copy =
+    type === 'trialEnded' && organization.subscriptionPeriodEventsLimit === 0
+      ? NO_TRIAL_COPY
+      : COPY[type];
   const { data: products, isLoading: isLoadingProducts } = useQuery(
     trpc.subscription.products.queryOptions({
       organizationId: organization.id,

@@ -48,7 +48,7 @@ export function WindDownStoppingSoon({
       <Layout unsubscribeUrl={unsubscribeUrl}>
         {greeting}
         <Text>
-          One week left: on {blockDate} we stop recording events from your
+          Two days left: on {blockDate} we stop recording events from your
           projects.
         </Text>
         <Text>
@@ -100,8 +100,8 @@ export function WindDownStoppingSoon({
     <Layout unsubscribeUrl={unsubscribeUrl}>
       {greeting}
       <Text>
-        Quick follow-up: your trial ended a couple of weeks ago and the
-        workspace is still empty, so I'll be closing it on {blockDate}.
+        Quick follow-up: your trial ended a few days ago and the workspace is
+        still empty, so I'll be closing it on {blockDate}.
       </Text>
       <Text>
         If you'd rather keep it, picking a plan stops the clock. Otherwise you

@@ -181,4 +181,65 @@ describe('isIngestionWoundDown', () => {
     ).toBe(false);
     expect(getOrganizationByProjectIdCached).not.toHaveBeenCalled();
   });
+
+  describe('free trial over its allowance', () => {
+    const trial = {
+      id: 'org-1',
+      windDownStep: null,
+      subscriptionStatus: 'trialing',
+      subscriptionProductId: null,
+      subscriptionPeriodEventsLimit: 1_000_000,
+      subscriptionPeriodEventsCount: 1_000_001,
+      subscriptionPeriodEventsCountExceededAt: new Date('2026-11-27'),
+    };
+    const check = async () =>
+      isIngestionWoundDown(deps, {
+        projectId: 'proj-1',
+        selfHosted: false,
+        logger: makeLogger().logger,
+      });
+
+    it('stops collecting for a trial over its limit', async () => {
+      getOrganizationByProjectIdCached.mockResolvedValue(trial);
+      expect(await check()).toBe(true);
+    });
+
+    it('stops a workspace that started without a trial (limit 0)', async () => {
+      getOrganizationByProjectIdCached.mockResolvedValue({
+        ...trial,
+        subscriptionPeriodEventsLimit: 0,
+        subscriptionPeriodEventsCount: 3,
+      });
+      expect(await check()).toBe(true);
+    });
+
+    it('keeps collecting for a trial under its limit', async () => {
+      getOrganizationByProjectIdCached.mockResolvedValue({
+        ...trial,
+        subscriptionPeriodEventsCount: 999_999,
+        subscriptionPeriodEventsCountExceededAt: null,
+      });
+      expect(await check()).toBe(false);
+    });
+
+    it('keeps collecting for a paid plan over its limit (only charts pause)', async () => {
+      getOrganizationByProjectIdCached.mockResolvedValue({
+        ...trial,
+        subscriptionStatus: 'active',
+        subscriptionProductId: 'prod_1',
+      });
+      expect(await check()).toBe(false);
+    });
+
+    it('never blocks when self-hosted', async () => {
+      getOrganizationByProjectIdCached.mockResolvedValue(trial);
+      expect(
+        await isIngestionWoundDown(deps, {
+          projectId: 'proj-1',
+          selfHosted: true,
+          logger: makeLogger().logger,
+        })
+      ).toBe(false);
+    });
+  });
 });

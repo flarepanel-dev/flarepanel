@@ -137,6 +137,14 @@ function Component() {
   const hideBannerForPrompt =
     isProjectRoute &&
     subscriptionBlocksDashboard(organization.subscriptionState);
+  const isTrialOverLimit = Boolean(
+    organization.subscriptionStatus === 'trialing' &&
+      !organization.subscriptionProductId &&
+      organization.subscriptionPeriodEventsCountExceededAt &&
+      organization.subscriptionPeriodEventsLimit > 0 &&
+      organization.subscriptionPeriodEventsCount >
+        organization.subscriptionPeriodEventsLimit
+  );
   const isOverLimit = Boolean(
     organization.subscriptionPeriodEventsCountExceededAt &&
       organization.isActive &&
@@ -186,6 +194,21 @@ function Component() {
             </LinkButton>
           </Alert>
         )}
+      {isTrialOverLimit && (
+        <Alert
+          description={`Your free trial has used all ${organization.subscriptionPeriodEventsLimit.toLocaleString()} of its events, so new events are no longer recorded. Everything collected so far is kept; choose a plan to start recording again.`}
+          title="Free trial events used up"
+        >
+          <LinkButton
+            params={{
+              organizationId,
+            }}
+            to="/$organizationId/billing"
+          >
+            Choose a plan
+          </LinkButton>
+        </Alert>
+      )}
       {isOverLimit &&
         !isProjectRoute &&
         organization.subscriptionPeriodEventsCountExceededAt && (

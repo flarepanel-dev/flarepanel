@@ -80,9 +80,12 @@ export default function TermsPage() {
           paid plan yourself.
         </li>
         <li>
-          <strong>Trial.</strong> A new workspace starts with a {TRIAL_DAYS}-day
-          free trial of up to {formatEvents(TRIAL_EVENTS)} events, with no card
-          needed.
+          <strong>Trial.</strong> Your first workspace starts with a{' '}
+          {TRIAL_DAYS}-day free trial of up to {formatEvents(TRIAL_EVENTS)}{' '}
+          events, with no card needed. There is one trial per person and email
+          address: further workspaces start on a plan, and sign-ups with
+          temporary inboxes are not accepted. A trial stops recording new events
+          once it reaches its limit, and 7 days after it ends without a plan.
         </li>
         <li>
           <strong>Plans.</strong> After that you choose a plan by monthly event
@@ -110,9 +113,9 @@ export default function TermsPage() {
         </li>
         <li>
           <strong>Going over your plan.</strong> We email you at 80% and 100% of
-          your plan. If you go over, we keep collecting your events and never
-          charge for the extra, but the charts pause until you upgrade or your
-          next period starts.
+          your plan. If a paid plan goes over, we keep collecting your events
+          and never charge for the extra, but the charts pause until you upgrade
+          or your next period starts.
         </li>
         <li>
           <strong>Price changes.</strong> We may change prices with at least 30

@@ -10,6 +10,8 @@ export const zUsageNearLimit = z.object({
   billingUrl: z.string(),
   eventsCount: z.number(),
   eventsLimit: z.number(),
+  /** A free trial stops collecting at its limit; a paid plan does not. */
+  isTrial: z.boolean().optional(),
 });
 
 const formatNumber = (count: number) =>
@@ -23,6 +25,7 @@ export function UsageNearLimit({
   billingUrl = 'https://dashboard.flarepanel.dev',
   eventsCount,
   eventsLimit,
+  isTrial,
   unsubscribeUrl,
 }: Props & { unsubscribeUrl?: string }) {
   const percent = Math.round((eventsCount / eventsLimit) * 100);
@@ -34,9 +37,9 @@ export function UsageNearLimit({
         {formatNumber(eventsLimit)} monthly events ({percent}%).
       </Text>
       <Text>
-        If you go over the limit, we keep collecting every event — nothing is
-        lost — but your charts stop showing new data until you upgrade or the
-        next billing cycle starts.
+        {isTrial
+          ? 'This is your free trial: when it reaches the limit we stop recording new events until you choose a plan. Everything collected so far is kept.'
+          : 'If you go over the limit, we keep collecting every event — nothing is lost — but your charts stop showing new data until you upgrade or the next billing cycle starts.'}
       </Text>
       <Text>
         <Button href={withUtm(billingUrl, 'usage-near-limit')}>

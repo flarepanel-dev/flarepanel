@@ -31,12 +31,15 @@ import type {
   IOrganizationAttribution,
   IOrganizationAttributionStored,
 } from './onboarding.constants';
+import { trialEmailKey } from './src/trial-claim';
 
 const TRIAL_DURATION_IN_DAYS = 30;
 // The trial's allowance: enough to evaluate on a real site (the 1M plan's),
 // small enough that trial sign-ups cannot run up Cloudflare costs (OpenPanel
 // gives 10M). Set, as before, so a trial is never flagged at the default 0.
 const TRIAL_EVENTS_LIMIT = 1_000_000;
+/** How long the hash of an email that started a trial is kept. */
+const TRIAL_CLAIM_KEEP_MS = 2 * 365 * 24 * 60 * 60 * 1000;
 
 export async function canSkipOnboarding(
   deps: ServiceDeps,
@@ -96,6 +99,23 @@ async function createOrGetOnboardingOrganization(
 
   const db = deps.db;
   const organizationId = await getId(deps, 'organization', input.organization);
+  const user = await getUserById(deps, userId);
+
+  // One free trial per email address, on hosted FlarePanel. A workspace
+  // created after that starts without one (limit 0, already ended): it must
+  // choose a plan, and the ingestion guard stops it at its first counted
+  // events. Self-hosting has no billing, so every workspace is as before.
+  const trialKey = deps.config.selfHosted ? null : trialEmailKey(user.email);
+  if (trialKey) {
+    // The privacy policy keeps these hashes two years.
+    await db.trialClaim.deleteMany({
+      where: { createdAt: { lt: new Date(Date.now() - TRIAL_CLAIM_KEEP_MS) } },
+    });
+  }
+  const hasTrial =
+    !trialKey ||
+    !(await db.trialClaim.findUnique({ where: { emailKey: trialKey } }));
+  const now = Date.now();
 
   // Create the organization and its owner atomically. The `delete` cron
   // treats an organization with no admin member as ownerless and removes it,
@@ -107,10 +127,10 @@ async function createOrGetOnboardingOrganization(
         name: input.organization,
         createdByUserId: userId,
         subscriptionEndsAt: new Date(
-          Date.now() + TRIAL_DURATION_IN_DAYS * 24 * 60 * 60 * 1000
+          hasTrial ? now + TRIAL_DURATION_IN_DAYS * 24 * 60 * 60 * 1000 : now
         ),
         subscriptionStatus: 'trialing',
-        subscriptionPeriodEventsLimit: TRIAL_EVENTS_LIMIT,
+        subscriptionPeriodEventsLimit: hasTrial ? TRIAL_EVENTS_LIMIT : 0,
         timezone: input.timezone,
         attribution: toStoredAttribution(input.attribution),
         onboarding: '',
@@ -120,12 +140,15 @@ async function createOrGetOnboardingOrganization(
     }),
     db.member.create({
       data: {
-        email: (await getUserById(deps, userId)).email,
+        email: user.email,
         organizationId,
         role: 'owner',
         userId,
       },
     }),
+    ...(trialKey && hasTrial
+      ? [db.trialClaim.create({ data: { emailKey: trialKey } })]
+      : []),
   ]);
 
   return organization;

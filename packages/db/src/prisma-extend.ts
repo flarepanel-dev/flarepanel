@@ -7,6 +7,7 @@
  */
 
 import { getSubscriptionState } from '@flarepanel/payments/subscription-state';
+import { yearlyPlanCycle } from './billing-cycle';
 import type { PrismaClient } from './generated/prisma/client';
 import { logger } from './logger';
 
@@ -153,19 +154,7 @@ export function extendPrismaClient(client: PrismaClient<'error' | 'warn'>) {
             }
 
             if (org.subscriptionInterval === 'year') {
-              const startDay = org.subscriptionStartsAt.getUTCDate();
-              const now = new Date();
-              return new Date(
-                Date.UTC(
-                  now.getUTCFullYear(),
-                  now.getUTCMonth(),
-                  startDay,
-                  0,
-                  0,
-                  0,
-                  0
-                )
-              );
+              return yearlyPlanCycle(org.subscriptionStartsAt).start;
             }
 
             return org.subscriptionStartsAt;
@@ -187,19 +176,7 @@ export function extendPrismaClient(client: PrismaClient<'error' | 'warn'>) {
             }
 
             if (org.subscriptionInterval === 'year') {
-              const startDay = org.subscriptionStartsAt.getUTCDate();
-              const now = new Date();
-              return new Date(
-                Date.UTC(
-                  now.getUTCFullYear(),
-                  now.getUTCMonth() + 1,
-                  startDay - 1,
-                  0,
-                  0,
-                  0,
-                  0
-                )
-              );
+              return yearlyPlanCycle(org.subscriptionStartsAt).end;
             }
 
             return org.subscriptionEndsAt;

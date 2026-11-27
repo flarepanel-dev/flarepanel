@@ -37,6 +37,7 @@ import {
   VERIFY_EMAIL_PATH,
 } from '../auth.constants';
 import { cookieOptions } from './constants';
+import { isDisposableEmail } from './disposable-email';
 import { isOAuthClientConfigured } from './oauth';
 import { hashPassword, verifyPasswordHash } from './password';
 import { getIsRegistrationAllowed } from './registration';
@@ -73,6 +74,8 @@ const TWO_FACTOR_CHALLENGE_SECONDS = 60 * 10;
 export const EMAIL_VERIFICATION_SECONDS = 60 * 60 * 24;
 /** Per address and IP: the dashboard waits a minute between resends anyway. */
 const SEND_VERIFICATION_LIMIT = { window: 60, max: 3 };
+/** Email sign-ups per IP: five an hour. */
+const SIGN_UP_LIMIT = { window: 60 * 60, max: 5 };
 const LAST_LOGIN_METHOD_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 const RATE_LIMIT_WINDOW_SECONDS = 60;
 const RATE_LIMIT_MAX = 100;
@@ -322,6 +325,24 @@ async function assertRegistrationAllowed(
 }
 
 /**
+ * FlarePanel Cloud refuses throwaway inboxes, which would otherwise start a
+ * new free trial each. Self-hosted installs decide for themselves.
+ */
+function assertPermanentEmail(deps: AuthDeps, body: unknown): void {
+  if (deps.config.selfHosted) {
+    return;
+  }
+  const { email } = (body ?? {}) as { email?: unknown };
+  if (typeof email === 'string' && isDisposableEmail(email)) {
+    throw new APIError('BAD_REQUEST', {
+      code: 'DISPOSABLE_EMAIL',
+      message:
+        'Please sign up with a permanent email address. Temporary inboxes are not accepted.',
+    });
+  }
+}
+
+/**
  * A closed install refuses an email sign-up before better-auth looks the
  * address up. Once verification is required, better-auth answers a refusal
  * from the user-create hook with its made-up "check your inbox" user, and the
@@ -338,6 +359,7 @@ function registrationPlugin(deps: AuthDeps) {
           matcher: (ctx: { path?: string }) => ctx.path === '/sign-up/email',
           handler: createAuthMiddleware(async (ctx) => {
             await assertRegistrationAllowed(deps, ctx);
+            assertPermanentEmail(deps, ctx.body);
           }),
         },
       ],
@@ -592,7 +614,11 @@ function buildAuth(deps: AuthDeps, secret: string) {
       max: RATE_LIMIT_MAX,
       customStorage: rateLimitStorage(coordination),
       // Every allowed call sends an email.
-      customRules: { '/send-verification-email': SEND_VERIFICATION_LIMIT },
+      customRules: {
+        '/send-verification-email': SEND_VERIFICATION_LIMIT,
+        // Each sign-up sends an email and can start a trial.
+        '/sign-up/email': SIGN_UP_LIMIT,
+      },
     },
     advanced: {
       cookiePrefix: COOKIE_PREFIX,

@@ -164,10 +164,10 @@ describe('runWindDownCron', () => {
     });
   });
 
-  it('blocks ingestion by advancing the pointer on day 21', async () => {
+  it('blocks ingestion by advancing the pointer on day 7', async () => {
     organizationFindMany.mockResolvedValue([
       makeOrg({
-        windDownStartedAt: subDays(new Date(), 21),
+        windDownStartedAt: subDays(new Date(), 7),
         windDownStep: 'stopping_soon',
       }),
     ]);
@@ -187,7 +187,7 @@ describe('runWindDownCron', () => {
   it('arms deletion once the final warning is delivered', async () => {
     organizationFindMany.mockResolvedValue([
       makeOrg({
-        windDownStartedAt: subDays(new Date(), 44),
+        windDownStartedAt: subDays(new Date(), 30),
         windDownStep: 'blocked',
       }),
     ]);
@@ -212,7 +212,7 @@ describe('runWindDownCron', () => {
     sendEmail.mockResolvedValue(null);
     organizationFindMany.mockResolvedValue([
       makeOrg({
-        windDownStartedAt: subDays(new Date(), 44),
+        windDownStartedAt: subDays(new Date(), 30),
         windDownStep: 'blocked',
       }),
     ]);
@@ -366,5 +366,21 @@ describe('runWindDownCron', () => {
         data: expect.objectContaining({ stillTracking: false }),
       });
     });
+  });
+});
+
+it('does not block before day 7', async () => {
+  organizationFindMany.mockResolvedValue([
+    makeOrg({
+      windDownStartedAt: subDays(new Date(), 6),
+      windDownStep: 'stopping_soon',
+    }),
+  ]);
+
+  await runWindDownCron(deps());
+
+  expect(organizationUpdate).not.toHaveBeenCalledWith({
+    where: { id: 'org-1' },
+    data: { windDownStep: 'blocked' },
   });
 });

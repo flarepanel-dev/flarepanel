@@ -18,11 +18,12 @@ import {
 import type { HighlightProject } from './win-back-highlight';
 
 /**
- * What happens to a trial that expired without a purchase: four emails over 44
- * days, then deletion. Ingestion keeps flowing until day 21 so the first two
- * emails have something to be about; from day 21 the ingestion hook rejects
- * events (it reads `windDownStep`). Day 44 arms `deleteAt`, which the delete
- * cron sweeps seven days later.
+ * What happens to a trial that expired without a purchase: four emails over 30
+ * days, then deletion. Ingestion keeps flowing until day 7 so the first two
+ * emails have something to be about; from day 7 the ingestion hook rejects
+ * events (it reads `windDownStep`). Day 30 arms `deleteAt`, which the delete
+ * cron sweeps seven days later. Seven free days after a 30-day trial, not
+ * three weeks: every collected event costs requests and storage.
  *
  * The schedule is measured from `windDownStartedAt`, not `subscriptionEndsAt`:
  * for the existing backlog that is hundreds of days old and would put every org
@@ -32,8 +33,8 @@ import type { HighlightProject } from './win-back-highlight';
  * enter first and their emails lead with current volume, not a lifetime total.
  */
 
-const BLOCK_DAY = 21;
-const FINAL_WARNING_DAY = 44;
+const BLOCK_DAY = 7;
+const FINAL_WARNING_DAY = 30;
 const DELETE_GRACE_DAYS = 7;
 
 /** Sent something this recently, so the SDKs are demonstrably still live. */
@@ -207,7 +208,7 @@ function windDownSteps(deps: WindDownDeps): SequenceStep<WindDownContext>[] {
       }),
     }),
     step<WindDownContext, 'wind-down-stopping-soon'>({
-      day: 14,
+      day: 5,
       step: 'stopping_soon',
       template: 'wind-down-stopping-soon',
       data: async (ctx) => ({

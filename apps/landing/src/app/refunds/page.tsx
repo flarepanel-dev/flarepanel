@@ -41,9 +41,9 @@ export default function RefundsPage() {
 
       <h2>Going over your plan</h2>
       <p>
-        You are never charged for events above your plan, so there is nothing to
-        refund there: we keep collecting your events and pause the charts until
-        you upgrade or your next period starts.
+        You are never charged for events above a paid plan, so there is nothing
+        to refund there: we keep collecting your events and pause the charts
+        until you upgrade or your next period starts.
       </p>
 
       <h2>How to ask</h2>

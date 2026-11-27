@@ -673,6 +673,28 @@ export async function ingestTrack(
  */
 const WIND_DOWN_BLOCKED_STEPS = new Set(['blocked', 'final_warning']);
 
+/**
+ * A free trial stops collecting once it is over its event allowance: unlike a
+ * paid plan, which keeps collecting over its limit (only the charts pause),
+ * a trial has no one paying for the extra storage and requests. Workspaces
+ * that start without a trial (limit 0) stop at their first counted events.
+ */
+export function isTrialOverLimit(organization: {
+  subscriptionStatus: string | null;
+  subscriptionProductId: string | null;
+  subscriptionPeriodEventsCount: number;
+  subscriptionPeriodEventsLimit: number;
+  subscriptionPeriodEventsCountExceededAt: Date | string | null;
+}): boolean {
+  return (
+    organization.subscriptionStatus === 'trialing' &&
+    !organization.subscriptionProductId &&
+    organization.subscriptionPeriodEventsCountExceededAt !== null &&
+    organization.subscriptionPeriodEventsCount >
+      organization.subscriptionPeriodEventsLimit
+  );
+}
+
 export async function isIngestionWoundDown(
   deps: ServiceDeps,
   request: {
@@ -695,12 +717,15 @@ export async function isIngestionWoundDown(
       projectId
     );
 
-    if (
-      !(
-        organization?.windDownStep &&
+    if (!organization) {
+      return false;
+    }
+    const woundDown = Boolean(
+      organization.windDownStep &&
         WIND_DOWN_BLOCKED_STEPS.has(organization.windDownStep)
-      )
-    ) {
+    );
+    const trialOverLimit = isTrialOverLimit(organization);
+    if (!(woundDown || trialOverLimit)) {
       return false;
     }
 
@@ -709,8 +734,11 @@ export async function isIngestionWoundDown(
         organizationId: organization.id,
         projectId,
         windDownStep: organization.windDownStep,
+        trialOverLimit,
       },
-      'Ingestion blocked by wind-down'
+      trialOverLimit
+        ? 'Ingestion blocked: trial over its event allowance'
+        : 'Ingestion blocked by wind-down'
     );
     return true;
   } catch (error) {
