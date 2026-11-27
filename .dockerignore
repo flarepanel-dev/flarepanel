@@ -1,4 +1,13 @@
+# Local secrets and state never enter a build context, so they cannot end up
+# in an image layer.
 **/.env
+**/.env.*
+**/.dev.vars
+**/.dev.vars.*
+**/.wrangler
+**/.playwright-mcp
+**/*.pem
+**/*.key
 **/node_modules
 **/dist
 Dockerfile
