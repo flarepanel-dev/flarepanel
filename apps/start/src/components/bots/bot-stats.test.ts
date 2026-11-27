@@ -73,6 +73,7 @@ describe('isBotsPageEmpty', () => {
     topPaths: [],
     verifiedOnly: false,
     verifiedHits: 0,
+    allHits: total,
     usage: { month: '2026-11', hits: total, cap: null, capped: false },
   });
 

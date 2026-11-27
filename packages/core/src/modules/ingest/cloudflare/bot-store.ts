@@ -227,6 +227,7 @@ export function emptyBotStats(usage?: IBotUsage): IBotStats {
     topPaths: [],
     verifiedOnly: false,
     verifiedHits: 0,
+    allHits: 0,
     usage: usage ?? {
       month: new Date().toISOString().slice(0, ISO_MONTH_LENGTH),
       hits: 0,
@@ -705,6 +706,7 @@ export function openBotStore(sql: EngineSql) {
         (sum, row) => sum + (row.verified ? row.hits : 0),
         0
       );
+      const allHits = counts.reduce((sum, row) => sum + row.hits, 0);
       const verifiedOnly =
         query.verified === 'verified' ||
         (query.verified === 'auto' && verifiedHits > 0);
@@ -800,6 +802,7 @@ export function openBotStore(sql: EngineSql) {
           .slice(0, limit),
         verifiedOnly,
         verifiedHits,
+        allHits,
         usage: monthUsage,
       };
     },

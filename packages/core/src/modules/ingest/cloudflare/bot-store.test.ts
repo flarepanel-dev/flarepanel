@@ -317,7 +317,11 @@ describe('bot store', () => {
     const range = window('2026-11-24', '2026-11-24');
 
     const all = bots.stats({ ...range, verified: 'all' });
-    expect(all).toMatchObject({ verifiedOnly: false, verifiedHits: 2 });
+    expect(all).toMatchObject({
+      verifiedOnly: false,
+      verifiedHits: 2,
+      allHits: 4,
+    });
     expect(all.totals.total).toBe(4);
     expect(all.topBots[0]).toMatchObject({
       name: 'GPTBot',

@@ -241,6 +241,8 @@ export interface IBotStats {
   verifiedOnly: boolean;
   /** Verified hits in the window, whatever the filter. */
   verifiedHits: number;
+  /** Every hit in the window, verified or not, whatever the filter. */
+  allHits: number;
   /** This calendar month (UTC) against the plan's allowance. */
   usage: IBotUsage;
 }

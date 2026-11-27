@@ -118,6 +118,7 @@ const BOT_STATS: IBotStats = {
   ],
   verifiedOnly: false,
   verifiedHits: 0,
+  allHits: 3,
   usage: { month: '2026-11', hits: 3, cap: 100_000, capped: false },
 };
 

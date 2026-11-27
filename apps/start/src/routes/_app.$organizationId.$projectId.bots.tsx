@@ -174,6 +174,20 @@ function Component() {
             <AlertDescription>{notice.description}</AlertDescription>
           </Alert>
         )}
+        {stats?.verifiedOnly && stats.allHits > stats.verifiedHits && (
+          <p className="text-muted-foreground text-xs">
+            Showing verified hits only.{' '}
+            {(stats.allHits - stats.verifiedHits).toLocaleString()} hits from
+            user agents that could not be verified are hidden.{' '}
+            <button
+              className="underline underline-offset-2 hover:text-foreground"
+              onClick={() => setVerifiedOnly(false)}
+              type="button"
+            >
+              Show all
+            </button>
+          </p>
+        )}
         <DataSourceLine
           cloudflareConnected={Boolean(cloudflare?.connection)}
           lastCloudflareSync={cloudflare?.connection?.lastSyncedAt ?? null}

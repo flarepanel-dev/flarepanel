@@ -85,6 +85,7 @@ export function registerBotTools(
           // `cloudflare`: sampled estimates imported from a connected zone.
           sources: stats.sources,
           verified_hits: stats.verifiedHits,
+          all_hits: stats.allHits,
           usage: stats.usage,
           daily: table(series, {
             limit: MAX_SERIES_POINTS,
