@@ -197,8 +197,26 @@ export interface IBotStatusCounts {
   '5xx': number;
 }
 
+/**
+ * Where bot hits came from: `snippet` is a server or edge reporting each
+ * request (`POST /track/crawl`), `cloudflare` the hourly import from a
+ * connected Cloudflare zone's analytics (sampled estimates).
+ */
+export const BOT_SOURCES = ['snippet', 'cloudflare'] as const;
+export type BotSource = (typeof BOT_SOURCES)[number];
+/** Sources imported as hourly estimates rather than reported hit by hit. */
+export type BotImportSource = Exclude<BotSource, 'snippet'>;
+
+/** Hits per source in a window. */
+export type IBotSourceTotals = Record<BotSource, number>;
+
 export interface IBotStats {
   totals: IBotStatsTotals;
+  /**
+   * Hits per source. An hour with any snippet hit shows the snippet's
+   * numbers only; imported estimates fill the other hours.
+   */
+  sources: IBotSourceTotals;
   /** One row per day of the project's time zone, `YYYY-MM-DD`, zero-filled. */
   series: (IBotStatsTotals & { date: string })[];
   topBots: {

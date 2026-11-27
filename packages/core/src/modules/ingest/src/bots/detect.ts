@@ -42,6 +42,16 @@ const EXTRA_BOTS = [
   { includes: 'DeepSeekBot', name: 'DeepseekBot', category: 'AI Data Scraper' },
 ] as const;
 
+/** One entry of the detection list, as `detectBot` matches it. */
+export type KnownBot =
+  | { includes: string; name: string; category?: string }
+  | { regex: string; name: string; category?: string };
+
+/** Every bot `detectBot` recognises, in match order. */
+export function knownBots(): readonly KnownBot[] {
+  return [...bots, ...EXTRA_BOTS];
+}
+
 // Pre-compile regex patterns at module load time
 const compiledBots = [...bots, ...EXTRA_BOTS].map((bot) => {
   if ('regex' in bot) {

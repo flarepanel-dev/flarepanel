@@ -71,6 +71,7 @@ function stubJobCtx(
     conversation: {} as Services['conversation'],
     assistant: {} as Services['assistant'],
     mcp: {} as Services['mcp'],
+    cloudflareAnalytics: {} as Services['cloudflareAnalytics'],
     ai: {} as Services['ai'],
   };
   return {
@@ -192,6 +193,7 @@ test('insightsDaily fans out one insightsProject enqueue per candidate, jobId de
       conversation: {} as Services['conversation'],
       assistant: {} as Services['assistant'],
       mcp: {} as Services['mcp'],
+      cloudflareAnalytics: {} as Services['cloudflareAnalytics'],
       ai: {} as Services['ai'],
     },
     requestId: 'req_1',

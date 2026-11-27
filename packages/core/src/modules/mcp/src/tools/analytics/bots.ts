@@ -82,6 +82,8 @@ export function registerBotTools(
           ...(group ? { group } : {}),
           verified_only: stats.verifiedOnly,
           totals: stats.totals,
+          // `cloudflare`: sampled estimates imported from a connected zone.
+          sources: stats.sources,
           verified_hits: stats.verifiedHits,
           usage: stats.usage,
           daily: table(series, {

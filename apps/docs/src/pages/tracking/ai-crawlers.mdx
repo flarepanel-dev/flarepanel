@@ -12,7 +12,7 @@ The **Bots & AI crawlers** page in your project shows which crawlers fetch your 
 
 ## Why the script cannot see them
 
-AI crawlers, AI assistants fetching a page for a user, and search engine bots download your HTML and leave. They do not run JavaScript, so the FlarePanel script (`op1.js`) never loads and nothing reaches FlarePanel. To see them, report page requests from the place that serves them: your server, your Cloudflare Worker or your framework's middleware.
+AI crawlers, AI assistants fetching a page for a user, and search engine bots download your HTML and leave. They do not run JavaScript, so the FlarePanel script (`op1.js`) never loads and nothing reaches FlarePanel. To see them, report page requests from the place that serves them: your server, your Cloudflare Worker or your framework's middleware. If your site is on Cloudflare, you can instead [connect Cloudflare](#connect-cloudflare-no-code) and skip the code.
 
 What you report is matched against FlarePanel's bot list (several hundred user agents). A known bot is kept with its name, category, path, time, and the response status and verification you send. Anything else, including every human visitor, is dropped.
 
@@ -39,6 +39,48 @@ The tables also show the bot list's own category (for example *AI Data Scraper*)
 ### Monthly allowance
 
 On FlarePanel Cloud a project keeps up to **100,000 bot hits a month** (calendar month, UTC). Past that, `/track/crawl` still answers `202` with `"capped": true`, the hit is not stored, and the page says so until the next month starts. Self-hosted installs have no allowance.
+
+## Connect Cloudflare (no code)
+
+If your site's DNS is proxied through Cloudflare (the orange cloud), FlarePanel can read the crawler traffic straight from your zone's analytics: no Worker, no code on your site. It works on every Cloudflare plan, including Free.
+
+### 1. Create a read-only API token
+
+1. In the Cloudflare dashboard, open **My Profile → API Tokens** ([dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens)) and select **Create Token**.
+2. Next to **Create Custom Token**, select **Get started**.
+3. Name it, for example `FlarePanel crawler import`.
+4. Under **Permissions**, add:
+   - **Zone** → **Analytics** → **Read** (required: this is what FlarePanel reads).
+   - **Zone** → **Zone** → **Read** (optional: lets FlarePanel list your zones so you can pick one; without it you paste the zone ID).
+5. Under **Zone Resources**, select **Include** → **Specific zone** → your site's zone. Do not grant all zones.
+6. Leave **Client IP Address Filtering** empty (the import runs on Cloudflare's network, not from a fixed address). A **TTL** is fine, but the import stops when the token expires.
+7. Select **Continue to summary**, check that the summary lists only the read permissions above, then **Create Token** and copy it. Cloudflare shows it once.
+
+The token can only read analytics. It cannot change DNS, settings or anything else in your account.
+
+### 2. Connect it in FlarePanel
+
+1. Open your project's **Bots & AI crawlers** page and find the **Cloudflare** card (it is under the setup guide while the page is empty).
+2. Paste the token and select **Continue**. FlarePanel lists the zones the token can see; pick your site's zone. If the token has no **Zone → Zone → Read**, enter the **Zone ID** instead: it is on the zone's **Overview** page in Cloudflare, in the **API** section.
+3. Check the **Hostnames**. They start as your project's domain (with and without `www.`) and its allowed origins; only requests to these hostnames are imported. Leave the field empty to import every hostname in the zone.
+4. Select **Connect**. FlarePanel checks the token against the zone with one small query before it saves anything.
+
+The token is stored encrypted and is never shown again; the card shows its last four characters only. **Disconnect** removes it from FlarePanel; delete the token in Cloudflare as well.
+
+### What happens next
+
+- The first sync reads the **last 7 days**. After that FlarePanel syncs **every hour**, a little past the hour, and picks up where the previous sync stopped (never more than 30 days back, which is what Cloudflare keeps). **Sync now** on the card queues a sync straight away.
+- FlarePanel reads Cloudflare's HTTP request analytics (`httpRequestsAdaptiveGroups` in the [GraphQL Analytics API](https://developers.cloudflare.com/analytics/graphql-api/)): real visitor requests (not Cloudflare's own), on your hostnames, whose user agent contains one of the AI crawler, AI assistant or search engine names FlarePanel recognises, per hour, path and response status. Each user agent is then matched against the same bot list as `/track/crawl`, so the groups, categories and 4xx/5xx columns work the same way. SEO tools, monitors and other bots are not imported; report those with a snippet if you want them.
+- **The numbers are estimates.** Cloudflare samples its analytics on busy zones and scales the counts back up, so imported hits are rounded estimates rather than an exact log. The page says so and marks the data source as *Cloudflare*. The *Latest hits* list gets a few sample rows per sync, marked *Cloudflare*, not every hit.
+- Imported hits are matched by user agent only, so **Verified only** does not include them.
+- Imported hits count towards the [monthly allowance](#monthly-allowance) like reported ones.
+- Each sync uses a handful of queries; Cloudflare allows 300 analytics queries per 5 minutes per user. If the limit is hit, the sync waits and retries a few minutes later, and the card says so.
+
+### Snippet and Cloudflare together
+
+You can use both. FlarePanel never adds them up for the same hour: **an hour with any hit from your server snippet shows the snippet's exact numbers**, and Cloudflare's estimates fill the hours the snippet did not report (for example before you installed it, or while it was down). If your snippet covers only part of the zone (say, `docs.example.com`), limit the Cloudflare connection to the other hostnames so the two do not overlap within an hour.
+
+The page shows where the numbers come from: *Server snippet*, *Cloudflare*, or *Server snippet + Cloudflare*.
 
 ## Cloudflare Workers
 
@@ -244,7 +286,7 @@ curl "https://api.flarepanel.dev/insights/$PROJECT_ID/bots?range=30d&group=answe
   -H "openpanel-client-secret: $READ_CLIENT_SECRET"
 ```
 
-`range` (or `startDate` and `endDate`), `group` (`answers`, `indexing`, `training`, `search`, `other`) and `verified` are optional. The answer has `totals`, a daily `series`, `topBots`, `topPaths` (with `status` counts per class) and the month's `usage`. AI tools connected through [MCP](/features/mcp) get the same through the `get_bot_traffic` tool.
+`range` (or `startDate` and `endDate`), `group` (`answers`, `indexing`, `training`, `search`, `other`) and `verified` are optional. The answer has `totals`, `sources` (hits from the server snippet and from Cloudflare), a daily `series`, `topBots`, `topPaths` (with `status` counts per class) and the month's `usage`. AI tools connected through [MCP](/features/mcp) get the same through the `get_bot_traffic` tool.
 
 ## Bots that run JavaScript
 

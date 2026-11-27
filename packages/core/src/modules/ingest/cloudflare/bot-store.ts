@@ -19,13 +19,24 @@
 // no longer written; its rows are read as if they fell at noon UTC of their
 // day (the same calendar day in every time zone within 12 hours of UTC) and
 // expire with the rest.
+//
+// `bot_hourly_imported` holds hourly estimates imported from another source
+// (a connected Cloudflare zone's analytics), keyed like `bot_hourly` plus the
+// source. An import replaces its source's rows for the hours it covers, so a
+// retried or overlapping sync never counts twice. An hour with any snippet
+// hit in `bot_hourly` keeps the snippet's numbers: imports skip such hours
+// and reads ignore imported rows in them. `bot_import_hours` counts the
+// imported hits per hour for the month's usage, like `bot_days`.
 
 import {
   BOT_STATS_BOTS_PER_PATH,
   BOT_STATS_TOP_LIMIT,
   type BotGroup,
+  type BotImportSource,
+  type BotSource,
   type BotVerifiedFilter,
   botGroup,
+  type IBotSourceTotals,
   type IBotStats,
   type IBotStatsTotals,
   type IBotStatusCounts,
@@ -39,6 +50,8 @@ export const BOT_EVENTS_PER_DAY = 5000;
 export const BOT_EVENTS_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const BOT_DAILY_PATHS_PER_DAY = 2000;
 export const BOT_OTHER_PATHS = '(other)';
+/** Sample rows one import may add to the recent list. */
+export const BOT_IMPORT_SAMPLES_MAX = 5;
 const BOT_PATH_MAX_LENGTH = 512;
 const BOT_VERIFIED_CATEGORY_MAX_LENGTH = 64;
 /** A stats window longer than this is cut to its most recent days. */
@@ -56,6 +69,7 @@ const EVENT_COLUMNS_ADDED = [
   ['status', 'INTEGER'],
   ['verified', 'INTEGER'],
   ['verified_category', 'TEXT'],
+  ['source', 'TEXT'],
 ] as const;
 
 export interface BotEventRow {
@@ -71,6 +85,8 @@ export interface BotEventRow {
   verified?: boolean | null;
   /** The edge's own category for a verified bot (Cloudflare's, e.g. `AI Crawler`). */
   verified_category?: string | null;
+  /** Absent for a reported hit; the import's source for an imported sample. */
+  source?: BotImportSource | null;
 }
 
 export interface BotStatsQuery {
@@ -97,6 +113,46 @@ export interface BotAddResult {
   listed: boolean;
   /** The month's cap was reached: nothing was stored. */
   capped: boolean;
+}
+
+/** One imported estimate: hits of one bot on one path in one UTC hour. */
+export interface BotImportRow {
+  /** UTC hour number (epoch ms / 3 600 000, floored). */
+  hour: number;
+  name: string;
+  type: string;
+  path: string;
+  hits: number;
+  /** Hits per response status class, when the source reports them. */
+  status?: Partial<IBotStatusCounts>;
+}
+
+/**
+ * Everything one import knows about `fromHour`..`toHour` (exclusive): rows
+ * this source stored for those hours before are replaced.
+ */
+export interface BotImportBatch {
+  source: BotImportSource;
+  fromHour: number;
+  toHour: number;
+  rows: BotImportRow[];
+  /** A few rows for the recent list; at most BOT_IMPORT_SAMPLES_MAX are kept. */
+  samples?: BotEventRow[];
+  /** Hits a month may store; null or absent: no cap. */
+  monthlyCap?: number | null;
+}
+
+export interface BotImportResult {
+  /** Hours written. */
+  hours: number;
+  /** Rows written after merging. */
+  rows: number;
+  /** Hits written. */
+  hits: number;
+  /** Hours left out because the snippet reported them. */
+  skippedHours: number;
+  /** Hours left out because their month reached the cap. */
+  cappedHours: number;
 }
 
 /** The pathname a hit counts under: no origin, query or fragment. */
@@ -153,6 +209,8 @@ const emptyTotals = (): IBotStatsTotals => ({
   other: 0,
 });
 
+const emptySources = (): IBotSourceTotals => ({ snippet: 0, cloudflare: 0 });
+
 const emptyStatus = (): IBotStatusCounts => ({
   '2xx': 0,
   '3xx': 0,
@@ -163,6 +221,7 @@ const emptyStatus = (): IBotStatusCounts => ({
 export function emptyBotStats(usage?: IBotUsage): IBotStats {
   return {
     totals: emptyTotals(),
+    sources: emptySources(),
     series: [],
     topBots: [],
     topPaths: [],
@@ -180,6 +239,7 @@ export function emptyBotStats(usage?: IBotUsage): IBotStats {
 interface CountRow {
   /** Where the row falls in time: the middle of its hour. */
   at: number;
+  source: BotSource;
   name: string;
   category: string;
   path: string;
@@ -254,19 +314,36 @@ export function openBotStore(sql: EngineSql) {
   sql.exec(
     'CREATE TABLE IF NOT EXISTS bot_daily (day INTEGER NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, path TEXT NOT NULL, hits INTEGER NOT NULL, last_at INTEGER NOT NULL, PRIMARY KEY (day, name, type, path)) WITHOUT ROWID'
   );
+  sql.exec(
+    'CREATE TABLE IF NOT EXISTS bot_hourly_imported (hour INTEGER NOT NULL, source TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, path TEXT NOT NULL, hits INTEGER NOT NULL, s2 INTEGER NOT NULL DEFAULT 0, s3 INTEGER NOT NULL DEFAULT 0, s4 INTEGER NOT NULL DEFAULT 0, s5 INTEGER NOT NULL DEFAULT 0, last_at INTEGER NOT NULL, PRIMARY KEY (hour, source, name, type, path)) WITHOUT ROWID'
+  );
+  sql.exec(
+    'CREATE TABLE IF NOT EXISTS bot_import_hours (hour INTEGER NOT NULL, source TEXT NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (hour, source)) WITHOUT ROWID'
+  );
 
   // The month's stored hits, kept in memory: this store is the only writer.
   let month: { key: string; hits: number } | null = null;
 
+  /** Hits stored in the month holding `at`: reported and imported. */
+  function readMonthHits(at: number): number {
+    const { from, to } = monthDays(at);
+    const [reported] = sql.exec(
+      'SELECT coalesce(sum(n), 0) AS n FROM bot_days WHERE day >= ? AND day < ?',
+      from,
+      to
+    );
+    const [imported] = sql.exec(
+      'SELECT coalesce(sum(n), 0) AS n FROM bot_import_hours WHERE hour >= ? AND hour < ?',
+      from * HOURS_PER_DAY,
+      to * HOURS_PER_DAY
+    );
+    return Number(reported?.n ?? 0) + Number(imported?.n ?? 0);
+  }
+
   function monthHits(at: number): { key: string; hits: number } {
-    const { from, to, key } = monthDays(at);
+    const { key } = monthDays(at);
     if (month?.key !== key) {
-      const [row] = sql.exec(
-        'SELECT coalesce(sum(n), 0) AS n FROM bot_days WHERE day >= ? AND day < ?',
-        from,
-        to
-      );
-      month = { key, hits: Number(row?.n ?? 0) };
+      month = { key, hits: readMonthHits(at) };
     }
     return month;
   }
@@ -311,23 +388,178 @@ export function openBotStore(sql: EngineSql) {
     );
   }
 
+  /** Imports one hour's merged rows; false when the month is capped. */
+  function importHour(
+    source: BotImportSource,
+    hour: number,
+    rows: BotImportRow[],
+    cap: number | null | undefined
+  ): { written: boolean; rows: number; hits: number } {
+    const at = hour * HOUR_MS;
+    const hits = rows.reduce((sum, row) => sum + row.hits, 0);
+    if (cap != null && readMonthHits(at) >= cap) {
+      return { written: false, rows: 0, hits: 0 };
+    }
+    const day = Math.floor(at / DAY_MS);
+    const lastAt = at + HOUR_MS - 1;
+    let stored = 0;
+    for (const row of rows) {
+      const path = admitPath(day, botAggregatePath(row.path));
+      const status = row.status ?? {};
+      sql.exec(
+        'INSERT INTO bot_hourly_imported (hour, source, name, type, path, hits, s2, s3, s4, s5, last_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(hour, source, name, type, path) DO UPDATE SET hits = hits + excluded.hits, s2 = s2 + excluded.s2, s3 = s3 + excluded.s3, s4 = s4 + excluded.s4, s5 = s5 + excluded.s5',
+        hour,
+        source,
+        row.name,
+        row.type,
+        path,
+        row.hits,
+        ...STATUS_CLASSES.map((statusClass) =>
+          Math.max(0, Math.round(status[statusClass] ?? 0))
+        ),
+        lastAt
+      );
+      stored += 1;
+    }
+    sql.exec(
+      'INSERT INTO bot_import_hours (hour, source, n) VALUES (?, ?, ?)',
+      hour,
+      source,
+      hits
+    );
+    return { written: true, rows: stored, hits };
+  }
+
+  function importBatch(batch: BotImportBatch): BotImportResult {
+    const { source, fromHour, toHour } = batch;
+    const result: BotImportResult = {
+      hours: 0,
+      rows: 0,
+      hits: 0,
+      skippedHours: 0,
+      cappedHours: 0,
+    };
+    const byHour = new Map<number, BotImportRow[]>();
+    for (const row of batch.rows) {
+      const hits = Math.round(row.hits);
+      if (
+        !Number.isFinite(row.hour) ||
+        row.hour < fromHour ||
+        row.hour >= toHour ||
+        !(hits > 0)
+      ) {
+        continue;
+      }
+      const hourRows = byHour.get(row.hour) ?? [];
+      hourRows.push({ ...row, hits });
+      byHour.set(row.hour, hourRows);
+    }
+    const written = new Set<number>();
+    sql.transaction(() => {
+      sql.exec(
+        'DELETE FROM bot_hourly_imported WHERE source = ? AND hour >= ? AND hour < ?',
+        source,
+        fromHour,
+        toHour
+      );
+      sql.exec(
+        'DELETE FROM bot_import_hours WHERE source = ? AND hour >= ? AND hour < ?',
+        source,
+        fromHour,
+        toHour
+      );
+      for (const hour of [...byHour.keys()].sort((a, b) => a - b)) {
+        const [reported] = sql.exec(
+          'SELECT 1 AS reported FROM bot_hourly WHERE hour = ? LIMIT 1',
+          hour
+        );
+        if (reported) {
+          result.skippedHours += 1;
+          continue;
+        }
+        const outcome = importHour(
+          source,
+          hour,
+          byHour.get(hour) ?? [],
+          batch.monthlyCap
+        );
+        if (!outcome.written) {
+          result.cappedHours += 1;
+          continue;
+        }
+        written.add(hour);
+        result.hours += 1;
+        result.rows += outcome.rows;
+        result.hits += outcome.hits;
+      }
+      for (const sample of (batch.samples ?? []).slice(
+        0,
+        BOT_IMPORT_SAMPLES_MAX
+      )) {
+        const at = parseCreatedAt(sample.created_at);
+        if (!written.has(Math.floor(at / HOUR_MS))) {
+          continue;
+        }
+        sql.exec(
+          'INSERT OR IGNORE INTO bot_events (id, name, type, path, created_at, status, verified, verified_category, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          sample.id,
+          sample.name,
+          sample.type,
+          sample.path,
+          at,
+          sample.status ?? null,
+          null,
+          null,
+          source
+        );
+      }
+    });
+    // The month's usage changed under the cache.
+    month = null;
+    return result;
+  }
+
   function readCounts(fromMs: number, toMs: number): CountRow[] {
     // An hour belongs to the window when its middle does, and to the local
     // day its middle falls in; that also places half-hour zones sensibly.
     const fromHour = Math.ceil((fromMs - HOUR_MS / 2) / HOUR_MS);
     const toHour = Math.floor((toMs - HOUR_MS / 2) / HOUR_MS);
     const rows: CountRow[] = [];
+    const reportedHours = new Set<number>();
     for (const row of sql.exec(
       'SELECT hour, name, type, path, verified, hits, s2, s3, s4, s5, last_at FROM bot_hourly WHERE hour >= ? AND hour <= ?',
       fromHour,
       toHour
     )) {
+      reportedHours.add(Number(row.hour));
       rows.push({
         at: Number(row.hour) * HOUR_MS + HOUR_MS / 2,
+        source: 'snippet',
         name: String(row.name),
         category: String(row.type),
         path: String(row.path),
         verified: Number(row.verified) === 1,
+        hits: Number(row.hits),
+        status: statusOf(row),
+        lastSeen: Number(row.last_at),
+      });
+    }
+    // The snippet reported these hours itself: its numbers win.
+    for (const row of sql.exec(
+      'SELECT hour, source, name, type, path, hits, s2, s3, s4, s5, last_at FROM bot_hourly_imported WHERE hour >= ? AND hour <= ?',
+      fromHour,
+      toHour
+    )) {
+      if (reportedHours.has(Number(row.hour))) {
+        continue;
+      }
+      rows.push({
+        at: Number(row.hour) * HOUR_MS + HOUR_MS / 2,
+        source: String(row.source) as BotImportSource,
+        name: String(row.name),
+        category: String(row.type),
+        path: String(row.path),
+        verified: false,
         hits: Number(row.hits),
         status: statusOf(row),
         lastSeen: Number(row.last_at),
@@ -342,6 +574,7 @@ export function openBotStore(sql: EngineSql) {
     )) {
       rows.push({
         at: Number(row.day) * DAY_MS + LEGACY_DAY_OFFSET_MS,
+        source: 'snippet',
         name: String(row.name),
         category: String(row.type),
         path: String(row.path),
@@ -403,11 +636,19 @@ export function openBotStore(sql: EngineSql) {
       current.hits += 1;
       return { listed, capped: false };
     },
+    /**
+     * Stores one import's hourly estimates for `fromHour`..`toHour`,
+     * replacing what the same source stored for those hours. Hours the
+     * snippet reported, and hours of a month at its cap, are left out.
+     */
+    importHours(batch: BotImportBatch): BotImportResult {
+      return importBatch(batch);
+    },
     /** Newest first, as `SELECT * FROM events_bots ... ORDER BY created_at DESC`. */
     page(projectId: string, limit: number, offset: number): BotEventRow[] {
       return sql
         .exec(
-          'SELECT id, name, type, path, created_at, status, verified, verified_category FROM bot_events ORDER BY created_at DESC LIMIT ? OFFSET ?',
+          'SELECT id, name, type, path, created_at, status, verified, verified_category, source FROM bot_events ORDER BY created_at DESC LIMIT ? OFFSET ?',
           limit,
           offset
         )
@@ -427,6 +668,9 @@ export function openBotStore(sql: EngineSql) {
             row.verified_category == null
               ? null
               : String(row.verified_category),
+          ...(row.source == null
+            ? {}
+            : { source: String(row.source) as BotImportSource }),
         }));
     },
     count(): number {
@@ -470,6 +714,7 @@ export function openBotStore(sql: EngineSql) {
       const ends = buckets.map((bucket) => bucket.end);
       const series = buckets.map(() => emptyTotals());
       const totals = emptyTotals();
+      const sources = emptySources();
       const bots = new Map<string, IBotStats['topBots'][number]>();
       const paths = new Map<
         string,
@@ -489,6 +734,7 @@ export function openBotStore(sql: EngineSql) {
         const group = botGroup(name, category);
 
         addTotals(totals, group, hits);
+        sources[row.source] += hits;
         const day = series[bucketIndex(starts, ends, row.at)];
         if (day) {
           addTotals(day, group, hits);
@@ -534,6 +780,7 @@ export function openBotStore(sql: EngineSql) {
         b.hits - a.hits;
       return {
         totals,
+        sources,
         series: buckets.map((bucket, index) => ({
           date: wallClockText(bucket.start, timezone).slice(0, ISO_DAY_LENGTH),
           ...(series[index] ?? emptyTotals()),
@@ -574,6 +821,14 @@ export function openBotStore(sql: EngineSql) {
       sql.exec('DELETE FROM bot_day_paths WHERE day < ?', beforeDay);
       sql.exec('DELETE FROM bot_daily_paths WHERE day < ?', beforeDay);
       sql.exec('DELETE FROM bot_daily WHERE day < ?', beforeDay);
+      sql.exec(
+        'DELETE FROM bot_hourly_imported WHERE hour < ?',
+        beforeDay * HOURS_PER_DAY
+      );
+      sql.exec(
+        'DELETE FROM bot_import_hours WHERE hour < ?',
+        Math.min(beforeDay, monthDays(now).from) * HOURS_PER_DAY
+      );
     },
   };
 }

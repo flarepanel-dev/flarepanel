@@ -67,6 +67,7 @@ function stubJobCtx(
     conversation: {} as Services['conversation'],
     assistant: {} as Services['assistant'],
     mcp: {} as Services['mcp'],
+    cloudflareAnalytics: {} as Services['cloudflareAnalytics'],
     ai: {} as Services['ai'],
   };
   return {
@@ -205,6 +206,7 @@ test('gscSync fans out one gscProjectSync enqueue per connected project', async 
       conversation: {} as Services['conversation'],
       assistant: {} as Services['assistant'],
       mcp: {} as Services['mcp'],
+      cloudflareAnalytics: {} as Services['cloudflareAnalytics'],
       ai: {} as Services['ai'],
     },
     requestId: 'req_1',

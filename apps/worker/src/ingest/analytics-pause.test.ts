@@ -66,6 +66,10 @@ describe('over-limit analytics pause', () => {
     expect(await read.cohorts!('p1', { kind: 'compute' })).toBe('cohorts');
     expect(await read.groups!('p1', { kind: 'upsert' })).toBe('groups');
     expect(await read.gsc!('p1', { kind: 'write' })).toBe('gsc');
+    // The hourly Cloudflare crawler import keeps writing.
+    expect(await read.botImport!('p1', { source: 'cloudflare' })).toBe(
+      'botImport'
+    );
     await expect(read.gsc!('p1', { kind: 'overview' })).rejects.toBeInstanceOf(
       AnalyticsPausedError
     );

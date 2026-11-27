@@ -470,3 +470,175 @@ describe('botAggregatePath', () => {
     expect(botAggregatePath('')).toBe('/');
   });
 });
+
+describe('imported hours (Cloudflare)', () => {
+  const HOUR_MS = 60 * 60 * 1000;
+  const hourOf = (iso: string) => Date.parse(iso) / HOUR_MS;
+  const H10 = hourOf('2026-11-24T10:00:00Z');
+  const H11 = H10 + 1;
+  const H12 = H10 + 2;
+
+  const imported = (
+    hour: number,
+    hits: number,
+    bot: { name: string; type: string } = GPTBOT,
+    path = '/docs'
+  ) => ({
+    hour,
+    ...bot,
+    path,
+    hits,
+    status: { '2xx': hits, '3xx': 0, '4xx': 0, '5xx': 0 },
+  });
+
+  it('stores estimates as hourly rows and reports their source', () => {
+    const bots = openBotStore(memorySql());
+    const result = bots.importHours({
+      source: 'cloudflare',
+      fromHour: H10,
+      toHour: H12,
+      rows: [
+        imported(H10, 40),
+        { ...imported(H11, 5, CLAUDEBOT, '/x?y=1'), status: { '4xx': 5 } },
+      ],
+    });
+    expect(result).toEqual({
+      hours: 2,
+      rows: 2,
+      hits: 45,
+      skippedHours: 0,
+      cappedHours: 0,
+    });
+    const stats = bots.stats(window('2026-11-24', '2026-11-24'));
+    expect(stats.totals.total).toBe(45);
+    expect(stats.sources).toEqual({ snippet: 0, cloudflare: 45 });
+    expect(stats.topPaths.find((page) => page.path === '/x')?.status).toEqual({
+      '2xx': 0,
+      '3xx': 0,
+      '4xx': 5,
+      '5xx': 0,
+    });
+    // Estimates are never listed hit by hit.
+    expect(bots.count()).toBe(0);
+  });
+
+  it('replaces its own earlier import for the same hours instead of adding', () => {
+    const bots = openBotStore(memorySql());
+    const batch = {
+      source: 'cloudflare' as const,
+      fromHour: H10,
+      toHour: H11,
+      rows: [imported(H10, 40)],
+    };
+    bots.importHours(batch);
+    bots.importHours(batch);
+    bots.importHours({ ...batch, rows: [imported(H10, 30)] });
+    expect(bots.stats(window('2026-11-24', '2026-11-24')).totals.total).toBe(
+      30
+    );
+    expect(bots.usage(null, Date.parse('2026-11-24T12:00:00Z')).hits).toBe(30);
+  });
+
+  it('keeps the snippet numbers for an hour the snippet reported (no double count)', () => {
+    const bots = openBotStore(memorySql());
+    bots.add(hit('s1', '2026-11-24 10:15:00.000', '/docs', GPTBOT));
+    bots.add(hit('s2', '2026-11-24 10:45:00.000', '/docs', GPTBOT));
+    const result = bots.importHours({
+      source: 'cloudflare',
+      fromHour: H10,
+      toHour: H12,
+      rows: [imported(H10, 40), imported(H11, 7)],
+    });
+    expect(result.skippedHours).toBe(1);
+    expect(result.hits).toBe(7);
+    const stats = bots.stats(window('2026-11-24', '2026-11-24'));
+    expect(stats.totals.total).toBe(9);
+    expect(stats.sources).toEqual({ snippet: 2, cloudflare: 7 });
+  });
+
+  it('prefers the snippet at read time when its hits arrive after the import', () => {
+    const bots = openBotStore(memorySql());
+    bots.importHours({
+      source: 'cloudflare',
+      fromHour: H10,
+      toHour: H11,
+      rows: [imported(H10, 40)],
+    });
+    bots.add(hit('late', '2026-11-24 10:30:00.000', '/docs', GPTBOT));
+    const stats = bots.stats(window('2026-11-24', '2026-11-24'));
+    expect(stats.totals.total).toBe(1);
+    expect(stats.sources).toEqual({ snippet: 1, cloudflare: 0 });
+  });
+
+  it('counts imported hits against the monthly cap and stops at it', () => {
+    const bots = openBotStore(memorySql());
+    bots.add(hit('s1', '2026-11-01 00:00:00.000', '/', GPTBOT));
+    const result = bots.importHours({
+      source: 'cloudflare',
+      fromHour: H10,
+      toHour: H12 + 1,
+      rows: [imported(H10, 5), imported(H11, 5), imported(H12, 5)],
+      monthlyCap: 8,
+    });
+    // 1 + 5 = 6 < 8: hour 11 still fits; 11 >= 8: hour 12 does not.
+    expect(result.hours).toBe(2);
+    expect(result.cappedHours).toBe(1);
+    const usage = bots.usage(8, Date.parse('2026-11-24T13:00:00Z'));
+    expect(usage).toMatchObject({ hits: 11, capped: true });
+    expect(
+      bots.add(hit('s2', '2026-11-24 14:00:00.000'), { monthlyCap: 8 })
+    ).toEqual({ listed: false, capped: true });
+  });
+
+  it('lists at most a few samples, marked with their source', () => {
+    const bots = openBotStore(memorySql());
+    const samples = Array.from({ length: 8 }, (_, index) => ({
+      id: `cloudflare:${H10}:${index}`,
+      ...GPTBOT,
+      project_id: 'p1',
+      path: `https://example.com/p${index}`,
+      created_at: new Date(H10 * HOUR_MS + HOUR_MS / 2).toISOString(),
+      status: 200,
+      source: 'cloudflare' as const,
+    }));
+    bots.importHours({
+      source: 'cloudflare',
+      fromHour: H10,
+      toHour: H11,
+      rows: [imported(H10, 40)],
+      samples,
+    });
+    // A retry does not list them twice.
+    bots.importHours({
+      source: 'cloudflare',
+      fromHour: H10,
+      toHour: H11,
+      rows: [imported(H10, 40)],
+      samples,
+    });
+    const listed = bots.page('p1', 20, 0);
+    expect(listed).toHaveLength(5);
+    expect(listed[0]).toMatchObject({ source: 'cloudflare', status: 200 });
+  });
+
+  it('expires imported hours with the rest', () => {
+    const bots = openBotStore(memorySql());
+    bots.importHours({
+      source: 'cloudflare',
+      fromHour: hourOf('2026-10-01T00:00:00Z'),
+      toHour: hourOf('2026-10-01T01:00:00Z'),
+      rows: [imported(hourOf('2026-10-01T00:00:00Z'), 3)],
+    });
+    bots.importHours({
+      source: 'cloudflare',
+      fromHour: H10,
+      toHour: H11,
+      rows: [imported(H10, 4)],
+    });
+    bots.expire(
+      Date.parse('2026-11-01T00:00:00Z'),
+      Date.parse('2026-11-24T12:00:00Z')
+    );
+    expect(bots.stats(window('2026-09-01', '2026-11-30')).totals.total).toBe(4);
+  });
+});

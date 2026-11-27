@@ -11,7 +11,9 @@ import {
 import { useId, useState } from 'react';
 import { AiVisibility } from '@/components/bots/ai-visibility';
 import {
+  BOT_DATA_SOURCE_LABELS,
   BOTS_DOCS_URL,
+  botDataSource,
   botGroupColor,
   botGroupLabel,
   botUsageNotice,
@@ -21,6 +23,10 @@ import {
   toBotChartData,
 } from '@/components/bots/bot-stats';
 import { BotsChart } from '@/components/bots/bots-chart';
+import {
+  CloudflareConnectCard,
+  useCloudflareSetup,
+} from '@/components/bots/cloudflare-connect';
 import { EmptyState } from '@/components/empty-state';
 import { OverviewMetricCard } from '@/components/overview/overview-metric-card';
 import { OverviewRange } from '@/components/overview/overview-range';
@@ -85,6 +91,9 @@ function Component() {
     )
   );
 
+  const setupQuery = useCloudflareSetup(projectId);
+  const cloudflare = setupQuery.data;
+
   const stats = statsQuery.data;
   const isLoading = statsQuery.isLoading || recentQuery.isLoading;
   const header = (
@@ -137,7 +146,7 @@ function Component() {
         {header}
         <EmptyState
           className="mt-8"
-          description="AI crawlers such as GPTBot, ClaudeBot and PerplexityBot, and search bots like Googlebot, fetch your HTML without running JavaScript, so the FlarePanel script never sees them. Report page requests from your server or edge (a Cloudflare Worker, Next.js middleware) and they show up here."
+          description="AI crawlers such as GPTBot, ClaudeBot and PerplexityBot, and search bots like Googlebot, fetch your HTML without running JavaScript, so the FlarePanel script never sees them. Report page requests from your server or edge (a Cloudflare Worker, Next.js middleware), or connect your Cloudflare zone below, and they show up here."
           icon={RadarIcon}
           title="No bot traffic yet"
         >
@@ -145,6 +154,11 @@ function Component() {
             Set up crawler tracking
           </LinkButton>
         </EmptyState>
+        {cloudflare?.available && (
+          <div className="mx-auto mt-8 max-w-2xl">
+            <CloudflareConnectCard projectId={projectId} setup={cloudflare} />
+          </div>
+        )}
       </PageContainer>
     );
   }
@@ -160,6 +174,11 @@ function Component() {
             <AlertDescription>{notice.description}</AlertDescription>
           </Alert>
         )}
+        <DataSourceLine
+          cloudflareConnected={Boolean(cloudflare?.connection)}
+          lastCloudflareSync={cloudflare?.connection?.lastSyncedAt ?? null}
+          stats={stats}
+        />
         <BotKpis isLoading={statsQuery.isLoading} range={range} stats={stats} />
         <BotsChart
           isLoading={statsQuery.isLoading}
@@ -181,6 +200,9 @@ function Component() {
           page={recentPage}
           rows={recentQuery.data?.data ?? []}
         />
+        {cloudflare?.available && (
+          <CloudflareConnectCard projectId={projectId} setup={cloudflare} />
+        )}
         <p className="text-muted-foreground text-xs">
           The FlarePanel script cannot see crawlers, which never run JavaScript.{' '}
           <a
@@ -190,11 +212,48 @@ function Component() {
             target="_blank"
           >
             Report them from your server or edge
-          </a>
-          .
+          </a>{' '}
+          or connect Cloudflare.
         </p>
       </div>
     </PageContainer>
+  );
+}
+
+function DataSourceLine({
+  stats,
+  cloudflareConnected,
+  lastCloudflareSync,
+}: {
+  stats: IBotStats | undefined;
+  cloudflareConnected: boolean;
+  lastCloudflareSync: Date | string | null;
+}) {
+  const source = botDataSource(stats, cloudflareConnected);
+  if (source === 'none') {
+    return null;
+  }
+  const usesCloudflare = source === 'cloudflare' || source === 'both';
+  return (
+    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground text-xs">
+      <span>
+        Data source:{' '}
+        <span className="font-medium text-foreground">
+          {BOT_DATA_SOURCE_LABELS[source]}
+        </span>
+      </span>
+      {usesCloudflare && (
+        <span title="Cloudflare analytics are sampled: imported counts are estimates. Hours the server snippet reported keep its exact numbers.">
+          Cloudflare numbers are sampled estimates
+        </span>
+      )}
+      {usesCloudflare && lastCloudflareSync && (
+        <span>
+          Last Cloudflare sync{' '}
+          {formatTimeAgoOrDateTime(new Date(lastCloudflareSync))}
+        </span>
+      )}
+    </p>
   );
 }
 
@@ -480,6 +539,8 @@ interface RecentHit {
   createdAt: Date | string;
   status?: number | null;
   verified?: boolean | null;
+  /** Set on a sample imported from Cloudflare (stands for an hourly estimate). */
+  source?: string | null;
 }
 
 function RecentHits({
@@ -532,6 +593,14 @@ function RecentHits({
               <span className="min-w-0 flex-1 truncate" title={row.path}>
                 {displayBotPath(row.path)}
               </span>
+              {row.source === 'cloudflare' && (
+                <span
+                  className="shrink-0 rounded border px-1 text-[10px] text-muted-foreground"
+                  title="A sample from the hourly Cloudflare import, not a single reported hit"
+                >
+                  Cloudflare
+                </span>
+              )}
               {row.verified && (
                 <BadgeCheckIcon
                   aria-label="Verified"

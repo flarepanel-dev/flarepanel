@@ -309,6 +309,8 @@ export function createWorkerEventStore(
       projectEventsStub(env, projectId).botEvents(page),
     botStats: (projectId, query) =>
       projectEventsStub(env, projectId).botStats(query),
+    botImport: (projectId, batch) =>
+      projectEventsStub(env, projectId).importBotHours(batch),
     replayChunks: env.EVENTS_ARCHIVE
       ? (projectId, sessionId, page) =>
           readReplayChunks(

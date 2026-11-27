@@ -26,6 +26,7 @@ const ALWAYS_ALLOWED = new Set<string>([
   'exportAck',
   'countEvents',
   'deleteProjects',
+  'botImport',
 ]);
 
 /** Kinds of the multi-purpose calls that write rather than read. */

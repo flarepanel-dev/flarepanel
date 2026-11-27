@@ -4,7 +4,10 @@
 import { describe, expect, it, mock } from 'bun:test';
 import { BOT_HITS_PER_MONTH } from '@flarepanel/core/modules/event/event.constants';
 import { MemoryCacheStore } from '@flarepanel/platform';
-import { createCloudflareIngestBackend } from './backend';
+import {
+  createCloudflareIngestBackend,
+  createWorkerEventStore,
+} from './backend';
 
 function backendFor(selfHosted: boolean, capped = false) {
   const addBotEvent = mock(async (_row: unknown, _options: unknown) => ({
@@ -68,5 +71,47 @@ describe('recordBot', () => {
     // The colo remembers: the next hit that month skips the Durable Object.
     expect(await full.backend.recordBot(HIT)).toEqual({ capped: true });
     expect(full.addBotEvent).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('botImport', () => {
+  it('sends one import batch to the project’s Durable Object', async () => {
+    const importBotHours = mock(async (_batch: unknown) => ({
+      hours: 1,
+      rows: 1,
+      hits: 12,
+      skippedHours: 0,
+      cappedHours: 0,
+    }));
+    const names: string[] = [];
+    const env = {
+      PROJECT_EVENTS: {
+        idFromName: (name: string) => {
+          names.push(name);
+          return name;
+        },
+        get: () => ({ importBotHours }),
+      },
+    };
+    const store = createWorkerEventStore(env as never);
+    const batch = {
+      source: 'cloudflare' as const,
+      fromHour: 10,
+      toHour: 11,
+      rows: [
+        {
+          hour: 10,
+          name: 'GPTBot',
+          type: 'AI Data Scraper',
+          path: '/',
+          hits: 12,
+        },
+      ],
+    };
+    expect(await store.botImport?.('project-1', batch)).toMatchObject({
+      hits: 12,
+    });
+    expect(names).toEqual(['project-1']);
+    expect(importBotHours.mock.calls[0]?.[0]).toEqual(batch);
   });
 });

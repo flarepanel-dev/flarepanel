@@ -394,6 +394,7 @@ model Project {
   notifications     Notification[]
   imports           Import[]
   gscConnection     GscConnection?
+  cloudflareConnection CloudflareConnection?
   cohorts           Cohort[]
   exportWatermarks  ExportWatermark[]
   integrations      Integration[]
@@ -895,6 +896,38 @@ model GscConnection {
   updatedAt            DateTime  @default(now()) @updatedAt
 
   @@map("gsc_connections")
+}
+
+// A project's connected Cloudflare zone: an hourly job reads the zone's HTTP
+// request analytics (GraphQL Analytics API) and imports AI crawler and search
+// bot hits into the project's bot store as sampled estimates. The token is
+// read-only (Zone Analytics Read) and never leaves the API.
+model CloudflareConnection {
+  id              String    @id @default(uuid())
+  projectId       String    @unique
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  // encryptCredential(ENCRYPTION_KEY, token): `enc:` + AES-256-GCM.
+  encryptedToken  String
+  // Last 4 characters, to tell tokens apart without decrypting.
+  tokenHint       String
+  zoneId          String
+  zoneName        String    @default("")
+  // Hostnames whose requests are imported; empty: every host in the zone.
+  /// [IPrismaStringList]
+  hostnames       Json      @default("[]")
+  // Requests before this instant are imported; the next sync starts here.
+  syncedThrough   DateTime?
+  lastSyncedAt    DateTime?
+  /// success | error | auth_error | rate_limited
+  lastSyncStatus  String?
+  lastSyncError   String?
+  // Estimated hits the last successful sync imported.
+  lastSyncHits    Int?
+  createdByUserId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+
+  @@map("cloudflare_connections")
 }
 
 // A workspace's own AI provider key (bring your own key). The assistant uses

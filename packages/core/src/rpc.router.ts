@@ -6,6 +6,7 @@ import { chatRouter } from './modules/assistant/assistant.rpc';
 import { authRouter } from './modules/auth/auth.rpc';
 import { chartRouter } from './modules/chart/chart.rpc';
 import { clientRouter } from './modules/client/client.rpc';
+import { cloudflareAnalyticsRouter } from './modules/cloudflare-analytics/cloudflare-analytics.rpc';
 import { cohortRouter } from './modules/cohort/cohort.rpc';
 import { conversationRouter } from './modules/conversation/conversation.rpc';
 import { customEventRouter } from './modules/custom-event/custom-event.rpc';
@@ -39,6 +40,7 @@ export const appRouter = createTRPCRouter({
   health: healthRouter,
   insight: insightRouter,
   gsc: gscRouter,
+  cloudflareAnalytics: cloudflareAnalyticsRouter,
   cohort: cohortRouter,
   import: importRouter,
   chat: chatRouter,

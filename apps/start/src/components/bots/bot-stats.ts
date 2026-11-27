@@ -1,3 +1,4 @@
+import type { ICloudflareConnection } from '@flarepanel/core/modules/cloudflare-analytics/cloudflare-analytics.constants';
 import {
   BOT_GROUP_LABELS,
   type BotGroup,
@@ -8,6 +9,7 @@ import {
 import { getChartColor } from '@/utils/theme';
 
 export const BOTS_DOCS_URL = 'https://docs.flarepanel.dev/tracking/ai-crawlers';
+export const CLOUDFLARE_DOCS_URL = `${BOTS_DOCS_URL}#connect-cloudflare-no-code`;
 
 export interface BotGroupSeries {
   key: BotGroup;
@@ -151,3 +153,64 @@ export const AI_REFERRER_FILTER = {
   operator: 'is' as const,
   value: ['ai'],
 };
+
+export type BotDataSource = 'snippet' | 'cloudflare' | 'both' | 'none';
+
+/**
+ * Where the numbers on the page come from: hits in the window per source,
+ * and a connected zone even before its first import lands.
+ */
+export function botDataSource(
+  stats: Pick<IBotStats, 'sources'> | undefined,
+  cloudflareConnected: boolean
+): BotDataSource {
+  const snippet = (stats?.sources?.snippet ?? 0) > 0;
+  const cloudflare =
+    (stats?.sources?.cloudflare ?? 0) > 0 || cloudflareConnected;
+  if (snippet && cloudflare) {
+    return 'both';
+  }
+  if (cloudflare) {
+    return 'cloudflare';
+  }
+  return snippet ? 'snippet' : 'none';
+}
+
+export const BOT_DATA_SOURCE_LABELS: Record<BotDataSource, string> = {
+  snippet: 'Server snippet',
+  cloudflare: 'Cloudflare',
+  both: 'Server snippet + Cloudflare',
+  none: 'Not set up',
+};
+
+/** One line on a connection's last sync, for the Cloudflare card. */
+export function cloudflareSyncSummary(
+  connection: Pick<
+    ICloudflareConnection,
+    'lastSyncStatus' | 'lastSyncHits' | 'lastSyncedAt'
+  >
+): { tone: 'ok' | 'pending' | 'error'; text: string } {
+  switch (connection.lastSyncStatus) {
+    case 'success': {
+      const hits = connection.lastSyncHits ?? 0;
+      return {
+        tone: 'ok',
+        text:
+          hits > 0
+            ? `Imported about ${hits.toLocaleString('en')} crawler hits`
+            : 'No new crawler hits',
+      };
+    }
+    case 'auth_error':
+      return { tone: 'error', text: 'Cloudflare rejected the token' };
+    case 'rate_limited':
+      return {
+        tone: 'error',
+        text: 'Cloudflare rate limit reached; retrying shortly',
+      };
+    case 'error':
+      return { tone: 'error', text: 'The last sync failed' };
+    default:
+      return { tone: 'pending', text: 'First sync queued' };
+  }
+}

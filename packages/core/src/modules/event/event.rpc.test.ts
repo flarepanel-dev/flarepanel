@@ -88,6 +88,7 @@ const BOT_TOTALS = {
 };
 const BOT_STATS: IBotStats = {
   totals: BOT_TOTALS,
+  sources: { snippet: 3, cloudflare: 0 },
   series: [{ date: '2026-11-24', ...BOT_TOTALS }],
   topBots: [
     {

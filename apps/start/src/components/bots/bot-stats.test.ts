@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   aiReferralSessions,
   BOT_GROUP_SERIES,
+  botDataSource,
   botUsageNotice,
   botVerifiedFilter,
+  cloudflareSyncSummary,
   displayBotPath,
   isBotsPageEmpty,
   toBotChartData,
@@ -65,6 +67,7 @@ describe('displayBotPath', () => {
 describe('isBotsPageEmpty', () => {
   const stats = (total: number) => ({
     totals: { ...EMPTY_TOTALS, total },
+    sources: { snippet: total, cloudflare: 0 },
     series: [],
     topBots: [],
     topPaths: [],
@@ -127,5 +130,59 @@ describe('aiReferralSessions', () => {
     ).toBe(7);
     expect(aiReferralSessions([])).toBe(0);
     expect(aiReferralSessions(undefined)).toBe(0);
+  });
+});
+
+describe('botDataSource', () => {
+  const sources = (snippet: number, cloudflare: number) => ({
+    sources: { snippet, cloudflare },
+  });
+
+  it('names the sources the window has hits from', () => {
+    expect(botDataSource(sources(3, 0), false)).toBe('snippet');
+    expect(botDataSource(sources(0, 9), false)).toBe('cloudflare');
+    expect(botDataSource(sources(3, 9), false)).toBe('both');
+    expect(botDataSource(sources(0, 0), false)).toBe('none');
+    expect(botDataSource(undefined, false)).toBe('none');
+  });
+
+  it('counts a connected zone before its first import', () => {
+    expect(botDataSource(sources(0, 0), true)).toBe('cloudflare');
+    expect(botDataSource(sources(2, 0), true)).toBe('both');
+  });
+});
+
+describe('cloudflareSyncSummary', () => {
+  const at = { lastSyncedAt: new Date('2026-11-27T10:20:00Z') };
+
+  it('says what the last sync did', () => {
+    expect(
+      cloudflareSyncSummary({
+        ...at,
+        lastSyncStatus: 'success',
+        lastSyncHits: 1234,
+      })
+    ).toEqual({ tone: 'ok', text: 'Imported about 1,234 crawler hits' });
+    expect(
+      cloudflareSyncSummary({
+        ...at,
+        lastSyncStatus: 'success',
+        lastSyncHits: 0,
+      }).text
+    ).toBe('No new crawler hits');
+    expect(
+      cloudflareSyncSummary({
+        ...at,
+        lastSyncStatus: 'auth_error',
+        lastSyncHits: null,
+      }).tone
+    ).toBe('error');
+    expect(
+      cloudflareSyncSummary({
+        lastSyncedAt: null,
+        lastSyncStatus: null,
+        lastSyncHits: null,
+      })
+    ).toEqual({ tone: 'pending', text: 'First sync queued' });
   });
 });

@@ -8,6 +8,7 @@ import { createFunnelService } from './modules/chart/funnel.service';
 import { createRetentionService } from './modules/chart/retention.service';
 import { createSankeyService } from './modules/chart/sankey.service';
 import { createClientService } from './modules/client/client.service';
+import { createCloudflareAnalyticsService } from './modules/cloudflare-analytics/cloudflare-analytics.service';
 import { createCohortService } from './modules/cohort/cohort.service';
 import { createConversationService } from './modules/conversation/conversation.service';
 import { createCustomEventService } from './modules/custom-event/custom-event.service';
@@ -65,6 +66,7 @@ export interface Services {
   auth: ReturnType<typeof createAuthService>;
   insight: ReturnType<typeof createInsightService>;
   gsc: ReturnType<typeof createGscService>;
+  cloudflareAnalytics: ReturnType<typeof createCloudflareAnalyticsService>;
   cohort: ReturnType<typeof createCohortService>;
   import: ReturnType<typeof createImportService>;
   ingest: ReturnType<typeof createIngestService>;
@@ -116,6 +118,7 @@ export function createServices(deps: ServiceDeps): Services {
     auth: createAuthService(deps, services),
     insight: createInsightService(deps, services),
     gsc: createGscService(deps, services),
+    cloudflareAnalytics: createCloudflareAnalyticsService(deps, services),
     cohort: createCohortService(deps, services),
     import: createImportService(deps, services),
     ingest: createIngestService(deps, services),

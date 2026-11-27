@@ -6,6 +6,8 @@
 import type { ImportFileStore } from '../../import/src/workers-import';
 import type { AiQuery } from '../../ingest/cloudflare/ai-query';
 import type {
+  BotImportBatch,
+  BotImportResult,
   BotStatsQuery,
   BotEventRow as IClickhouseBotEvent,
 } from '../../ingest/cloudflare/bot-store';
@@ -243,6 +245,14 @@ export interface EventStore {
   ): Promise<{ rows: IClickhouseBotEvent[]; count: number }>;
   /** Bot hit totals per UTC day, bot and path (every hit, not only listed). */
   botStats?(projectId: string, query: BotStatsQuery): Promise<IBotStats>;
+  /**
+   * Hourly bot estimates from another source (a connected Cloudflare zone),
+   * replacing that source's rows for the batch's hours.
+   */
+  botImport?(
+    projectId: string,
+    batch: BotImportBatch
+  ): Promise<BotImportResult>;
   /**
    * A page of a session's replay chunks in playback order (started, ended,
    * index), each with its rrweb events as JSON text. `offset` counts chunks.

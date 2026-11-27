@@ -23,6 +23,7 @@ import {
   BOT_EVENTS_TTL_MS,
   type BotAddOptions,
   type BotEventRow,
+  type BotImportBatch,
   type BotStatsQuery,
   type BotStore,
   buildArchiveObjects,
@@ -1093,6 +1094,12 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   async botStats(query: BotStatsQuery) {
     const { bots } = await this.state;
     return bots.stats(query);
+  }
+
+  /** One sync's hourly bot estimates from a connected Cloudflare zone. */
+  async importBotHours(batch: BotImportBatch) {
+    const { bots } = await this.state;
+    return bots.importHours(batch);
   }
 
   /** Whether a session is unknown, already recorded, or new to replay. */

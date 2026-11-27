@@ -12,6 +12,10 @@ import {
   schedulersFromRegistry,
 } from './jobs/schedulers';
 import { aiCronJobs } from './modules/ai/ai.jobs';
+import {
+  cloudflareAnalyticsCronJobs,
+  cloudflareAnalyticsQueueJobs,
+} from './modules/cloudflare-analytics/cloudflare-analytics.jobs';
 import { cohortCronJobs, cohortQueueJobs } from './modules/cohort/cohort.jobs';
 import { eventCronJobs } from './modules/event/event.jobs';
 import { groupCronJobs } from './modules/group/group.jobs';
@@ -82,6 +86,7 @@ const cron = defineQueue('cron', {
     ...aiCronJobs,
     ...insightCronJobs,
     ...gscCronJobs,
+    ...cloudflareAnalyticsCronJobs,
     ...cohortCronJobs,
     ...organizationCronJobs,
     ...onboardingCronJobs,
@@ -124,12 +129,15 @@ const insights = defineQueue('insights', {
   },
 });
 
+// Per-project pulls from third-party APIs: Search Console and the Cloudflare
+// crawler import.
 const gsc = defineQueue('gsc', {
   defaults: { removeOnComplete: 50, removeOnFail: 100 },
   worker: { concurrency: CONCURRENCY.gsc },
   compat: legacyCompat.gsc,
   jobs: {
     ...gscQueueJobs,
+    ...cloudflareAnalyticsQueueJobs,
   },
 });
 
