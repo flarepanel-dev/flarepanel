@@ -398,7 +398,9 @@ export default function BillingPlanPicker({
         })}
       </div>
       {directCheckout && (
-        <div className="col shrink-0 gap-3">
+        // Pinned to the bottom of the screen while the plan list is longer
+        // than it: the action is always in view, whichever plan is picked.
+        <div className="col sticky bottom-0 z-10 -mx-4 -mb-4 shrink-0 gap-3 rounded-b-md border-t bg-card p-4">
           <Button
             className="w-full"
             disabled={!selectedProduct}
