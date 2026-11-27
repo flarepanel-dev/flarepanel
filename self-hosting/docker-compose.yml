@@ -100,7 +100,7 @@ services:
   # Applies the SQLite and ClickHouse migrations, then exits. Runs on every
   # `up`, so an upgrade is: pull the new images, `docker compose up -d`.
   migrate:
-    image: ${FLAREPANEL_API_IMAGE:-flarepanel-api:local}
+    image: ${FLAREPANEL_API_IMAGE:-ghcr.io/flarepanel-dev/flarepanel-api:latest}
     restart: "no"
     environment: *app-env
     working_dir: /app/packages/db
@@ -112,7 +112,7 @@ services:
         condition: service_healthy
 
   app:
-    image: ${FLAREPANEL_API_IMAGE:-flarepanel-api:local}
+    image: ${FLAREPANEL_API_IMAGE:-ghcr.io/flarepanel-dev/flarepanel-api:latest}
     restart: unless-stopped
     environment:
       <<: *app-env
@@ -135,7 +135,7 @@ services:
       retries: 12
 
   dashboard:
-    image: ${FLAREPANEL_DASHBOARD_IMAGE:-flarepanel-dashboard:local}
+    image: ${FLAREPANEL_DASHBOARD_IMAGE:-ghcr.io/flarepanel-dev/flarepanel-dashboard:latest}
     restart: unless-stopped
     environment:
       NODE_ENV: production

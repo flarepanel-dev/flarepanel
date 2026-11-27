@@ -20,16 +20,12 @@ one side only: see [What differs](#what-differs).
 
 ## Install
 
-Get the code and build the two images. Images are not published to a registry
-yet, so they are built on the server (or on another machine and pushed to your
-own registry). The dashboard build needs about 6 GB of memory.
+Get this folder. The two FlarePanel images are published, for `amd64` and
+`arm64`, so there is nothing to build:
 
 ```bash
 git clone https://github.com/flarepanel-dev/flarepanel.git
-cd flarepanel
-docker build -f apps/api/Dockerfile -t flarepanel-api:local .
-docker build -f apps/start/Dockerfile -t flarepanel-dashboard:local .
-cd self-hosting
+cd flarepanel/self-hosting
 cp env.example .env
 ```
 
@@ -69,12 +65,37 @@ Use your API address as `apiUrl` and load the script from your dashboard:
 
 ```bash
 git pull
-docker build -f apps/api/Dockerfile -t flarepanel-api:local .
-docker build -f apps/start/Dockerfile -t flarepanel-dashboard:local .
-cd self-hosting && docker compose --profile proxy up -d
+docker compose --profile proxy pull
+docker compose --profile proxy up -d
 ```
 
-The `migrate` service applies database changes before the app starts.
+The `migrate` service applies database changes before the app starts. Back up
+first (below).
+
+## The images
+
+| Image | Runs |
+|---|---|
+| `ghcr.io/flarepanel-dev/flarepanel-api` | The API and background jobs |
+| `ghcr.io/flarepanel-dev/flarepanel-dashboard` | The dashboard |
+
+They are built by this repository's `Docker images` workflow from a clean
+checkout, with no build secrets, and run as a non-root user. `latest` follows
+`main`; a release also gets its version (`1.2.3`, `1.2`). Each image carries a
+signed build record, which you can check with the GitHub CLI:
+
+```bash
+gh attestation verify oci://ghcr.io/flarepanel-dev/flarepanel-api:latest -R flarepanel-dev/flarepanel
+```
+
+To build them yourself instead (the dashboard build needs about 6 GB of
+memory), run this from the repository root and name the results in `.env`
+(`FLAREPANEL_API_IMAGE`, `FLAREPANEL_DASHBOARD_IMAGE`):
+
+```bash
+docker build -f apps/api/Dockerfile -t flarepanel-api:local .
+docker build -f apps/start/Dockerfile -t flarepanel-dashboard:local .
+```
 
 ## Check an install
 

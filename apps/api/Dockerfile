@@ -7,7 +7,7 @@ ARG BUN_VERSION=1.4.4
 # `sh -c "…"`) and not alpine (musl against a `debian-openssl-3.0.x` Prisma engine).
 #
 # The apt set is what the running container needs: `curl` backs the compose HEALTHCHECKs and `netcat-openbsd` backs
-# self-hosting/coolify.yml's `nc -z` wait loops, both exec inside the container. `ca-certificates`, `openssl` and
+# the compose wait loops, both exec inside the container. `ca-certificates`, `openssl` and
 # `libssl3` are already in the base; naming them pulls the Debian-Security libssl3t64/openssl upgrade.
 FROM oven/bun:${BUN_VERSION}-slim AS base
 
