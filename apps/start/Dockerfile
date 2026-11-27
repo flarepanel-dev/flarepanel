@@ -37,9 +37,13 @@ RUN bun install --frozen-lockfile --linker=isolated
 
 COPY . .
 
-# The tracking script the self-hosted dashboard serves.
-COPY apps/landing/public/op1.js ./apps/start/public/op1.js
-COPY apps/landing/public/op1-replay.js ./apps/start/public/op1-replay.js
+# The tracking script the self-hosted dashboard serves (`/op1.js`, and
+# `/op1-replay.js` for session replay). Built here from packages/sdks/web: the
+# files are build output and not in the repository, so a clean checkout has
+# none to copy.
+RUN cd apps/landing && bun scripts/build-tracker.ts && \
+    cp public/op1.js public/op1-replay.js ../start/public/ && \
+    test -s ../start/public/op1.js && test -s ../start/public/op1-replay.js
 
 # BUILD — Nitro's standalone server output. NITRO=1 selects the node-server
 # preset over the Cloudflare one; SELF_HOSTED=1 is read at build time.
