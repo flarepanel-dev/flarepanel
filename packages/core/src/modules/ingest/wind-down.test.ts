@@ -242,4 +242,76 @@ describe('isIngestionWoundDown', () => {
       ).toBe(false);
     });
   });
+
+  describe('paid plan that ended', () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    const org = (over: Record<string, unknown>) => ({
+      id: 'org-1',
+      windDownStep: null,
+      subscriptionProductId: 'prod_1',
+      subscriptionPeriodEventsLimit: 5000,
+      subscriptionPeriodEventsCount: 10,
+      subscriptionPeriodEventsCountExceededAt: null,
+      subscriptionCanceledAt: null,
+      ...over,
+    });
+    const check = async () =>
+      isIngestionWoundDown(deps, {
+        projectId: 'proj-1',
+        selfHosted: false,
+        logger: makeLogger().logger,
+      });
+
+    it('keeps collecting for 7 days after it ended', async () => {
+      getOrganizationByProjectIdCached.mockResolvedValue(
+        org({
+          subscriptionStatus: 'canceled',
+          subscriptionEndsAt: new Date(Date.now() - 6 * DAY),
+        })
+      );
+      expect(await check()).toBe(false);
+    });
+
+    it('stops collecting after 7 days', async () => {
+      getOrganizationByProjectIdCached.mockResolvedValue(
+        org({
+          subscriptionStatus: 'canceled',
+          subscriptionEndsAt: new Date(Date.now() - 8 * DAY),
+        })
+      );
+      expect(await check()).toBe(true);
+    });
+
+    it('counts from the cancellation when it was ended early (refund)', async () => {
+      getOrganizationByProjectIdCached.mockResolvedValue(
+        org({
+          subscriptionStatus: 'canceled',
+          subscriptionEndsAt: new Date(Date.now() + 20 * DAY),
+          subscriptionCanceledAt: new Date(Date.now() - 8 * DAY),
+        })
+      );
+      expect(await check()).toBe(true);
+    });
+
+    it('keeps collecting while canceling, active or paused', async () => {
+      for (const over of [
+        {
+          subscriptionStatus: 'active',
+          subscriptionCanceledAt: new Date(),
+          subscriptionEndsAt: new Date(Date.now() + 20 * DAY),
+        },
+        {
+          subscriptionStatus: 'active',
+          subscriptionEndsAt: new Date(Date.now() + 20 * DAY),
+        },
+        {
+          subscriptionStatus: 'paused',
+          subscriptionEndsAt: new Date(Date.now() - 30 * DAY),
+        },
+      ]) {
+        getOrganizationByProjectIdCached.mockResolvedValue(org(over));
+        expect(await check()).toBe(false);
+      }
+    });
+  });
 });

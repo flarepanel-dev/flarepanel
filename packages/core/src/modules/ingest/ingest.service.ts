@@ -695,6 +695,40 @@ export function isTrialOverLimit(organization: {
   );
 }
 
+const LAPSED_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
+const ENDED_STATUSES = new Set(['canceled', 'unpaid', 'incomplete_expired']);
+
+/**
+ * A paid plan that ended more than 7 days ago stops collecting, like an
+ * expired trial: otherwise one month's payment would buy free collection
+ * forever. A pause is different (it resumes by itself) and keeps collecting.
+ */
+export function isSubscriptionLapsed(
+  organization: {
+    subscriptionStatus: string | null;
+    subscriptionEndsAt: Date | string | null;
+    subscriptionCanceledAt: Date | string | null;
+  },
+  now: number = Date.now()
+): boolean {
+  const time = (value: Date | string | null) =>
+    value ? new Date(value).getTime() : null;
+  const endsAt = time(organization.subscriptionEndsAt);
+  let endedAt: number | null = null;
+  if (ENDED_STATUSES.has(organization.subscriptionStatus ?? '')) {
+    // Ended early (revoked or refunded): the period end is still in the
+    // future, so the cancellation time is when it really ended.
+    endedAt =
+      endsAt !== null && endsAt <= now
+        ? endsAt
+        : (time(organization.subscriptionCanceledAt) ?? endsAt);
+  } else if (organization.subscriptionStatus === 'active') {
+    // A missed webhook: the paid period is long over.
+    endedAt = endsAt;
+  }
+  return endedAt !== null && now - endedAt > LAPSED_GRACE_MS;
+}
+
 export async function isIngestionWoundDown(
   deps: ServiceDeps,
   request: {
@@ -725,7 +759,8 @@ export async function isIngestionWoundDown(
         WIND_DOWN_BLOCKED_STEPS.has(organization.windDownStep)
     );
     const trialOverLimit = isTrialOverLimit(organization);
-    if (!(woundDown || trialOverLimit)) {
+    const lapsed = isSubscriptionLapsed(organization);
+    if (!(woundDown || trialOverLimit || lapsed)) {
       return false;
     }
 
@@ -735,10 +770,13 @@ export async function isIngestionWoundDown(
         projectId,
         windDownStep: organization.windDownStep,
         trialOverLimit,
+        lapsed,
       },
       trialOverLimit
         ? 'Ingestion blocked: trial over its event allowance'
-        : 'Ingestion blocked by wind-down'
+        : lapsed
+          ? 'Ingestion blocked: plan ended more than 7 days ago'
+          : 'Ingestion blocked by wind-down'
     );
     return true;
   } catch (error) {

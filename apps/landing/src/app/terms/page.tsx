@@ -103,7 +103,8 @@ export default function TermsPage() {
           <strong>Renewal and cancelling.</strong> Plans renew automatically
           each month or year until you cancel, which you can do at any time from
           Billing in your workspace. Upgrades apply at once; when you cancel,
-          your plan runs to the end of the period you paid for.
+          your plan runs to the end of the period you paid for. New events stop
+          being recorded 7 days after a plan ends.
         </li>
         <li>
           <strong>Refunds.</strong> You can get a full refund of your first
