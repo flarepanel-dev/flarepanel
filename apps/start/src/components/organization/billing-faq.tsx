@@ -8,39 +8,41 @@ import { Widget, WidgetHead } from '@/components/widget';
 
 const questions = [
   {
-    question: 'Does FlarePanel have a free tier?',
+    question: 'Is there a free plan?',
     answer: [
-      'For our Cloud plan we offer a 30 days free trial, this is mostly for you to be able to try out FlarePanel before committing to a paid plan.',
-      'FlarePanel is also open-source and you can self-host it for free!',
-      '',
-      'Why does FlarePanel not have a free tier?',
-      'We want to make sure that FlarePanel is used by people who are serious about using it. We also need to invest time and resources to maintain the platform and provide support to our users.',
+      'No, but every new account starts with a 30-day free trial of up to 100,000 events, with every feature and no card needed.',
+      'After that, plans start at $1 a month.',
     ],
   },
   {
-    question: 'What happens if my site exceeds the limit?',
+    question: 'What happens if I go over my plan?',
     answer: [
-      "You will not see any new events in FlarePanel until your next billing period. If this happens 2 months in a row, we'll advice you to upgrade your plan.",
+      'Nothing is lost and nothing extra is charged. We keep recording every event; your charts pause until you move to a bigger plan or your next billing period starts, and then everything recorded in between shows up.',
+      'We email you at 80% and at 100%, so it never comes as a surprise.',
     ],
   },
   {
-    question: 'What happens if I cancel my subscription?',
+    question: 'Can I change plan or cancel later?',
     answer: [
-      'If you cancel your subscription, you will still have access to FlarePanel until the end of your current billing period. You can reactivate your subscription at any time.',
-      'After your current billing period ends, you will not get access to new data.',
-      "NOTE: If your account has been inactive for 3 months, we'll delete your events.",
+      'Any time, from this page. Upgrades apply straight away. If you cancel, your plan keeps running until the end of the period you paid for, and recording stops 7 days after that.',
     ],
   },
   {
-    question: 'How do I change my billing information?',
+    question: 'Can I get a refund?',
     answer: [
-      'You can change your billing information by clicking the "Customer portal" button in the billing section.',
+      'Yes: your first payment is refunded in full if you ask within 14 days. Email hello@flarepanel.dev from the address on your account.',
     ],
   },
   {
-    question: 'We need a custom plan, can you help us?',
+    question: 'Who handles the payment?',
     answer: [
-      'Yes, we can help you with that. Please contact us at hello@flarepanel.dev to request a quote.',
+      'Polar, our payment partner and merchant of record. Polar issues your invoice and adds VAT or sales tax at checkout where it applies. You can update your card and download invoices in the customer portal.',
+    ],
+  },
+  {
+    question: 'We track more than 50M events. Can you help?',
+    answer: [
+      'Yes. Email hello@flarepanel.dev and we will set up a plan for your volume.',
     ],
   },
 ];
@@ -49,7 +51,7 @@ export function BillingFaq() {
   return (
     <Widget className="w-full">
       <WidgetHead className="flex items-center justify-between">
-        <span className="title">Frequently asked questions</span>
+        <span className="title">Questions</span>
       </WidgetHead>
       <Accordion
         className="w-full max-w-screen-md self-center"

@@ -1,14 +1,15 @@
 import type { IServiceOrganization } from '@flarepanel/core';
 import type { IPolarProduct } from '@flarepanel/payments';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  CheckIcon,
-  ChevronRightIcon,
-  Loader2Icon,
-  ShuffleIcon,
-} from 'lucide-react';
-import { useState } from 'react';
+import { CheckIcon, Loader2Icon, LockIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import {
+  formatEventVolume,
+  monthlyEquivalent,
+  recommendedPlanId,
+} from './billing-plans';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -71,11 +72,12 @@ export default function BillingPlanPicker({
       organizationId: organization.id,
     })
   );
-  // Yearly is the default for new subscribers — it churns far less and saves
-  // them 2 months. Existing subscribers land on their current interval.
+  // Monthly is the default: it is the price people expect to compare. Yearly
+  // is one click away and says what it saves. Existing subscribers land on
+  // their current interval.
   const [recurringInterval, setRecurringInterval] = useState<'year' | 'month'>(
     defaultInterval ??
-      ((organization.subscriptionInterval as 'year' | 'month') || 'year')
+      ((organization.subscriptionInterval as 'year' | 'month') || 'month')
   );
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
     organization.subscriptionProductId || null
@@ -96,6 +98,42 @@ export default function BillingPlanPicker({
   // to Polar checkout). When changing an existing plan we keep the select→confirm
   // step so the user sees the current→new price comparison.
   const directCheckout = !currentProduct;
+
+  const plans = products
+    .filter((product) =>
+      // `free` no longer exists in the SDK's amountType union, but
+      // retired free-plan products can still come back from Polar's API.
+      product.prices.some((p) => (p.amountType as string) !== 'free')
+    )
+    .filter((product) => product.metadata.eventsLimit)
+    .filter((product) => product.recurringInterval === recurringInterval)
+    .map((product) => {
+      const limit = Number(product.metadata.eventsLimit);
+      return {
+        product,
+        id: product.id,
+        limit,
+        price: getPrice(product),
+        // A plan smaller than what was already used cannot be chosen.
+        disabled:
+          (limit > 0 && organization.subscriptionPeriodEventsCount >= limit) ||
+          !!product.disabled,
+      };
+    });
+  const recommendedId = recommendedPlanId(
+    plans,
+    organization.subscriptionPeriodEventsCount
+  );
+
+  // Someone without a plan starts with the one that fits already picked, so
+  // the page opens on an answer, not a list. Re-picked when the interval
+  // changes, because monthly and yearly plans are different products.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only when the fit changes
+  useEffect(() => {
+    if (directCheckout && recommendedId) {
+      setSelectedProductId(recommendedId);
+    }
+  }, [directCheckout, recommendedId]);
 
   const checkoutMutation = useMutation(
     trpc.subscription.checkout.mutationOptions({
@@ -147,27 +185,6 @@ export default function BillingPlanPicker({
       return;
     }
     startCheckout(selectedProduct);
-  };
-
-  const renderRowIndicator = (product: IPolarProduct) => {
-    if (directCheckout) {
-      if (pendingProductId === product.id) {
-        return (
-          <Loader2Icon className="size-4 animate-spin text-muted-foreground" />
-        );
-      }
-      return (
-        <ChevronRightIcon className="size-4 text-muted-foreground opacity-40 transition-opacity group-hover:opacity-100" />
-      );
-    }
-    if (selectedProductId === product.id) {
-      return (
-        <div className="center-center size-4 rounded-full bg-emerald-600 text-primary-foreground">
-          <CheckIcon className="size-2" />
-        </div>
-      );
-    }
-    return null;
   };
 
   const handleCancelSubscription = () => {
@@ -272,91 +289,136 @@ export default function BillingPlanPicker({
             </span>
           </div>
         )}
-        <div className="row -mb-2 items-center justify-between gap-2">
-          <div className="font-medium">
-            {recurringInterval === 'year' ? (
-              <>
-                Yearly billing —{' '}
-                <span className="text-emerald-500">2 months free</span>{' '}
-                <span className="font-normal text-muted-foreground">
-                  (pay for 10 months, get 12)
-                </span>
-              </>
-            ) : (
-              <>
-                Switch to yearly and get{' '}
-                <span className="text-emerald-500 underline">
-                  2 months for free
-                </span>
-              </>
-            )}
-          </div>
-
-          <Button
-            onClick={() =>
-              setRecurringInterval((p) => (p === 'year' ? 'month' : 'year'))
-            }
-            variant="outline"
+        <div className="row flex-wrap items-center justify-between gap-3">
+          <div
+            aria-label="Billing period"
+            className="inline-flex rounded-lg border bg-def-100 p-1"
+            role="group"
           >
-            {recurringInterval === 'year' ? 'Monthly' : 'Yearly'}
-            <ShuffleIcon className="ml-2 size-4" />
-          </Button>
-        </div>
-      </div>
-      <div className="col min-h-0 divide-y divide-border overflow-y-auto rounded-lg border">
-        {products
-          .filter((product) =>
-            // `free` no longer exists in the SDK's amountType union, but
-            // retired free-plan products can still come back from Polar's API.
-            product.prices.some((p) => (p.amountType as string) !== 'free')
-          )
-          .filter((product) => product.metadata.eventsLimit)
-          .filter((product) => product.recurringInterval === recurringInterval)
-          .map((product) => {
-            const price = getPrice(product);
-
-            const limit = product.metadata.eventsLimit
-              ? Number(product.metadata.eventsLimit)
-              : 0;
-
-            const isProductDisabled =
-              (limit > 0 &&
-                organization.subscriptionPeriodEventsCount >= limit) ||
-              !!product.disabled;
-
-            return (
+            {(['month', 'year'] as const).map((interval) => (
               <button
+                aria-pressed={recurringInterval === interval}
                 className={cn(
-                  'group row shrink-0 justify-between p-4 py-3 hover:bg-def-100',
-                  !directCheckout &&
-                    currentProduct?.id === product.id &&
-                    selectedProductId !== product.id &&
-                    'text-muted-foreground line-through',
-                  isProductDisabled && '!cursor-not-allowed opacity-50'
+                  'row items-center gap-2 rounded-md px-3 py-1.5 font-medium text-sm transition-colors',
+                  recurringInterval === interval
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
-                disabled={isProductDisabled || checkoutMutation.isPending}
-                key={product.id}
-                onClick={() =>
-                  directCheckout
-                    ? startCheckout(product)
-                    : setSelectedProductId(product.id)
-                }
+                key={interval}
+                onClick={() => setRecurringInterval(interval)}
                 type="button"
               >
-                <span className={'font-medium'}>{product.name}</span>
-                <div className="row items-center gap-2">
-                  <span className="font-bold">
-                    {number.currency(price)}
-                    <span className="font-normal text-muted-foreground">
-                      /{recurringInterval === 'year' ? 'yr' : 'mo'}
-                    </span>
+                {interval === 'month' ? 'Monthly' : 'Yearly'}
+                {interval === 'year' && (
+                  <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-emerald-600 text-xs dark:text-emerald-400">
+                    2 months free
                   </span>
-                  {renderRowIndicator(product)}
-                </div>
+                )}
               </button>
-            );
-          })}
+            ))}
+          </div>
+          <p className="text-muted-foreground text-sm">
+            {recurringInterval === 'year'
+              ? 'Pay for 10 months, get 12.'
+              : 'Every feature is in every plan. You only pick a volume.'}
+          </p>
+        </div>
       </div>
+      <div
+        aria-label="Plans"
+        className="col min-h-0 divide-y divide-border overflow-y-auto rounded-lg border"
+        role="radiogroup"
+      >
+        {productsQuery.isLoading && (
+          <div className="center-center p-8 text-muted-foreground">
+            <Loader2Icon className="size-5 animate-spin" />
+          </div>
+        )}
+        {plans.map(({ product, limit, price, disabled }) => {
+          const isSelected =
+            selectedProductId === product.id && !!selectedProduct;
+          const isCurrent = currentProduct?.id === product.id;
+          const perMonth =
+            recurringInterval === 'year' ? monthlyEquivalent(price) : price;
+          return (
+            <button
+              aria-checked={isSelected}
+              className={cn(
+                'group row shrink-0 items-center gap-3 p-4 py-3 text-left transition-colors',
+                isSelected ? 'bg-def-200' : 'hover:bg-def-100',
+                disabled && '!cursor-not-allowed opacity-50'
+              )}
+              disabled={disabled || checkoutMutation.isPending}
+              key={product.id}
+              onClick={() => setSelectedProductId(product.id)}
+              role="radio"
+              type="button"
+            >
+              <span
+                className={cn(
+                  'center-center size-4 shrink-0 rounded-full border',
+                  isSelected
+                    ? 'border-emerald-600 bg-emerald-600 text-white'
+                    : 'border-muted-foreground/40'
+                )}
+              >
+                {isSelected && <CheckIcon className="size-2.5" />}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="row flex-wrap items-center gap-2">
+                  <span className="font-semibold tabular-nums">
+                    {formatEventVolume(limit)}
+                  </span>
+                  <span className="text-muted-foreground">events a month</span>
+                  {product.id === recommendedId && (
+                    <Badge variant="success">Fits your usage</Badge>
+                  )}
+                  {isCurrent && <Badge variant="secondary">Current plan</Badge>}
+                </span>
+                {disabled && !product.disabled && (
+                  <span className="block text-muted-foreground text-xs">
+                    You have already used more than this.
+                  </span>
+                )}
+              </span>
+              <span className="shrink-0 text-right">
+                <span className="font-semibold tabular-nums">
+                  {number.currency(perMonth)}
+                </span>
+                <span className="text-muted-foreground"> / month</span>
+                {recurringInterval === 'year' && (
+                  <span className="block text-muted-foreground text-xs">
+                    {number.currency(price)} billed yearly
+                  </span>
+                )}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {directCheckout && (
+        <div className="col shrink-0 gap-3">
+          <Button
+            className="w-full"
+            disabled={!selectedProduct}
+            loading={checkoutMutation.isPending}
+            onClick={handleCheckout}
+            size="lg"
+          >
+            {selectedProduct
+              ? `Continue with ${formatEventVolume(Number(selectedProduct.metadata.eventsLimit))} events for ${number.currency(getPrice(selectedProduct))} a ${recurringInterval}`
+              : 'Pick a plan to continue'}
+          </Button>
+          <p className="row flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-muted-foreground text-xs">
+            <span className="row items-center gap-1">
+              <LockIcon className="size-3" />
+              Secure checkout by Polar
+            </span>
+            <span>First payment refundable for 14 days</span>
+            <span>Cancel any time</span>
+          </p>
+        </div>
+      )}
       {!directCheckout && <div className="shrink-0">{renderAction()}</div>}
     </>
   );

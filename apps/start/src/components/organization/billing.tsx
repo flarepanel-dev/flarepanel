@@ -2,6 +2,7 @@ import type { IServiceOrganization } from '@flarepanel/core';
 import { getSubscriptionStateMeta } from '@flarepanel/payments/subscription-state-meta';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { differenceInDays } from 'date-fns';
+import { CheckIcon } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
@@ -9,6 +10,7 @@ import { Progress } from '../ui/progress';
 import { Widget, WidgetBody, WidgetHead } from '../widget';
 import { BillingFaq } from './billing-faq';
 import BillingPlanPicker from './billing-plan-picker';
+import { usedPercent } from './billing-plans';
 import { projectUsage } from './billing-projection';
 import BillingUsage from './billing-usage';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +20,15 @@ import useWS from '@/hooks/use-ws';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal, useOnPushModal } from '@/modals';
 import { formatDate } from '@/utils/date';
+
+const PLAN_INCLUDES = [
+  'Unlimited websites, team members and dashboards',
+  'Funnels, retention, sessions and session replay',
+  'Cookieless tracking and your own data, exportable any time',
+  'AI assistant on your own OpenAI or Anthropic key',
+  'REST API and MCP access to your data',
+  'No extra charges if you go over: charts pause, events are kept',
+];
 
 interface Props {
   organization: IServiceOrganization;
@@ -360,35 +371,66 @@ export default function Billing({ organization }: Props) {
   const daysLeft = organization.subscriptionEndsAt
     ? differenceInDays(organization.subscriptionEndsAt, new Date()) + 1
     : null;
+  const trialLimit = organization.subscriptionPeriodEventsLimit;
+  const trialUsed = organization.subscriptionPeriodEventsCount;
+  // A workspace created after the email's one trial has no allowance.
+  const hasTrial = organization.isTrial && trialLimit > 0;
+  const trialUsedUp = hasTrial && trialUsed >= trialLimit;
 
   return (
     <div className="col gap-8">
       <Widget className="w-full">
-        <WidgetBody className="col gap-2">
-          <div className="row items-center gap-2">
-            <Badge variant={organization.isTrial ? 'secondary' : 'destructive'}>
-              {organization.isTrial ? 'Free trial' : 'No active plan'}
-            </Badge>
-            {organization.isTrial && daysLeft !== null && (
-              <span className="font-semibold">{daysLeft} days left</span>
-            )}
-          </div>
-          {organization.isTrial && organization.subscriptionEndsAt ? (
-            <p className="text-muted-foreground">
-              Your trial ends on {formatDate(organization.subscriptionEndsAt)}.
-              When it ends, your dashboards pause until you choose a plan — your
-              data keeps flowing in.
-            </p>
+        <WidgetBody className="col gap-3">
+          {hasTrial ? (
+            <>
+              <div className="row flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+                <div className="row items-center gap-2">
+                  <Badge variant={trialUsedUp ? 'warning' : 'secondary'}>
+                    Free trial
+                  </Badge>
+                  <span className="font-semibold">
+                    {trialUsedUp
+                      ? 'All trial events used'
+                      : daysLeft === 1
+                        ? 'Last day'
+                        : `${daysLeft} days left`}
+                  </span>
+                </div>
+                <span className="text-muted-foreground tabular-nums">
+                  {number.format(Math.min(trialUsed, trialLimit))} of{' '}
+                  {number.format(trialLimit)} events used
+                </span>
+              </div>
+              <Progress size="sm" value={usedPercent(trialUsed, trialLimit)} />
+              <p className="text-muted-foreground">
+                {trialUsedUp
+                  ? 'New events are not being recorded. Everything collected so far is kept: choose a plan below and recording starts again straight away.'
+                  : `Your trial runs until ${organization.subscriptionEndsAt ? formatDate(organization.subscriptionEndsAt) : 'its end date'} or ${number.format(trialLimit)} events, whichever comes first. Choose a plan any time to keep everything running without a gap.`}
+              </p>
+            </>
           ) : (
-            renderStatus()
+            <>
+              <div className="row items-center gap-2">
+                <Badge variant="destructive">No active plan</Badge>
+              </div>
+              {organization.isTrial ? (
+                <p className="text-muted-foreground">
+                  Each email address gets one free trial, and yours was used on
+                  an earlier workspace. Choose a plan below to start recording
+                  events here.
+                </p>
+              ) : (
+                renderStatus()
+              )}
+            </>
           )}
         </WidgetBody>
       </Widget>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Widget className="w-full self-start">
           <WidgetHead>
-            <div className="title">Choose a plan</div>
+            <div className="title">Choose your plan</div>
           </WidgetHead>
           <WidgetBody className="col gap-4">
             <BillingPlanPicker
@@ -398,7 +440,24 @@ export default function Billing({ organization }: Props) {
           </WidgetBody>
         </Widget>
 
-        <BillingFaq />
+        <div className="col gap-8">
+          <Widget className="w-full">
+            <WidgetHead>
+              <div className="title">Every plan includes</div>
+            </WidgetHead>
+            <WidgetBody>
+              <ul className="col gap-2">
+                {PLAN_INCLUDES.map((item) => (
+                  <li className="row items-start gap-2" key={item}>
+                    <CheckIcon className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </WidgetBody>
+          </Widget>
+          <BillingFaq />
+        </div>
       </div>
 
       <BillingUsage organization={organization} />
