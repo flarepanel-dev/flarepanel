@@ -129,7 +129,8 @@
     "TRUSTED_IP_HEADER_ORDER": "cf-connecting-ip",
     // Hot events kept in each project's Durable Object; R2 keeps them all.
     "FLAREPANEL_EVENT_RETENTION_DAYS": "90",
-    // Checked every 5 minutes by the cron; failures email OPS_ALERT_EMAIL.
+    // Checked every 5 minutes by the cron; failures go to the operator by
+    // email (OPS_ALERT_EMAIL) and/or ntfy push (OPS_ALERT_NTFY_URL).
     "UPTIME_URLS": "https://analytics.example.com/login",
     // "Give feedback" in the dashboard: an inbox to email it to (and/or the
     // FEEDBACK_GITHUB_TOKEN secret to open GitHub issues). Empty keeps the

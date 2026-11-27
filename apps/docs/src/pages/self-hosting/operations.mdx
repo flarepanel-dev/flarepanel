@@ -16,10 +16,11 @@ Set an operator address on the API Worker:
 
 ```bash
 cd apps/worker
-bunx wrangler secret put OPS_ALERT_EMAIL   # where alerts go
+bunx wrangler secret put OPS_ALERT_EMAIL      # where alert emails go
+bunx wrangler secret put OPS_ALERT_NTFY_URL   # or a push: your ntfy topic address
 ```
 
-It needs the `send_email` binding from [Deploy](/self-hosting/deploy#email). Then the API Worker emails that address, at most once an hour per problem, when:
+Set either or both. Email needs the `send_email` binding from [Deploy](/self-hosting/deploy#email). The push goes through [ntfy](https://ntfy.sh): give the full topic address, for example `https://ntfy.sh/<a-long-random-name>`, and subscribe to that topic in the ntfy app. A topic on the public server is only as private as its name, so the push carries the problem and where to look, not the job's data or error text; for a protected topic or your own ntfy server also set `OPS_ALERT_NTFY_TOKEN`. The API Worker then alerts you, at most once an hour per problem, when:
 
 - **a background job fails for good**: its retries are used up, or Cloudflare Queues gave up on it (a crash, CPU limit or timeout on every delivery). Each failed job is also kept in R2 as `dead-letters/<date>/<queue>-<job>-<id>-<time>.json`, with its data and error, whether or not an email is set.
 - **an uptime check fails**: every 5 minutes the cron checks D1, R2 and the sites in `UPTIME_URLS` (in `apps/worker/wrangler.jsonc`; set it to your dashboard, docs and landing addresses). A 5xx answer, a timeout or a storage error counts as a failure.

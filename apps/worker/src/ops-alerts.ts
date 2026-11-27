@@ -1,14 +1,15 @@
 /**
  * Jobs that fail for good. On Workers the logs are sampled, so a failure line
  * alone can be lost: each failed job is also kept in R2 under
- * `dead-letters/<date>/`, and the operator (OPS_ALERT_EMAIL) gets one email per
- * job name and hour. Two ways a job ends here:
+ * `dead-letters/<date>/`, and the operator gets one alert per job name and
+ * hour, by email, ntfy push or both (see ops-notify.ts). Two ways a job ends here:
  * - its own retries are used up (`job failed terminally`);
  * - Cloudflare Queues gave up on the message (a crash, CPU limit or timeout on
  *   every delivery) and moved it to the dead letter queue.
  */
 import type { Logger } from '@flarepanel/core';
 import { getPlatformStores } from '@flarepanel/platform';
+import { hasOpsChannel, notifyOperator, type OpsNotifyEnv } from './ops-notify';
 
 export const DEAD_LETTER_QUEUE = 'flarepanel-jobs-dlq';
 export const DEAD_LETTER_PREFIX = 'dead-letters/';
@@ -26,10 +27,8 @@ export interface FailedJob {
   data?: unknown;
 }
 
-export interface OpsAlertEnv {
+export interface OpsAlertEnv extends OpsNotifyEnv {
   EVENTS_ARCHIVE?: R2Bucket;
-  EMAIL?: SendEmail;
-  OPS_ALERT_EMAIL?: string;
 }
 
 export function deadLetterKey(failure: FailedJob, now: Date): string {
@@ -81,8 +80,7 @@ async function alertOperator(
   failure: FailedJob,
   key: string
 ) {
-  const to = env.OPS_ALERT_EMAIL;
-  if (!(to && env.EMAIL)) {
+  if (!hasOpsChannel(env)) {
     return;
   }
   const job = failure.job ?? failure.queue ?? 'unknown job';
@@ -95,18 +93,17 @@ async function alertOperator(
     if (!first) {
       return;
     }
-    await env.EMAIL.send({
-      from: process.env.EMAIL_SENDER ?? 'hello@flarepanel.dev',
-      to,
-      subject: `FlarePanel: job "${job}" failed`,
+    await notifyOperator(env, logger, {
+      title: `FlarePanel: job "${job}" failed`,
       text: [
         `The job "${job}" failed after ${failure.attempts} attempt(s) (${failure.source}).`,
         '',
         `Error: ${failure.error?.slice(0, 500) ?? 'none recorded'}`,
         '',
         `The job and its data are kept in R2: ${key}`,
-        'More failures of this job in the next hour are kept and logged, without another email.',
+        'More failures of this job in the next hour are kept and logged, without another alert.',
       ].join('\n'),
+      push: `Failed after ${failure.attempts} attempt(s) (${failure.source}). Kept in R2: ${key}`,
     });
   } catch (error) {
     logger.error({ err: error }, 'Could not send the failed-job alert');

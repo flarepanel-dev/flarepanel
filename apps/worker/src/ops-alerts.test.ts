@@ -112,3 +112,38 @@ describe('failed jobs', () => {
     expect(puts[0]?.key).toContain('import-import-i1');
   });
 });
+
+describe('ntfy push alerts', () => {
+  beforeEach(() => configurePlatformStores(createMemoryStores()));
+
+  it('pushes a short notice without the job data or error text', async () => {
+    const calls: { url: string; init: RequestInit }[] = [];
+    const fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(((
+      url: string,
+      init: RequestInit
+    ) => {
+      calls.push({ url, init });
+      return Promise.resolve(new Response('ok'));
+    }) as unknown as typeof fetch);
+    const { env, emails } = fakeEnv(false);
+    (env as OpsAlertEnv).OPS_ALERT_NTFY_URL = 'https://ntfy.example/ops-topic';
+    await reportFailedJob(env, logger, {
+      source: 'retries-exhausted',
+      queue: 'cron',
+      job: 'insights',
+      attempts: 3,
+      error: 'secret-looking detail',
+      data: { projectId: 'p1' },
+    });
+    fetchSpy.mockRestore();
+    expect(emails).toHaveLength(0);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toBe('https://ntfy.example/ops-topic');
+    const headers = calls[0]?.init.headers as Record<string, string>;
+    expect(headers.Title).toBe('FlarePanel: job "insights" failed');
+    const body = String(calls[0]?.init.body);
+    expect(body).toContain('3 attempt(s)');
+    expect(body).not.toContain('secret-looking detail');
+    expect(body).not.toContain('p1');
+  });
+});

@@ -14,7 +14,7 @@
 <p align="center">
   <a href="https://flarepanel.dev">Website</a> ·
   <a href="https://docs.flarepanel.dev">Docs</a> ·
-  <a href="https://dashboard.flarepanel.dev/onboarding">Get early access</a> ·
+  <a href="https://dashboard.flarepanel.dev/onboarding">Start free trial</a> ·
   <a href="https://flarepanel.dev/blog">Blog</a> ·
   <a href="https://status.flarepanel.dev">Status</a> ·
   <a href="https://x.com/FlarePanel">X</a>
@@ -34,8 +34,8 @@ run. Every part runs on Cloudflare's developer platform:
 | Accounts, projects and settings | D1 |
 | Background work (exports, insights, notifications) | Queues and Cron Triggers |
 
-> **Early access.** Tracking, the dashboards, sessions and replay work today on
-> the hosted service. Some reports are still being moved over; see
+> The hosted service is open: every account starts with a 30-day free trial.
+> For what each part does today, see
 > [what works today](https://docs.flarepanel.dev/getting-started/status).
 
 ## Use it

@@ -31,7 +31,7 @@ const COLUMNS = [
     title: 'Account',
     links: [
       { label: 'Sign in', href: site.signIn },
-      { label: 'Get early access', href: site.signUp },
+      { label: 'Start free trial', href: site.signUp },
     ],
   },
   // Hidden while LEGAL_DRAFT (lib/legal.ts) is true.
@@ -60,7 +60,7 @@ export function ClosingCta() {
           </h2>
           <p className="mt-5 max-w-[56ch] text-[16px] text-muted leading-[1.6]">
             FlarePanel is built in the open. Star the repository to follow
-            along, or join early access and try the hosted dashboard.
+            along, or start a free trial of the hosted dashboard.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">

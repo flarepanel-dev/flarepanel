@@ -126,7 +126,8 @@
     "TRUSTED_IP_HEADER_ORDER": "cf-connecting-ip",
     // Hot events kept in each project's Durable Object; R2 keeps them all.
     "FLAREPANEL_EVENT_RETENTION_DAYS": "90",
-    // Checked every 5 minutes by the cron; failures email OPS_ALERT_EMAIL.
+    // Checked every 5 minutes by the cron; failures go to the operator as an
+    // ntfy push (secret OPS_ALERT_NTFY_URL) and/or an email (OPS_ALERT_EMAIL).
     "UPTIME_URLS": "https://dashboard.flarepanel.dev/login,https://docs.flarepanel.dev/,https://flarepanel.dev/",
     // "Give feedback" in the dashboard emails here (forwarded to the team).
     // Do not set FEEDBACK_GITHUB_TOKEN here: issues would go to the public

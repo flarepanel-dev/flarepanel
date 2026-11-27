@@ -1,12 +1,13 @@
 /**
  * A small uptime check run by the API Worker's own cron every 5 minutes: the
  * public sites in UPTIME_URLS answer, and the API's D1 and R2 respond. A
- * failure is logged and emailed to OPS_ALERT_EMAIL (one email per target and
+ * failure is logged and sent to the operator by email, ntfy push or both (one alert per target and
  * hour). It cannot notice the API Worker itself being down; for that, point an
  * external monitor at /healthcheck (see the operations docs).
  */
 import type { Logger } from '@flarepanel/core';
 import { getPlatformStores } from '@flarepanel/platform';
+import { hasOpsChannel, notifyOperator } from './ops-notify';
 
 export const UPTIME_EVERY_MINUTES = 5;
 const TIMEOUT_MS = 10_000;
@@ -17,6 +18,8 @@ export interface UptimeEnv {
   EVENTS_ARCHIVE?: R2Bucket;
   EMAIL?: SendEmail;
   OPS_ALERT_EMAIL?: string;
+  OPS_ALERT_NTFY_URL?: string;
+  OPS_ALERT_NTFY_TOKEN?: string;
   UPTIME_URLS?: string;
 }
 
@@ -94,8 +97,7 @@ export async function runUptimeCheck(
 }
 
 async function alert(env: UptimeEnv, logger: Logger, failure: UptimeFailure) {
-  const to = env.OPS_ALERT_EMAIL;
-  if (!(to && env.EMAIL)) {
+  if (!hasOpsChannel(env)) {
     return;
   }
   try {
@@ -107,15 +109,14 @@ async function alert(env: UptimeEnv, logger: Logger, failure: UptimeFailure) {
     if (!first) {
       return;
     }
-    await env.EMAIL.send({
-      from: process.env.EMAIL_SENDER ?? 'hello@flarepanel.dev',
-      to,
-      subject: `FlarePanel: ${failure.target} is failing`,
+    await notifyOperator(env, logger, {
+      title: `FlarePanel: ${failure.target} is failing`,
       text: [
         `The uptime check could not reach ${failure.target}: ${failure.reason}.`,
         '',
-        `Checked every ${UPTIME_EVERY_MINUTES} minutes; no further email for this target in the next hour.`,
+        `Checked every ${UPTIME_EVERY_MINUTES} minutes; no further alert for this target in the next hour.`,
       ].join('\n'),
+      push: `The uptime check could not reach it: ${failure.reason.slice(0, 200)}. No further alert for an hour.`,
     });
   } catch (error) {
     logger.error({ err: error }, 'Could not send the uptime alert');

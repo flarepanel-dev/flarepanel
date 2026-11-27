@@ -35,7 +35,7 @@ export function GitHubButton({ label = 'Star on GitHub' }: { label?: string }) {
 }
 
 export function EarlyAccessButton({
-  label = 'Get early access',
+  label = 'Start free trial',
 }: {
   label?: string;
 }) {

@@ -120,6 +120,10 @@ export interface Env {
   LOADER?: WorkerLoader;
   /** Where failed-job alerts go (one per job and hour). Unset: no email. */
   OPS_ALERT_EMAIL?: string;
+  /** Secret: an ntfy topic address for the same alerts as push notifications. */
+  OPS_ALERT_NTFY_URL?: string;
+  /** Secret: access token for a protected ntfy topic. */
+  OPS_ALERT_NTFY_TOKEN?: string;
   /** Public API origin; links to feedback screenshots are built on it. */
   API_URL?: string;
   /** Secret: enables the /__ops recovery endpoints (see ops-routes.ts). */
