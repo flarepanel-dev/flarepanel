@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
   formatEventVolume,
+  formatPlanPrice,
   monthlyEquivalent,
   recommendedPlanId,
 } from './billing-plans';
@@ -383,12 +384,12 @@ export default function BillingPlanPicker({
               </span>
               <span className="shrink-0 text-right">
                 <span className="font-semibold tabular-nums">
-                  {number.currency(perMonth)}
+                  {formatPlanPrice(perMonth)}
                 </span>
                 <span className="text-muted-foreground"> / month</span>
                 {recurringInterval === 'year' && (
                   <span className="block text-muted-foreground text-xs">
-                    {number.currency(price)} billed yearly
+                    {formatPlanPrice(price)} billed yearly
                   </span>
                 )}
               </span>
@@ -406,7 +407,7 @@ export default function BillingPlanPicker({
             size="lg"
           >
             {selectedProduct
-              ? `Continue with ${formatEventVolume(Number(selectedProduct.metadata.eventsLimit))} events for ${number.currency(getPrice(selectedProduct))} a ${recurringInterval}`
+              ? `Continue with ${formatEventVolume(Number(selectedProduct.metadata.eventsLimit))} events for ${formatPlanPrice(getPrice(selectedProduct))} a ${recurringInterval}`
               : 'Pick a plan to continue'}
           </Button>
           <p className="row flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-muted-foreground text-xs">

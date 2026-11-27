@@ -34,3 +34,14 @@ export function usedPercent(used: number, limit: number): number {
   }
   return Math.min(100, Math.round((used / limit) * 100));
 }
+
+/** `10` → `$10`, `8.333` → `$8.33`: whole dollars stay short, cents are exact. */
+export function formatPlanPrice(amount: number): string {
+  const whole = Number.isInteger(amount);
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: whole ? 0 : 2,
+  }).format(amount);
+}

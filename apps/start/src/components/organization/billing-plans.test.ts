@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatEventVolume,
+  formatPlanPrice,
   monthlyEquivalent,
   recommendedPlanId,
   usedPercent,
@@ -35,5 +36,11 @@ describe('billing plans', () => {
     expect(usedPercent(60_000, 100_000)).toBe(60);
     expect(usedPercent(120, 100)).toBe(100);
     expect(usedPercent(0, 0)).toBe(100);
+  });
+
+  it('shows whole dollars short and cents in full', () => {
+    expect(formatPlanPrice(10)).toBe('$10');
+    expect(formatPlanPrice(100 / 12)).toBe('$8.33');
+    expect(formatPlanPrice(1250)).toBe('$1,250');
   });
 });
