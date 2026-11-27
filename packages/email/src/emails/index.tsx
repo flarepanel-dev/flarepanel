@@ -147,7 +147,7 @@ export const templates = {
   },
   'usage-near-limit': {
     subject: (data: z.infer<typeof zUsageNearLimit>) =>
-      `You've used ${Math.round((data.eventsCount / data.eventsLimit) * 100)}% of your monthly events`,
+      `You've used ${Math.round((data.eventsCount / data.eventsLimit) * 100)}% of this month's events`,
     Component: UsageNearLimit,
     schema: zUsageNearLimit,
     category: 'product_alerts' as const,
@@ -165,7 +165,7 @@ export const templates = {
     subject: (data: z.infer<typeof zUsageLimitExceeded>) =>
       data.isTrial
         ? 'Your free trial has used all its events'
-        : 'Event limit reached — charts paused, data still collected',
+        : "You've hit this month's event limit (your data is safe)",
     Component: UsageLimitExceeded,
     schema: zUsageLimitExceeded,
     category: 'product_alerts' as const,

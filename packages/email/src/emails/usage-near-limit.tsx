@@ -33,21 +33,22 @@ export function UsageNearLimit({
     <Layout unsubscribeUrl={unsubscribeUrl}>
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
       <Text>
-        Heads up: {organizationName} has used {formatNumber(eventsCount)} of its{' '}
-        {formatNumber(eventsLimit)} monthly events ({percent}%).
+        {organizationName} is having a busy month: you've used{' '}
+        {formatNumber(eventsCount)} of your {formatNumber(eventsLimit)} events (
+        {percent}%).
       </Text>
       <Text>
         {isTrial
-          ? 'This is your free trial: when it reaches the limit we stop recording new events until you choose a plan. Everything collected so far is kept.'
-          : 'If you go over the limit, we keep collecting every event — nothing is lost — but your charts stop showing new data until you upgrade or the next billing cycle starts.'}
+          ? 'This is your free trial, so when it reaches the limit we stop recording new events until you choose a plan. Everything recorded so far stays.'
+          : 'Nothing breaks if you go over. We keep recording every event and never charge extra. The only change: your charts pause until you move up a plan or your next billing period starts, and then everything recorded in between shows up.'}
       </Text>
       <Text>
         <Button href={withUtm(billingUrl, 'usage-near-limit')}>
-          See usage &amp; plans
+          See usage and plans
         </Button>
       </Text>
       <Text>
-        Questions about which plan fits? Reply to this email and I'll help you
+        Not sure which plan fits? Just reply to this email and we'll help you
         pick.
       </Text>
       <Text>The FlarePanel team</Text>

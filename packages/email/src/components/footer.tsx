@@ -1,6 +1,6 @@
 import { Hr, Link, Row, Section, Text } from '@react-email/components';
 
-const GITHUB_URL = 'https://github.com/flarepanel-dev/flarepanel';
+const DOCS_URL = 'https://docs.flarepanel.dev';
 const SITE_URL = 'https://flarepanel.dev';
 const CONTACT = 'hello@flarepanel.dev';
 
@@ -10,7 +10,7 @@ export function Footer({ unsubscribeUrl }: { unsubscribeUrl?: string }) {
       <Hr />
       <Section className="w-full p-6">
         <Text className="font-regular text-[16px]" style={{ margin: 0 }}>
-          FlarePanel: open-source web and product analytics on Cloudflare.
+          FlarePanel: web and product analytics, without cookies.
         </Text>
 
         <Row className="mt-4">
@@ -19,8 +19,8 @@ export function Footer({ unsubscribeUrl }: { unsubscribeUrl?: string }) {
               flarepanel.dev
             </Link>
             {' · '}
-            <Link className="text-[#707070]" href={GITHUB_URL}>
-              GitHub
+            <Link className="text-[#707070]" href={DOCS_URL}>
+              Docs
             </Link>
             {' · '}
             <Link className="text-[#707070]" href={`mailto:${CONTACT}`}>

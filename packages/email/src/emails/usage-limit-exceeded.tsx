@@ -2,6 +2,7 @@ import { Text } from '@react-email/components';
 import { z } from 'zod';
 import { Button } from '../components/button';
 import { Layout } from '../components/layout';
+import { List } from '../components/list';
 import { withUtm } from '../utm';
 
 export const zUsageLimitExceeded = z.object({
@@ -44,7 +45,7 @@ export function UsageLimitExceeded({
           </Button>
         </Text>
         <Text>
-          Not sure which plan fits? Reply to this email and I'll help.
+          Not sure which plan fits? Reply to this email and we'll help.
         </Text>
         <Text>The FlarePanel team</Text>
       </Layout>
@@ -54,27 +55,27 @@ export function UsageLimitExceeded({
     <Layout unsubscribeUrl={unsubscribeUrl}>
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
       <Text>
-        {organizationName} has reached its monthly limit of{' '}
-        {formatNumber(eventsLimit)} events.
+        {organizationName} has used all {formatNumber(eventsLimit)} events in
+        this month's plan. Looks like a busier month than planned.
       </Text>
       <Text>
-        Important: we're still collecting every incoming event, so nothing is
-        being lost. But your charts are paused at the moment you hit the limit —
-        new data won't show until you upgrade or your next billing cycle starts.
+        Your data is safe: we're still recording every event, and we won't
+        charge you extra. For now, your charts are paused at the point you hit
+        the limit.
       </Text>
-      <Text>
-        Upgrading takes a minute and unlocks everything collected in the
-        meantime.
-      </Text>
+      <Text>You have two ways forward:</Text>
+      <List
+        items={[
+          'Upgrade, and your charts are back in about a minute, including everything recorded since.',
+          'Wait, and they come back by themselves when your next billing period starts.',
+        ]}
+      />
       <Text>
         <Button href={withUtm(billingUrl, 'usage-limit-exceeded')}>
           Upgrade your plan
         </Button>
       </Text>
-      <Text>
-        If this month was an outlier, you can also just wait for the cycle to
-        reset. And if you're stuck between plans, reply and I'll help.
-      </Text>
+      <Text>Stuck between two plans? Reply and we'll help you choose.</Text>
       <Text>The FlarePanel team</Text>
     </Layout>
   );
