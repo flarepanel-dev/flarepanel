@@ -185,8 +185,9 @@ export const op = new FlarePanel({
       <p>
         FlarePanel runs entirely on Cloudflare: Workers, Durable Objects, D1, R2
         and Queues, with no servers or databases to run. You can use the hosted
-        service, which is free while billing is set up, or deploy the same
-        AGPL-3.0 code to your own Cloudflare account. The{' '}
+        service, which starts with a 30-day free trial, or deploy the same
+        AGPL-3.0 code to your own Cloudflare account. If you would rather keep a
+        server, the same code also runs with Docker. The{' '}
         <A href="/blog/how-flarepanel-runs-on-cloudflare">architecture post</A>{' '}
         has the details.
       </p>

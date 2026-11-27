@@ -24,7 +24,7 @@ const SUBPROCESSORS = [
   {
     name: 'Polar Software, Inc.',
     purpose:
-      'Sells paid plans as merchant of record: checkout, payments, invoices, tax and subscriptions (once billing is switched on)',
+      'Sells paid plans as merchant of record: checkout, payments, invoices, tax and subscriptions',
     data: 'Account holders who buy a plan: name, email, billing details, plan',
     location: 'United States',
     link: 'https://polar.sh/legal/privacy',

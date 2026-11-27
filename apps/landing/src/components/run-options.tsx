@@ -5,7 +5,7 @@ import { site } from '@/lib/site';
 const OPTIONS = [
   {
     name: 'FlarePanel Cloud',
-    status: 'Early access',
+    status: '30-day free trial',
     live: true,
     body: 'We run it for you. Create an account, add a project, paste the SDK snippet.',
     points: [
@@ -13,21 +13,21 @@ const OPTIONS = [
       'Nothing to install or keep running',
       'Priced per event, from $1 a month',
     ],
-    cta: { label: 'Get early access', href: site.signUp },
+    cta: { label: 'Start free trial', href: site.signUp },
   },
   {
-    name: 'Your own Cloudflare account',
-    status: 'Manual deploy',
+    name: 'Self-hosted',
+    status: 'Cloudflare or Docker',
     live: true,
-    body: 'Deploy the same code to your own Workers, D1, Durable Objects and R2.',
+    body: 'Deploy the same code to your own Cloudflare account, or run it with Docker on your own server.',
     points: [
       'Your data never leaves your account',
-      'You pay Cloudflare directly, per use',
+      'You pay Cloudflare or your server, nothing to us',
       'Same open-source code as the hosted version',
     ],
     cta: {
-      label: 'Read the deploy guide',
-      href: `${site.docs}/self-hosting/deploy`,
+      label: 'Choose how to self-host',
+      href: `${site.docs}/self-hosting`,
     },
   },
 ] as const;
@@ -45,8 +45,9 @@ export function RunOptions() {
           title="Run it on our Cloudflare, or on yours."
         >
           <p>
-            One codebase, two ways to use it. Start hosted, move to your own
-            account later, and keep your SDK setup either way.
+            One codebase. Start hosted, or self-host it: on your own Cloudflare
+            account with nothing to maintain, or with Docker on your own server.
+            Your SDK setup stays the same either way.
           </p>
         </SectionHeading>
         <div className="mt-14 overflow-hidden rounded-2xl border border-rule">
@@ -81,16 +82,20 @@ export function RunOptions() {
               </div>
             ))}
             {[
-              ['Who runs it', 'We do', 'You do, on your Cloudflare account'],
+              [
+                'Who runs it',
+                'We do',
+                'You do, on Cloudflare or your own server',
+              ],
               [
                 'Where data lives',
                 'Our Cloudflare account',
-                'Never leaves your account',
+                'Never leaves your account or server',
               ],
               [
                 'How you pay',
                 'Per event, from $1 a month',
-                'Cloudflare directly, per use',
+                'Cloudflare per use, or your server',
               ],
               ['The code', 'Open source', 'The same open-source code'],
             ].map(([label, cloud, own]) => [

@@ -8,15 +8,15 @@ import { site } from '@/lib/site';
 const QUESTIONS: Array<{ q: string; a: ReactNode; text?: string }> = [
   {
     q: 'Can I use FlarePanel today?',
-    text: 'Yes, in early access. Create an account, add the script or an SDK, and events show up in the dashboard within seconds. Early access is free while billing is being set up. You can also self-host it on your own Cloudflare account.',
+    text: 'Yes. Create an account, add the script or an SDK, and events show up in the dashboard within seconds. The hosted service starts with a 30-day free trial, no card needed. You can also self-host it, on your own Cloudflare account or with Docker on your own server.',
     a: (
       <>
-        Yes, in early access. Create an account, add the script or an SDK, and
-        events show up in the dashboard within seconds. Early access is free
-        while billing is being set up. You can also{' '}
-        <TextLink href={`${site.docs}/self-hosting`}>self-host</TextLink> it on
-        your own Cloudflare account. Follow progress on{' '}
-        <TextLink href={site.github}>GitHub</TextLink> and{' '}
+        Yes. Create an account, add the script or an SDK, and events show up in
+        the dashboard within seconds. The hosted service starts with a 30-day
+        free trial, no card needed. You can also{' '}
+        <TextLink href={`${site.docs}/self-hosting`}>self-host</TextLink> it, on
+        your own Cloudflare account or with Docker on your own server. Follow
+        progress on <TextLink href={site.github}>GitHub</TextLink> and{' '}
         <TextLink href={site.x}>X</TextLink>.
       </>
     ),
@@ -48,11 +48,11 @@ const QUESTIONS: Array<{ q: string; a: ReactNode; text?: string }> = [
   },
   {
     q: 'Where is my data stored?',
-    a: 'On Cloudflare: accounts and settings in D1, events in a Durable Object per project, and the raw archive in R2. Self-hosted installs keep everything in your own Cloudflare account.',
+    a: 'On Cloudflare: accounts and settings in D1, events in a Durable Object per project, and the raw archive in R2. Self-hosted installs keep everything in your own Cloudflare account, or in ClickHouse on your own server.',
   },
   {
     q: 'What will it cost?',
-    a: 'Hosted plans are priced by events a month, from $1 for 5,000 events, with a 30-day free trial and every feature in every plan. See the pricing page. Self-hosting is free and open source; you pay Cloudflare directly for what you use, on a Workers Paid plan.',
+    a: 'Hosted plans are priced by events a month, from $1 for 5,000 events, with a 30-day free trial and every feature in every plan. See the pricing page. Self-hosting is free and open source: you pay Cloudflare directly for what you use (Workers Paid plan), or for your own server.',
   },
   {
     q: 'Is FlarePanel made by Cloudflare?',

@@ -53,7 +53,7 @@ export const FLAREPANEL: Record<RowKey, Fact> = {
   license: { value: 'AGPL-3.0', note: 'SDKs MIT' },
   selfHost: {
     value: 'Yes, every feature',
-    note: 'On your own Cloudflare account, no servers to run',
+    note: 'On your own Cloudflare account, or with Docker on your own server',
   },
   hosting: {
     value: "Cloudflare's global network",

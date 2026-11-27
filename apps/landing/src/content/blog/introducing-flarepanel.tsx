@@ -163,9 +163,8 @@ export default function Post() {
       <p>
         <strong>Hosted</strong> at flarepanel.dev is priced by monthly events,
         with every feature in every plan and a 30-day trial. You get an email at
-        80% of your plan’s events and never an overage charge. Billing is still
-        being set up, so early access is free for now. The plans are on the{' '}
-        <A href="/pricing">pricing page</A>.
+        80% of your plan’s events and never an overage charge. The plans are on
+        the <A href="/pricing">pricing page</A>.
       </p>
       <p>
         <strong>Self-hosted</strong> puts everything in your own Cloudflare
@@ -176,6 +175,11 @@ export default function Post() {
         on Cloudflare DNS. Follow{' '}
         <A href="https://docs.flarepanel.dev/self-hosting/deploy">
           Deploy to Cloudflare
+        </A>
+        . Since November 2026 the same code also runs with Docker on your own
+        server:{' '}
+        <A href="https://docs.flarepanel.dev/self-hosting">
+          choose how to self-host
         </A>
         .
       </p>

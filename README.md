@@ -42,7 +42,8 @@ run. Every part runs on Cloudflare's developer platform:
 
 - **Hosted:** create an account at
   [dashboard.flarepanel.dev](https://dashboard.flarepanel.dev/onboarding), add a
-  project and paste the snippet. Early access is free while billing is set up.
+  project and paste the snippet. It starts with a 30-day free trial, no card
+  needed.
 - **Self-hosted on Cloudflare:** deploy the same code to your own Cloudflare
   account. It needs the Workers Paid plan. Follow the
   [deploy guide](https://docs.flarepanel.dev/self-hosting/deploy).

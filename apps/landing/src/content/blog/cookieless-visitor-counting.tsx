@@ -207,7 +207,7 @@ export function generateDeviceId({ salt, ua, ip, origin }) {
         <A href="https://dashboard.flarepanel.dev/onboarding">
           create a project
         </A>
-        . Early access is free.
+        . The first 30 days are free.
       </p>
     </>
   );

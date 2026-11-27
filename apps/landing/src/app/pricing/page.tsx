@@ -38,7 +38,7 @@ const PROMISES = [
   },
   {
     title: 'No lock-in',
-    body: 'Export everything through the API, or move to your own Cloudflare account with the same code.',
+    body: 'Export everything through the API, or move to your own Cloudflare account or server with the same code.',
   },
 ];
 
@@ -77,7 +77,7 @@ const QUESTIONS = [
   },
   {
     q: 'Is self-hosting limited?',
-    a: 'No. The open-source code runs on your own Cloudflare account with no event limits. You pay Cloudflare directly for what you use.',
+    a: 'No. The open-source code runs on your own Cloudflare account, or with Docker on your own server, with no event limits. You pay Cloudflare or your server host, nothing to us.',
   },
   {
     q: 'We track more than 50M events. Can you help?',
@@ -112,10 +112,10 @@ export default function PricingPage() {
               <PlanPicker />
             </div>
             <p className="mt-5 text-[13.5px] text-faint leading-[1.6]">
-              Early access: billing is not switched on yet, so accounts are free
-              for now. These are the prices that will apply. Payments are
-              processed by Polar as merchant of record, and your first payment
-              can be <Link href="/refunds">refunded within 14 days</Link>.
+              Every account starts with a 30-day free trial, no card needed.
+              Payments are processed by Polar as merchant of record, and your
+              first payment can be{' '}
+              <Link href="/refunds">refunded within 14 days</Link>.
             </p>
           </Container>
         </section>
@@ -177,7 +177,7 @@ export default function PricingPage() {
                   Self-hosted
                 </div>
                 <h3 className="mt-3 font-semibold text-[26px] tracking-[-0.02em]">
-                  Run it on your Cloudflare
+                  Run it yourself
                 </h3>
                 <div className="mt-4 flex items-baseline gap-2">
                   <span className="font-semibold text-[40px] tracking-[-0.03em]">
@@ -215,7 +215,7 @@ export default function PricingPage() {
                   {[
                     'The same open-source code, no event limits',
                     'Your data never leaves your account',
-                    'You pay Cloudflare directly, per use',
+                    'On your Cloudflare account, or with Docker on your server',
                   ].map((point) => (
                     <li className="flex items-start gap-2.5" key={point}>
                       <Check

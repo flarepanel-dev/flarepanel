@@ -104,7 +104,8 @@ export default async function BlogPost({
               Try FlarePanel
             </h2>
             <p className="mt-2 text-[15px] text-muted leading-[1.6]">
-              Open-source analytics on Cloudflare. Free while in early access.
+              Open-source analytics on Cloudflare. Free for 30 days, no card
+              needed.
             </p>
             <div className="mt-5">
               <EarlyAccessButton />

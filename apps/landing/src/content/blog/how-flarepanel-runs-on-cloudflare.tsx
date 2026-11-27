@@ -239,7 +239,7 @@ alarm: close idle sessions (session_end), checkpoint,
         <A href="https://dashboard.flarepanel.dev/onboarding">
           create a project on the hosted service
         </A>
-        , which is free during early access.
+        , which is free for the first 30 days.
       </p>
     </>
   );
