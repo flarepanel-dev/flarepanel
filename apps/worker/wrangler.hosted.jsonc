@@ -116,8 +116,9 @@
     "NODE_ENV": "production",
     // No SELF_HOSTED: billing, plan limits and trial guards are on. Any value
     // (even "false") would switch them off in the dashboard.
-    // Sign-ups closed until launch; invited users can still join.
-    "ALLOW_REGISTRATION": "false",
+    // Sign-ups are open. A new account must confirm its email, temporary
+    // inboxes are refused, and email sign-ups are limited per address.
+    "ALLOW_REGISTRATION": "true",
     "API_URL": "https://api.flarepanel.dev",
     "DASHBOARD_URL": "https://dashboard.flarepanel.dev",
     "CUSTOM_COOKIE_DOMAIN": ".flarepanel.dev",

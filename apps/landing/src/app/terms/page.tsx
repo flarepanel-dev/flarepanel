@@ -75,11 +75,6 @@ export default function TermsPage() {
       <h2>4. Plans, payment and refunds</h2>
       <ul>
         <li>
-          <strong>Early access.</strong> While billing is not switched on,
-          FlarePanel Cloud is free. Nothing is ever charged unless you choose a
-          paid plan yourself.
-        </li>
-        <li>
           <strong>Trial.</strong> Your first workspace starts with a{' '}
           {TRIAL_DAYS}-day free trial of up to {formatEvents(TRIAL_EVENTS)}{' '}
           events, with no card needed. There is one trial per person and email
