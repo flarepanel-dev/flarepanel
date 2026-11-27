@@ -1,0 +1,175 @@
+# FlarePanel on your own server (Docker).
+#
+#   cp env.example .env      # then edit .env
+#   docker compose up -d
+#
+# One `app` container runs the API and the background jobs (ROLE=all), so the
+# SQLite metadata file has a single writer. ClickHouse holds events, Redis the
+# buffers and queues, Redpanda the event stream. Put a TLS proxy in front (see
+# README.md), or start the bundled Caddy with `--profile proxy`.
+#
+# The Cloudflare deployment needs none of this: see docs.flarepanel.dev.
+
+name: flarepanel
+
+x-app-env: &app-env
+  NODE_ENV: production
+  SELF_HOSTED: "true"
+  DATABASE_URL: file:/data/flarepanel.db
+  CLICKHOUSE_URL: http://clickhouse:8123/flarepanel
+  REDIS_URL: redis://redis:6379
+  KAFKA_BROKERS: redpanda:9092
+  API_URL: ${API_URL:?set API_URL in .env}
+  DASHBOARD_URL: ${DASHBOARD_URL:?set DASHBOARD_URL in .env}
+  COOKIE_SECRET: ${COOKIE_SECRET:?set COOKIE_SECRET in .env}
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY in .env}
+  CUSTOM_COOKIE_DOMAIN: ${CUSTOM_COOKIE_DOMAIN:-}
+  ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-false}
+  ALLOW_INVITATION: ${ALLOW_INVITATION:-true}
+  DISABLE_PING: ${DISABLE_PING:-}
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASS: ${SMTP_PASS:-}
+  SMTP_SECURE: ${SMTP_SECURE:-}
+  RESEND_API_KEY: ${RESEND_API_KEY:-}
+  EMAIL_SENDER: ${EMAIL_SENDER:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+services:
+  redis:
+    image: redis:7.2.5-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory-policy", "noeviction", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.1.3.52
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: flarepanel
+      CLICKHOUSE_SKIP_USER_SETUP: 1
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./clickhouse/config.xml:/etc/clickhouse-server/config.d/flarepanel.xml:ro
+      - ./clickhouse/users.xml:/etc/clickhouse-server/users.d/flarepanel.xml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client -q 'SELECT 1'"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redpanda:
+    image: redpandadata/redpanda:v25.1.4
+    restart: unless-stopped
+    command:
+      - redpanda
+      - start
+      - --kafka-addr=internal://0.0.0.0:9092
+      - --advertise-kafka-addr=internal://redpanda:9092
+      - --rpc-addr=0.0.0.0:33145
+      - --advertise-rpc-addr=redpanda:33145
+      - --smp=1
+      - --memory=${REDPANDA_MEMORY:-1G}
+      - --mode=dev-container
+      - --default-log-level=warn
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+      - ./redpanda/bootstrap.yaml:/etc/redpanda/.bootstrap.yaml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health -X admin.hosts=localhost:9644 | grep -q 'Healthy:.*true'"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  # Applies the SQLite and ClickHouse migrations, then exits. Runs on every
+  # `up`, so an upgrade is: pull the new images, `docker compose up -d`.
+  migrate:
+    image: ${FLAREPANEL_API_IMAGE:-flarepanel-api:local}
+    restart: "no"
+    environment: *app-env
+    working_dir: /app/packages/db
+    command: ["sh", "-c", "bun ./scripts/migrate-sqlite.ts && bun ./scripts/migrate-code.ts"]
+    volumes:
+      - app-data:/data
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+
+  app:
+    image: ${FLAREPANEL_API_IMAGE:-flarepanel-api:local}
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      ROLE: all
+    volumes:
+      - app-data:/data
+    ports:
+      - "${API_BIND:-127.0.0.1:3333}:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/healthcheck >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  dashboard:
+    image: ${FLAREPANEL_DASHBOARD_IMAGE:-flarepanel-dashboard:local}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      SELF_HOSTED: "true"
+      API_URL: ${API_URL:?set API_URL in .env}
+      # The dashboard's own server reaches the API inside the Docker network.
+      API_URL_SSR: http://app:3000
+      DASHBOARD_URL: ${DASHBOARD_URL:?set DASHBOARD_URL in .env}
+    ports:
+      - "${DASHBOARD_BIND:-127.0.0.1:3300}:3000"
+    depends_on:
+      app:
+        condition: service_healthy
+
+  # Optional TLS proxy: `docker compose --profile proxy up -d`. It needs
+  # DASHBOARD_HOST and API_HOST in .env and ports 80 and 443 reachable.
+  caddy:
+    image: caddy:2.8-alpine
+    profiles: ["proxy"]
+    restart: unless-stopped
+    environment:
+      DASHBOARD_HOST: ${DASHBOARD_HOST:-}
+      API_HOST: ${API_HOST:-}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - dashboard
+      - app
+
+volumes:
+  app-data:
+  redis-data:
+  clickhouse-data:
+  redpanda-data:
+  caddy-data:
+  caddy-config:

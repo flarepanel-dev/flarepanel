@@ -133,17 +133,22 @@ COPY --from=prod-deps --chown=bun:bun /app/tooling/typescript ./tooling/typescri
 
 COPY --from=prisma-cli --chown=bun:bun /opt/prisma /opt/prisma
 
-# The shipped start command is `cd /app/packages/db && prisma migrate deploy`, so the CLI, the schema and the
-# migrations directory are load-bearing image content. Assert them at build time rather than let a self-hoster find
-# out at container start. The code migrations' entrypoints are asserted too: the api runs
-# `packages/db/src/code-migrations` itself, and `packages/core/scripts/migrate-code.ts`, which older compose files
-# still name, forwards to `packages/db/scripts/migrate-code.ts`.
+# The metadata database is SQLite: `packages/db/scripts/migrate-sqlite.ts` applies the SQL files in
+# `packages/db/migrations`, and `scripts/migrate-code.ts` runs the ClickHouse and data migrations. Both are
+# load-bearing image content, so assert them at build time rather than let a self-hoster find out at container
+# start. `packages/core/scripts/migrate-code.ts`, which older compose files name, forwards to the db script.
 RUN prisma --version >/dev/null && \
     test -f /app/packages/db/prisma/schema.prisma && \
-    test -d /app/packages/db/prisma/migrations && \
+    test -d /app/packages/db/migrations && \
+    test -f /app/packages/db/scripts/migrate-sqlite.ts && \
     test -f /app/packages/db/scripts/migrate-code.ts && \
     test -d /app/packages/db/src/code-migrations && \
     test -f /app/packages/core/scripts/migrate-code.ts
+
+# The SQLite metadata file lives on a volume at /data. Created here and owned
+# by `bun`, so a fresh named volume mounted there is writable without root.
+RUN mkdir -p /data && chown bun:bun /data
+VOLUME ["/data"]
 
 USER bun
 
