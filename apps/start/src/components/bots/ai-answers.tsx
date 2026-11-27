@@ -402,9 +402,10 @@ function SettingsForm({
           />
           <p className="text-muted-foreground text-xs">
             One question per line, the way your customers would ask it. Up to{' '}
-            {AI_ANSWER_PROMPTS_MAX}. Each check asks every prompt once per
-            assistant: {newPrompts.length * asked.length} calls a day on your
-            key.
+            {AI_ANSWER_PROMPTS_MAX}.{' '}
+            {asked.length > 0
+              ? `Each check asks every prompt once per assistant: ${newPrompts.length * asked.length} calls a day on your key.`
+              : 'Checks start once the workspace has an AI key.'}
           </p>
         </div>
       )}
