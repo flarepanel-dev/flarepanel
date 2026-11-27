@@ -44,10 +44,19 @@ describe('HTTP rate limits', () => {
 
   // The same page promises these are unlimited. A prefix added carelessly
   // here would start throttling ingestion.
-  test('the ingestion paths are not limited', () => {
+  test('tracking is limited per IP on a server install only', () => {
+    for (const path of ['/track', '/track/device-id', '/event']) {
+      expect(limitFor(path)).toMatchObject({
+        keyBy: 'ip',
+        max: 600,
+        windowMs: 60_000,
+        serverOnly: true,
+      });
+    }
+  });
+
+  test('the other ingestion paths are not limited', () => {
     for (const path of [
-      '/track',
-      '/track/device-id',
       '/profile',
       '/profile/increment',
       '/import/events',

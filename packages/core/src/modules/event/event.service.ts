@@ -1,4 +1,4 @@
-import type { SqlFragment } from '@flarepanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@flarepanel/db/src/clickhouse/sql';
 import type { EventMeta, Prisma } from '@flarepanel/db/src/prisma-client';
 import { getCache } from '@flarepanel/redis';
 import { resolveDateRange } from '@flarepanel/shared';
@@ -8,10 +8,15 @@ import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
 import { stripFixedStringPadding } from '../../shared/ch-fixed-string';
+import { TABLE_NAMES } from '../../shared/ch-tables';
 import { toRowFilters } from '../chart/src/engine/store-rows';
 import { getEventFiltersWhereClause } from '../chart/src/filter-where';
 import { buildFilterWhere } from '../chart/src/table-filter-where';
-import { emptyBotStats } from '../ingest/cloudflare/bot-store';
+import {
+  type BotCountRow,
+  emptyBotStats,
+  summarizeBotCounts,
+} from '../ingest/cloudflare/bot-store';
 import type { ListEventsQuery } from '../ingest/cloudflare/engine';
 import type { RowFilter } from '../ingest/cloudflare/filter-eval';
 import {
@@ -1477,17 +1482,100 @@ export interface BotStatsInput {
   limit?: number;
 }
 
+/** The server keeps at most this many days of bot hits in a stats window. */
+const BOT_STATS_SERVER_MAX_DAYS = 90;
+
 /**
- * Bot and AI crawler totals for a window of the project's local days. Only
- * the Durable Object store keeps the hourly counts; without it (ClickHouse
- * on Bun) the stats are empty and the recent list still works.
+ * Bot totals from ClickHouse, for a server install: one row per hour, bot and
+ * path. The table has no response status or verification, so those read as
+ * "not reported" and every hit counts as unverified.
+ */
+async function getBotStatsFromClickhouse(
+  deps: ServiceDeps,
+  input: BotStatsInput
+): Promise<IBotStats> {
+  const toMs = wallClockEndMs(input.endDate, input.timezone);
+  const fromMs = Math.max(
+    wallClockToMs(input.startDate, input.timezone),
+    toMs - BOT_STATS_SERVER_MAX_DAYS * 24 * 60 * 60 * 1000
+  );
+  const month = new Date().toISOString().slice(0, 7);
+  const noUsage = { month, hits: 0, cap: null, capped: false };
+  if (!(Number.isFinite(fromMs) && Number.isFinite(toMs)) || fromMs > toMs) {
+    return emptyBotStats(noUsage);
+  }
+  const [rows, monthRows] = await Promise.all([
+    chQuery<{
+      hour: string;
+      name: string;
+      type: string;
+      path: string;
+      hits: string;
+      last_at: string;
+    }>(
+      deps,
+      sql`
+        SELECT
+          toUnixTimestamp(toStartOfHour(created_at)) AS hour,
+          name,
+          type,
+          path,
+          count() AS hits,
+          toUnixTimestamp64Milli(max(created_at)) AS last_at
+        FROM ${sql.id(TABLE_NAMES.events_bots)}
+        WHERE project_id = ${sql.string(input.projectId)}
+          AND created_at >= fromUnixTimestamp64Milli(toInt64(${sql.uint64(Math.floor(fromMs))}))
+          AND created_at <= fromUnixTimestamp64Milli(toInt64(${sql.uint64(Math.floor(toMs))}))
+        GROUP BY hour, name, type, path
+      `
+    ),
+    chQuery<{ hits: string }>(
+      deps,
+      sql`
+        SELECT count() AS hits
+        FROM ${sql.id(TABLE_NAMES.events_bots)}
+        WHERE project_id = ${sql.string(input.projectId)}
+          AND toStartOfMonth(created_at) = toStartOfMonth(now())
+      `
+    ),
+  ]);
+  const HOUR_MS = 60 * 60 * 1000;
+  const counts: BotCountRow[] = rows.map((row) => ({
+    // The middle of the hour, as the Durable Object store buckets it.
+    at: Number(row.hour) * 1000 + HOUR_MS / 2,
+    source: 'snippet',
+    name: row.name,
+    category: row.type,
+    path: row.path,
+    verified: false,
+    hits: Number(row.hits),
+    status: { '2xx': 0, '3xx': 0, '4xx': 0, '5xx': 0 },
+    lastSeen: Number(row.last_at),
+  }));
+  return summarizeBotCounts(
+    counts,
+    {
+      fromMs,
+      toMs,
+      timezone: input.timezone,
+      group: input.group,
+      verified: input.verified,
+      limit: input.limit,
+    },
+    { ...noUsage, hits: Number(monthRows[0]?.hits ?? 0) }
+  );
+}
+
+/**
+ * Bot and AI crawler totals for a window of the project's local days: from
+ * the Durable Object store on Cloudflare, from ClickHouse on a server.
  */
 export async function getBotStats(
   deps: ServiceDeps,
   input: BotStatsInput
 ): Promise<IBotStats> {
   if (!deps.eventStore?.botStats) {
-    return emptyBotStats();
+    return await getBotStatsFromClickhouse(deps, input);
   }
   return await deps.eventStore.botStats(input.projectId, {
     fromMs: wallClockToMs(input.startDate, input.timezone),

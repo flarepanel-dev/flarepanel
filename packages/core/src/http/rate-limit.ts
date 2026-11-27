@@ -112,6 +112,12 @@ export interface HttpRateLimit extends RateLimitWindow {
   keyBy: RateLimitKey;
   /** A second bucket per trusted address, counted on every request. */
   ipBudget?: RateLimitWindow;
+  /**
+   * Only on a server install. On Cloudflare the same limit is an edge
+   * binding that runs before the app, and counting it here again would cost
+   * a coordination call on every tracking request.
+   */
+  serverOnly?: boolean;
 }
 
 interface Bucket extends RateLimitWindow {
@@ -182,11 +188,15 @@ export async function isRateLimited(
 
 /**
  * The first matching prefix wins. `/export`, `/insights` and `/manage` are the
- * published limits; `/track`, `/profile` and `/import` are absent on purpose:
- * the docs promise they are unlimited. `/misc/favicon` asks third-party icon
+ * published limits. Tracking (`/track`, `/event`) is limited per IP address,
+ * as documented: here on a server install, at the edge on Cloudflare.
+ * `/profile` and `/import` have no limit. `/misc/favicon` asks third-party icon
  * services on the caller's behalf, and one dashboard page loads a few dozen
  * icons at once.
  */
+/** Tracking requests one IP address may send a minute (also the edge limit on Cloudflare). */
+export const TRACK_MAX_PER_MINUTE = 600;
+
 export const HTTP_RATE_LIMITS: readonly (HttpRateLimit & {
   prefix: string;
 })[] = [
@@ -221,6 +231,22 @@ export const HTTP_RATE_LIMITS: readonly (HttpRateLimit & {
     ipBudget: MCP_IP_BUDGET,
     max: 60,
     windowMs: 60_000,
+  },
+  {
+    prefix: '/track',
+    scope: 'track',
+    keyBy: 'ip',
+    max: TRACK_MAX_PER_MINUTE,
+    windowMs: 60_000,
+    serverOnly: true,
+  },
+  {
+    prefix: '/event',
+    scope: 'track-legacy',
+    keyBy: 'ip',
+    max: TRACK_MAX_PER_MINUTE,
+    windowMs: 60_000,
+    serverOnly: true,
   },
   {
     prefix: '/misc/favicon',
@@ -264,7 +290,7 @@ export function httpRateLimit(deps: AppDeps) {
       const { ctx, request, path, set } = context;
       const server: SocketAddressSource | null = context.server;
       const limit = limitFor(path);
-      if (!limit) {
+      if (!limit || (limit.serverOnly && deps.eventStore)) {
         return;
       }
       // `ctx` is absent for a request that matched no route, and an unmatched

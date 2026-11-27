@@ -124,7 +124,8 @@ const BOT_STATS: IBotStats = {
 
 async function botStatsCaller(
   eventStore?: Partial<EventStore>,
-  timezone = 'UTC'
+  timezone = 'UTC',
+  ch?: unknown
 ) {
   const requireProjectAccess = mock(() => Promise.resolve({ level: 'read' }));
   const services = {
@@ -143,6 +144,7 @@ async function botStatsCaller(
     services,
     db: db as never,
     eventStore: eventStore as EventStore | undefined,
+    ...(ch ? { ch: ch as never } : {}),
   });
   const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
     cookieOptions: COOKIE_OPTIONS,
@@ -197,17 +199,52 @@ test('botStats rejects an unknown group', async () => {
   ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
 });
 
-test('botStats answers empty stats where the store keeps no counts', async () => {
-  const { caller } = await botStatsCaller();
+test('botStats reads ClickHouse on a server install, where there is no event store', async () => {
+  const queries: string[] = [];
+  const hour = Math.floor(Date.now() / 3_600_000) * 3600;
+  const ch = {
+    query: ({ query }: { query: string }) => {
+      queries.push(query);
+      const data = query.includes('GROUP BY hour')
+        ? [
+            {
+              hour: String(hour),
+              name: 'GPTBot',
+              type: 'AI Data Scraper',
+              path: '/pricing',
+              hits: '3',
+              last_at: String(hour * 1000),
+            },
+            {
+              hour: String(hour),
+              name: 'Googlebot',
+              type: 'Search bot',
+              path: '/',
+              hits: '2',
+              last_at: String(hour * 1000),
+            },
+          ]
+        : [{ hits: '5' }];
+      return Promise.resolve({
+        json: () => Promise.resolve({ data, meta: [] }),
+      });
+    },
+  };
+  const { caller } = await botStatsCaller(undefined, 'UTC', ch);
 
   const stats = await caller.botStats({ ...PROJECT, range: '7d' });
-  expect(stats).toMatchObject({
-    totals: { total: 0, ai: 0, answers: 0, training: 0 },
-    series: [],
-    topBots: [],
-    topPaths: [],
-    verifiedOnly: false,
-  });
+  expect(queries).toHaveLength(2);
+  expect(stats.totals).toMatchObject({ total: 5, training: 3, search: 2 });
+  expect(stats.topBots.map((bot) => [bot.name, bot.hits])).toEqual([
+    ['GPTBot', 3],
+    ['Googlebot', 2],
+  ]);
+  expect(stats.topPaths[0]).toMatchObject({ path: '/pricing', hits: 3 });
+  // The server table has no verification: nothing is filtered out.
+  expect(stats).toMatchObject({ verifiedOnly: false, verifiedHits: 0 });
+  expect(stats.usage).toMatchObject({ hits: 5, cap: null });
+  // One point per local day of the range; today's holds the hits.
+  expect(stats.series.at(-1)).toMatchObject({ total: 5 });
 });
 
 test('updateEventMeta rejects an unauthenticated caller before touching Postgres', async () => {

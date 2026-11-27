@@ -237,7 +237,8 @@ export function emptyBotStats(usage?: IBotUsage): IBotStats {
   };
 }
 
-interface CountRow {
+/** One name/path/hour bucket of bot hits. `at` is the middle of its hour. */
+export interface BotCountRow {
   /** Where the row falls in time: the middle of its hour. */
   at: number;
   source: BotSource;
@@ -281,6 +282,126 @@ function statusOf(row: SqlRow): IBotStatusCounts {
     '3xx': Number(row.s3 ?? 0),
     '4xx': Number(row.s4 ?? 0),
     '5xx': Number(row.s5 ?? 0),
+  };
+}
+
+/**
+ * Folds hourly bot counts into what the Bots page shows: totals, a
+ * zero-filled series of the project's local days, top bots and top paths.
+ * Shared by the Durable Object store and the ClickHouse path on a server.
+ */
+export function summarizeBotCounts(
+  rows: readonly BotCountRow[],
+  query: BotStatsQuery,
+  monthUsage: IBotUsage
+): IBotStats {
+  const { fromMs, toMs, timezone } = query;
+  const limit = query.limit ?? BOT_STATS_TOP_LIMIT;
+
+  const counts = rows.filter(
+    (row) => !query.group || botGroup(row.name, row.category) === query.group
+  );
+  const verifiedHits = counts.reduce(
+    (sum, row) => sum + (row.verified ? row.hits : 0),
+    0
+  );
+  const allHits = counts.reduce((sum, row) => sum + row.hits, 0);
+  const verifiedOnly =
+    query.verified === 'verified' ||
+    (query.verified === 'auto' && verifiedHits > 0);
+
+  const buckets = buildBuckets(fromMs, toMs, 'day', timezone);
+  const starts = buckets.map((bucket) => bucket.start);
+  const ends = buckets.map((bucket) => bucket.end);
+  const series = buckets.map(() => emptyTotals());
+  const totals = emptyTotals();
+  const sources = emptySources();
+  const bots = new Map<string, IBotStats['topBots'][number]>();
+  const paths = new Map<
+    string,
+    {
+      hits: number;
+      lastSeen: number;
+      status: IBotStatusCounts;
+      bots: Map<string, IBotStats['topPaths'][number]['bots'][number]>;
+    }
+  >();
+
+  for (const row of counts) {
+    if (verifiedOnly && !row.verified) {
+      continue;
+    }
+    const { name, category, path, hits, lastSeen } = row;
+    const group = botGroup(name, category);
+
+    addTotals(totals, group, hits);
+    sources[row.source] += hits;
+    const day = series[bucketIndex(starts, ends, row.at)];
+    if (day) {
+      addTotals(day, group, hits);
+    }
+
+    const botKey = `${name}\u0000${category}`;
+    const bot = bots.get(botKey) ?? {
+      name,
+      category,
+      group,
+      hits: 0,
+      verifiedHits: 0,
+      lastSeen,
+    };
+    bot.hits += hits;
+    bot.verifiedHits += row.verified ? hits : 0;
+    bot.lastSeen = Math.max(bot.lastSeen, lastSeen);
+    bots.set(botKey, bot);
+
+    const page = paths.get(path) ?? {
+      hits: 0,
+      lastSeen,
+      status: emptyStatus(),
+      bots: new Map(),
+    };
+    page.hits += hits;
+    page.lastSeen = Math.max(page.lastSeen, lastSeen);
+    for (const statusClass of STATUS_CLASSES) {
+      page.status[statusClass] += row.status[statusClass];
+    }
+    const pageBot = page.bots.get(botKey) ?? {
+      name,
+      category,
+      group,
+      hits: 0,
+    };
+    pageBot.hits += hits;
+    page.bots.set(botKey, pageBot);
+    paths.set(path, page);
+  }
+
+  const byHits = (a: { hits: number }, b: { hits: number }) => b.hits - a.hits;
+  return {
+    totals,
+    sources,
+    series: buckets.map((bucket, index) => ({
+      date: wallClockText(bucket.start, timezone).slice(0, ISO_DAY_LENGTH),
+      ...(series[index] ?? emptyTotals()),
+    })),
+    topBots: [...bots.values()].sort(byHits).slice(0, limit),
+    topPaths: [...paths]
+      .map(([path, page]) => ({
+        path,
+        hits: page.hits,
+        lastSeen: page.lastSeen,
+        status: page.status,
+        bots: [...page.bots.values()]
+          .sort(byHits)
+          .slice(0, BOT_STATS_BOTS_PER_PATH),
+      }))
+      .sort(byHits)
+      .slice(0, limit),
+    verifiedOnly,
+    verifiedHits,
+    allHits,
+    usage: monthUsage,
   };
 }
 
@@ -520,12 +641,12 @@ export function openBotStore(sql: EngineSql) {
     return result;
   }
 
-  function readCounts(fromMs: number, toMs: number): CountRow[] {
+  function readCounts(fromMs: number, toMs: number): BotCountRow[] {
     // An hour belongs to the window when its middle does, and to the local
     // day its middle falls in; that also places half-hour zones sensibly.
     const fromHour = Math.ceil((fromMs - HOUR_MS / 2) / HOUR_MS);
     const toHour = Math.floor((toMs - HOUR_MS / 2) / HOUR_MS);
-    const rows: CountRow[] = [];
+    const rows: BotCountRow[] = [];
     const reportedHours = new Set<number>();
     for (const row of sql.exec(
       'SELECT hour, name, type, path, verified, hits, s2, s3, s4, s5, last_at FROM bot_hourly WHERE hour >= ? AND hour <= ?',
@@ -696,115 +817,11 @@ export function openBotStore(sql: EngineSql) {
       if (fromMs > toMs) {
         return emptyBotStats(monthUsage);
       }
-      const limit = query.limit ?? BOT_STATS_TOP_LIMIT;
-
-      const counts = readCounts(fromMs, toMs).filter(
-        (row) =>
-          !query.group || botGroup(row.name, row.category) === query.group
+      return summarizeBotCounts(
+        readCounts(fromMs, toMs),
+        { ...query, fromMs },
+        monthUsage
       );
-      const verifiedHits = counts.reduce(
-        (sum, row) => sum + (row.verified ? row.hits : 0),
-        0
-      );
-      const allHits = counts.reduce((sum, row) => sum + row.hits, 0);
-      const verifiedOnly =
-        query.verified === 'verified' ||
-        (query.verified === 'auto' && verifiedHits > 0);
-
-      const buckets = buildBuckets(fromMs, toMs, 'day', timezone);
-      const starts = buckets.map((bucket) => bucket.start);
-      const ends = buckets.map((bucket) => bucket.end);
-      const series = buckets.map(() => emptyTotals());
-      const totals = emptyTotals();
-      const sources = emptySources();
-      const bots = new Map<string, IBotStats['topBots'][number]>();
-      const paths = new Map<
-        string,
-        {
-          hits: number;
-          lastSeen: number;
-          status: IBotStatusCounts;
-          bots: Map<string, IBotStats['topPaths'][number]['bots'][number]>;
-        }
-      >();
-
-      for (const row of counts) {
-        if (verifiedOnly && !row.verified) {
-          continue;
-        }
-        const { name, category, path, hits, lastSeen } = row;
-        const group = botGroup(name, category);
-
-        addTotals(totals, group, hits);
-        sources[row.source] += hits;
-        const day = series[bucketIndex(starts, ends, row.at)];
-        if (day) {
-          addTotals(day, group, hits);
-        }
-
-        const botKey = `${name}\u0000${category}`;
-        const bot = bots.get(botKey) ?? {
-          name,
-          category,
-          group,
-          hits: 0,
-          verifiedHits: 0,
-          lastSeen,
-        };
-        bot.hits += hits;
-        bot.verifiedHits += row.verified ? hits : 0;
-        bot.lastSeen = Math.max(bot.lastSeen, lastSeen);
-        bots.set(botKey, bot);
-
-        const page = paths.get(path) ?? {
-          hits: 0,
-          lastSeen,
-          status: emptyStatus(),
-          bots: new Map(),
-        };
-        page.hits += hits;
-        page.lastSeen = Math.max(page.lastSeen, lastSeen);
-        for (const statusClass of STATUS_CLASSES) {
-          page.status[statusClass] += row.status[statusClass];
-        }
-        const pageBot = page.bots.get(botKey) ?? {
-          name,
-          category,
-          group,
-          hits: 0,
-        };
-        pageBot.hits += hits;
-        page.bots.set(botKey, pageBot);
-        paths.set(path, page);
-      }
-
-      const byHits = (a: { hits: number }, b: { hits: number }) =>
-        b.hits - a.hits;
-      return {
-        totals,
-        sources,
-        series: buckets.map((bucket, index) => ({
-          date: wallClockText(bucket.start, timezone).slice(0, ISO_DAY_LENGTH),
-          ...(series[index] ?? emptyTotals()),
-        })),
-        topBots: [...bots.values()].sort(byHits).slice(0, limit),
-        topPaths: [...paths]
-          .map(([path, page]) => ({
-            path,
-            hits: page.hits,
-            lastSeen: page.lastSeen,
-            status: page.status,
-            bots: [...page.bots.values()]
-              .sort(byHits)
-              .slice(0, BOT_STATS_BOTS_PER_PATH),
-          }))
-          .sort(byHits)
-          .slice(0, limit),
-        verifiedOnly,
-        verifiedHits,
-        allHits,
-        usage: monthUsage,
-      };
     },
     /**
      * Drops what is older than `beforeMs`. A day's hit count stays while its

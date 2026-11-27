@@ -61,6 +61,63 @@ export function topByName(
     .slice(0, TRAFFIC_TOP_LIST_LIMIT);
 }
 
+/** The traffic widget's numbers from ClickHouse, for a server install. */
+async function trafficWidgetFromClickhouse(
+  deps: ServiceDeps,
+  options: {
+    projectId: string;
+    timezone: string;
+    days: number;
+    pages: boolean;
+    referrers: boolean;
+  }
+) {
+  const { projectId, timezone, days } = options;
+  const settings = { session_timezone: timezone };
+  const where = sql`project_id = ${sql.string(projectId)} AND created_at >= (now() - INTERVAL ${sql.uint64(days)} DAY)`;
+  const [series, totals, pages, referrers] = await Promise.all([
+    chQuery<{ date: string; visitors: string; pageviews: string }>(
+      deps,
+      sql`SELECT toString(toDate(created_at)) AS date, uniq(profile_id) AS visitors, countIf(name = 'screen_view') AS pageviews FROM ${EVENTS_TABLE} WHERE ${where} GROUP BY date ORDER BY date`,
+      settings
+    ),
+    chQuery<{ visitors: string; pageviews: string }>(
+      deps,
+      sql`SELECT uniq(profile_id) AS visitors, countIf(name = 'screen_view') AS pageviews FROM ${EVENTS_TABLE} WHERE ${where}`,
+      settings
+    ),
+    options.pages
+      ? chQuery<{ name: string; count: string }>(
+          deps,
+          sql`SELECT path AS name, count() AS count FROM ${EVENTS_TABLE} WHERE ${where} AND name = 'screen_view' AND path != '' GROUP BY name ORDER BY count DESC LIMIT ${sql.uint64(TRAFFIC_TOP_LIST_LIMIT)}`,
+          settings
+        )
+      : Promise.resolve([]),
+    options.referrers
+      ? chQuery<{ name: string; count: string }>(
+          deps,
+          sql`SELECT referrer_name AS name, uniq(session_id) AS count FROM ${EVENTS_TABLE} WHERE ${where} AND name = 'session_start' AND referrer_name != '' GROUP BY name ORDER BY count DESC LIMIT ${sql.uint64(TRAFFIC_TOP_LIST_LIMIT)}`,
+          settings
+        )
+      : Promise.resolve([]),
+  ]);
+  return {
+    visitors: Number(totals[0]?.visitors ?? 0),
+    pageviews: Number(totals[0]?.pageviews ?? 0),
+    // Days without events are absent: the widget draws what it is given.
+    series: series.map((point) => ({
+      date: point.date,
+      visitors: Number(point.visitors),
+      pageviews: Number(point.pageviews),
+    })),
+    pages: pages.map((row) => ({ path: row.name, count: Number(row.count) })),
+    referrers: referrers.map((row) => ({
+      referrer: row.name,
+      count: Number(row.count),
+    })),
+  };
+}
+
 /** The realtime widget's numbers from the project's Durable Object. */
 async function realtimeWidgetFromEventStore(
   store: NonNullable<ServiceDeps['eventStore']>,
@@ -344,10 +401,6 @@ export const widgetRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Invalid widget type');
       }
       const store = ctx.eventStore;
-      if (!store) {
-        // Self-hosted ClickHouse installs keep the realtime/counter widgets.
-        throw new TRPCNotFoundError('Traffic widget needs the event store');
-      }
       const { timezone } = await getSettingsForProject(ctx, projectId);
       const days = options.range === '7d' ? 7 : 30;
       const cacheKey = `widget:traffic:${widget.id}:${options.range}:${options.pages ? 1 : 0}${options.referrers ? 1 : 0}`;
@@ -358,6 +411,15 @@ export const widgetRouter = createTRPCRouter({
         async () => {
           const to = Date.now();
           const from = to - days * DAY_MS;
+          if (!store) {
+            return trafficWidgetFromClickhouse(ctx, {
+              projectId,
+              timezone,
+              days,
+              pages: Boolean(options.pages),
+              referrers: Boolean(options.referrers),
+            });
+          }
           const [metrics, pages, referrers] = await Promise.all([
             store.metrics(projectId, { from, to, interval: 'day', timezone }),
             options.pages
