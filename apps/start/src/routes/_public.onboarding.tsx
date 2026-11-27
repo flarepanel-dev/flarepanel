@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { AuthHeading } from '@/components/auth/auth-shell';
 import { CheckEmail } from '@/components/auth/check-email';
+import { AuthLegalLinks } from '@/components/auth/legal-links';
 import { Or } from '@/components/auth/or';
 import { SignInOAuth } from '@/components/auth/sign-in-oauth';
 import { SignUpEmailForm } from '@/components/auth/sign-up-email-form';
@@ -176,27 +177,7 @@ function Component() {
 
       <SignUpEmailForm inviteId={inviteId} onVerificationSent={setSentTo} />
 
-      <p className="text-center text-muted-foreground text-xs leading-relaxed">
-        By creating an account you agree to the{' '}
-        <a
-          className="underline hover:text-foreground"
-          href="https://flarepanel.dev/terms"
-          rel="noreferrer"
-          target="_blank"
-        >
-          Terms of Service
-        </a>{' '}
-        and{' '}
-        <a
-          className="underline hover:text-foreground"
-          href="https://flarepanel.dev/privacy"
-          rel="noreferrer"
-          target="_blank"
-        >
-          Privacy Policy
-        </a>
-        .
-      </p>
+      <AuthLegalLinks signUp />
 
       <p className="text-center text-muted-foreground text-sm">
         Already have an account?{' '}

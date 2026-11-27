@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { AuthHeading } from '@/components/auth/auth-shell';
 import { CheckEmail } from '@/components/auth/check-email';
+import { AuthLegalLinks } from '@/components/auth/legal-links';
 import { Or } from '@/components/auth/or';
 import { SignInDev } from '@/components/auth/sign-in-dev';
 import { SignInEmailForm } from '@/components/auth/sign-in-email-form';
@@ -185,6 +186,8 @@ function LoginPage() {
           </a>
         </p>
       )}
+
+      <AuthLegalLinks />
     </div>
   );
 }
