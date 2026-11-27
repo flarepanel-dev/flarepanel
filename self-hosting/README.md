@@ -76,29 +76,72 @@ cd self-hosting && docker compose --profile proxy up -d
 
 The `migrate` service applies database changes before the app starts.
 
-## Back up
+## Check an install
 
-Everything lives in Docker volumes:
+On a fresh install, before the first account exists and before SMTP is set
+(the script signs up without confirming an email):
 
-- `app-data`: accounts, projects and settings (one SQLite file).
-- `clickhouse-data`: events, sessions, profiles and replays.
-- `redis-data` and `redpanda-data`: queues and buffers in flight.
+```bash
+API_URL=https://api.analytics.example.com DASHBOARD_URL=https://analytics.example.com ./smoke-test.sh
+```
 
-Back up `app-data` and `clickhouse-data` on a schedule, and keep `.env` with
-them.
+It creates a test account and project, sends five events and reads them back.
+Use the same addresses as in `.env`. It leaves the test account behind.
+
+## Back up and restore
+
+```bash
+./backup.sh                 # writes ./backups/flarepanel-<UTC time>/
+./backup.sh /mnt/backups    # or into another folder
+./restore.sh ./backups/flarepanel-20261127-101500
+```
+
+A backup holds the SQLite file (accounts, projects, settings) and a ClickHouse
+backup (events, sessions, profiles, replays). It runs while the app is up.
+Queues in flight (Redis, Redpanda) are not part of it, so events that arrive
+during the backup may be missing. Run it on a schedule, copy the folder off
+the server, and keep `.env` with it: `ENCRYPTION_KEY` is needed to read stored
+keys after a restore.
+
+`restore.sh` stops the app, replaces both databases with the backup and starts
+it again. It asks before it overwrites anything.
+
+## Keep events for a limited time
+
+ClickHouse keeps events until you say otherwise (replay chunks are kept 30
+days, AI prompt text 30 days). To drop events and sessions after, say, 400
+days:
+
+```bash
+docker compose exec clickhouse clickhouse-client -q \
+  "ALTER TABLE flarepanel.events MODIFY TTL toDateTime(created_at) + INTERVAL 400 DAY"
+docker compose exec clickhouse clickhouse-client -q \
+  "ALTER TABLE flarepanel.sessions MODIFY TTL toDateTime(created_at) + INTERVAL 400 DAY"
+```
+
+`ALTER TABLE flarepanel.events REMOVE TTL` undoes it. Rows already deleted do
+not come back.
+
+## Behind a proxy
+
+The API reads the visitor's address from the header named in
+`TRUSTED_IP_HEADER_ORDER` (default `x-forwarded-for`). It feeds the location
+lookup and the tracking limit of 600 requests a minute per address. Your proxy
+must overwrite that header, never pass on a value the visitor sent; the
+bundled Caddy does.
 
 ## What differs
 
 | | Cloudflare | Your own server |
 |---|---|---|
-| Bots & AI crawlers: totals and charts | Yes | Latest hits only |
+| Bots & AI crawlers | Totals, charts, status codes, verified filter | Totals and charts; no status codes or verified filter |
 | Connect Cloudflare (crawler import) | Yes | No |
-| Public "traffic" widget | Yes | No |
-| Per-IP limit on `/track` | Yes | Use your proxy's rate limit |
 | Raw event archive | R2 | ClickHouse keeps everything |
+| Event retention | A setting | A ClickHouse TTL (above) |
+| Backups | D1 and Durable Object point-in-time recovery | `backup.sh` and `restore.sh` |
 | Visitor location | Cloudflare's edge | A GeoLite2 database built into the image |
 | Email | Cloudflare Email | SMTP or Resend |
 
 Everything else is the same on both: reports, funnels, retention, sessions and
-replay, profiles, cohorts, realtime, AI answers and observability, imports,
-exports, Search Console, the REST API and MCP.
+replay, profiles, cohorts, realtime, public widgets, AI answers and
+observability, imports, exports, Search Console, the REST API and MCP.

@@ -43,9 +43,12 @@ run. Every part runs on Cloudflare's developer platform:
 - **Hosted:** create an account at
   [dashboard.flarepanel.dev](https://dashboard.flarepanel.dev/onboarding), add a
   project and paste the snippet. Early access is free while billing is set up.
-- **Self-hosted:** deploy the same code to your own Cloudflare account. It
-  needs the Workers Paid plan. Follow the
+- **Self-hosted on Cloudflare:** deploy the same code to your own Cloudflare
+  account. It needs the Workers Paid plan. Follow the
   [deploy guide](https://docs.flarepanel.dev/self-hosting/deploy).
+- **Self-hosted on your own server:** run it with Docker on one Linux machine
+  (ClickHouse, Redis, Redpanda). See [`self-hosting/`](self-hosting/README.md)
+  or the [server guide](https://docs.flarepanel.dev/self-hosting/server).
 
 ```html
 <script>

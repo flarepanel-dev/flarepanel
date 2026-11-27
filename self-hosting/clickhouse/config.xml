@@ -31,4 +31,8 @@
         <replica>replica1</replica>
         <cluster>flarepanel_cluster</cluster>
     </macros>
+    <!-- backup.sh writes here, then copies the file out. -->
+    <backups>
+        <allowed_path>/backups/</allowed_path>
+    </backups>
 </clickhouse>

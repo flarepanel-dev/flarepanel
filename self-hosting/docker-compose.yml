@@ -24,6 +24,9 @@ x-app-env: &app-env
   COOKIE_SECRET: ${COOKIE_SECRET:?set COOKIE_SECRET in .env}
   ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY in .env}
   CUSTOM_COOKIE_DOMAIN: ${CUSTOM_COOKIE_DOMAIN:-}
+  # The proxy in front sets this header to the visitor's address. It feeds
+  # the per-IP tracking limit and the location lookup.
+  TRUSTED_IP_HEADER_ORDER: ${TRUSTED_IP_HEADER_ORDER:-x-forwarded-for}
   ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-false}
   ALLOW_INVITATION: ${ALLOW_INVITATION:-true}
   DISABLE_PING: ${DISABLE_PING:-}
@@ -62,6 +65,7 @@ services:
         hard: 262144
     volumes:
       - clickhouse-data:/var/lib/clickhouse
+      - clickhouse-backups:/backups
       - ./clickhouse/config.xml:/etc/clickhouse-server/config.d/flarepanel.xml:ro
       - ./clickhouse/users.xml:/etc/clickhouse-server/users.d/flarepanel.xml:ro
     healthcheck:
@@ -170,6 +174,7 @@ volumes:
   app-data:
   redis-data:
   clickhouse-data:
+  clickhouse-backups:
   redpanda-data:
   caddy-data:
   caddy-config:

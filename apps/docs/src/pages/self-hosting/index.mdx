@@ -3,12 +3,40 @@
 showAskAi: false
 showFeedback: false
 title: Self-hosting
-description: Run FlarePanel on your own Cloudflare account.
+description: Run FlarePanel on your own Cloudflare account or on your own server.
 ---
 
 # Self-hosting
 
-FlarePanel is one codebase: the hosted service and a self-hosted install run the same code. Self-hosting puts everything in **your** Cloudflare account, so your events never leave it and you pay Cloudflare directly for what you use.
+FlarePanel is one codebase: the hosted service and a self-hosted install run the same code, the same dashboard and accept the same SDKs. You can self-host it in two ways.
+
+## Choose how to self-host
+
+| | Cloudflare | Your own server |
+|---|---|---|
+| Runs on | Workers, Durable Objects, D1, R2, Queues in **your** Cloudflare account | Docker on one Linux machine: ClickHouse, Redis, Redpanda, the API and the dashboard |
+| You operate | Nothing: no servers or databases | The machine, its disk and its backups |
+| You need | Workers Paid plan and a domain on Cloudflare DNS | 4 GB of memory or more, two hostnames |
+| Cost | Cloudflare usage | The server |
+| Guide | [Deploy to Cloudflare](/self-hosting/deploy) | [Deploy to your own server](/self-hosting/server) |
+
+Pick Cloudflare when you want nothing to maintain and traffic that can grow without resizing a machine. Pick your own server when your data must stay on hardware you control, or you already run Docker hosts.
+
+A few things differ between the two:
+
+| | Cloudflare | Your own server |
+|---|---|---|
+| Bots & AI crawlers | Totals, charts, status codes, verified filter | Totals and charts; no status codes or verified filter |
+| Connect Cloudflare (crawler import) | Yes | No |
+| Raw event archive | R2 | ClickHouse keeps everything |
+| Event retention | A setting | A ClickHouse TTL |
+| Backups | D1 and Durable Object point-in-time recovery | Backup and restore scripts |
+| Visitor location | Cloudflare's edge | A GeoLite2 database built into the image |
+| Email | Cloudflare Email | SMTP or Resend |
+
+Everything else is the same on both: reports, funnels, retention, sessions and replay, profiles, cohorts, realtime, public widgets, AI answers and observability, imports, exports, Search Console, the REST API and MCP.
+
+The rest of this page describes the Cloudflare install.
 
 ## Self-hosted and hosted
 

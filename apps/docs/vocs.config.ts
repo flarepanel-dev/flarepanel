@@ -90,6 +90,7 @@ export default defineConfig({
       items: [
         { text: 'Overview', link: '/self-hosting' },
         { text: 'Deploy to Cloudflare', link: '/self-hosting/deploy' },
+        { text: 'Deploy to your own server', link: '/self-hosting/server' },
         { text: 'Architecture', link: '/self-hosting/architecture' },
         { text: 'Operations and recovery', link: '/self-hosting/operations' },
         {
