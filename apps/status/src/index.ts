@@ -12,6 +12,7 @@ import {
   type IncidentStatus,
 } from './incidents';
 import { MONITORS, monitorById, runCheck } from './monitors';
+import { incidentPush, type OpsPushEnv, sendOpsPush } from './ops-push';
 import {
   ANALYTICS_API,
   ANALYTICS_SCRIPT_HASH,
@@ -47,7 +48,7 @@ import {
 } from './subscribers';
 import { buildView, OVERALL_TEXT } from './view';
 
-export interface Env extends CrawlCaptureEnv {
+export interface Env extends CrawlCaptureEnv, OpsPushEnv {
   DB: D1Database;
   ASSETS: Fetcher;
   /** Secret: lets the operator post incidents and maintenance. Unset: off. */
@@ -140,6 +141,29 @@ function mailDeps(env: Env): MailDeps | undefined {
     site: SITE,
     from: env.STATUS_EMAIL_FROM ?? 'hello@flarepanel.dev',
   };
+}
+
+/** Pushes opened and resolved automatic incidents to the operator. */
+async function pushIncidents(
+  env: Env,
+  changes: { opened: string[]; resolved: string[] },
+  now: number
+) {
+  if (!env.OPS_ALERT_NTFY_URL) {
+    return;
+  }
+  try {
+    for (const kind of ['opened', 'resolved'] as const) {
+      for (const id of changes[kind]) {
+        const incident = await loadIncident(env.DB, id);
+        if (incident) {
+          await sendOpsPush(env, incidentPush(incident, kind, now, SITE));
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Could not push the incident to the operator', error);
+  }
 }
 
 /** Queues subscriber emails for these incidents; never fails the caller. */
@@ -587,6 +611,7 @@ export default {
     const now = controller.scheduledTime;
     const results = await Promise.all(MONITORS.map((m) => runCheck(m)));
     const changes = await recordRound(env.DB, results, now);
+    await pushIncidents(env, changes, now);
     const maintenance = await advanceMaintenance(env.DB, now);
     await announce(
       env,
