@@ -51,6 +51,7 @@ export function createBunIngestBackend({
     isDuplicate: isDuplicatedEvent,
     recordBot: async (event) => {
       await createBotEvent(deps, event);
+      return undefined;
     },
     geo: async ({ ip }) => {
       const [geo, asnInfo] = await Promise.all([

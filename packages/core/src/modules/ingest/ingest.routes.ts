@@ -199,11 +199,11 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
         if (!client.projectId) {
           return status(400, { status: 400, message: 'Missing projectId' });
         }
-        const bot = await recordCrawlHit(
+        const outcome = await recordCrawlHit(
           { projectId: client.projectId, payload: body },
           ingestBackend(deps, ctx)
         );
-        return status(ACCEPTED_STATUS, { bot });
+        return status(ACCEPTED_STATUS, outcome);
       },
       {
         clientAuth: { ingest: validateIngestRequest },
@@ -212,7 +212,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
         detail: {
           tags: TAGS,
           description:
-            'Report one page request your server saw (path and user agent). Known bots and AI crawlers are kept for the bots page; other requests are ignored. Requires the client secret. Never counted as an event.',
+            'Report one page request your server saw (path, user agent, and optionally the response status and whether your edge verified the bot). Known bots and AI crawlers are kept for the bots page; other requests are ignored. Requires the client secret. Never counted as an event. `capped: true` means the project used its monthly bot allowance and the hit was not kept.',
         },
       }
     )

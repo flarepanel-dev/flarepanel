@@ -64,6 +64,21 @@ export interface IngestSink {
   track(draft: TrackDraft): Promise<DeviceIdResult>;
 }
 
+/** A bot hit to keep: who, where, and what the site and its edge said. */
+export type IngestBotHit = IServiceCreateBotEventPayload & {
+  /** The HTTP status the site answered with. */
+  status?: number;
+  /** Whether the edge verified the bot; absent when unknown. */
+  verified?: boolean;
+  verifiedCategory?: string;
+};
+
+/** What the bot store did with a hit. */
+export interface BotRecordOutcome {
+  /** The project's monthly bot allowance is used up: the hit was not kept. */
+  capped: boolean;
+}
+
 export interface IngestBackend {
   /**
    * False where profiles, groups and replays have no store yet (Workers in
@@ -72,7 +87,7 @@ export interface IngestBackend {
    */
   storesProfiles?: boolean;
   isDuplicate(check: DuplicateCheck): Promise<boolean>;
-  recordBot(event: IServiceCreateBotEventPayload): Promise<void>;
+  recordBot(event: IngestBotHit): Promise<BotRecordOutcome | undefined>;
   geo(request: GeoRequest): Promise<ResolvedGeo>;
   sink: IngestSink;
 }

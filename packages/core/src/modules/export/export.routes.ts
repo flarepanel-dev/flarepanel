@@ -17,8 +17,10 @@ import { defineRoutes } from '../../http/define';
 import { parseQueryStringTransform } from '../../http/query';
 import { HttpError } from '../../shared/errors';
 import { RETENTION_SERIES_DEFAULT_RANGE } from '../chart/chart.constants';
+import { BOT_GROUPS, BOT_STATS_TOP_LIMIT } from '../event/event.constants';
 import type { GetEventListOptions } from '../event/event.service';
 import {
+  getBotStats,
   getEventList,
   getEventPropertyValuesCore,
   getEventsCount,
@@ -303,6 +305,12 @@ const zOverviewQuery = zDateRange.extend({
   interval: z.enum(['hour', 'day', 'week', 'month']).optional(),
 });
 
+const zBotsQuery = zDateRange.extend({
+  group: z.enum(BOT_GROUPS).optional(),
+  verified: z.boolean().optional(),
+  limit: z.number().int().min(1).max(BOT_STATS_TOP_LIMIT).optional(),
+});
+
 const zActiveUsersQuery = z.object({
   days: z.number().int().min(1).max(90).default(7),
 });
@@ -582,6 +590,37 @@ export const insightsRoutes = defineRoutes((app) =>
         detail: {
           tags: INSIGHTS_TAGS,
           description: 'Get retention cohort data.',
+        },
+      }
+    )
+    .get(
+      '/insights/:projectId/bots',
+      async ({ params, query, client, ctx }) => {
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
+        const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
+          projectId,
+          query
+        );
+        const { timezone } = await getSettingsForProject(ctx, projectId);
+        return getBotStats(ctx, {
+          projectId,
+          startDate,
+          endDate,
+          timezone,
+          group: query.group,
+          verified: query.verified ? 'verified' : 'all',
+          limit: query.limit,
+        });
+      },
+      {
+        clientAuth: CLIENT_ALLOW,
+        params: projectIdParam,
+        query: zBotsQuery,
+        detail: {
+          tags: INSIGHTS_TAGS,
+          description:
+            'Get bot and AI crawler traffic reported through `/track/crawl`: totals and a daily series by group (AI answers, AI search indexing, AI training, search engines, other), the top bots, and the most crawled pages with the status codes they were served. `group` keeps one group; `verified=true` keeps hits the edge verified.',
         },
       }
     )

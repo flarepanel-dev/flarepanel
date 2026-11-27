@@ -77,15 +77,25 @@ test('bots rejects an unauthenticated caller (ADR-011: no anonymous share branch
   await expect(caller.botStats(PROJECT)).rejects.toMatchObject(UNAUTHORIZED);
 });
 
+const BOT_TOTALS = {
+  total: 3,
+  ai: 2,
+  answers: 0,
+  indexing: 0,
+  training: 2,
+  search: 1,
+  other: 0,
+};
 const BOT_STATS: IBotStats = {
-  totals: { total: 3, ai: 2, search: 1, other: 0 },
-  series: [{ date: '2026-11-24', total: 3, ai: 2, search: 1, other: 0 }],
+  totals: BOT_TOTALS,
+  series: [{ date: '2026-11-24', ...BOT_TOTALS }],
   topBots: [
     {
       name: 'GPTBot',
       category: 'AI Data Scraper',
-      group: 'ai',
+      group: 'training',
       hits: 2,
+      verifiedHits: 0,
       lastSeen: 1,
     },
   ],
@@ -94,12 +104,26 @@ const BOT_STATS: IBotStats = {
       path: '/pricing',
       hits: 2,
       lastSeen: 1,
-      bots: [{ name: 'GPTBot', category: 'AI Data Scraper', hits: 2 }],
+      status: { '2xx': 2, '3xx': 0, '4xx': 0, '5xx': 0 },
+      bots: [
+        {
+          name: 'GPTBot',
+          category: 'AI Data Scraper',
+          group: 'training',
+          hits: 2,
+        },
+      ],
     },
   ],
+  verifiedOnly: false,
+  verifiedHits: 0,
+  usage: { month: '2026-11', hits: 3, cap: 100_000, capped: false },
 };
 
-async function botStatsCaller(eventStore?: Partial<EventStore>) {
+async function botStatsCaller(
+  eventStore?: Partial<EventStore>,
+  timezone = 'UTC'
+) {
   const requireProjectAccess = mock(() => Promise.resolve({ level: 'read' }));
   const services = {
     auth: {
@@ -110,7 +134,7 @@ async function botStatsCaller(eventStore?: Partial<EventStore>) {
   const db = {
     project: {
       findUniqueOrThrow: () =>
-        Promise.resolve({ organization: { id: 'org_1', timezone: 'UTC' } }),
+        Promise.resolve({ organization: { id: 'org_1', timezone } }),
     },
   };
   const { ctx } = stubHttpCtx({
@@ -124,15 +148,19 @@ async function botStatsCaller(eventStore?: Partial<EventStore>) {
   return { caller: eventRouter.createCaller(trpcCtx), requireProjectAccess };
 }
 
-test('botStats checks read access and asks the store for the UTC day window', async () => {
+test('botStats checks read access and asks the store for the local-day window', async () => {
   const botStats = mock(() => Promise.resolve(BOT_STATS));
-  const { caller, requireProjectAccess } = await botStatsCaller({ botStats });
+  const { caller, requireProjectAccess } = await botStatsCaller(
+    { botStats },
+    'Europe/Berlin'
+  );
 
   const stats = await caller.botStats({
     ...PROJECT,
     range: 'custom',
     startDate: '2026-11-01',
     endDate: '2026-11-24',
+    group: 'answers',
   });
 
   expect(stats).toEqual(BOT_STATS);
@@ -140,20 +168,43 @@ test('botStats checks read access and asks the store for the UTC day window', as
     expect.objectContaining({ projectId: 'proj_1', level: 'read' })
   );
   expect(botStats).toHaveBeenCalledTimes(1);
-  expect(botStats.mock.calls[0] as unknown[]).toEqual([
-    'proj_1',
-    { fromDay: '2026-11-01', toDay: '2026-11-24', limit: undefined },
-  ]);
+  const [projectId, query] = botStats.mock.calls[0] as unknown as [
+    string,
+    Record<string, unknown>,
+  ];
+  expect(projectId).toBe('proj_1');
+  // Berlin is UTC+1 in November: local midnight is 23:00 UTC the day before.
+  expect(query).toMatchObject({
+    fromMs: Date.parse('2026-10-31T23:00:00Z'),
+    toMs: Date.parse('2026-11-24T22:59:59Z'),
+    timezone: 'Europe/Berlin',
+    group: 'answers',
+    verified: 'auto',
+  });
+  expect(
+    typeof query.monthlyCap === 'number' || query.monthlyCap === null
+  ).toBe(true);
 });
 
-test('botStats answers empty stats where the store keeps no daily counts', async () => {
+test('botStats rejects an unknown group', async () => {
+  const { caller } = await botStatsCaller({
+    botStats: () => Promise.resolve(BOT_STATS),
+  });
+  await expect(
+    caller.botStats({ ...PROJECT, group: 'robots' as never })
+  ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+});
+
+test('botStats answers empty stats where the store keeps no counts', async () => {
   const { caller } = await botStatsCaller();
 
-  expect(await caller.botStats({ ...PROJECT, range: '7d' })).toEqual({
-    totals: { total: 0, ai: 0, search: 0, other: 0 },
+  const stats = await caller.botStats({ ...PROJECT, range: '7d' });
+  expect(stats).toMatchObject({
+    totals: { total: 0, ai: 0, answers: 0, training: 0 },
     series: [],
     topBots: [],
     topPaths: [],
+    verifiedOnly: false,
   });
 });
 

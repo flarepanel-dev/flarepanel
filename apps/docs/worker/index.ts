@@ -16,7 +16,7 @@ export default {
     ctx: { waitUntil(promise: Promise<unknown>): void }
   ): Promise<Response> {
     const response = await env.ASSETS.fetch(request);
-    reportCrawl(request, env, ctx);
+    reportCrawl(request, response, env, ctx);
     return response;
   },
 };

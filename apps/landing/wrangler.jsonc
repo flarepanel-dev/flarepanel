@@ -8,7 +8,20 @@
   "compatibility_date": "2026-11-25",
   "assets": {
     "binding": "ASSETS",
-    "run_worker_first": ["/*", "!/_next/*", "!/op1.js", "!/op1-replay.js", "!/*.png", "!/*.svg", "!/*.ico", "!/*.webp", "!/*.jpg", "!/*.woff2", "!/*.css", "!/*.js"],
+    "run_worker_first": [
+      "/*",
+      "!/_next/*",
+      "!/op1.js",
+      "!/op1-replay.js",
+      "!/*.png",
+      "!/*.svg",
+      "!/*.ico",
+      "!/*.webp",
+      "!/*.jpg",
+      "!/*.woff2",
+      "!/*.css",
+      "!/*.js"
+    ],
     "directory": "./out",
     "html_handling": "drop-trailing-slash",
     "not_found_handling": "404-page"

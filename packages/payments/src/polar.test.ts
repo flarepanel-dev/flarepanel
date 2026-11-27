@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
 import { Webhook } from 'standardwebhooks';
+import { describe, expect, test } from 'vitest';
 import { validatePolarEvent } from './polar.js';
 
 // Polar issues Standard Webhooks secrets: `whsec_` + a base64 key.

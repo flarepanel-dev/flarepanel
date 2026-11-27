@@ -13,7 +13,11 @@ import {
   zTimeInterval,
 } from '../report/report.constants';
 import { getChartStartEndDate } from '../report/src/chart-dates';
-import { TOP_PAGES_SORT_COLUMNS } from './event.constants';
+import {
+  BOT_GROUPS,
+  BOT_VERIFIED_FILTERS,
+  TOP_PAGES_SORT_COLUMNS,
+} from './event.constants';
 import {
   getBotEventsPage,
   getBotStats,
@@ -27,7 +31,6 @@ import {
 } from './event.service';
 
 const DEFAULT_BOTS_LIMIT = 8;
-const ISO_DAY_LENGTH = 10;
 const DEFAULT_PAGES_TAKE = 50;
 const MAX_PAGES_TAKE = 1000;
 
@@ -190,6 +193,8 @@ export const eventRouter = createTRPCRouter({
         range: zRange.default('30d'),
         startDate: z.string().nullish(),
         endDate: z.string().nullish(),
+        group: z.enum(BOT_GROUPS).optional(),
+        verified: z.enum(BOT_VERIFIED_FILTERS).default('auto'),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -203,8 +208,11 @@ export const eventRouter = createTRPCRouter({
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
       return getBotStats(ctx, {
         projectId: input.projectId,
-        fromDay: startDate.slice(0, ISO_DAY_LENGTH),
-        toDay: endDate.slice(0, ISO_DAY_LENGTH),
+        startDate,
+        endDate,
+        timezone,
+        group: input.group,
+        verified: input.verified,
       });
     }),
 

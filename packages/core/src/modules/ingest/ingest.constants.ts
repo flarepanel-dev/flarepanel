@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { type IAiPayload, zAiPayload } from '../ai/ai.constants';
+import { CRAWL_STATUS_MAX, CRAWL_STATUS_MIN } from '../event/event.constants';
 import {
   MAX_GROUP_ID_LENGTH,
   MAX_GROUPS_PER_EVENT,
@@ -385,6 +386,7 @@ export const zTrackHandlerPayload = z.discriminatedUnion('type', [
 export const CRAWL_PATH_MAX_LENGTH = 2048;
 export const CRAWL_USER_AGENT_MAX_LENGTH = 1024;
 export const CRAWL_HOST_MAX_LENGTH = 253;
+export const CRAWL_VERIFIED_CATEGORY_MAX_LENGTH = 64;
 
 /**
  * `POST /track/crawl`: one page request a customer's server or edge saw. Only
@@ -397,6 +399,23 @@ export const zCrawlPayload = z.object({
   referrer: z.string().max(CRAWL_PATH_MAX_LENGTH).optional(),
   /** The site's host, when one project tracks several. */
   host: z.string().max(CRAWL_HOST_MAX_LENGTH).optional(),
+  /** The HTTP status the site answered with. */
+  status: z
+    .number()
+    .int()
+    .min(CRAWL_STATUS_MIN)
+    .max(CRAWL_STATUS_MAX)
+    .optional(),
+  /**
+   * Whether the edge verified the bot (on Cloudflare: a verified bot
+   * category). Leave it out when unknown.
+   */
+  verified: z.boolean().optional(),
+  /** The edge's category for a verified bot, e.g. Cloudflare's `AI Crawler`. */
+  verifiedCategory: z
+    .string()
+    .max(CRAWL_VERIFIED_CATEGORY_MAX_LENGTH)
+    .optional(),
 });
 export type ICrawlPayload = z.infer<typeof zCrawlPayload>;
 

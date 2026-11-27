@@ -8,7 +8,17 @@
   "compatibility_date": "2026-11-25",
   "assets": {
     "binding": "ASSETS",
-    "run_worker_first": ["/*", "!/assets/*", "!/fonts/*", "!/*.png", "!/*.svg", "!/*.ico", "!/*.woff2", "!/*.css", "!/*.js"],
+    "run_worker_first": [
+      "/*",
+      "!/assets/*",
+      "!/fonts/*",
+      "!/*.png",
+      "!/*.svg",
+      "!/*.ico",
+      "!/*.woff2",
+      "!/*.css",
+      "!/*.js"
+    ],
     "directory": "./dist/public",
     "html_handling": "drop-trailing-slash",
     "not_found_handling": "404-page"

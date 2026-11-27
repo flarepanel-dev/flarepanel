@@ -11,8 +11,13 @@ import { stripFixedStringPadding } from '../../shared/ch-fixed-string';
 import { toRowFilters } from '../chart/src/engine/store-rows';
 import { getEventFiltersWhereClause } from '../chart/src/filter-where';
 import { buildFilterWhere } from '../chart/src/table-filter-where';
+import { emptyBotStats } from '../ingest/cloudflare/bot-store';
 import type { ListEventsQuery } from '../ingest/cloudflare/engine';
 import type { RowFilter } from '../ingest/cloudflare/filter-eval';
+import {
+  wallClockEndMs,
+  wallClockToMs,
+} from '../ingest/cloudflare/time-buckets';
 import {
   getProfileById,
   getProfilesCached,
@@ -23,6 +28,9 @@ import {
 import type { IChartEventFilter } from '../report/report.constants';
 import type { IClickhouseSession } from '../session/session.service';
 import {
+  type BotGroup,
+  type BotVerifiedFilter,
+  botMonthlyCap,
   EVENT_COLUMNS,
   type EventListColumn,
   type IBotStats,
@@ -1455,28 +1463,41 @@ export async function getBotEventsPage(
   };
 }
 
+export interface BotStatsInput {
+  projectId: string;
+  /**
+   * Wall-clock bounds in `timezone` (`yyyy-MM-dd HH:mm:ss`, as the chart
+   * ranges give them); a bare `yyyy-MM-dd` end covers that whole day.
+   */
+  startDate: string;
+  endDate: string;
+  timezone: string;
+  group?: BotGroup;
+  verified?: BotVerifiedFilter;
+  limit?: number;
+}
+
 /**
- * Bot and AI crawler totals for `fromDay`..`toDay` (UTC, `YYYY-MM-DD`). Only
- * the Durable Object store keeps the per-day counts; without it (ClickHouse
+ * Bot and AI crawler totals for a window of the project's local days. Only
+ * the Durable Object store keeps the hourly counts; without it (ClickHouse
  * on Bun) the stats are empty and the recent list still works.
  */
 export async function getBotStats(
   deps: ServiceDeps,
-  query: { projectId: string; fromDay: string; toDay: string; limit?: number }
+  input: BotStatsInput
 ): Promise<IBotStats> {
-  if (deps.eventStore?.botStats) {
-    return await deps.eventStore.botStats(query.projectId, {
-      fromDay: query.fromDay,
-      toDay: query.toDay,
-      limit: query.limit,
-    });
+  if (!deps.eventStore?.botStats) {
+    return emptyBotStats();
   }
-  return {
-    totals: { total: 0, ai: 0, search: 0, other: 0 },
-    series: [],
-    topBots: [],
-    topPaths: [],
-  };
+  return await deps.eventStore.botStats(input.projectId, {
+    fromMs: wallClockToMs(input.startDate, input.timezone),
+    toMs: wallClockEndMs(input.endDate, input.timezone),
+    timezone: input.timezone,
+    group: input.group,
+    verified: input.verified,
+    limit: input.limit,
+    monthlyCap: botMonthlyCap(deps.config.selfHosted),
+  });
 }
 
 const ORIGINS_STORE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;

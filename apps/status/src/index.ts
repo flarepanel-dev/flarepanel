@@ -460,122 +460,127 @@ function httpsRedirect(request: Request): Response | null {
   return Response.redirect(url.toString(), 301);
 }
 
+async function serve(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext
+): Promise<Response> {
+  const url = new URL(request.url);
+  const path = url.pathname.replace(/\/+$/, '') || '/';
+  const html = (body: string, status = 200) =>
+    respond(body, 'text/html; charset=utf-8', {
+      status,
+      ttl: status === 200 ? PAGE_TTL_SECONDS : undefined,
+    });
+
+  if (path.startsWith('/api/admin/')) {
+    return admin(request, env, path);
+  }
+  const update = await updates(request, env, ctx, url, path);
+  if (update) {
+    return update;
+  }
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    return json({ error: 'Method not allowed' }, 405);
+  }
+  if (path === '/healthz') {
+    return json({ ok: true });
+  }
+  // Public status pages: search engines and AI crawlers are welcome.
+  if (path === '/robots.txt') {
+    return respond(
+      'User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: https://status.flarepanel.dev/sitemap.xml\n',
+      'text/plain; charset=utf-8',
+      { ttl: 3600 }
+    );
+  }
+  if (path === '/sitemap.xml') {
+    const urls = ['/', '/history']
+      .map(
+        (p) =>
+          `  <url><loc>https://status.flarepanel.dev${p === '/' ? '/' : p}</loc></url>`
+      )
+      .join('\n');
+    return respond(
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
+      'application/xml; charset=utf-8',
+      { ttl: 3600 }
+    );
+  }
+
+  return cached(request, ctx, async () => {
+    const now = Date.now();
+    if (path === '/') {
+      return html(renderStatusPage(buildView(await loadSnapshot(env.DB, now))));
+    }
+    if (path === '/api/status.json') {
+      const view = buildView(await loadSnapshot(env.DB, now));
+      return json(
+        {
+          status: view.overall,
+          description: OVERALL_TEXT[view.overall],
+          updatedAt: new Date(now).toISOString(),
+          services: view.monitors.map((m) => ({
+            id: m.monitor.id,
+            name: m.monitor.name,
+            state: m.state,
+            uptime90d: m.uptime === null ? null : Number(m.uptime.toFixed(3)),
+          })),
+          incidents: view.active.map((i) => ({
+            id: i.id,
+            title: i.title,
+            impact: i.impact,
+            status: i.status,
+            startedAt: new Date(i.startedAt).toISOString(),
+          })),
+        },
+        200,
+        PAGE_TTL_SECONDS
+      );
+    }
+    if (path === '/history') {
+      return html(
+        renderHistoryPage(
+          await loadIncidents(env.DB, now - 90 * DAY),
+          now,
+          url.searchParams.get('type') === 'maintenance'
+            ? 'maintenance'
+            : 'incidents'
+        )
+      );
+    }
+    if (path === '/subscribe') {
+      return html(renderSubscribePage(Boolean(mailDeps(env))));
+    }
+    if (path === '/feed.atom' || path === '/feed.xml' || path === '/rss') {
+      return respond(
+        renderFeed(await loadIncidents(env.DB, now - 90 * DAY)),
+        'application/atom+xml; charset=utf-8',
+        { ttl: PAGE_TTL_SECONDS }
+      );
+    }
+    const incident = /^\/incidents\/([^/]+)$/.exec(path);
+    if (incident?.[1]) {
+      const found = await loadIncident(env.DB, decodeURIComponent(incident[1]));
+      return found
+        ? html(renderIncidentPage(found, now))
+        : html(renderNotFound(), 404);
+    }
+    return html(renderNotFound(), 404);
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const insecure = httpsRedirect(request);
     if (insecure) {
       return insecure;
     }
-    // AI crawlers never run the page script: report them from here.
-    reportCrawl(request, env, ctx);
-    const url = new URL(request.url);
-    const path = url.pathname.replace(/\/+$/, '') || '/';
-    const html = (body: string, status = 200) =>
-      respond(body, 'text/html; charset=utf-8', {
-        status,
-        ttl: status === 200 ? PAGE_TTL_SECONDS : undefined,
-      });
-
-    if (path.startsWith('/api/admin/')) {
-      return admin(request, env, path);
-    }
-    const update = await updates(request, env, ctx, url, path);
-    if (update) {
-      return update;
-    }
-    if (request.method !== 'GET' && request.method !== 'HEAD') {
-      return json({ error: 'Method not allowed' }, 405);
-    }
-    if (path === '/healthz') {
-      return json({ ok: true });
-    }
-    // Public status pages: search engines and AI crawlers are welcome.
-    if (path === '/robots.txt') {
-      return respond(
-        'User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: https://status.flarepanel.dev/sitemap.xml\n',
-        'text/plain; charset=utf-8',
-        { ttl: 3600 }
-      );
-    }
-    if (path === '/sitemap.xml') {
-      const urls = ['/', '/history']
-        .map(
-          (p) =>
-            `  <url><loc>https://status.flarepanel.dev${p === '/' ? '/' : p}</loc></url>`
-        )
-        .join('\n');
-      return respond(
-        `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
-        'application/xml; charset=utf-8',
-        { ttl: 3600 }
-      );
-    }
-
-    return cached(request, ctx, async () => {
-      const now = Date.now();
-      if (path === '/') {
-        return html(
-          renderStatusPage(buildView(await loadSnapshot(env.DB, now)))
-        );
-      }
-      if (path === '/api/status.json') {
-        const view = buildView(await loadSnapshot(env.DB, now));
-        return json(
-          {
-            status: view.overall,
-            description: OVERALL_TEXT[view.overall],
-            updatedAt: new Date(now).toISOString(),
-            services: view.monitors.map((m) => ({
-              id: m.monitor.id,
-              name: m.monitor.name,
-              state: m.state,
-              uptime90d: m.uptime === null ? null : Number(m.uptime.toFixed(3)),
-            })),
-            incidents: view.active.map((i) => ({
-              id: i.id,
-              title: i.title,
-              impact: i.impact,
-              status: i.status,
-              startedAt: new Date(i.startedAt).toISOString(),
-            })),
-          },
-          200,
-          PAGE_TTL_SECONDS
-        );
-      }
-      if (path === '/history') {
-        return html(
-          renderHistoryPage(
-            await loadIncidents(env.DB, now - 90 * DAY),
-            now,
-            url.searchParams.get('type') === 'maintenance'
-              ? 'maintenance'
-              : 'incidents'
-          )
-        );
-      }
-      if (path === '/subscribe') {
-        return html(renderSubscribePage(Boolean(mailDeps(env))));
-      }
-      if (path === '/feed.atom' || path === '/feed.xml' || path === '/rss') {
-        return respond(
-          renderFeed(await loadIncidents(env.DB, now - 90 * DAY)),
-          'application/atom+xml; charset=utf-8',
-          { ttl: PAGE_TTL_SECONDS }
-        );
-      }
-      const incident = /^\/incidents\/([^/]+)$/.exec(path);
-      if (incident?.[1]) {
-        const found = await loadIncident(
-          env.DB,
-          decodeURIComponent(incident[1])
-        );
-        return found
-          ? html(renderIncidentPage(found, now))
-          : html(renderNotFound(), 404);
-      }
-      return html(renderNotFound(), 404);
-    });
+    const response = await serve(request, env, ctx);
+    // AI crawlers never run the page script: report them from here, with
+    // the status they were served.
+    reportCrawl(request, response, env, ctx);
+    return response;
   },
 
   async scheduled(controller: ScheduledController, env: Env) {

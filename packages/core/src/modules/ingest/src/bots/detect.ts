@@ -13,6 +13,33 @@ const EXTRA_BOTS = [
     name: 'Headless Chrome',
     category: 'Headless browser',
   },
+  // AI crawlers and fetchers documented by their operators that the upstream
+  // list does not have yet.
+  { includes: 'Google-Agent', name: 'Google-Agent', category: 'AI Agent' },
+  {
+    includes: 'Google-GeminiNotebook',
+    name: 'Google-GeminiNotebook',
+    category: 'AI Assistant',
+  },
+  { includes: 'Kimi-User', name: 'Kimi-User', category: 'AI Assistant' },
+  {
+    includes: 'Kimi-SearchBot',
+    name: 'Kimi-SearchBot',
+    category: 'AI Search Crawler',
+  },
+  { includes: 'KimiBot', name: 'KimiBot', category: 'AI Data Scraper' },
+  {
+    includes: 'xAI-SearchBot',
+    name: 'xAI-SearchBot',
+    category: 'AI Search Crawler',
+  },
+  {
+    includes: 'Grok-DeepSearch',
+    name: 'Grok-DeepSearch',
+    category: 'AI Assistant',
+  },
+  { includes: 'GrokBot', name: 'GrokBot', category: 'AI Data Scraper' },
+  { includes: 'DeepSeekBot', name: 'DeepseekBot', category: 'AI Data Scraper' },
 ] as const;
 
 // Pre-compile regex patterns at module load time

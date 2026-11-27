@@ -179,6 +179,7 @@ export type {
   SequenceSubject,
 } from './modules/email/src/sequence';
 export { runSequence, step } from './modules/email/src/sequence';
+export { botMonthlyCap } from './modules/event/event.constants';
 export type {
   IClickhouseBotEvent,
   IClickhouseEvent,

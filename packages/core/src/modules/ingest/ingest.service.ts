@@ -52,10 +52,12 @@ import type { IncomingEventProducer } from './src/incoming-event';
 
 export type { IngestHeaders } from '../../shared/headers';
 export type {
+  BotRecordOutcome,
   DeviceRequest,
   DuplicateCheck,
   GeoRequest,
   IngestBackend,
+  IngestBotHit,
   IngestSink,
   PartitionBy,
   ResolvedGeo,
@@ -1039,6 +1041,12 @@ function crawlPath(payload: ICrawlPayload): string {
   return `https://${host}${path.startsWith('/') ? '' : '/'}${path}`;
 }
 
+export interface CrawlOutcome {
+  bot: BotVerdict;
+  /** The project's monthly bot allowance is used up: the hit was not kept. */
+  capped: boolean;
+}
+
 /**
  * `POST /track/crawl`: a page request a customer's server or edge saw. A known
  * bot's hit is kept for the bots page; anything else is dropped. Never an
@@ -1047,19 +1055,25 @@ function crawlPath(payload: ICrawlPayload): string {
 export async function recordCrawlHit(
   request: { projectId: string; payload: ICrawlPayload; now?: Date },
   backend: Pick<IngestBackend, 'recordBot'>
-): Promise<BotVerdict> {
-  const userAgent = request.payload.userAgent.trim();
+): Promise<CrawlOutcome> {
+  const { payload } = request;
+  const userAgent = payload.userAgent.trim();
   const bot = userAgent ? await isBot(userAgent) : null;
   if (!bot) {
-    return null;
+    return { bot: null, capped: false };
   }
-  await backend.recordBot({
+  const verifiedCategory = payload.verifiedCategory?.trim() || undefined;
+  const outcome = await backend.recordBot({
     ...bot,
     projectId: request.projectId,
-    path: crawlPath(request.payload),
+    path: crawlPath(payload),
     createdAt: request.now ?? new Date(),
+    status: payload.status,
+    // A verified bot category is the edge saying it checked the bot.
+    verified: payload.verified ?? (verifiedCategory ? true : undefined),
+    verifiedCategory,
   });
-  return bot;
+  return { bot, capped: outcome?.capped ?? false };
 }
 
 function isLiveSession(
@@ -1100,6 +1114,7 @@ export function createIngestService(
     checkIngestBot(request, {
       recordBot: async (event) => {
         await createBotEvent(deps, event);
+        return undefined;
       },
     });
 

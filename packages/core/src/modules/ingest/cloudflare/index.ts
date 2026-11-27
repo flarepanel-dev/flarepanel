@@ -36,6 +36,8 @@ export { assertTableName } from './basin-sql';
 export {
   BOT_EVENTS_PER_DAY,
   BOT_EVENTS_TTL_MS,
+  type BotAddOptions,
+  type BotAddResult,
   type BotEventRow,
   type BotStatsQuery,
   type BotStore,

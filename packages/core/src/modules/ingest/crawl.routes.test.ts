@@ -43,7 +43,9 @@ beforeAll(async () => {
   ({ ingestRoutes } = await import('./ingest.routes'));
 });
 
-const recordBot = mock(async (_bot: unknown) => undefined);
+const recordBot = mock(
+  async (_bot: unknown): Promise<{ capped: boolean } | undefined> => undefined
+);
 
 beforeEach(() => {
   authenticateClient.mockClear();
@@ -87,6 +89,7 @@ test('records a known AI crawler with its name, category and path', async () => 
   expect(response.status).toBe(202);
   expect(await response.json()).toEqual({
     bot: { name: 'GPTBot', type: 'AI Data Scraper' },
+    capped: false,
   });
   expect(authenticateClient).toHaveBeenCalledTimes(1);
   expect(recordBot).toHaveBeenCalledTimes(1);
@@ -99,11 +102,56 @@ test('records a known AI crawler with its name, category and path', async () => 
   expect(ingestTrack).not.toHaveBeenCalled();
 });
 
+test('passes the status and verification on, and answers 202 when capped', async () => {
+  recordBot.mockResolvedValueOnce({ capped: true });
+  const response = await crawl({
+    path: '/missing',
+    userAgent: GPTBOT_UA,
+    status: 404,
+    verified: true,
+    verifiedCategory: 'AI Crawler',
+  });
+
+  expect(response.status).toBe(202);
+  expect(await response.json()).toEqual({
+    bot: { name: 'GPTBot', type: 'AI Data Scraper' },
+    capped: true,
+  });
+  expect(recordBot.mock.calls[0]?.[0]).toMatchObject({
+    status: 404,
+    verified: true,
+    verifiedCategory: 'AI Crawler',
+  });
+});
+
+test('rejects a status outside 100-599 and a non-boolean verified', async () => {
+  const badStatus = await crawl({
+    path: '/',
+    userAgent: GPTBOT_UA,
+    status: 99,
+  });
+  const fractional = await crawl({
+    path: '/',
+    userAgent: GPTBOT_UA,
+    status: 200.5,
+  });
+  const badVerified = await crawl({
+    path: '/',
+    userAgent: GPTBOT_UA,
+    verified: 'yes',
+  });
+
+  expect(badStatus.status).toBe(400);
+  expect(fractional.status).toBe(400);
+  expect(badVerified.status).toBe(400);
+  expect(recordBot).not.toHaveBeenCalled();
+});
+
 test('ignores a human user agent and stores nothing', async () => {
   const response = await crawl({ path: '/', userAgent: SAFARI_UA });
 
   expect(response.status).toBe(202);
-  expect(await response.json()).toEqual({ bot: null });
+  expect(await response.json()).toEqual({ bot: null, capped: false });
   expect(isBot).toHaveBeenCalledTimes(1);
   expect(recordBot).not.toHaveBeenCalled();
   expect(ingestTrack).not.toHaveBeenCalled();

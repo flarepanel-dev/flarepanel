@@ -21,6 +21,7 @@ import {
   answerToolQuery,
   archivePrefix,
   BOT_EVENTS_TTL_MS,
+  type BotAddOptions,
   type BotEventRow,
   type BotStatsQuery,
   type BotStore,
@@ -1074,9 +1075,9 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   }
 
   /** One detected bot hit (kept out of analytics), for the bot list. */
-  async addBotEvent(row: BotEventRow) {
+  async addBotEvent(row: BotEventRow, options?: BotAddOptions) {
     const { bots } = await this.state;
-    return bots.add(row);
+    return bots.add(row, options);
   }
 
   /** The bot list, newest first, with the total kept. */

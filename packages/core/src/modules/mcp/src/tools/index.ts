@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerActiveUserTools } from './analytics/active-users';
+import { registerBotTools } from './analytics/bots';
 import { registerEngagementTools } from './analytics/engagement';
 import { registerEventNameTools } from './analytics/event-names';
 import { registerEventTools } from './analytics/events';
@@ -51,6 +52,7 @@ export function registerAllTools(server: McpServer, tools: McpToolDeps): void {
   registerPagePerformanceTools(server, tools);
   registerPageConversionTools(server, tools);
   registerTrafficTools(server, tools);
+  registerBotTools(server, tools);
 
   registerFunnelTools(server, tools);
   registerRetentionTools(server, tools);

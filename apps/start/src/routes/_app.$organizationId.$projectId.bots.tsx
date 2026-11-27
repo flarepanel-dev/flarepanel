@@ -1,12 +1,21 @@
 import type { IBotStats } from '@flarepanel/core/modules/event/event.constants';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { BookOpenIcon, RadarIcon, RotateCwIcon } from 'lucide-react';
-import { useState } from 'react';
+import {
+  BadgeCheckIcon,
+  BookOpenIcon,
+  RadarIcon,
+  RotateCwIcon,
+  TriangleAlertIcon,
+} from 'lucide-react';
+import { useId, useState } from 'react';
+import { AiVisibility } from '@/components/bots/ai-visibility';
 import {
   BOTS_DOCS_URL,
   botGroupColor,
   botGroupLabel,
+  botUsageNotice,
+  botVerifiedFilter,
   displayBotPath,
   isBotsPageEmpty,
   toBotChartData,
@@ -21,7 +30,10 @@ import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
 import { Skeleton } from '@/components/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button, LinkButton } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { useTRPC } from '@/integrations/trpc/react';
 import { formatTimeAgoOrDateTime } from '@/utils/date';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
@@ -36,13 +48,14 @@ export const Route = createFileRoute('/_app/$organizationId/$projectId/bots')({
 const RECENT_PAGE_SIZE = 20;
 const TITLE = 'Bots & AI crawlers';
 const DESCRIPTION =
-  'AI crawlers, assistants and search bots that fetched your pages. Kept for 30 days and never counted as events.';
+  'AI crawlers, assistants and search bots that fetched your pages, grouped by what they fetched for. Kept for 30 days and never counted as events.';
 
 const KPIS = [
   { id: 'total', label: 'All bot hits' },
-  { id: 'ai', label: 'AI crawlers and agents' },
+  { id: 'answers', label: 'AI answers' },
+  { id: 'indexing', label: 'AI search indexing' },
+  { id: 'training', label: 'AI training' },
   { id: 'search', label: 'Search engines' },
-  { id: 'other', label: 'Other bots' },
 ] as const;
 
 function Component() {
@@ -50,10 +63,18 @@ function Component() {
   const trpc = useTRPC();
   const { range, startDate, endDate } = useOverviewOptions();
   const [recentPage, setRecentPage] = useState(0);
+  // Null until the user picks: verified only once the period has any.
+  const [verifiedOnly, setVerifiedOnly] = useState<boolean | null>(null);
 
   const statsQuery = useQuery(
     trpc.event.botStats.queryOptions(
-      { projectId, range, startDate, endDate },
+      {
+        projectId,
+        range,
+        startDate,
+        endDate,
+        verified: botVerifiedFilter(verifiedOnly),
+      },
       { placeholderData: keepPreviousData }
     )
   );
@@ -68,11 +89,21 @@ function Component() {
   const isLoading = statsQuery.isLoading || recentQuery.isLoading;
   const header = (
     <PageHeader
-      actions={<OverviewRange />}
+      actions={
+        <div className="flex flex-wrap items-center gap-4">
+          <VerifiedToggle
+            checked={stats?.verifiedOnly ?? false}
+            hasVerified={(stats?.verifiedHits ?? 0) > 0}
+            onChange={setVerifiedOnly}
+          />
+          <OverviewRange />
+        </div>
+      }
       description={DESCRIPTION}
       title={TITLE}
     />
   );
+  const notice = botUsageNotice(stats?.usage);
 
   if (statsQuery.isError) {
     return (
@@ -122,10 +153,22 @@ function Component() {
     <PageContainer>
       {header}
       <div className="mt-8 space-y-8">
+        {notice && (
+          <Alert variant={notice.level === 'capped' ? 'warning' : 'default'}>
+            <TriangleAlertIcon className="size-4" />
+            <AlertTitle>{notice.title}</AlertTitle>
+            <AlertDescription>{notice.description}</AlertDescription>
+          </Alert>
+        )}
         <BotKpis isLoading={statsQuery.isLoading} range={range} stats={stats} />
         <BotsChart
           isLoading={statsQuery.isLoading}
           series={stats?.series ?? []}
+        />
+        <AiVisibility
+          isLoading={statsQuery.isLoading}
+          projectId={projectId}
+          stats={stats}
         />
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <TopBotsTable isLoading={statsQuery.isLoading} stats={stats} />
@@ -155,6 +198,38 @@ function Component() {
   );
 }
 
+function VerifiedToggle({
+  checked,
+  hasVerified,
+  onChange,
+}: {
+  checked: boolean;
+  hasVerified: boolean;
+  onChange: (verifiedOnly: boolean) => void;
+}) {
+  const id = useId();
+  return (
+    <div
+      className="flex items-center gap-2"
+      title={
+        hasVerified
+          ? 'Only hits your edge verified as the real crawler (Cloudflare verified bots)'
+          : 'No verified hits in this period. Cloudflare Workers can send them: see the setup guide.'
+      }
+    >
+      <Switch
+        checked={checked}
+        disabled={!(hasVerified || checked)}
+        id={id}
+        onCheckedChange={onChange}
+      />
+      <Label className="mb-0 cursor-pointer text-sm" htmlFor={id}>
+        Verified only
+      </Label>
+    </div>
+  );
+}
+
 function BotKpis({
   stats,
   isLoading,
@@ -166,7 +241,7 @@ function BotKpis({
 }) {
   const points = toBotChartData(stats?.series ?? []);
   return (
-    <div className="card grid grid-cols-2 overflow-hidden rounded-md lg:grid-cols-4">
+    <div className="card grid grid-cols-2 overflow-hidden rounded-md md:grid-cols-3 lg:grid-cols-5">
       {KPIS.map((kpi) => (
         <OverviewMetricCard
           data={points.map((point) => ({
@@ -263,8 +338,17 @@ function TopBotsTable({
                     title={botGroupLabel(row.group)}
                   />
                   <span className="truncate font-medium">{row.name}</span>
-                  <span className="truncate text-muted-foreground">
-                    {row.category}
+                  {row.verifiedHits > 0 && (
+                    <BadgeCheckIcon
+                      aria-label="Verified"
+                      className="size-3.5 shrink-0 text-emerald-600"
+                    />
+                  )}
+                  <span
+                    className="truncate text-muted-foreground"
+                    title={`Detected as: ${row.category}`}
+                  >
+                    {botGroupLabel(row.group)} · {row.category}
                   </span>
                 </div>
               ),
@@ -343,6 +427,18 @@ function TopPathsTable({
               ),
             },
             {
+              name: '4xx',
+              width: '50px',
+              getSortValue: (row) => row.status['4xx'],
+              render: (row) => <StatusCount value={row.status['4xx']} />,
+            },
+            {
+              name: '5xx',
+              width: '50px',
+              getSortValue: (row) => row.status['5xx'],
+              render: (row) => <StatusCount value={row.status['5xx']} />,
+            },
+            {
               name: 'Last seen',
               width: '110px',
               getSortValue: (row) => row.lastSeen,
@@ -362,12 +458,28 @@ function TopPathsTable({
   );
 }
 
+function StatusCount({ value }: { value: number }) {
+  return (
+    <span
+      className={
+        value > 0
+          ? 'font-medium text-destructive tabular-nums'
+          : 'text-muted-foreground tabular-nums'
+      }
+    >
+      {value.toLocaleString()}
+    </span>
+  );
+}
+
 interface RecentHit {
   id: string;
   name: string;
   type: string;
   path: string;
   createdAt: Date | string;
+  status?: number | null;
+  verified?: boolean | null;
 }
 
 function RecentHits({
@@ -420,6 +532,23 @@ function RecentHits({
               <span className="min-w-0 flex-1 truncate" title={row.path}>
                 {displayBotPath(row.path)}
               </span>
+              {row.verified && (
+                <BadgeCheckIcon
+                  aria-label="Verified"
+                  className="size-3.5 shrink-0 text-emerald-600"
+                />
+              )}
+              {row.status != null && (
+                <span
+                  className={
+                    row.status >= 400
+                      ? 'shrink-0 font-medium text-destructive tabular-nums'
+                      : 'shrink-0 text-muted-foreground tabular-nums'
+                  }
+                >
+                  {row.status}
+                </span>
+              )}
               <span className="shrink-0 text-muted-foreground tabular-nums">
                 {formatTimeAgoOrDateTime(new Date(row.createdAt))}
               </span>

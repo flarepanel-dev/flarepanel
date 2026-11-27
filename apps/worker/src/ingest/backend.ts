@@ -8,6 +8,7 @@
 import {
   type AppDeps,
   type Buffers,
+  botMonthlyCap,
   checkNotificationRulesForEvent,
   countRecordedSession,
   createCtx,
@@ -38,6 +39,9 @@ import { readReplayChunks, storeReplayChunk } from './replays';
 
 /** Repeats of one request inside this window are dropped. */
 const DEDUPE_TTL_SECONDS = 1;
+/** How long a colo skips the Durable Object for a project over its bot allowance. */
+const BOT_CAPPED_TTL_SECONDS = 15 * 60;
+const ISO_MONTH_LENGTH = 7;
 
 type ProjectEventsStub = ReturnType<Env['PROJECT_EVENTS']['get']>;
 
@@ -93,19 +97,37 @@ export function createCloudflareIngestBackend({
     },
 
     // Bot hits stay out of analytics; the project's Durable Object counts
-    // every one per day and lists them (5,000 a day at most, 30 days).
+    // every one per hour and lists them (5,000 a day at most, 30 days), up
+    // to the plan's monthly allowance.
     recordBot: async (bot) => {
-      await projectEventsStub(env, bot.projectId).addBotEvent({
-        id: crypto.randomUUID(),
-        name: bot.name,
-        type: bot.type,
-        project_id: bot.projectId,
-        path: bot.path,
-        created_at: new Date(bot.createdAt)
-          .toISOString()
-          .replace('T', ' ')
-          .replace('Z', ''),
-      });
+      const createdAt = new Date(bot.createdAt);
+      // Over the allowance the Durable Object writes nothing; remembering
+      // that in the colo spares it the call too.
+      const cappedKey = `bots:capped:${bot.projectId}:${createdAt.toISOString().slice(0, ISO_MONTH_LENGTH)}`;
+      if (await cache.get(cappedKey)) {
+        return { capped: true };
+      }
+      const result = await projectEventsStub(env, bot.projectId).addBotEvent(
+        {
+          id: crypto.randomUUID(),
+          name: bot.name,
+          type: bot.type,
+          project_id: bot.projectId,
+          path: bot.path,
+          created_at: createdAt
+            .toISOString()
+            .replace('T', ' ')
+            .replace('Z', ''),
+          status: bot.status ?? null,
+          verified: bot.verified ?? null,
+          verified_category: bot.verifiedCategory ?? null,
+        },
+        { monthlyCap: botMonthlyCap(deps().config.selfHosted) }
+      );
+      if (result.capped) {
+        await cache.set(cappedKey, '1', BOT_CAPPED_TTL_SECONDS);
+      }
+      return { capped: result.capped };
     },
 
     // request.cf locates the caller. A server passing the visitor's address

@@ -96,20 +96,68 @@ export const TOP_PAGES_SORT_COLUMNS = [
 export type TopPagesSortColumn = (typeof TOP_PAGES_SORT_COLUMNS)[number];
 
 /**
- * How the bots page groups the detector's categories (`bots.ts`): AI crawlers,
- * assistants and agents; search engines; everything else.
+ * What a bot hit was for: fetches a person triggered in an AI assistant (`answers`), crawls that feed
+ * AI search (`indexing`), crawls that collect training data (`training`),
+ * classic search engines, and everything else.
  */
-export const BOT_CATEGORY_GROUPS = ['ai', 'search', 'other'] as const;
-export type BotCategoryGroup = (typeof BOT_CATEGORY_GROUPS)[number];
+export const BOT_GROUPS = [
+  'answers',
+  'indexing',
+  'training',
+  'search',
+  'other',
+] as const;
+export type BotGroup = (typeof BOT_GROUPS)[number];
 
-export function botCategoryGroup(category: string): BotCategoryGroup {
-  if (category.startsWith('AI ')) {
-    return 'ai';
-  }
-  if (category === 'Search bot') {
-    return 'search';
-  }
-  return 'other';
+export const BOT_GROUP_LABELS: Record<BotGroup, string> = {
+  answers: 'AI answers',
+  indexing: 'AI search indexing',
+  training: 'AI training',
+  search: 'Search engines',
+  other: 'Other',
+};
+
+/** The groups that are AI. */
+export const AI_BOT_GROUPS: readonly BotGroup[] = [
+  'answers',
+  'indexing',
+  'training',
+];
+
+/** The detector's categories (`bots.ts`) that say what a bot is for. */
+const BOT_CATEGORY_GROUP: Record<string, BotGroup> = {
+  'AI Assistant': 'answers',
+  'AI Agent': 'answers',
+  'AI Search Crawler': 'indexing',
+  'AI Data Scraper': 'training',
+  'Search bot': 'search',
+};
+
+/**
+ * Bots whose upstream category says less than their operator documents.
+ * Keyed by the detector's name, so hits stored before a fix regroup too.
+ */
+const BOT_NAME_GROUP: Record<string, BotGroup> = {
+  // Meta: the agent crawls for training and indexing, the fetcher runs on a
+  // user's request.
+  'Meta-ExternalAgent': 'training',
+  'Meta-ExternalFetcher': 'answers',
+  // ByteDance's and Common Crawl's crawls are the usual training corpora.
+  Bytespider: 'training',
+  'ccBot crawler': 'training',
+  // Amazon searches with Amzn-SearchBot; Amazonbot may train its models.
+  Amazonbot: 'training',
+  // Builds Vertex AI agents' search index on the site owner's request.
+  'Google-CloudVertexBot': 'indexing',
+  'Applebot-Extended': 'training',
+};
+
+export function botGroup(name: string, category: string): BotGroup {
+  return BOT_NAME_GROUP[name] ?? BOT_CATEGORY_GROUP[category] ?? 'other';
+}
+
+export function isAiBotGroup(group: BotGroup): boolean {
+  return AI_BOT_GROUPS.includes(group);
 }
 
 /** Rows `event.botStats` returns per table. */
@@ -117,22 +165,50 @@ export const BOT_STATS_TOP_LIMIT = 50;
 /** Bots listed per crawled path. */
 export const BOT_STATS_BOTS_PER_PATH = 5;
 
-export interface IBotStatsTotals {
-  total: number;
-  ai: number;
-  search: number;
-  other: number;
+/**
+ * Bot hits a hosted project keeps per calendar month (UTC). Later hits that
+ * month are answered and not stored, which keeps the project's Durable
+ * Object writes bounded.
+ * Self-hosted projects keep every hit.
+ */
+export const BOT_HITS_PER_MONTH = 100_000;
+
+export function botMonthlyCap(selfHosted: boolean): number | null {
+  return selfHosted ? null : BOT_HITS_PER_MONTH;
+}
+
+/**
+ * `auto` keeps to verified hits once the window has any (the page's
+ * default); `all` and `verified` are explicit.
+ */
+export const BOT_VERIFIED_FILTERS = ['auto', 'all', 'verified'] as const;
+export type BotVerifiedFilter = (typeof BOT_VERIFIED_FILTERS)[number];
+
+export const CRAWL_STATUS_MIN = 100;
+export const CRAWL_STATUS_MAX = 599;
+
+export type IBotStatsTotals = Record<BotGroup | 'total' | 'ai', number>;
+
+/** Responses served to bots by status class; hits without one count in none. */
+export interface IBotStatusCounts {
+  '2xx': number;
+  '3xx': number;
+  '4xx': number;
+  '5xx': number;
 }
 
 export interface IBotStats {
   totals: IBotStatsTotals;
-  /** One row per UTC day in the window, `YYYY-MM-DD`, zero-filled. */
+  /** One row per day of the project's time zone, `YYYY-MM-DD`, zero-filled. */
   series: (IBotStatsTotals & { date: string })[];
   topBots: {
     name: string;
+    /** The detector's own category, e.g. `AI Data Scraper`. */
     category: string;
-    group: BotCategoryGroup;
+    group: BotGroup;
     hits: number;
+    /** Hits the reporting edge (Cloudflare) verified as this bot. */
+    verifiedHits: number;
     /** Milliseconds since the epoch. */
     lastSeen: number;
   }[];
@@ -140,6 +216,22 @@ export interface IBotStats {
     path: string;
     hits: number;
     lastSeen: number;
-    bots: { name: string; category: string; hits: number }[];
+    status: IBotStatusCounts;
+    bots: { name: string; category: string; group: BotGroup; hits: number }[];
   }[];
+  /** Whether only verified hits were counted. */
+  verifiedOnly: boolean;
+  /** Verified hits in the window, whatever the filter. */
+  verifiedHits: number;
+  /** This calendar month (UTC) against the plan's allowance. */
+  usage: IBotUsage;
+}
+
+export interface IBotUsage {
+  /** `YYYY-MM`, UTC. */
+  month: string;
+  hits: number;
+  /** Null where nothing is capped (self-hosted). */
+  cap: number | null;
+  capped: boolean;
 }

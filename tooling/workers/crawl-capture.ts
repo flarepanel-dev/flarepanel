@@ -22,8 +22,35 @@ const BOT_HINT =
 const ASSET =
   /\.(?:css|js|mjs|map|png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|mp4|webm)$/i;
 
+/**
+ * What Cloudflare says about the bot. Cloudflare lists `verifiedBotCategory`
+ * and `botManagement.verifiedBot` with its Bot Management variables
+ * (developers.cloudflare.com/bots/reference/bot-management-variables/); they
+ * are not set on every plan, so each is sent only when present.
+ */
+function edgeVerification(request: Request): {
+  verified?: boolean;
+  verifiedCategory?: string;
+} {
+  const cf = (
+    request as Request & {
+      cf?: {
+        verifiedBotCategory?: string;
+        botManagement?: { verifiedBot?: boolean };
+      };
+    }
+  ).cf;
+  const verifiedCategory = cf?.verifiedBotCategory || undefined;
+  if (verifiedCategory) {
+    return { verified: true, verifiedCategory };
+  }
+  const verified = cf?.botManagement?.verifiedBot;
+  return typeof verified === 'boolean' ? { verified } : {};
+}
+
 export function reportCrawl(
   request: Request,
+  response: Response,
   env: CrawlCaptureEnv,
   ctx: { waitUntil(promise: Promise<unknown>): void }
 ): void {
@@ -55,6 +82,8 @@ export function reportCrawl(
         host: url.host,
         userAgent: userAgent.slice(0, 1024),
         referrer: request.headers.get('referer') ?? undefined,
+        status: response.status,
+        ...edgeVerification(request),
       }),
     }).catch(() => undefined)
   );
