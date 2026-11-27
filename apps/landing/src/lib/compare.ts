@@ -47,7 +47,7 @@ export const FLAREPANEL: Record<RowKey, Fact> = {
   },
   free: {
     value: false,
-    note: '30-day trial with 1M events, no card',
+    note: '30-day trial with 100K events, no card',
   },
   cookies: { value: 'None', note: 'No cookies or persistent visitor ids' },
   license: { value: 'AGPL-3.0', note: 'SDKs MIT' },

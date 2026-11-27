@@ -21,6 +21,13 @@ function clampToInt4(count: number): number {
   return Math.min(count, INT4_MAX);
 }
 
+function isFreeTrial(organization: Organization): boolean {
+  return (
+    organization.subscriptionStatus === 'trialing' &&
+    !organization.subscriptionProductId
+  );
+}
+
 function nextExceededAt(
   organization: Organization,
   count: number,
@@ -32,13 +39,12 @@ function nextExceededAt(
     return null;
   }
   const limit = organization.subscriptionPeriodEventsLimit;
-  if (count > limit && !organization.subscriptionPeriodEventsCountExceededAt) {
-    return new Date();
-  }
-  if (count <= limit) {
+  // A trial is used up at its limit; a plan is exceeded past it.
+  const over = isFreeTrial(organization) ? count >= limit : count > limit;
+  if (!over) {
     return null;
   }
-  return organization.subscriptionPeriodEventsCountExceededAt;
+  return organization.subscriptionPeriodEventsCountExceededAt ?? new Date();
 }
 
 export const updateEventsCount = cacheablePerDeps(
@@ -112,11 +118,14 @@ async function sendUsageAlerts(
     return;
   }
 
-  const exceeded = count > limit && !organization.usageExceededSentAt;
+  const isTrial = isFreeTrial(organization);
+  const exceeded =
+    (isTrial ? count >= limit : count > limit) &&
+    !organization.usageExceededSentAt;
   const nearLimit =
     !exceeded &&
     count >= limit * USAGE_WARNING_THRESHOLD &&
-    count <= limit &&
+    (isTrial ? count < limit : count <= limit) &&
     !organization.usageWarningSentAt;
 
   if (!(exceeded || nearLimit)) {
@@ -164,9 +173,6 @@ async function sendUsageAlerts(
       }
     }
 
-    const isTrial =
-      organization.subscriptionStatus === 'trialing' &&
-      !organization.subscriptionProductId;
     let failedRecipients = 0;
     for (const [email, firstName] of recipients) {
       // One bad address must not abort the loop or roll back the claim —

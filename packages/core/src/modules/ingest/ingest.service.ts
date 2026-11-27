@@ -674,10 +674,11 @@ export async function ingestTrack(
 const WIND_DOWN_BLOCKED_STEPS = new Set(['blocked', 'final_warning']);
 
 /**
- * A free trial stops collecting once it is over its event allowance: unlike a
- * paid plan, which keeps collecting over its limit (only the charts pause),
- * a trial has no one paying for the extra storage and requests. Workspaces
- * that start without a trial (limit 0) stop at their first counted events.
+ * A free trial stops collecting when it has used its event allowance: unlike
+ * a paid plan, which keeps collecting over its limit (only the charts pause),
+ * a trial has no one paying for the extra storage and requests. The exact
+ * stop is the project's event store (`getTrialCap`); this flag, refreshed
+ * with the usage counters, turns later requests away before they reach it.
  */
 export function isTrialOverLimit(organization: {
   subscriptionStatus: string | null;
@@ -690,7 +691,7 @@ export function isTrialOverLimit(organization: {
     organization.subscriptionStatus === 'trialing' &&
     !organization.subscriptionProductId &&
     organization.subscriptionPeriodEventsCountExceededAt !== null &&
-    organization.subscriptionPeriodEventsCount >
+    organization.subscriptionPeriodEventsCount >=
       organization.subscriptionPeriodEventsLimit
   );
 }

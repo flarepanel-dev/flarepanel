@@ -204,6 +204,14 @@ describe('isIngestionWoundDown', () => {
       expect(await check()).toBe(true);
     });
 
+    it('stops a trial at exactly its limit', async () => {
+      getOrganizationByProjectIdCached.mockResolvedValue({
+        ...trial,
+        subscriptionPeriodEventsCount: 1_000_000,
+      });
+      expect(await check()).toBe(true);
+    });
+
     it('stops a workspace that started without a trial (limit 0)', async () => {
       getOrganizationByProjectIdCached.mockResolvedValue({
         ...trial,

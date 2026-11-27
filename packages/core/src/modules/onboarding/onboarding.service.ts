@@ -34,10 +34,10 @@ import type {
 import { trialEmailKey } from './src/trial-claim';
 
 const TRIAL_DURATION_IN_DAYS = 30;
-// The trial's allowance: enough to evaluate on a real site (the 1M plan's),
-// small enough that trial sign-ups cannot run up Cloudflare costs (OpenPanel
-// gives 10M). Set, as before, so a trial is never flagged at the default 0.
-const TRIAL_EVENTS_LIMIT = 1_000_000;
+// The trial's allowance: enough to evaluate on a real site for a month,
+// small enough that a trial costs well under a dollar in Cloudflare usage.
+// Set, as before, so a trial is never flagged at the default 0.
+const TRIAL_EVENTS_LIMIT = 100_000;
 /** How long the hash of an email that started a trial is kept. */
 const TRIAL_CLAIM_KEEP_MS = 2 * 365 * 24 * 60 * 60 * 1000;
 

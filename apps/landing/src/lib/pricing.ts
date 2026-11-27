@@ -27,7 +27,7 @@ export const PLANS: Plan[] = [
 export const yearly = (plan: Plan) => plan.monthly * 10;
 
 export const TRIAL_DAYS = 30;
-export const TRIAL_EVENTS = 1_000_000;
+export const TRIAL_EVENTS = 100_000;
 
 export function formatEvents(events: number) {
   return new Intl.NumberFormat('en-US', {

@@ -285,6 +285,7 @@ export type {
 export {
   createOrganizationService,
   getOrganizationByProjectIdCached,
+  getTrialCapCached,
 } from './modules/organization/organization.service';
 export type { IGetTopGenericInput } from './modules/overview/overview.service';
 export type {

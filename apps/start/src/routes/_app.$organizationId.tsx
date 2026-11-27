@@ -142,7 +142,7 @@ function Component() {
       !organization.subscriptionProductId &&
       organization.subscriptionPeriodEventsCountExceededAt &&
       organization.subscriptionPeriodEventsLimit > 0 &&
-      organization.subscriptionPeriodEventsCount >
+      organization.subscriptionPeriodEventsCount >=
         organization.subscriptionPeriodEventsLimit
   );
   const isOverLimit = Boolean(

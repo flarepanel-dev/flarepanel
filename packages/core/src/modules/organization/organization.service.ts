@@ -128,6 +128,61 @@ export const getOrganizationByProjectIdCached = cacheablePerDb(
   ORGANIZATION_BY_PROJECT_CACHE_TTL_SEC
 );
 
+/** A free trial's allowance, as the project's event store enforces it. */
+export interface TrialCap {
+  /** Billable events the whole workspace may record during its trial. */
+  limit: number;
+  /** Events already recorded by the workspace's other projects. */
+  others: number;
+}
+
+/**
+ * The cap for a project whose workspace is on a free trial, or null when it
+ * is on a plan. The project's own events are counted exactly by its event
+ * store; the other projects' share comes from their stored counters, which
+ * are refreshed every ten minutes.
+ */
+export async function getTrialCap(
+  deps: DbScope,
+  projectId: string
+): Promise<TrialCap | null> {
+  const project = await deps.db.project.findUnique({
+    where: { id: projectId },
+    select: {
+      organization: {
+        select: {
+          subscriptionStatus: true,
+          subscriptionProductId: true,
+          subscriptionPeriodEventsLimit: true,
+          projects: { select: { id: true, eventsCount: true } },
+        },
+      },
+    },
+  });
+  const organization = project?.organization;
+  if (
+    !organization ||
+    organization.subscriptionStatus !== 'trialing' ||
+    organization.subscriptionProductId
+  ) {
+    return null;
+  }
+  return {
+    limit: organization.subscriptionPeriodEventsLimit,
+    others: organization.projects
+      .filter((other) => other.id !== projectId)
+      .reduce((sum, other) => sum + (other.eventsCount ?? 0), 0),
+  };
+}
+
+const TRIAL_CAP_CACHE_TTL_SEC = 60;
+// A minute: short enough that choosing a plan lifts the cap almost at once.
+export const getTrialCapCached = cacheablePerDb(
+  'getTrialCap',
+  (deps: DbScope, projectId: string) => getTrialCap(deps, projectId),
+  TRIAL_CAP_CACHE_TTL_SEC
+);
+
 export async function getInvites(
   deps: ServiceDeps,
   organizationId: string

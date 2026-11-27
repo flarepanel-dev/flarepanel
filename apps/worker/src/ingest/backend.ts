@@ -18,8 +18,10 @@ import {
   getGeoFromCf,
   getGeoLocation,
   getNotificationRulesByProjectId,
+  getOrganizationByProjectIdCached,
   getProjectByIdCached,
   getProjectReplayAccess,
+  getTrialCapCached,
   hasGeoLookup,
   type IClickhouseProfile,
   type IClickhouseSessionReplayChunk,
@@ -156,8 +158,13 @@ export function createCloudflareIngestBackend({
           deps(),
           projectId
         ).catch(() => []);
+        // A free trial stops exactly at its allowance, inside the store.
+        const cap = deps().config.selfHosted
+          ? null
+          : await getTrialCapCached(deps(), projectId).catch(() => null);
         const result = await projectEventsStub(env, projectId).track({
           funnelRules: getFunnelRules(rules).length > 0,
+          cap,
           draft,
           project: project
             ? {
@@ -175,13 +182,24 @@ export function createCloudflareIngestBackend({
             )
           );
         }
-        // Usage counters (project sort order, billing period): cached for an
-        // hour per project, so this is a cache read on almost every request.
+        // Usage counters (project sort order, billing period): cached for
+        // ten minutes per project, so this is a cache read on most requests.
         const appDeps = deps();
         const scope = createCtx(appDeps, {
           requestId: `usage:${projectId}`,
           logger: appDeps.logger,
         });
+        if (result.blocked) {
+          return { deviceId: '', sessionId: '' };
+        }
+        if (result.capReached) {
+          // The trial just used its last event: refresh the counters now, so
+          // the workspace is flagged, emailed and shown as used up at once.
+          await Promise.all([
+            updateEventsCount.clear(scope, projectId),
+            getOrganizationByProjectIdCached.clear(appDeps, projectId),
+          ]).catch(() => undefined);
+        }
         const hasEventRules = rules.some(
           (rule) => (rule.config as { type?: string }).type === 'events'
         );

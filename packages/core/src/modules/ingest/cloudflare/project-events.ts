@@ -34,6 +34,12 @@ export interface ProjectEventsTrackInput {
   dedupeKey?: string;
 }
 
+/** A free trial's allowance for this project (see `getTrialCap`). */
+export interface ProjectEventsCap {
+  limit: number;
+  others: number;
+}
+
 export interface ProjectEventsTrackResult extends DeviceIdResult {
   /** The project had no first event and this request stored one. */
   firstEvent: boolean;

@@ -33,6 +33,7 @@ import {
   type ConversionScanQuery,
   createArchiveColdStore,
   createProjectEventsService,
+  createTrialCapCounter,
   type Dimension,
   type EngineSql,
   type EventCountQuery,
@@ -64,6 +65,7 @@ import {
   type ProfileListQuery,
   type ProfileLookup,
   type ProfileStore,
+  type ProjectEventsCap,
   type ProjectEventsEngine,
   type ProjectEventsService,
   type ProjectEventsTrackInput,
@@ -213,6 +215,11 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   /** Advanced analytics: stored chunks not sent to the Basin stream yet. */
   private unstreamed = false;
   private pendingEvents = 0;
+  /** A free trial's exact stop; counts stored billable events once per wake-up. */
+  private readonly trialCap = createTrialCapCounter(async () => {
+    const { engine } = await this.state;
+    return engine.countBillableEvents(0, Date.now());
+  });
   private readonly groupSummaries = new Map<
     string,
     { at: number; json: string }
@@ -345,9 +352,27 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
   // -------------------------------------------------------------------------
   // RPC (called by the Worker with the project's id as the object name)
 
-  async track(input: ProjectEventsTrackInput & { funnelRules?: boolean }) {
+  async track(
+    input: ProjectEventsTrackInput & {
+      funnelRules?: boolean;
+      /** Set for a workspace on a free trial: stop exactly at its allowance. */
+      cap?: ProjectEventsCap | null;
+    }
+  ) {
     const { service } = await this.state;
     await this.rememberProject(input.draft.event.projectId);
+    const { cap } = input;
+    if (cap && !(await this.trialCap.admit(cap))) {
+      return {
+        deviceId: '',
+        sessionId: '',
+        firstEvent: false,
+        duplicate: false,
+        eventJson: null,
+        blocked: true,
+        capReached: false,
+      };
+    }
     if (
       input.funnelRules !== undefined &&
       input.funnelRules !== this.funnelRules
@@ -355,13 +380,35 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
       this.funnelRules = input.funnelRules;
       await this.ctx.storage.put(KEY_FUNNEL_RULES, input.funnelRules);
     }
-    const { event, ...result } = await service.track(input);
+    let tracked: Awaited<ReturnType<typeof service.track>>;
+    try {
+      tracked = await service.track(input);
+    } catch (error) {
+      if (cap) {
+        this.trialCap.settle(cap, false);
+      }
+      throw error;
+    }
+    const { event, ...result } = tracked;
     if (!result.duplicate) {
       this.pendingEvents += 1;
       this.scheduleBroadcast();
     }
+    let capReached = false;
+    if (cap) {
+      capReached = this.trialCap.settle(cap, Boolean(event));
+    } else if (event) {
+      // Stored uncounted (not on a trial): recount if a cap ever applies.
+      this.trialCap.reset();
+    }
     // As JSON text: the payload's open-ended properties are not RPC-typed.
-    return { ...result, eventJson: event ? JSON.stringify(event) : null };
+    return {
+      ...result,
+      eventJson: event ? JSON.stringify(event) : null,
+      blocked: false,
+      /** This event used the last of the trial's allowance. */
+      capReached,
+    };
   }
 
   async resolveDevice(device: DeviceRequest) {
@@ -494,6 +541,7 @@ export class ProjectEventsDurableObject extends DurableObject<Env> {
     this.unarchived = false;
     this.unstreamed = false;
     this.pendingEvents = 0;
+    this.trialCap.reset();
     this.state = this.open();
     await this.state;
     return { archivedObjectsDeleted: deleted };

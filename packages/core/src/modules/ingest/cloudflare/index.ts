@@ -138,6 +138,7 @@ export {
 } from './profile-store';
 export {
   createProjectEventsService,
+  type ProjectEventsCap,
   type ProjectEventsProject,
   type ProjectEventsService,
   type ProjectEventsTrackInput,
@@ -179,3 +180,4 @@ export {
   type FindProfilesQuery,
   type ToolQuery,
 } from './tool-scans';
+export { createTrialCapCounter } from './trial-cap';

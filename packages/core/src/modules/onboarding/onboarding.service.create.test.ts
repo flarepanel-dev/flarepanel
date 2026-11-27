@@ -167,7 +167,7 @@ test('gives one free trial per email address; later workspaces start without one
   const [first, second] = dbMock.organization.create.mock.calls.map(
     ([call]) => call.data
   );
-  expect(first?.subscriptionPeriodEventsLimit).toBe(1_000_000);
+  expect(first?.subscriptionPeriodEventsLimit).toBe(100_000);
   expect(
     (first?.subscriptionEndsAt as Date).getTime() - Date.now()
   ).toBeGreaterThan(29 * 24 * 60 * 60 * 1000);
@@ -204,6 +204,6 @@ test('self-hosting keeps a trial for every workspace and records no claim', asyn
   const limits = dbMock.organization.create.mock.calls.map(
     ([call]) => call.data.subscriptionPeriodEventsLimit
   );
-  expect(limits).toEqual([1_000_000, 1_000_000]);
+  expect(limits).toEqual([100_000, 100_000]);
   expect(dbMock.trialClaim.create).not.toHaveBeenCalled();
 });
