@@ -9,6 +9,7 @@ import {
   TriangleAlertIcon,
 } from 'lucide-react';
 import { useId, useState } from 'react';
+import { AiAnswersCard } from '@/components/bots/ai-answers';
 import { AiVisibility } from '@/components/bots/ai-visibility';
 import {
   BOT_DATA_SOURCE_LABELS,
@@ -65,7 +66,7 @@ const KPIS = [
 ] as const;
 
 function Component() {
-  const { projectId } = Route.useParams();
+  const { projectId, organizationId } = Route.useParams();
   const trpc = useTRPC();
   const { range, startDate, endDate } = useOverviewOptions();
   const [recentPage, setRecentPage] = useState(0);
@@ -159,6 +160,12 @@ function Component() {
             <CloudflareConnectCard projectId={projectId} setup={cloudflare} />
           </div>
         )}
+        <div className="mt-8">
+          <AiAnswersCard
+            organizationId={organizationId}
+            projectId={projectId}
+          />
+        </div>
       </PageContainer>
     );
   }
@@ -203,6 +210,7 @@ function Component() {
           projectId={projectId}
           stats={stats}
         />
+        <AiAnswersCard organizationId={organizationId} projectId={projectId} />
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <TopBotsTable isLoading={statsQuery.isLoading} stats={stats} />
           <TopPathsTable isLoading={statsQuery.isLoading} stats={stats} />

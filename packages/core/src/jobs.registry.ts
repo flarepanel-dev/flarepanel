@@ -13,6 +13,10 @@ import {
 } from './jobs/schedulers';
 import { aiCronJobs } from './modules/ai/ai.jobs';
 import {
+  aiAnswersCronJobs,
+  aiAnswersQueueJobs,
+} from './modules/ai-answers/ai-answers.jobs';
+import {
   cloudflareAnalyticsCronJobs,
   cloudflareAnalyticsQueueJobs,
 } from './modules/cloudflare-analytics/cloudflare-analytics.jobs';
@@ -87,6 +91,7 @@ const cron = defineQueue('cron', {
     ...insightCronJobs,
     ...gscCronJobs,
     ...cloudflareAnalyticsCronJobs,
+    ...aiAnswersCronJobs,
     ...cohortCronJobs,
     ...organizationCronJobs,
     ...onboardingCronJobs,
@@ -129,8 +134,8 @@ const insights = defineQueue('insights', {
   },
 });
 
-// Per-project pulls from third-party APIs: Search Console and the Cloudflare
-// crawler import.
+// Per-project pulls from third-party APIs: Search Console, the Cloudflare
+// crawler import and AI answer checks.
 const gsc = defineQueue('gsc', {
   defaults: { removeOnComplete: 50, removeOnFail: 100 },
   worker: { concurrency: CONCURRENCY.gsc },
@@ -138,6 +143,7 @@ const gsc = defineQueue('gsc', {
   jobs: {
     ...gscQueueJobs,
     ...cloudflareAnalyticsQueueJobs,
+    ...aiAnswersQueueJobs,
   },
 });
 

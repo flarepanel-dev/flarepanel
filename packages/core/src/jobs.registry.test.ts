@@ -4,6 +4,7 @@ import { queues } from './jobs.registry';
 
 // Byte-identity snapshot; `jobs/schedulers.test.ts` has the matching id-level check.
 const GOLDEN_SCHEDULER_IDS = [
+  'aiAnswersDaily',
   'cloudflareSync',
   'cohortRefresh',
   'dataHealth',
@@ -117,6 +118,7 @@ test('the insights queue carries the insight module job', () => {
 test('the cron queue carries the insight module cron fragment', () => {
   expect(Object.keys(queues.cron.jobs).sort()).toEqual(
     [
+      'aiAnswersDaily',
       'cloudflareSync',
       'cohortRefresh',
       'dataHealth',
@@ -150,9 +152,14 @@ test('the cron queue carries the insight module cron fragment', () => {
 });
 
 // legacyCompat.gsc discriminates on these exact names (jobs/compat.ts).
-test('the gsc queue carries the gsc module jobs and the Cloudflare crawler sync', () => {
+test('the gsc queue carries the gsc module jobs, the Cloudflare crawler sync and AI answer runs', () => {
   expect(Object.keys(queues.gsc.jobs).sort()).toEqual(
-    ['cloudflareProjectSync', 'gscProjectBackfill', 'gscProjectSync'].sort()
+    [
+      'aiAnswersProjectRun',
+      'cloudflareProjectSync',
+      'gscProjectBackfill',
+      'gscProjectSync',
+    ].sort()
   );
   for (const name of ['gscProjectSync', 'gscProjectBackfill']) {
     expect(queues.gsc.jobs[name as keyof typeof queues.gsc.jobs]).toMatchObject(
@@ -240,7 +247,7 @@ test('the notification queue carries the notification module jobs', () => {
   });
 });
 
-test('the cron queue derives the golden 23 scheduler ids', () => {
+test('the cron queue derives the golden 24 scheduler ids', () => {
   const derivedIds = [
     ...schedulersFromRegistry(queues.cron).map((s) => s.id),
     PING_SCHEDULE.id,

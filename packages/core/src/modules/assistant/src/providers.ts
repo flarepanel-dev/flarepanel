@@ -75,6 +75,32 @@ function modelFor(
   return instrumentLanguageModel(config, model);
 }
 
+/**
+ * A model with its provider's own web search tool, for answers that read the
+ * web the way ChatGPT and Claude do. Not self-tracked: these are a customer's
+ * prompts on the customer's own key.
+ */
+export function webSearchModel(
+  config: CoreConfig,
+  provider: ChatProvider,
+  modelId: string
+) {
+  if (provider === 'openai') {
+    const client = openai(config);
+    return {
+      model: client(modelId) as LanguageModel,
+      tools: {
+        web_search: client.tools.webSearch({ searchContextSize: 'low' }),
+      },
+    };
+  }
+  const client = anthropic(config);
+  return {
+    model: client(modelId) as LanguageModel,
+    tools: { web_search: client.tools.webSearch_20250305({ maxUses: 3 }) },
+  };
+}
+
 export function resolveChatModel(
   config: CoreConfig,
   entry: ChatModelEntry

@@ -73,6 +73,7 @@ export default defineConfig({
         { text: 'Identify users', link: '/tracking/identify' },
         { text: 'Revenue', link: '/tracking/revenue' },
         { text: 'AI crawlers and bots', link: '/tracking/ai-crawlers' },
+        { text: 'AI answers', link: '/tracking/ai-answers' },
         { text: 'SDK options', link: '/tracking/options' },
       ],
     },

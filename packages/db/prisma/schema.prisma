@@ -395,6 +395,8 @@ model Project {
   imports           Import[]
   gscConnection     GscConnection?
   cloudflareConnection CloudflareConnection?
+  aiAnswerTracker      AiAnswerTracker?
+  aiAnswerPrompts      AiAnswerPrompt[]
   cohorts           Cohort[]
   exportWatermarks  ExportWatermark[]
   integrations      Integration[]
@@ -959,4 +961,74 @@ model EmailUnsubscribe {
 
   @@unique([email, category])
   @@map("email_unsubscribes")
+}
+
+// AI answer visibility: a project's brand, competitors and prompts. A daily
+// job asks each prompt to ChatGPT (OpenAI) and Claude (Anthropic) with web
+// search, on the workspace's own AI key, and records whether the brand is
+// named, where, and which sites the answer cites.
+model AiAnswerTracker {
+  id            String    @id @default(uuid())
+  projectId     String    @unique
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  // Names the brand is known by, e.g. ["FlarePanel"].
+  /// [IPrismaStringList]
+  brandNames    Json      @default("[]")
+  // Domains whose citation counts as the brand's own, e.g. ["flarepanel.dev"].
+  /// [IPrismaStringList]
+  brandDomains  Json      @default("[]")
+  /// [IPrismaStringList]
+  competitors   Json      @default("[]")
+  // Providers to ask (openai, anthropic); empty: every provider with a key.
+  /// [IPrismaStringList]
+  providers     Json      @default("[]")
+  enabled       Boolean   @default(true)
+  lastRunAt     DateTime?
+  /// success | partial | error | no_key
+  lastRunStatus String?
+  lastRunError  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+
+  @@map("ai_answer_trackers")
+}
+
+model AiAnswerPrompt {
+  id        String           @id @default(uuid())
+  projectId String
+  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  prompt    String
+  createdAt DateTime         @default(now())
+  results   AiAnswerResult[]
+
+  @@index([projectId])
+  @@map("ai_answer_prompts")
+}
+
+// One answer per prompt, provider and UTC day; a rerun the same day replaces it.
+model AiAnswerResult {
+  id          String         @id @default(uuid())
+  projectId   String
+  promptId    String
+  prompt      AiAnswerPrompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  provider    String
+  model       String
+  // YYYY-MM-DD, UTC.
+  day         String
+  mentioned   Boolean
+  // 1-based rank of the brand among the brands the answer names; null when absent.
+  position    Int?
+  ownCited    Boolean
+  /// [IPrismaStringList]
+  citations   Json           @default("[]")
+  /// [IPrismaStringList]
+  competitors Json           @default("[]")
+  // The answer's opening, to show what was said.
+  excerpt     String         @default("")
+  error       String?
+  createdAt   DateTime       @default(now())
+
+  @@unique([promptId, provider, day])
+  @@index([projectId, day])
+  @@map("ai_answer_results")
 }

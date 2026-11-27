@@ -2,6 +2,7 @@
 // serves.
 
 import { aiRouter } from './modules/ai/ai.rpc';
+import { aiAnswersRouter } from './modules/ai-answers/ai-answers.rpc';
 import { chatRouter } from './modules/assistant/assistant.rpc';
 import { authRouter } from './modules/auth/auth.rpc';
 import { chartRouter } from './modules/chart/chart.rpc';
@@ -41,6 +42,7 @@ export const appRouter = createTRPCRouter({
   insight: insightRouter,
   gsc: gscRouter,
   cloudflareAnalytics: cloudflareAnalyticsRouter,
+  aiAnswers: aiAnswersRouter,
   cohort: cohortRouter,
   import: importRouter,
   chat: chatRouter,

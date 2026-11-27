@@ -1,0 +1,51 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: AI answers
+description: Track whether ChatGPT and Claude name your brand, where they rank you, and which sites their answers use.
+---
+
+# AI answers
+
+When someone asks ChatGPT or Claude for "the best privacy-friendly analytics tool", are you in the answer? **AI answers** (beta) on the **Bots & AI crawlers** page checks that every day for the questions you choose.
+
+It complements [AI crawlers and bots](/tracking/ai-crawlers), which shows what AI crawlers read on your site, and the AI referrals channel, which shows the people AI answers send you.
+
+## How it works
+
+1. You enter your brand (the names people use for you), your domains and up to 10 competitors.
+2. You add up to 10 prompts: the questions your customers would type into an assistant.
+3. Once a day (05:30 UTC), FlarePanel asks every prompt to each assistant you picked, with web search on, the way a person would:
+   - **ChatGPT**: OpenAI's Responses API, `gpt-5.4-mini` with web search.
+   - **Claude**: Anthropic's Messages API, `claude-haiku-5-5` with web search (up to 3 searches an answer).
+4. For each answer it records:
+   - **Named**: whether the answer names your brand or one of your domains (whole words, any case).
+   - **Rank**: your place among the brands the answer names, by first mention. If it names two competitors before you, you are #3.
+   - **Your site**: whether one of your domains is among the sources the answer cites or its searches read.
+   - The competitors it names, the sources it used and the opening of the answer around your name.
+
+**Check now** runs the same check on demand, at most once an hour.
+
+## Your own AI key
+
+Answers run on your workspace's [own OpenAI or Anthropic key](/features/ai-keys) (**Workspace settings → AI provider key**), so your provider bills the calls directly and FlarePanel never pays for or resells them. Each daily check makes one call per prompt and assistant: 10 prompts on both assistants is 20 calls a day. Web search is billed by the provider on top of tokens; check your provider's pricing.
+
+If the workspace has no key, nothing runs and the card says so. If a call fails (an invalid key, a rate limit, web search turned off for your Anthropic organization), that answer shows **Failed** with the provider's message and is left out of the numbers. Failed calls are not retried, so you are never billed twice.
+
+## Reading the numbers
+
+- **Answers naming you** is the share of the last 30 days' answers that name you.
+- **Average rank when named** only counts answers that name you.
+- **Answers using your site** is the share of answers with one of your domains among their sources.
+- **Named in answers** compares how many answers name you and each competitor.
+
+Assistants answer the same question differently from one run to the next, and differently for different people. Read the trend over days, not a single answer. These are API answers from small models with web search: close to what the apps show, not the same.
+
+## What is stored
+
+Your brand, domains, competitors and prompts, and for each prompt, assistant and day: the result above, up to 20 source URLs and an excerpt of the answer (about 360 characters). Answers are kept 90 days. Removing a prompt removes its answers.
+
+## Self-hosting
+
+The check uses the workspace key when there is one, and otherwise `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` from your server's environment. Runs are queued on the `gsc` queue, like Search Console and the Cloudflare import.

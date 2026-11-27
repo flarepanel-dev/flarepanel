@@ -7,9 +7,10 @@ import {
   startSchedulers,
 } from './schedulers';
 
-// Byte-identity snapshot: these 23 scheduler ids must not change without a
+// Byte-identity snapshot: these 24 scheduler ids must not change without a
 // migration, since BullMQ persists them as job-scheduler keys in Redis.
 const GOLDEN_SCHEDULER_IDS = [
+  'aiAnswersDaily',
   'cloudflareSync',
   'cohortRefresh',
   'dataHealth',
@@ -102,7 +103,7 @@ function fakeQueue(options?: {
 test('the golden scheduler ids are reproduced byte-for-byte', () => {
   const allIds = [...CRON_SCHEDULES.map((s) => s.id), PING_SCHEDULE.id].sort();
 
-  expect(allIds).toHaveLength(23);
+  expect(allIds).toHaveLength(24);
   expect(allIds).toEqual(GOLDEN_SCHEDULER_IDS);
 });
 
@@ -124,7 +125,7 @@ test('ping is excluded by default — neither self-hosted nor production', async
   });
 
   const upsertedIds = queue.calls.upserted.map((u) => u.id).sort();
-  expect(upsertedIds).toHaveLength(22);
+  expect(upsertedIds).toHaveLength(23);
   expect(upsertedIds).not.toContain('ping');
 });
 
@@ -165,7 +166,7 @@ test('ping is included only when self-hosted AND production', async () => {
   });
 
   const upsertedIds = queue.calls.upserted.map((u) => u.id).sort();
-  expect(upsertedIds).toHaveLength(23);
+  expect(upsertedIds).toHaveLength(24);
   expect(upsertedIds).toEqual(GOLDEN_SCHEDULER_IDS);
 });
 

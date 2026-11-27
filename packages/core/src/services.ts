@@ -1,5 +1,6 @@
 import type { Ctx } from './context';
 import { createAiService } from './modules/ai/ai.service';
+import { createAiAnswersService } from './modules/ai-answers/ai-answers.service';
 import { createAssistantService } from './modules/assistant/assistant.service';
 import { createAuthService } from './modules/auth/auth.service';
 import { createChartService } from './modules/chart/chart.service';
@@ -67,6 +68,7 @@ export interface Services {
   insight: ReturnType<typeof createInsightService>;
   gsc: ReturnType<typeof createGscService>;
   cloudflareAnalytics: ReturnType<typeof createCloudflareAnalyticsService>;
+  aiAnswers: ReturnType<typeof createAiAnswersService>;
   cohort: ReturnType<typeof createCohortService>;
   import: ReturnType<typeof createImportService>;
   ingest: ReturnType<typeof createIngestService>;
@@ -119,6 +121,7 @@ export function createServices(deps: ServiceDeps): Services {
     insight: createInsightService(deps, services),
     gsc: createGscService(deps, services),
     cloudflareAnalytics: createCloudflareAnalyticsService(deps, services),
+    aiAnswers: createAiAnswersService(deps, services),
     cohort: createCohortService(deps, services),
     import: createImportService(deps, services),
     ingest: createIngestService(deps, services),
