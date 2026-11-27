@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description:
     'The companies that process personal data for FlarePanel Cloud, what each one does and where.',
   alternates: { canonical: '/subprocessors' },
-  // Unreviewed drafts stay out of search results.
+  // Drafts stay out of search results.
   robots: LEGAL_DRAFT ? { index: false } : undefined,
 };
 
@@ -22,11 +22,11 @@ const SUBPROCESSORS = [
     link: 'https://www.cloudflare.com/cloudflare-customer-dpa/',
   },
   {
-    name: 'Polar Software, Inc. [verify the legal entity]',
+    name: 'Polar Software, Inc.',
     purpose:
-      'Payments and subscriptions, as merchant of record (once billing is switched on)',
-    data: 'Account holders only: name, email, billing details, plan',
-    location: 'United States [verify]',
+      'Sells paid plans as merchant of record: checkout, payments, invoices, tax and subscriptions (once billing is switched on)',
+    data: 'Account holders who buy a plan: name, email, billing details, plan',
+    location: 'United States',
     link: 'https://polar.sh/legal/privacy',
   },
 ];

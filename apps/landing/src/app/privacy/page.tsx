@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { COMPANY, LegalPage } from '@/components/legal';
+import { COMPANY, ContactLink, LegalPage, MERCHANT } from '@/components/legal';
 import { LEGAL_DRAFT } from '@/lib/legal';
 import { site } from '@/lib/site';
 
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description:
     'What FlarePanel collects, why, where it is stored and for how long, for account holders and for the visitors our customers measure.',
   alternates: { canonical: '/privacy' },
-  // Unreviewed drafts stay out of search results.
+  // Drafts stay out of search results.
   robots: LEGAL_DRAFT ? { index: false } : undefined,
 };
 
@@ -33,8 +33,8 @@ export default function PrivacyPage() {
       <p>
         FlarePanel Cloud (flarepanel.dev, dashboard.flarepanel.dev,
         api.flarepanel.dev and status.flarepanel.dev) is run by {COMPANY.name},{' '}
-        {COMPANY.address}, registration number {COMPANY.registration} ("we").
-        For anything in this policy, write to {COMPANY.contact}.
+        {COMPANY.description} ("we"). We are the controller for the data in
+        section 1. For anything in this policy, write to <ContactLink />.
       </p>
       <p>
         If you run FlarePanel yourself from the open-source code, the data stays
@@ -58,13 +58,18 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>Keys you add:</strong> API clients, MCP tokens (stored as
-          hashes) and, if you connect your own AI provider, its key, encrypted
-          at rest.
+          hashes) and, if you connect your own AI provider or a Cloudflare zone,
+          its key or read-only token, encrypted at rest.
         </li>
         <li>
-          <strong>Billing:</strong> your plan and its status. Payments are
-          handled by our payment provider (see{' '}
-          <Link href="/subprocessors">subprocessors</Link>); we do not see or
+          <strong>Billing:</strong> your plan and its status. Paid plans are
+          sold by {MERCHANT.name} as merchant of record. Polar collects your
+          payment and billing details, issues invoices and handles tax, as an
+          independent controller under its own{' '}
+          <a href={MERCHANT.privacy} rel="noopener noreferrer" target="_blank">
+            privacy policy
+          </a>
+          . We receive your plan and its status from Polar, and never see or
           store card numbers.
         </li>
         <li>
@@ -77,6 +82,12 @@ export default function PrivacyPage() {
           <strong>Emails:</strong> the account emails we send you (verification,
           invitations, password resets, usage warnings, product updates you can
           unsubscribe from).
+        </li>
+        <li>
+          <strong>Feedback:</strong> when you use Give feedback in the
+          dashboard, your message, any screenshots, the page, your browser and
+          workspace id, and your email if you choose to share it, are emailed to
+          us so we can follow up.
         </li>
       </ul>
       <p>
@@ -112,6 +123,14 @@ export default function PrivacyPage() {
           masked by default) and the prompts and responses of their AI features
         </li>
       </ul>
+      <p>
+        Customers can also report crawler and bot requests to their site, or
+        import them from their Cloudflare account. Only requests from known bots
+        (such as GPTBot or Googlebot) are kept, with the bot's name, the page,
+        the time and the response status; requests from people are dropped. If a
+        customer tracks how AI assistants answer questions about their brand, we
+        store the questions they choose and a short excerpt of each answer.
+      </p>
       <h3>No cookies, and no stored IP addresses</h3>
       <p>
         The FlarePanel script sets no cookies and keeps ids only in memory. To
@@ -172,10 +191,9 @@ export default function PrivacyPage() {
         databases and R2 storage. Cloudflare operates a global network, so data
         can be processed in the United States and other countries where it has
         data centres. Transfers out of the EU and UK rely on Cloudflare's
-        participation in the EU-U.S. Data Privacy Framework and on the Standard
-        Contractual Clauses in its data processing terms. [Verify before
-        publishing, and decide whether to pin new workspaces to Cloudflare's EU
-        jurisdiction.]
+        certification under the EU-U.S. Data Privacy Framework, with the
+        Standard Contractual Clauses in its data processing addendum as a
+        fallback.
       </p>
 
       <h2>5. How long we keep it</h2>
@@ -207,6 +225,14 @@ export default function PrivacyPage() {
             <td>30 days</td>
           </tr>
           <tr>
+            <td>Crawler and bot hits</td>
+            <td>30 days</td>
+          </tr>
+          <tr>
+            <td>AI answer checks</td>
+            <td>90 days</td>
+          </tr>
+          <tr>
             <td>Status email subscriptions</td>
             <td>Until you unsubscribe; unconfirmed ones a week</td>
           </tr>
@@ -219,8 +245,11 @@ export default function PrivacyPage() {
             <td>30 days, then overwritten</td>
           </tr>
           <tr>
-            <td>Invoices and billing records</td>
-            <td>As long as tax law requires [fill in: e.g. 10 years]</td>
+            <td>Invoices and payment records</td>
+            <td>
+              Kept by Polar as merchant of record; our own records of plans and
+              payments as long as German tax law requires (up to 10 years)
+            </td>
           </tr>
         </tbody>
       </table>
@@ -238,9 +267,10 @@ export default function PrivacyPage() {
       <p>
         You can see, correct, export and delete your account data at any time:
         most of it from the dashboard (Settings, and Delete account), the rest
-        by writing to {COMPANY.contact}. Depending on where you live you may
-        also object to processing, restrict it, or complain to your data
-        protection authority.
+        by writing to <ContactLink />. You may also object to processing,
+        restrict it, take your data to another provider, withdraw consent you
+        gave, and complain to a data protection authority, for example the one
+        where you live or work.
       </p>
       <p>
         If you are a visitor of a site that uses FlarePanel, please contact that

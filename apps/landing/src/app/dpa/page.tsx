@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { COMPANY, LegalPage } from '@/components/legal';
+import { COMPANY, ContactLink, LegalPage } from '@/components/legal';
 import { LEGAL_DRAFT } from '@/lib/legal';
 
 export const metadata: Metadata = {
@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description:
     'How FlarePanel processes personal data for customers under GDPR Article 28: scope, security measures, subprocessors, breaches and deletion.',
   alternates: { canonical: '/dpa' },
-  // Unreviewed drafts stay out of search results.
+  // Drafts stay out of search results.
   robots: LEGAL_DRAFT ? { index: false } : undefined,
 };
 
@@ -134,8 +134,8 @@ export default function DpaPage() {
         Where personal data leaves the EEA, UK or Switzerland, transfers rely on
         an adequacy decision (such as the EU-U.S. Data Privacy Framework) or on
         the Standard Contractual Clauses, which are incorporated by reference
-        with this DPA. [Verify the mechanism per subprocessor before
-        publishing.]
+        with this DPA. Cloudflare, which hosts the service, is certified under
+        the EU-U.S. Data Privacy Framework.
       </p>
 
       <h2>7. Helping you</h2>
@@ -144,7 +144,7 @@ export default function DpaPage() {
         requests from data subjects (access, deletion, export), carry out data
         protection impact assessments and consult supervisory authorities.
         FlarePanel's dashboard and API let you find and export a person's data
-        yourself. To delete one person's data, write to {COMPANY.contact} with
+        yourself. To delete one person's data, write to <ContactLink /> with
         their id and we delete it within 30 days.
       </p>
 

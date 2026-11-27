@@ -34,12 +34,13 @@ const COLUMNS = [
       { label: 'Get early access', href: site.signUp },
     ],
   },
-  // Shown once the legal texts are reviewed (LEGAL_DRAFT in legal.tsx).
+  // Hidden while LEGAL_DRAFT (lib/legal.ts) is true.
   {
     title: 'Legal',
     links: [
       { label: 'Privacy', href: '/privacy' },
       { label: 'Terms', href: '/terms' },
+      { label: 'Refunds', href: '/refunds' },
       { label: 'DPA', href: '/dpa' },
       { label: 'Subprocessors', href: '/subprocessors' },
     ],

@@ -176,8 +176,27 @@ function Component() {
 
       <SignUpEmailForm inviteId={inviteId} onVerificationSent={setSentTo} />
 
-      {/* The Terms and Privacy line returns once the legal texts are final
-          (LEGAL_DRAFT in apps/landing/src/lib/legal.ts). */}
+      <p className="text-center text-muted-foreground text-xs leading-relaxed">
+        By creating an account you agree to the{' '}
+        <a
+          className="underline hover:text-foreground"
+          href="https://flarepanel.dev/terms"
+          rel="noreferrer"
+          target="_blank"
+        >
+          Terms of Service
+        </a>{' '}
+        and{' '}
+        <a
+          className="underline hover:text-foreground"
+          href="https://flarepanel.dev/privacy"
+          rel="noreferrer"
+          target="_blank"
+        >
+          Privacy Policy
+        </a>
+        .
+      </p>
 
       <p className="text-center text-muted-foreground text-sm">
         Already have an account?{' '}

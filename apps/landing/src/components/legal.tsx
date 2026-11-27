@@ -1,8 +1,7 @@
 // Shared layout for the legal pages (privacy, terms, DPA, subprocessors).
 //
-// LEGAL_DRAFT stays true until the owner has filled every [bracketed]
-// placeholder and had the texts reviewed. While it is true each page shows a
-// visible draft notice, so an unreviewed text can never pass for final.
+// While LEGAL_DRAFT is true each page shows a visible draft notice, so a text
+// that is being rewritten can never pass for final.
 
 import Link from 'next/link';
 import type { ReactNode } from 'react';
@@ -11,19 +10,37 @@ import { Nav } from './nav';
 import { Container } from './ui';
 import { LEGAL_DRAFT, LEGAL_UPDATED } from '@/lib/legal';
 
-/** Company details the owner fills in before publishing. */
+/**
+ * Who runs FlarePanel Cloud. There is no company yet: the service is run as
+ * an independent project from Germany, and Polar sells the paid plans as
+ * merchant of record.
+ */
 export const COMPANY = {
-  name: '[Company legal name]',
-  address: '[Registered address]',
-  registration: '[Company registration number]',
-  country: '[Country of incorporation]',
-  governingLaw: '[Governing law, e.g. the laws of …]',
-  contact: '[Privacy contact email, e.g. privacy@flarepanel.dev]',
+  name: 'FlarePanel',
+  description: 'an independent software project operated from Germany',
+  governingLaw: 'the laws of the Federal Republic of Germany',
+  country: 'Germany',
+  contact: 'hello@flarepanel.dev',
 } as const;
+
+/** Polar, the merchant of record for paid plans. */
+export const MERCHANT = {
+  name: 'Polar Software, Inc.',
+  address: '3500 South DuPont Highway, Dover, DE 19901, United States',
+  site: 'https://polar.sh',
+  buyerTerms: 'https://polar.sh/legal/checkout-buyer-terms',
+  privacy: 'https://polar.sh/legal/privacy',
+} as const;
+
+/** The contact address as a mail link. */
+export function ContactLink() {
+  return <a href={`mailto:${COMPANY.contact}`}>{COMPANY.contact}</a>;
+}
 
 export const LEGAL_PAGES = [
   { href: '/privacy', label: 'Privacy policy' },
   { href: '/terms', label: 'Terms of service' },
+  { href: '/refunds', label: 'Refund policy' },
   { href: '/dpa', label: 'Data processing agreement' },
   { href: '/subprocessors', label: 'Subprocessors' },
 ] as const;

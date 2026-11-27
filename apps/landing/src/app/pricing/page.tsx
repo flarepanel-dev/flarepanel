@@ -1,5 +1,6 @@
 import { ArrowRight, Check, Plus } from 'lucide-react';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { CloudflareIcon } from '@/components/cloudflare-icons';
 import { ClosingCta, Footer } from '@/components/footer';
 import { Nav } from '@/components/nav';
@@ -59,6 +60,10 @@ const QUESTIONS = [
     a: 'Any time, from Billing in your workspace. Upgrades apply straight away; cancelling keeps your plan until the end of the period you paid for.',
   },
   {
+    q: 'Who handles payment, and can I get a refund?',
+    a: 'Payments are processed by Polar, our merchant of record, which issues your invoice and adds VAT or sales tax at checkout where it applies. If FlarePanel is not for you, your first payment is refunded in full within 14 days: see the refund policy.',
+  },
+  {
     q: 'Do you offer yearly billing?',
     a: 'Yes. A yearly plan costs ten months, so two months are free.',
   },
@@ -108,7 +113,9 @@ export default function PricingPage() {
             </div>
             <p className="mt-5 text-[13.5px] text-faint leading-[1.6]">
               Early access: billing is not switched on yet, so accounts are free
-              for now. These are the prices that will apply.
+              for now. These are the prices that will apply. Payments are
+              processed by Polar as merchant of record, and your first payment
+              can be <Link href="/refunds">refunded within 14 days</Link>.
             </p>
           </Container>
         </section>

@@ -1,6 +1,5 @@
-// LEGAL_DRAFT stays true until the owner has filled every [bracketed]
-// placeholder in components/legal.tsx and had the texts reviewed. While it is
-// true each legal page shows a draft notice, is kept out of search, and the
-// footer does not link to them.
-export const LEGAL_DRAFT = true;
-export const LEGAL_UPDATED = '2026-11-26';
+// LEGAL_DRAFT shows a draft notice on every legal page, keeps them out of
+// search and hides the footer's Legal column. Set it back to true only while
+// a text is being rewritten.
+export const LEGAL_DRAFT = false;
+export const LEGAL_UPDATED = '2026-11-27';
