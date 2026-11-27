@@ -13,6 +13,7 @@ import { Building2Icon } from 'lucide-react';
 import { EmptyState } from '@/components/empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import FeedbackPrompt from '@/components/organization/feedback-prompt';
+import { TrialStrip } from '@/components/organization/trial-strip';
 import YearlySwitchPrompt from '@/components/organization/yearly-switch-prompt';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -152,6 +153,7 @@ function Component() {
       organization.subscriptionPeriodEventsLimit > 0
   );
 
+  const isTrialing = organization.subscriptionState === 'trialing';
   const location = useLocation();
   const isBillingPage = /\/.+\/billing/.test(location.pathname);
 
@@ -160,7 +162,10 @@ function Component() {
       {!(stateMeta.banner || isBillingPage) && (
         <YearlySwitchPrompt organization={organization} />
       )}
-      {stateMeta.banner && !hideBannerForPrompt && (
+      {isTrialing && !isBillingPage && !isTrialOverLimit && (
+        <TrialStrip organization={organization} />
+      )}
+      {stateMeta.banner && !hideBannerForPrompt && !isTrialing && (
         <Alert
           description={stateMeta.banner.description}
           title={stateMeta.banner.title}
