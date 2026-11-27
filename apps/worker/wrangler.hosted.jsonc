@@ -114,7 +114,8 @@
   },
   "vars": {
     "NODE_ENV": "production",
-    "SELF_HOSTED": "true",
+    // No SELF_HOSTED: billing, plan limits and trial guards are on. Any value
+    // (even "false") would switch them off in the dashboard.
     // Sign-ups closed until launch; invited users can still join.
     "ALLOW_REGISTRATION": "false",
     "API_URL": "https://api.flarepanel.dev",
