@@ -212,7 +212,12 @@ test('botStats reads ClickHouse on a server install, where there is no event sto
               name: 'GPTBot',
               type: 'AI Data Scraper',
               path: '/pricing',
+              verified: 1,
               hits: '3',
+              s2: '2',
+              s3: '0',
+              s4: '1',
+              s5: '0',
               last_at: String(hour * 1000),
             },
             {
@@ -220,7 +225,12 @@ test('botStats reads ClickHouse on a server install, where there is no event sto
               name: 'Googlebot',
               type: 'Search bot',
               path: '/',
+              verified: 0,
               hits: '2',
+              s2: '0',
+              s3: '0',
+              s4: '0',
+              s5: '0',
               last_at: String(hour * 1000),
             },
           ]
@@ -232,16 +242,29 @@ test('botStats reads ClickHouse on a server install, where there is no event sto
   };
   const { caller } = await botStatsCaller(undefined, 'UTC', ch);
 
-  const stats = await caller.botStats({ ...PROJECT, range: '7d' });
+  const stats = await caller.botStats({
+    ...PROJECT,
+    range: '7d',
+    verified: 'all',
+  });
   expect(queries).toHaveLength(2);
   expect(stats.totals).toMatchObject({ total: 5, training: 3, search: 2 });
   expect(stats.topBots.map((bot) => [bot.name, bot.hits])).toEqual([
     ['GPTBot', 3],
     ['Googlebot', 2],
   ]);
-  expect(stats.topPaths[0]).toMatchObject({ path: '/pricing', hits: 3 });
-  // The server table has no verification: nothing is filtered out.
-  expect(stats).toMatchObject({ verifiedOnly: false, verifiedHits: 0 });
+  expect(stats.topPaths[0]).toMatchObject({
+    path: '/pricing',
+    hits: 3,
+    status: { '2xx': 2, '3xx': 0, '4xx': 1, '5xx': 0 },
+  });
+  // Status and verification come from the table's own columns.
+  expect(stats).toMatchObject({
+    verifiedOnly: false,
+    verifiedHits: 3,
+    allHits: 5,
+  });
+  expect(stats.topBots[0]).toMatchObject({ name: 'GPTBot', verifiedHits: 3 });
   expect(stats.usage).toMatchObject({ hits: 5, cap: null });
   // One point per local day of the range; today's holds the hits.
   expect(stats.series.at(-1)).toMatchObject({ total: 5 });

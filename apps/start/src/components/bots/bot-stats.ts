@@ -214,3 +214,55 @@ export function cloudflareSyncSummary(
       return { tone: 'pending', text: 'First sync queued' };
   }
 }
+
+export interface BotMixRow extends BotGroupSeries {
+  hits: number;
+  /** Share of every hit in the window, 0 to 1. */
+  share: number;
+}
+
+/** Hits per purpose with each one's share, in the chart's stack order. */
+export function botGroupMix(
+  totals: IBotStats['totals'] | undefined
+): BotMixRow[] {
+  const total = totals?.total ?? 0;
+  return BOT_GROUP_SERIES.map((group) => {
+    const hits = totals?.[group.key] ?? 0;
+    return { ...group, hits, share: total > 0 ? hits / total : 0 };
+  });
+}
+
+/** Share of `part` in `whole` as a whole percentage; under 1% reads `<1%`. */
+export function formatShare(part: number, whole: number): string {
+  if (!(whole > 0) || part <= 0) {
+    return '0%';
+  }
+  const percent = (part / whole) * 100;
+  if (percent < 1) {
+    return '<1%';
+  }
+  return `${Math.round(percent)}%`;
+}
+
+/**
+ * 4xx and 5xx answers among the crawled pages listed, against the hits that
+ * reported a status at all.
+ */
+export function botErrorSummary(paths: IBotStats['topPaths'] | undefined): {
+  errors: number;
+  reported: number;
+} {
+  let errors = 0;
+  let reported = 0;
+  for (const path of paths ?? []) {
+    const {
+      '2xx': ok,
+      '3xx': moved,
+      '4xx': client,
+      '5xx': server,
+    } = path.status;
+    errors += client + server;
+    reported += ok + moved + client + server;
+  }
+  return { errors, reported };
+}

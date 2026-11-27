@@ -30,22 +30,11 @@ export function BotsChart({
   const data = useMemo(() => toBotChartData(series), [series]);
 
   return (
-    <div className="card">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+    <div className="card flex h-full flex-col">
+      <div className="border-b px-4 py-3">
         <h3 className="font-medium text-sm">Bot hits per day</h3>
-        <div className="flex flex-wrap items-center gap-4 text-muted-foreground text-xs">
-          {BOT_GROUP_SERIES.map((group) => (
-            <span className="flex items-center gap-1.5" key={group.key}>
-              <span
-                className="size-2 rounded-sm"
-                style={{ backgroundColor: group.color }}
-              />
-              {group.label}
-            </span>
-          ))}
-        </div>
       </div>
-      <div className="h-[240px] w-full p-4">
+      <div className="min-h-[280px] w-full flex-1 p-4">
         {isLoading ? (
           <Skeleton className="h-full w-full" />
         ) : (

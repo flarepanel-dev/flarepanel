@@ -14,6 +14,7 @@ import { getEventFiltersWhereClause } from '../chart/src/filter-where';
 import { buildFilterWhere } from '../chart/src/table-filter-where';
 import {
   type BotCountRow,
+  botAggregatePath,
   emptyBotStats,
   summarizeBotCounts,
 } from '../ingest/cloudflare/bot-store';
@@ -118,6 +119,11 @@ export interface IClickhouseBotEvent {
   project_id: string;
   path: string;
   created_at: string;
+  /** ClickHouse: 0 when the hit reported no status. */
+  status?: number | null;
+  /** ClickHouse: 1 verified, 0 not verified, -1 unknown. */
+  verified?: boolean | number | null;
+  verified_category?: string | null;
 }
 
 export interface IServiceBotEvent {
@@ -855,9 +861,46 @@ export async function getEventsCount(
   return res[0]?.count ?? 0;
 }
 
+const HTTP_STATUS_MIN = 100;
+const HTTP_STATUS_MAX = 599;
+const VERIFIED_UNKNOWN = -1;
+
+/** What a bot hit may also carry: its response status and the edge's verdict. */
+export interface BotHitDetails {
+  status?: number;
+  verified?: boolean;
+  verifiedCategory?: string;
+}
+
+/** The status as ClickHouse stores it: 0 when absent or not an HTTP status. */
+function storedBotStatus(status: number | undefined): number {
+  return status !== undefined &&
+    Number.isInteger(status) &&
+    status >= HTTP_STATUS_MIN &&
+    status <= HTTP_STATUS_MAX
+    ? status
+    : 0;
+}
+
+function storedBotVerified(verified: boolean | undefined): number {
+  if (verified === undefined) {
+    return VERIFIED_UNKNOWN;
+  }
+  return verified ? 1 : 0;
+}
+
 export async function createBotEvent(
   deps: ServiceDeps,
-  { name, type, projectId, createdAt, path }: IServiceCreateBotEventPayload
+  {
+    name,
+    type,
+    projectId,
+    createdAt,
+    path,
+    status,
+    verified,
+    verifiedCategory,
+  }: IServiceCreateBotEventPayload & BotHitDetails
 ) {
   return deps.buffers.bot.add({
     id: crypto.randomUUID(),
@@ -866,7 +909,22 @@ export async function createBotEvent(
     project_id: projectId,
     path,
     created_at: formatClickhouseDate(createdAt),
+    status: storedBotStatus(status),
+    verified: storedBotVerified(verified),
+    verified_category: verifiedCategory ?? '',
   });
+}
+
+/** A ClickHouse bot row as the dashboard reads it: "not reported" becomes null. */
+function readBotEventRow(row: IClickhouseBotEvent) {
+  const verified = Number(row.verified ?? VERIFIED_UNKNOWN);
+  return {
+    ...row,
+    status: Number(row.status ?? 0) > 0 ? Number(row.status) : null,
+    verified: verified === VERIFIED_UNKNOWN ? null : verified === 1,
+    verified_category: row.verified_category || null,
+    createdAt: convertClickhouseDateToJs(row.created_at),
+  };
 }
 
 export async function getConversionEventNames(
@@ -1460,10 +1518,7 @@ export async function getBotEventsPage(
   ]);
 
   return {
-    data: events.map((item) => ({
-      ...item,
-      createdAt: convertClickhouseDateToJs(item.created_at),
-    })),
+    data: events.map(readBotEventRow),
     count: counts[0]?.count ?? 0,
   };
 }
@@ -1486,9 +1541,8 @@ export interface BotStatsInput {
 const BOT_STATS_SERVER_MAX_DAYS = 90;
 
 /**
- * Bot totals from ClickHouse, for a server install: one row per hour, bot and
- * path. The table has no response status or verification, so those read as
- * "not reported" and every hit counts as unverified.
+ * Bot totals from ClickHouse, for a server install: one row per hour, bot,
+ * path and verification, with the hits per response status class.
  */
 async function getBotStatsFromClickhouse(
   deps: ServiceDeps,
@@ -1510,7 +1564,12 @@ async function getBotStatsFromClickhouse(
       name: string;
       type: string;
       path: string;
+      verified: number;
       hits: string;
+      s2: string;
+      s3: string;
+      s4: string;
+      s5: string;
       last_at: string;
     }>(
       deps,
@@ -1520,13 +1579,18 @@ async function getBotStatsFromClickhouse(
           name,
           type,
           path,
+          verified = 1 AS verified,
           count() AS hits,
+          countIf(status >= 200 AND status < 300) AS s2,
+          countIf(status >= 300 AND status < 400) AS s3,
+          countIf(status >= 400 AND status < 500) AS s4,
+          countIf(status >= 500 AND status < 600) AS s5,
           toUnixTimestamp64Milli(max(created_at)) AS last_at
         FROM ${sql.id(TABLE_NAMES.events_bots)}
         WHERE project_id = ${sql.string(input.projectId)}
           AND created_at >= fromUnixTimestamp64Milli(toInt64(${sql.uint64(Math.floor(fromMs))}))
           AND created_at <= fromUnixTimestamp64Milli(toInt64(${sql.uint64(Math.floor(toMs))}))
-        GROUP BY hour, name, type, path
+        GROUP BY hour, name, type, path, verified
       `
     ),
     chQuery<{ hits: string }>(
@@ -1546,10 +1610,16 @@ async function getBotStatsFromClickhouse(
     source: 'snippet',
     name: row.name,
     category: row.type,
-    path: row.path,
-    verified: false,
+    // The table keeps the full URL; totals count per pathname, as on Cloudflare.
+    path: botAggregatePath(row.path),
+    verified: Number(row.verified) === 1,
     hits: Number(row.hits),
-    status: { '2xx': 0, '3xx': 0, '4xx': 0, '5xx': 0 },
+    status: {
+      '2xx': Number(row.s2),
+      '3xx': Number(row.s3),
+      '4xx': Number(row.s4),
+      '5xx': Number(row.s5),
+    },
     lastSeen: Number(row.last_at),
   }));
   return summarizeBotCounts(

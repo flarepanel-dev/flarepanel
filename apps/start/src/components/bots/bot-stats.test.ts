@@ -3,10 +3,13 @@ import {
   aiReferralSessions,
   BOT_GROUP_SERIES,
   botDataSource,
+  botErrorSummary,
+  botGroupMix,
   botUsageNotice,
   botVerifiedFilter,
   cloudflareSyncSummary,
   displayBotPath,
+  formatShare,
   isBotsPageEmpty,
   toBotChartData,
 } from './bot-stats';
@@ -185,5 +188,60 @@ describe('cloudflareSyncSummary', () => {
         lastSyncHits: null,
       })
     ).toEqual({ tone: 'pending', text: 'First sync queued' });
+  });
+});
+
+describe('botGroupMix', () => {
+  it('gives each purpose its share of all hits', () => {
+    const mix = botGroupMix({
+      total: 200,
+      ai: 150,
+      answers: 50,
+      indexing: 0,
+      training: 100,
+      search: 40,
+      other: 10,
+    });
+    expect(mix.map((row) => [row.key, row.hits, row.share])).toEqual([
+      ['answers', 50, 0.25],
+      ['indexing', 0, 0],
+      ['training', 100, 0.5],
+      ['search', 40, 0.2],
+      ['other', 10, 0.05],
+    ]);
+  });
+
+  it('has no shares without hits', () => {
+    expect(botGroupMix(undefined).every((row) => row.share === 0)).toBe(true);
+  });
+});
+
+describe('formatShare', () => {
+  it('rounds, and keeps a small share visible', () => {
+    expect(formatShare(1, 3)).toBe('33%');
+    expect(formatShare(1, 1000)).toBe('<1%');
+    expect(formatShare(0, 10)).toBe('0%');
+    expect(formatShare(5, 0)).toBe('0%');
+  });
+});
+
+describe('botErrorSummary', () => {
+  it('counts 4xx and 5xx against hits that reported a status', () => {
+    const path = (status: [number, number, number, number]) => ({
+      path: '/',
+      hits: 100,
+      lastSeen: 0,
+      bots: [],
+      status: {
+        '2xx': status[0],
+        '3xx': status[1],
+        '4xx': status[2],
+        '5xx': status[3],
+      },
+    });
+    expect(botErrorSummary([path([80, 5, 10, 5]), path([0, 0, 0, 0])])).toEqual(
+      { errors: 15, reported: 100 }
+    );
+    expect(botErrorSummary(undefined)).toEqual({ errors: 0, reported: 0 });
   });
 });

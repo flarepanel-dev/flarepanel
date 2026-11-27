@@ -134,8 +134,7 @@ bundled Caddy does.
 
 | | Cloudflare | Your own server |
 |---|---|---|
-| Bots & AI crawlers | Totals, charts, status codes, verified filter | Totals and charts; no status codes or verified filter |
-| Connect Cloudflare (crawler import) | Yes | No |
+| Connect Cloudflare (no-code crawler import) | Yes | No: report crawlers from your server or edge |
 | Raw event archive | R2 | ClickHouse keeps everything |
 | Event retention | A setting | A ClickHouse TTL (above) |
 | Backups | D1 and Durable Object point-in-time recovery | `backup.sh` and `restore.sh` |
@@ -143,5 +142,5 @@ bundled Caddy does.
 | Email | Cloudflare Email | SMTP or Resend |
 
 Everything else is the same on both: reports, funnels, retention, sessions and
-replay, profiles, cohorts, realtime, public widgets, AI answers and
+replay, profiles, cohorts, realtime, bots and AI crawlers, public widgets, AI answers and
 observability, imports, exports, Search Console, the REST API and MCP.

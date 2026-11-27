@@ -19,11 +19,13 @@ import {
   botGroupLabel,
   botUsageNotice,
   botVerifiedFilter,
-  displayBotPath,
+  formatShare,
   isBotsPageEmpty,
   toBotChartData,
 } from '@/components/bots/bot-stats';
 import { BotsChart } from '@/components/bots/bots-chart';
+import { BotsMix } from '@/components/bots/bots-mix';
+import { RECENT_PAGE_SIZE, RecentHits } from '@/components/bots/bots-recent';
 import {
   CloudflareConnectCard,
   useCloudflareSetup,
@@ -35,7 +37,6 @@ import { OverviewWidgetTable } from '@/components/overview/overview-widget-table
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
-import { Pagination } from '@/components/pagination';
 import { Skeleton } from '@/components/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button, LinkButton } from '@/components/ui/button';
@@ -52,7 +53,6 @@ export const Route = createFileRoute('/_app/$organizationId/$projectId/bots')({
   }),
 });
 
-const RECENT_PAGE_SIZE = 20;
 const TITLE = 'Bots & AI crawlers';
 const DESCRIPTION =
   'AI crawlers, assistants and search bots that fetched your pages, grouped by what they fetched for. Kept for 30 days and never counted as events.';
@@ -95,6 +95,9 @@ function Component() {
   const setupQuery = useCloudflareSetup(projectId);
   const cloudflare = setupQuery.data;
 
+  // Only the Cloudflare deployment can import from a Cloudflare zone.
+  const canConnectCloudflare = Boolean(cloudflare?.available);
+
   const stats = statsQuery.data;
   const isLoading = statsQuery.isLoading || recentQuery.isLoading;
   const header = (
@@ -103,6 +106,7 @@ function Component() {
         <div className="flex flex-wrap items-center gap-4">
           <VerifiedToggle
             checked={stats?.verifiedOnly ?? false}
+            cloudflare={canConnectCloudflare}
             hasVerified={(stats?.verifiedHits ?? 0) > 0}
             onChange={setVerifiedOnly}
           />
@@ -147,7 +151,7 @@ function Component() {
         {header}
         <EmptyState
           className="mt-8"
-          description="AI crawlers such as GPTBot, ClaudeBot and PerplexityBot, and search bots like Googlebot, fetch your HTML without running JavaScript, so the FlarePanel script never sees them. Report page requests from your server or edge (a Cloudflare Worker, Next.js middleware), or connect your Cloudflare zone below, and they show up here."
+          description={`AI crawlers such as GPTBot, ClaudeBot and PerplexityBot, and search bots like Googlebot, fetch your HTML without running JavaScript, so the FlarePanel script never sees them. Report page requests from your server or edge (a Cloudflare Worker, Next.js middleware)${canConnectCloudflare ? ', or connect your Cloudflare zone below,' : ''} and they show up here.`}
           icon={RadarIcon}
           title="No bot traffic yet"
         >
@@ -155,7 +159,7 @@ function Component() {
             Set up crawler tracking
           </LinkButton>
         </EmptyState>
-        {cloudflare?.available && (
+        {cloudflare && canConnectCloudflare && (
           <div className="mx-auto mt-8 max-w-2xl">
             <CloudflareConnectCard projectId={projectId} setup={cloudflare} />
           </div>
@@ -181,36 +185,22 @@ function Component() {
             <AlertDescription>{notice.description}</AlertDescription>
           </Alert>
         )}
-        {stats?.verifiedOnly && stats.allHits > stats.verifiedHits && (
-          <p className="text-muted-foreground text-xs">
-            Showing verified hits only.{' '}
-            {(stats.allHits - stats.verifiedHits).toLocaleString()} hits from
-            user agents that could not be verified are hidden.{' '}
-            <button
-              className="underline underline-offset-2 hover:text-foreground"
-              onClick={() => setVerifiedOnly(false)}
-              type="button"
-            >
-              Show all
-            </button>
-          </p>
-        )}
-        <DataSourceLine
+        <ContextBar
           cloudflareConnected={Boolean(cloudflare?.connection)}
           lastCloudflareSync={cloudflare?.connection?.lastSyncedAt ?? null}
+          onShowAll={() => setVerifiedOnly(false)}
           stats={stats}
         />
         <BotKpis isLoading={statsQuery.isLoading} range={range} stats={stats} />
-        <BotsChart
-          isLoading={statsQuery.isLoading}
-          series={stats?.series ?? []}
-        />
-        <AiVisibility
-          isLoading={statsQuery.isLoading}
-          projectId={projectId}
-          stats={stats}
-        />
-        <AiAnswersCard organizationId={organizationId} projectId={projectId} />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <BotsChart
+              isLoading={statsQuery.isLoading}
+              series={stats?.series ?? []}
+            />
+          </div>
+          <BotsMix isLoading={statsQuery.isLoading} stats={stats} />
+        </div>
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <TopBotsTable isLoading={statsQuery.isLoading} stats={stats} />
           <TopPathsTable isLoading={statsQuery.isLoading} stats={stats} />
@@ -222,7 +212,13 @@ function Component() {
           page={recentPage}
           rows={recentQuery.data?.data ?? []}
         />
-        {cloudflare?.available && (
+        <AiVisibility
+          isLoading={statsQuery.isLoading}
+          projectId={projectId}
+          stats={stats}
+        />
+        <AiAnswersCard organizationId={organizationId} projectId={projectId} />
+        {cloudflare && canConnectCloudflare && (
           <CloudflareConnectCard projectId={projectId} setup={cloudflare} />
         )}
         <p className="text-muted-foreground text-xs">
@@ -234,58 +230,85 @@ function Component() {
             target="_blank"
           >
             Report them from your server or edge
-          </a>{' '}
-          or connect Cloudflare.
+          </a>
+          {canConnectCloudflare ? ' or connect Cloudflare.' : '.'}
         </p>
       </div>
     </PageContainer>
   );
 }
 
-function DataSourceLine({
+/**
+ * One quiet line under the header: where the numbers come from, and what
+ * the verified filter is hiding.
+ */
+function ContextBar({
   stats,
   cloudflareConnected,
   lastCloudflareSync,
+  onShowAll,
 }: {
   stats: IBotStats | undefined;
   cloudflareConnected: boolean;
   lastCloudflareSync: Date | string | null;
+  onShowAll: () => void;
 }) {
   const source = botDataSource(stats, cloudflareConnected);
-  if (source === 'none') {
+  const usesCloudflare = source === 'cloudflare' || source === 'both';
+  const hidden =
+    stats?.verifiedOnly && stats.allHits > stats.verifiedHits
+      ? stats.allHits - stats.verifiedHits
+      : 0;
+  if (source === 'none' && hidden === 0) {
     return null;
   }
-  const usesCloudflare = source === 'cloudflare' || source === 'both';
   return (
-    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground text-xs">
-      <span>
-        Data source:{' '}
-        <span className="font-medium text-foreground">
-          {BOT_DATA_SOURCE_LABELS[source]}
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-muted-foreground text-xs">
+      {source !== 'none' && (
+        <span className="inline-flex items-center gap-2 rounded-full border bg-card px-2.5 py-1">
+          <span aria-hidden className="size-1.5 rounded-full bg-emerald-500" />
+          <span className="font-medium text-foreground">
+            {BOT_DATA_SOURCE_LABELS[source]}
+          </span>
+          {usesCloudflare && lastCloudflareSync && (
+            <span>
+              synced {formatTimeAgoOrDateTime(new Date(lastCloudflareSync))}
+            </span>
+          )}
         </span>
-      </span>
+      )}
       {usesCloudflare && (
         <span title="Cloudflare analytics are sampled: imported counts are estimates. Hours the server snippet reported keep its exact numbers.">
           Cloudflare numbers are sampled estimates
         </span>
       )}
-      {usesCloudflare && lastCloudflareSync && (
-        <span>
-          Last Cloudflare sync{' '}
-          {formatTimeAgoOrDateTime(new Date(lastCloudflareSync))}
+      {hidden > 0 && (
+        <span className="inline-flex items-center gap-1.5">
+          <BadgeCheckIcon aria-hidden className="size-3.5 text-emerald-600" />
+          Verified hits only: {hidden.toLocaleString()} unverified hidden.
+          <button
+            className="font-medium text-foreground underline underline-offset-2"
+            onClick={onShowAll}
+            type="button"
+          >
+            Show all
+          </button>
         </span>
       )}
-    </p>
+    </div>
   );
 }
 
 function VerifiedToggle({
   checked,
   hasVerified,
+  cloudflare,
   onChange,
 }: {
   checked: boolean;
   hasVerified: boolean;
+  /** Whether this install can point at Cloudflare for verified bots. */
+  cloudflare: boolean;
   onChange: (verifiedOnly: boolean) => void;
 }) {
   const id = useId();
@@ -294,8 +317,8 @@ function VerifiedToggle({
       className="flex items-center gap-2"
       title={
         hasVerified
-          ? 'Only hits your edge verified as the real crawler (Cloudflare verified bots)'
-          : 'No verified hits in this period. Cloudflare Workers can send them: see the setup guide.'
+          ? 'Only hits your edge confirmed as the real crawler'
+          : `No verified hits in this period. ${cloudflare ? 'Cloudflare Workers can send them' : 'Your edge can send them with each hit'}: see the setup guide.`
       }
     >
       <Switch
@@ -398,9 +421,16 @@ function TopBotsTable({
 }) {
   const rows = stats?.topBots ?? [];
   const maxHits = Math.max(...rows.map((row) => row.hits), 1);
+  const total = stats?.totals.total ?? 0;
   return (
     <div className="card overflow-hidden">
-      <CardHeader title="Bots" />
+      <CardHeader title="Bots">
+        {rows.length > 0 && (
+          <span className="text-muted-foreground text-xs tabular-nums">
+            {rows.length.toLocaleString()} seen
+          </span>
+        )}
+      </CardHeader>
       {isLoading && <LoadingTable label="Bot" />}
       {!isLoading && rows.length === 0 && (
         <EmptyRows message="No bots in this period" />
@@ -426,10 +456,10 @@ function TopBotsTable({
                     />
                   )}
                   <span
-                    className="truncate text-muted-foreground"
+                    className="hidden truncate text-muted-foreground sm:inline"
                     title={`Detected as: ${row.category}`}
                   >
-                    {botGroupLabel(row.group)} · {row.category}
+                    {botGroupLabel(row.group)}
                   </span>
                 </div>
               ),
@@ -445,8 +475,19 @@ function TopBotsTable({
               ),
             },
             {
+              name: 'Share',
+              width: '60px',
+              responsive: { priority: 5 },
+              render: (row) => (
+                <span className="text-muted-foreground tabular-nums">
+                  {formatShare(row.hits, total)}
+                </span>
+              ),
+            },
+            {
               name: 'Last seen',
               width: '110px',
+              responsive: { priority: 6 },
               getSortValue: (row) => row.lastSeen,
               render: (row) => (
                 <span className="text-muted-foreground">
@@ -475,7 +516,13 @@ function TopPathsTable({
   const maxHits = Math.max(...rows.map((row) => row.hits), 1);
   return (
     <div className="card overflow-hidden">
-      <CardHeader title="Crawled pages" />
+      <CardHeader title="Crawled pages">
+        {rows.length > 0 && (
+          <span className="text-muted-foreground text-xs tabular-nums">
+            {rows.length.toLocaleString()} pages
+          </span>
+        )}
+      </CardHeader>
       {isLoading && <LoadingTable label="Path" />}
       {!isLoading && rows.length === 0 && (
         <EmptyRows message="No crawled pages in this period" />
@@ -487,13 +534,22 @@ function TopPathsTable({
               name: 'Path',
               width: 'w-full',
               render: (row) => (
-                <div className="min-w-0">
-                  <div className="truncate font-medium" title={row.path}>
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate font-medium" title={row.path}>
                     {row.path}
-                  </div>
-                  <div className="truncate text-muted-foreground">
-                    {row.bots.map((bot) => bot.name).join(', ')}
-                  </div>
+                  </span>
+                  <span
+                    className="hidden shrink-0 items-center gap-0.5 sm:flex"
+                    title={row.bots.map((bot) => bot.name).join(', ')}
+                  >
+                    {row.bots.map((bot) => (
+                      <span
+                        className="size-1.5 rounded-full"
+                        key={`${bot.name}:${bot.category}`}
+                        style={{ backgroundColor: botGroupColor(bot.group) }}
+                      />
+                    ))}
+                  </span>
                 </div>
               ),
             },
@@ -510,18 +566,21 @@ function TopPathsTable({
             {
               name: '4xx',
               width: '50px',
+              responsive: { priority: 4 },
               getSortValue: (row) => row.status['4xx'],
               render: (row) => <StatusCount value={row.status['4xx']} />,
             },
             {
               name: '5xx',
               width: '50px',
+              responsive: { priority: 4 },
               getSortValue: (row) => row.status['5xx'],
               render: (row) => <StatusCount value={row.status['5xx']} />,
             },
             {
               name: 'Last seen',
               width: '110px',
+              responsive: { priority: 6 },
               getSortValue: (row) => row.lastSeen,
               render: (row) => (
                 <span className="text-muted-foreground">
@@ -550,103 +609,5 @@ function StatusCount({ value }: { value: number }) {
     >
       {value.toLocaleString()}
     </span>
-  );
-}
-
-interface RecentHit {
-  id: string;
-  name: string;
-  type: string;
-  path: string;
-  createdAt: Date | string;
-  status?: number | null;
-  verified?: boolean | null;
-  /** Set on a sample imported from Cloudflare (stands for an hourly estimate). */
-  source?: string | null;
-}
-
-function RecentHits({
-  rows,
-  count,
-  page,
-  isLoading,
-  onPageChange,
-}: {
-  rows: RecentHit[];
-  count: number;
-  page: number;
-  isLoading: boolean;
-  onPageChange: (page: number) => void;
-}) {
-  const pageCount = Math.max(Math.ceil(count / RECENT_PAGE_SIZE), 1);
-  return (
-    <div className="card overflow-hidden">
-      <CardHeader title="Latest hits">
-        {count > RECENT_PAGE_SIZE && (
-          <Pagination
-            canNextPage={page < pageCount - 1}
-            canPreviousPage={page > 0}
-            nextPage={() => onPageChange(Math.min(page + 1, pageCount - 1))}
-            pageIndex={page}
-            previousPage={() => onPageChange(Math.max(page - 1, 0))}
-          />
-        )}
-      </CardHeader>
-      {isLoading && (
-        <div className="space-y-2 p-4">
-          {LOADING_ROWS.map((row) => (
-            <Skeleton className="h-5 w-full" key={row} />
-          ))}
-        </div>
-      )}
-      {!isLoading && rows.length === 0 && (
-        <EmptyRows message="No bot hits kept yet" />
-      )}
-      {!isLoading && rows.length > 0 && (
-        <ul className="divide-y text-xs">
-          {rows.map((row) => (
-            <li className="flex items-center gap-3 px-4 py-2.5" key={row.id}>
-              <span className="w-32 shrink-0 truncate font-medium">
-                {row.name}
-              </span>
-              <span className="hidden w-36 shrink-0 truncate text-muted-foreground sm:block">
-                {row.type}
-              </span>
-              <span className="min-w-0 flex-1 truncate" title={row.path}>
-                {displayBotPath(row.path)}
-              </span>
-              {row.source === 'cloudflare' && (
-                <span
-                  className="shrink-0 rounded border px-1 text-[10px] text-muted-foreground"
-                  title="A sample from the hourly Cloudflare import, not a single reported hit"
-                >
-                  Cloudflare
-                </span>
-              )}
-              {row.verified && (
-                <BadgeCheckIcon
-                  aria-label="Verified"
-                  className="size-3.5 shrink-0 text-emerald-600"
-                />
-              )}
-              {row.status != null && (
-                <span
-                  className={
-                    row.status >= 400
-                      ? 'shrink-0 font-medium text-destructive tabular-nums'
-                      : 'shrink-0 text-muted-foreground tabular-nums'
-                  }
-                >
-                  {row.status}
-                </span>
-              )}
-              <span className="shrink-0 text-muted-foreground tabular-nums">
-                {formatTimeAgoOrDateTime(new Date(row.createdAt))}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   );
 }
