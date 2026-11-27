@@ -370,15 +370,18 @@ export async function getOrganizationBillingEventsCount(
   deps: ServiceDeps,
   organization: IServiceOrganization & { projects: { id: string }[] }
 ): Promise<number | undefined> {
-  // Trials have no Polar billing period; fall back to the trial window
-  // (creation → trial end). Status stays 'trialing' even once expired.
+  // Trials have no Polar billing period: a trial's allowance covers every
+  // event since the workspace was created, up to now. Not the trial window:
+  // a workspace that starts without a trial ends it at creation, and events
+  // sent after a trial ended must still count against it. Status stays
+  // 'trialing' even once expired.
   const isTrialStatus = organization.subscriptionStatus === 'trialing';
   const periodStart =
     organization.subscriptionCurrentPeriodStart ??
     (isTrialStatus ? organization.createdAt : null);
   const periodEnd =
     organization.subscriptionCurrentPeriodEnd ??
-    (isTrialStatus ? organization.subscriptionEndsAt : null);
+    (isTrialStatus ? new Date() : null);
 
   if (!(periodStart && periodEnd) || organization.projects.length === 0) {
     return 0;

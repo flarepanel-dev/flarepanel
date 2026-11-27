@@ -1,5 +1,5 @@
-// After each session_end the owning project's and organization's event counters
-// are refreshed, at most once an hour per project, and usage alert emails go
+// After each event the owning project's and organization's event counters
+// are refreshed, at most once every ten minutes per project, and usage alert emails go
 // out at 80% / 100% of the billing limit.
 
 import type { Organization } from '@flarepanel/db/src/prisma-client';
@@ -12,7 +12,8 @@ import { getProjectEventsCount } from '../../project/project.service';
 
 const INT4_MAX = 2_147_483_647;
 const USAGE_WARNING_THRESHOLD = 0.8;
-const UPDATE_EVENTS_COUNT_CACHE_SECONDS = 60 * 60;
+// Ten minutes: how long a trial can run past its allowance before it stops.
+const UPDATE_EVENTS_COUNT_CACHE_SECONDS = 10 * 60;
 const DEFAULT_DASHBOARD_URL = 'https://dashboard.flarepanel.dev';
 
 /** Saturating: the columns are INT4 and lifetime counts can exceed them. */
