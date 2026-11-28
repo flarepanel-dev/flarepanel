@@ -1,0 +1,79 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Astro
+description: Add FlarePanel to an Astro site.
+---
+
+# Astro
+
+```bash
+npm install @flarepanel/astro
+```
+
+Add the component to the `<head>` of your base layout, so it loads on every page:
+
+```astro
+---
+// src/layouts/Layout.astro
+import { OpenPanelComponent } from '@flarepanel/astro';
+---
+
+<html lang="en">
+  <head>
+    <OpenPanelComponent
+      clientId="YOUR_CLIENT_ID"
+      trackScreenViews={true}
+      trackOutgoingLinks={true}
+      trackAttributes={true}
+    />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+```
+
+## Track events
+
+Call the helpers from a client-side script:
+
+```astro
+<button id="signup">Sign up</button>
+
+<script>
+  import { track } from '@flarepanel/astro';
+
+  document.getElementById('signup')?.addEventListener('click', () => {
+    track('signup_clicked', { location: 'hero' });
+  });
+</script>
+```
+
+`identify`, `increment`, `decrement`, `screenView`, `setGlobalProperties` and `clear` work the same way. With `trackAttributes`, a `data-track` attribute on any button or link also sends an event, with no script: see [Script tag](/sdks/script-tag#track-clicks-without-code).
+
+## Identify a signed-in user
+
+Render the identify component on pages where you know the user:
+
+```astro
+---
+import { IdentifyComponent } from '@flarepanel/astro';
+const user = Astro.locals.user;
+---
+
+{user && <IdentifyComponent profileId={user.id} email={user.email} />}
+```
+
+## Self-hosting
+
+Point the component at your own install:
+
+```astro
+<OpenPanelComponent
+  clientId="YOUR_CLIENT_ID"
+  apiUrl="https://api.example.com"
+  scriptUrl="https://analytics.example.com/op1.js"
+/>
+```

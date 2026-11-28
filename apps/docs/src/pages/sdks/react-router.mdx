@@ -1,0 +1,69 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: React Router and Remix
+description: Add FlarePanel to a React Router (framework mode) or Remix app.
+---
+
+# React Router and Remix
+
+The same steps work for React Router in framework mode and for Remix.
+
+```bash
+npm install @flarepanel/web
+```
+
+Create one shared instance:
+
+```ts
+// app/analytics.ts
+import { FlarePanel } from '@flarepanel/web';
+
+export const op = new FlarePanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+Import it in `app/root.tsx`, so it starts on every page:
+
+```tsx
+// app/root.tsx
+import './analytics';
+```
+
+The instance does nothing during server rendering; it starts in the browser. Client-side navigation counts as a screen view.
+
+## Track events
+
+```tsx
+import { op } from '~/analytics';
+
+export function UpgradeButton() {
+  return (
+    <button onClick={() => op.track('upgrade_clicked', { plan: 'team' })}>
+      Upgrade
+    </button>
+  );
+}
+```
+
+Identify a signed-in user, for example after the root loader returns them:
+
+```ts
+op.identify({ profileId: user.id, email: user.email });
+```
+
+## Self-hosting
+
+```ts
+export const op = new FlarePanel({
+  clientId: 'YOUR_CLIENT_ID',
+  apiUrl: 'https://api.example.com',
+});
+```
+
+For events from loaders and actions, use the [server SDK](/sdks/server).

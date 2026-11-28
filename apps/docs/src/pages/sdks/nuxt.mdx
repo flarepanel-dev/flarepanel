@@ -1,0 +1,78 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: Nuxt
+description: Add FlarePanel to a Nuxt app.
+---
+
+# Nuxt
+
+```bash
+npm install @flarepanel/nuxt
+```
+
+Add the module and your client ID to `nuxt.config.ts`:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@flarepanel/nuxt'],
+  openpanel: {
+    clientId: 'YOUR_CLIENT_ID',
+  },
+});
+```
+
+Screen views, outgoing links and `data-track` attributes are tracked by default. Route changes count as screen views.
+
+## Track events
+
+The `useOpenPanel` composable is imported for you:
+
+```vue
+<script setup lang="ts">
+const op = useOpenPanel();
+
+function upgrade() {
+  op.track('upgrade_clicked', { plan: 'team' });
+}
+</script>
+
+<template>
+  <button @click="upgrade">Upgrade</button>
+</template>
+```
+
+Identify a signed-in user once you know who they are:
+
+```ts
+const op = useOpenPanel();
+op.identify({ profileId: user.id, email: user.email });
+```
+
+## Options
+
+| Option | Default | |
+|---|---|---|
+| `clientId` | | Your client ID |
+| `trackScreenViews` | `true` | A screen view on every route change |
+| `trackOutgoingLinks` | `true` | Clicks on links to other sites |
+| `trackAttributes` | `true` | Events from `data-track` attributes |
+| `trackHashChanges` | `false` | Also count `#hash` changes as screen views |
+| `disabled` | `false` | Turn tracking off, for example in development |
+| `proxy` | `false` | Send events through your app at `/api/openpanel`, so ad blockers do not stop them. Hosted service only |
+| `apiUrl` | `https://api.flarepanel.dev` | Your own API when self-hosting |
+
+All [SDK options](/tracking/options) are accepted.
+
+## Self-hosting
+
+Set `apiUrl` to your own API and leave `proxy` off: the proxy forwards to the hosted service.
+
+```ts
+openpanel: {
+  clientId: 'YOUR_CLIENT_ID',
+  apiUrl: 'https://api.example.com',
+},
+```

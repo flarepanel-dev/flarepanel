@@ -1,0 +1,72 @@
+---
+# Ask AI and feedback need a server; this site is static.
+showAskAi: false
+showFeedback: false
+title: SvelteKit
+description: Add FlarePanel to a SvelteKit app.
+---
+
+# SvelteKit
+
+```bash
+npm install @flarepanel/web
+```
+
+Create one shared instance:
+
+```ts
+// src/lib/analytics.ts
+import { FlarePanel } from '@flarepanel/web';
+
+export const op = new FlarePanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+Import it once in your root layout, so it starts on every page:
+
+```svelte
+<!-- src/routes/+layout.svelte -->
+<script lang="ts">
+  import '$lib/analytics';
+  let { children } = $props();
+</script>
+
+{@render children()}
+```
+
+The instance does nothing during server rendering; it starts in the browser. Client-side navigation counts as a screen view.
+
+## Track events
+
+```svelte
+<script lang="ts">
+  import { op } from '$lib/analytics';
+</script>
+
+<button onclick={() => op.track('upgrade_clicked', { plan: 'team' })}>
+  Upgrade
+</button>
+```
+
+Identify a signed-in user:
+
+```ts
+op.identify({ profileId: user.id, email: user.email });
+```
+
+## Self-hosting
+
+Add your own API to the instance:
+
+```ts
+export const op = new FlarePanel({
+  clientId: 'YOUR_CLIENT_ID',
+  apiUrl: 'https://api.example.com',
+});
+```
+
+For events from server code (form actions, hooks, endpoints), use the [server SDK](/sdks/server).
