@@ -47,7 +47,10 @@ run. Every part runs on Cloudflare's developer platform:
 - **Self-hosted on Cloudflare:** deploy the same code to your own Cloudflare
   account (Workers Paid plan) in two clicks, the API first, then the dashboard:
 
+  **Step 1, the API:**
   [![Deploy the API to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/flarepanel-dev/flarepanel/tree/cloudflare-deploy/api)
+
+  **Step 2, the dashboard:**
   [![Deploy the dashboard to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/flarepanel-dev/flarepanel/tree/cloudflare-deploy/dashboard)
 
   What each button asks for is on the
