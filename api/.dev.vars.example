@@ -1,0 +1,6 @@
+API_URL=https://flarepanel-api.your-subdomain.workers.dev # this Worker’s address
+DASHBOARD_URL=https://flarepanel-dashboard.your-subdomain.workers.dev # the dashboard Worker’s address
+CUSTOM_COOKIE_DOMAIN=your-subdomain.workers.dev # shared by both addresses, so sign-in works on both
+COOKIE_SECRET=change-me # openssl rand -hex 32
+AUTH_SECRET=change-me # openssl rand -hex 32
+ENCRYPTION_KEY=change-me # openssl rand -hex 32; keep a copy

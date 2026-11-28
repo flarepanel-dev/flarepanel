@@ -1,0 +1,1 @@
+import{j as e,e as r}from"./main-DtjOmO-t.js";function s({className:o}){return e.jsxs(e.Fragment,{children:[e.jsx("img",{alt:"FlarePanel logo",className:r("dark:hidden",o),src:"/logo.svg"}),e.jsx("img",{alt:"FlarePanel logo",className:r("hidden dark:block",o),src:"/logo-inverted.svg"})]})}export{s as L};

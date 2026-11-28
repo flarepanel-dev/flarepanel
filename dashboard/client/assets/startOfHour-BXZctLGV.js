@@ -1,0 +1,1 @@
+import{cc as n,cB as r,en as c}from"./main-DtjOmO-t.js";function a(t,s){const o=+n(t);return r(t,o+s)}function u(t,s){return a(t,s*c)}function i(t){const s=n(t);return s.setMinutes(0,0,0),s}export{u as a,i as s};

@@ -1,0 +1,24 @@
+import { o as jsxRuntimeExports } from "./worker-entry-C5kSRogq.js";
+import { c as createLucideIcon, E as EmptyState } from "./router-gBnYxPzA.js";
+import "node:async_hooks";
+import "node:stream";
+import "node:stream/web";
+import "./pick-CfnSzKDx.js";
+import "fs";
+import "util";
+import "stream";
+import "zlib";
+import "assert";
+import "buffer";
+const __iconNode = [
+  ["path", { d: "M22 13V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h9", key: "1j9vog" }],
+  ["path", { d: "m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7", key: "1ocrg3" }],
+  ["path", { d: "m17 17 4 4", key: "1b3523" }],
+  ["path", { d: "m21 17-4 4", key: "uinynz" }]
+];
+const MailX = createLucideIcon("mail-x", __iconNode);
+const SplitErrorComponent = () => /* @__PURE__ */ jsxRuntimeExports.jsx(EmptyState, { description: "This unsubscribe link is missing information or has expired. Open the link from your email again, or change your preferences from your account settings.", icon: MailX, title: "Link not valid", variant: "page" });
+export {
+  SplitErrorComponent as errorComponent
+};
+//# sourceMappingURL=unsubscribe-Dx8LaXeA.js.map

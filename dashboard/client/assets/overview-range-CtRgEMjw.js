@@ -1,0 +1,1 @@
+import{b6 as v,j as g}from"./main-DtjOmO-t.js";import{T as m}from"./time-window-picker-xkLK_aDh.js";function u(){const{range:e,setRange:t,setStartDate:a,setEndDate:n,endDate:r,startDate:s,interval:o,setInterval:i}=v();return g.jsx(m,{endDate:r,interval:o,onChange:t,onEndDateChange:n,onIntervalChange:i,onStartDateChange:a,startDate:s,value:e})}export{u as O};

@@ -1,0 +1,1 @@
+import{j as o,E as t}from"./main-DtjOmO-t.js";import{U as n}from"./unlink-CgMrpw_d.js";const a=()=>o.jsx(t,{description:"This link doesn't point to a shared dashboard anymore. Ask whoever sent it for a new one.",icon:n,title:"Share not found",variant:"page"});export{a as errorComponent};

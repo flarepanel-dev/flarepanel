@@ -1,0 +1,1 @@
+import{a8 as a}from"./main-DtjOmO-t.js";function s(t){const i=a().pathname.split("/").filter(Boolean),n=i[i.length-1];if(!n)return{activeTab:t[0].id,tabs:t};const e=t.find(o=>o.id===n);return e?{activeTab:e.id,tabs:t}:{activeTab:t[0].id,tabs:t}}export{s as u};

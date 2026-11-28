@@ -1,0 +1,1 @@
+import{j as e,e as n}from"./main-DtjOmO-t.js";function i({title:s,description:t,className:a}){return e.jsxs("div",{className:n("col gap-3",a),children:[e.jsx("h1",{className:"font-semibold text-3xl tracking-tight",children:s}),e.jsx("p",{className:"max-w-prose text-base text-muted-foreground",children:t})]})}export{i as O};

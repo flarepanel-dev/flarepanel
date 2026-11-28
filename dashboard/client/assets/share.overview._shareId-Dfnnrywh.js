@@ -1,0 +1,1 @@
+import{j as o,E as t}from"./main-DtjOmO-t.js";import{U as e}from"./unlink-CgMrpw_d.js";const i=()=>o.jsx(t,{description:"This link doesn't point to a shared overview anymore. Ask whoever sent it for a new one.",icon:e,title:"Share not found",variant:"page"});export{i as errorComponent};

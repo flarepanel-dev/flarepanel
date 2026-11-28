@@ -1,0 +1,2 @@
+API_URL=https://flarepanel-api.your-subdomain.workers.dev # the API Worker’s address
+DASHBOARD_URL=https://flarepanel-dashboard.your-subdomain.workers.dev # this Worker’s address

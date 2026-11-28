@@ -1,0 +1,1 @@
+import{b6 as s,j as o}from"./main-DtjOmO-t.js";import{R as i}from"./ReportInterval-Crnc8vgU.js";function l(){const{interval:e,setInterval:t,range:r,startDate:a,endDate:n}=s();return o.jsx(i,{chartType:"linear",endDate:n,interval:e,onChange:t,range:r,startDate:a})}export{l as O};

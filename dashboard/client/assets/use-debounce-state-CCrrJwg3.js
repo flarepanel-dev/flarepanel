@@ -1,0 +1,1 @@
+import{d}from"./index-DJrR4w9S.js";import{r as e}from"./main-DtjOmO-t.js";function m(u,o=500,s){const[t,c]=e.useState(u),[n,a]=e.useState(u),r=e.useMemo(()=>d(a,o,s),[]);return e.useEffect(()=>{r(t)},[t]),{value:t,debounced:n,set:c}}export{m as u};

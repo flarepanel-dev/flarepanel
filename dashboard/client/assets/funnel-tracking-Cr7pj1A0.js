@@ -1,0 +1,1 @@
+import{b0 as s,r as t}from"./main-DtjOmO-t.js";function o(e,n){s.track(e,n)}function r(){const e=t.useRef(Date.now());return t.useCallback(()=>Math.round((Date.now()-e.current)/1e3),[])}function u(e){return(e instanceof Error?e.message:String(e)).slice(0,80)}export{u as f,o as t,r as u};

@@ -1,0 +1,1 @@
+import{j as o,E as t,A as n,L as e}from"./main-DtjOmO-t.js";const i=()=>o.jsx(t,{description:"This workspace doesn't exist or you don't have access to it.",icon:n,title:"Workspace not found",variant:"page",children:o.jsx(e,{href:"/",children:"Go to home"})});export{i as notFoundComponent};

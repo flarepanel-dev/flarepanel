@@ -1,0 +1,146 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "flarepanel-api",
+  "main": "dist/index.js",
+  "compatibility_date": "2026-11-25",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "legacy_module_registry"
+  ],
+  "no_bundle": true,
+  "rules": [
+    {
+      "type": "ESModule",
+      "globs": [
+        "**/*.js"
+      ]
+    },
+    {
+      "type": "CompiledWasm",
+      "globs": [
+        "**/*.wasm"
+      ]
+    }
+  ],
+  "workers_dev": true,
+  "limits": {
+    "cpu_ms": 10000
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "flarepanel",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "COORDINATOR",
+        "class_name": "CoordinatorDurableObject"
+      },
+      {
+        "name": "PUBSUB_HUB",
+        "class_name": "PubSubHubDurableObject"
+      },
+      {
+        "name": "PROJECT_EVENTS",
+        "class_name": "ProjectEventsDurableObject"
+      },
+      {
+        "name": "BASIN_USAGE",
+        "class_name": "BasinUsageDurableObject"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "CoordinatorDurableObject",
+        "PubSubHubDurableObject"
+      ]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": [
+        "ProjectEventsDurableObject"
+      ]
+    },
+    {
+      "tag": "v3",
+      "new_sqlite_classes": [
+        "BasinUsageDurableObject"
+      ]
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "EVENTS_ARCHIVE",
+      "bucket_name": "flarepanel-events"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "TRACK_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 600,
+        "period": 60
+      }
+    },
+    {
+      "name": "MCP_LIMITER",
+      "namespace_id": "1002",
+      "simple": {
+        "limit": 600,
+        "period": 60
+      }
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "JOBS",
+        "queue": "flarepanel-jobs"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "flarepanel-jobs",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 5,
+        "max_concurrency": 2,
+        "dead_letter_queue": "flarepanel-jobs-dlq"
+      },
+      {
+        "queue": "flarepanel-jobs-dlq",
+        "max_batch_size": 10,
+        "max_retries": 3
+      }
+    ]
+  },
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
+  "vars": {
+    "NODE_ENV": "production",
+    "SELF_HOSTED": "true",
+    "ALLOW_REGISTRATION": "false",
+    "TRUSTED_IP_HEADER_ORDER": "cf-connecting-ip",
+    "FLAREPANEL_EVENT_RETENTION_DAYS": "90",
+    "UPTIME_URLS": "",
+    "FEEDBACK_EMAIL": ""
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1,
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.1
+    }
+  }
+}

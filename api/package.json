@@ -1,0 +1,51 @@
+{
+  "name": "flarepanel-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FlarePanel API: tracking, the dashboard API, sign-in and background jobs.",
+  "scripts": {
+    "deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.168.0"
+  },
+  "cloudflare": {
+    "label": "FlarePanel API",
+    "products": [
+      "Workers",
+      "Durable Objects",
+      "D1",
+      "R2",
+      "Queues"
+    ],
+    "categories": [
+      "analytics"
+    ],
+    "bindings": {
+      "API_URL": {
+        "description": "This Worker’s address: https://flarepanel-api.<your-subdomain>.workers.dev. Your workers.dev subdomain is under Workers & Pages → Settings in the Cloudflare dashboard."
+      },
+      "DASHBOARD_URL": {
+        "description": "The dashboard Worker’s address: https://flarepanel-dashboard.<your-subdomain>.workers.dev. Deploy it with the second button."
+      },
+      "CUSTOM_COOKIE_DOMAIN": {
+        "description": "Your workers.dev subdomain, for example `your-subdomain.workers.dev`, so the sign-in cookie reaches both Workers."
+      },
+      "COOKIE_SECRET": {
+        "description": "A random string: run `openssl rand -hex 32`."
+      },
+      "AUTH_SECRET": {
+        "description": "Another random string: run `openssl rand -hex 32`."
+      },
+      "ENCRYPTION_KEY": {
+        "description": "A third random string (`openssl rand -hex 32`). Keep a copy: stored AI and integration keys cannot be read without it."
+      },
+      "DB": {
+        "description": "Accounts, projects and settings."
+      },
+      "EVENTS_ARCHIVE": {
+        "description": "Raw event archive, imports, replays and AI prompt text."
+      }
+    }
+  }
+}

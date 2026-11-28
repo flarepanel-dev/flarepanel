@@ -1,0 +1,29 @@
+{
+  "name": "flarepanel-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FlarePanel dashboard.",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.168.0"
+  },
+  "cloudflare": {
+    "label": "FlarePanel dashboard",
+    "products": [
+      "Workers"
+    ],
+    "categories": [
+      "analytics"
+    ],
+    "bindings": {
+      "API_URL": {
+        "description": "The API Worker’s address from the first button: https://flarepanel-api.<your-subdomain>.workers.dev."
+      },
+      "DASHBOARD_URL": {
+        "description": "This Worker’s address: https://flarepanel-dashboard.<your-subdomain>.workers.dev."
+      }
+    }
+  }
+}

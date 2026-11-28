@@ -1,0 +1,1 @@
+import{a as o,l as a,b2 as r}from"./main-DtjOmO-t.js";function t(s){const e=o(),{data:n}=a({...e.organization.myAccess.queryOptions({organizationId:s??""}),enabled:!!s});return{role:n?.role??null,isAdmin:!!n&&r(n.role)}}export{t as u};

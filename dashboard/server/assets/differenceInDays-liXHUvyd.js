@@ -1,0 +1,27 @@
+import { bL as toDate, bM as differenceInCalendarDays } from "./router-gBnYxPzA.js";
+function differenceInDays(dateLeft, dateRight) {
+  const _dateLeft = toDate(dateLeft);
+  const _dateRight = toDate(dateRight);
+  const sign = compareLocalAsc(_dateLeft, _dateRight);
+  const difference = Math.abs(differenceInCalendarDays(_dateLeft, _dateRight));
+  _dateLeft.setDate(_dateLeft.getDate() - sign * difference);
+  const isLastDayNotFull = Number(
+    compareLocalAsc(_dateLeft, _dateRight) === -sign
+  );
+  const result = sign * (difference - isLastDayNotFull);
+  return result === 0 ? 0 : result;
+}
+function compareLocalAsc(dateLeft, dateRight) {
+  const diff = dateLeft.getFullYear() - dateRight.getFullYear() || dateLeft.getMonth() - dateRight.getMonth() || dateLeft.getDate() - dateRight.getDate() || dateLeft.getHours() - dateRight.getHours() || dateLeft.getMinutes() - dateRight.getMinutes() || dateLeft.getSeconds() - dateRight.getSeconds() || dateLeft.getMilliseconds() - dateRight.getMilliseconds();
+  if (diff < 0) {
+    return -1;
+  } else if (diff > 0) {
+    return 1;
+  } else {
+    return diff;
+  }
+}
+export {
+  differenceInDays as d
+};
+//# sourceMappingURL=differenceInDays-liXHUvyd.js.map
