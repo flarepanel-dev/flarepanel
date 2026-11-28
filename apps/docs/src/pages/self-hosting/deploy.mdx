@@ -8,9 +8,28 @@ description: Deploy the API and dashboard to your own Cloudflare account.
 
 # Deploy to Cloudflare
 
-:::warning
-This is the manual path the hosted service uses. It works, but it is manual: a one-command setup is planned.
-:::
+## One click
+
+Two buttons deploy a ready-made build to your account on workers.dev: the API first, then the dashboard. Cloudflare copies each to your GitHub account, creates the D1 database, R2 bucket, queues and Durable Objects, and asks for a few values.
+
+[![Deploy the API to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/flarepanel-dev/flarepanel/tree/cloudflare-deploy/api)
+
+[![Deploy the dashboard to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/flarepanel-dev/flarepanel/tree/cloudflare-deploy/dashboard)
+
+| Value | What to enter |
+|---|---|
+| `API_URL` | `https://flarepanel-api.<your-subdomain>.workers.dev` |
+| `DASHBOARD_URL` | `https://flarepanel-dashboard.<your-subdomain>.workers.dev` |
+| `CUSTOM_COOKIE_DOMAIN` (API only) | `<your-subdomain>.workers.dev` |
+| `COOKIE_SECRET`, `AUTH_SECRET`, `ENCRYPTION_KEY` (API only) | Three different values from `openssl rand -hex 32`. Keep a copy of `ENCRYPTION_KEY`. |
+
+Your workers.dev subdomain is under **Workers & Pages → Settings**. You need the Workers Paid plan with R2 turned on. The first account that signs up is yours; sign-ups then close, and you invite the rest of your team.
+
+The one-click build leaves out email (sign-up verification, invitations, password reset), your own domain and JavaScript webhook templates. Add them with the manual steps below.
+
+## Manual setup
+
+The path the hosted service uses, with every option.
 
 ::::steps
 

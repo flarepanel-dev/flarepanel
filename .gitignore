@@ -229,3 +229,6 @@ docs/roadmap/
 
 # Local design-tool state
 .impeccable/
+
+# One-click deploy bundle (scripts/build-cloudflare-deploy.ts)
+/.cloudflare-deploy

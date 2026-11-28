@@ -45,7 +45,14 @@ run. Every part runs on Cloudflare's developer platform:
   project and paste the snippet. It starts with a 30-day free trial, no card
   needed.
 - **Self-hosted on Cloudflare:** deploy the same code to your own Cloudflare
-  account. It needs the Workers Paid plan. Follow the
+  account (Workers Paid plan) in two clicks, the API first, then the dashboard:
+
+  [![Deploy the API to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/flarepanel-dev/flarepanel/tree/cloudflare-deploy/api)
+  [![Deploy the dashboard to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/flarepanel-dev/flarepanel/tree/cloudflare-deploy/dashboard)
+
+  What each button asks for is on the
+  [`cloudflare-deploy` branch](https://github.com/flarepanel-dev/flarepanel/tree/cloudflare-deploy).
+  For your own domain, email and every option, follow the
   [deploy guide](https://docs.flarepanel.dev/self-hosting/deploy).
 - **Self-hosted on your own server:** run it with Docker on one Linux machine
   (ClickHouse, Redis, Redpanda). See [`self-hosting/`](self-hosting/README.md)

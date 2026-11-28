@@ -1,0 +1,85 @@
+name: Cloudflare deploy bundle
+
+# Builds the one-click "Deploy to Cloudflare" bundle
+# (scripts/build-cloudflare-deploy.ts) and publishes it to the
+# `cloudflare-deploy` branch, which the Deploy to Cloudflare buttons in the
+# README and docs point at. The branch holds one commit, replaced each time,
+# so prebuilt files never pile up in the history.
+#
+# Runs for a version tag (`v1.2.3`) or by hand from `main`. Built here, not on
+# a developer's machine, so the bundle carries no local paths. No secrets: the
+# job only needs to push to this repository.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-deploy-bundle
+  cancel-in-progress: false
+
+jobs:
+  bundle:
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: ".bun-version"
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Generate the database client
+        run: bun run --filter @flarepanel/db codegen
+
+      - name: Build the bundle
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+        run: bun scripts/build-cloudflare-deploy.ts "${RUNNER_TEMP}/bundle"
+
+      - name: Check the bundle
+        run: |
+          set -euo pipefail
+          out="${RUNNER_TEMP}/bundle"
+          for f in api/wrangler.jsonc api/package.json api/.dev.vars.example api/dist/index.js \
+                   dashboard/wrangler.jsonc dashboard/package.json dashboard/server/index.js README.md; do
+            test -s "${out}/${f}" || { echo "missing ${f}"; exit 1; }
+          done
+          # No local secrets files and no developer machine paths.
+          if find "${out}" -name '.dev.vars' -o -name '.env' | grep -q .; then
+            echo "a secrets file is in the bundle"; exit 1
+          fi
+          if grep -rlq '/Users/' "${out}"; then
+            echo "a local path is in the bundle"; exit 1
+          fi
+          du -sh "${out}/api" "${out}/dashboard"
+
+      - name: Publish to the cloudflare-deploy branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_REF: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          cd "${RUNNER_TEMP}/bundle"
+          git init -q -b cloudflare-deploy
+          git config user.name "FlarePanel"
+          git config user.email "hello@flarepanel.dev"
+          git add -A
+          git commit -q -m "Deploy bundle for ${SOURCE_REF} (${SOURCE_SHA:0:7})"
+          git push -q --force \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            cloudflare-deploy
+          echo "Published ${SOURCE_REF} to the cloudflare-deploy branch"
